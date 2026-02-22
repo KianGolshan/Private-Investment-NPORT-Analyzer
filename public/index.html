@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SEC NPORT Analyzer</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.1/dist/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    :root {
+      --blue:       #2563eb;
+      --blue-dark:  #1d4ed8;
+      --blue-pale:  #dbeafe;
+      --blue-mid:   #93c5fd;
+      --green:      #059669;
+      --green-pale: #d1fae5;
+      --red:        #dc2626;
+      --red-pale:   #fee2e2;
+      --amber-pale: #fef3c7;
+      --amber:      #d97706;
+      --gray-50:    #f9fafb;
+      --gray-100:   #f3f4f6;
+      --gray-200:   #e5e7eb;
+      --gray-400:   #9ca3af;
+      --gray-500:   #6b7280;
+      --gray-700:   #374151;
+      --gray-900:   #111827;
+      --radius:     8px;
+      --shadow:     0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: var(--gray-700);
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 36px 40px;
+    }
+
+    h1 { color: var(--blue); margin-bottom: 6px; font-size: 26px; font-weight: 700; }
+    .subtitle { color: var(--gray-500); margin-bottom: 22px; font-size: 14px; }
+
+    /* ── Alerts ─────────────────────────────────────────────────────────── */
+    .alert {
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin-bottom: 18px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .alert strong { display: block; margin-bottom: 2px; font-size: 13px; }
+    .alert-info    { background: var(--blue-pale);  border: 1px solid var(--blue-mid); color: #1e40af; }
+    .alert-warning { background: var(--amber-pale); border: 1px solid #f59e0b;         color: #92400e; }
+    .alert-success { background: var(--green-pale); border: 1px solid var(--green);    color: #065f46; }
+    .alert-error   { background: var(--red-pale);   border: 1px solid var(--red);      color: #991b1b; }
+
+    /* ── Tabs ───────────────────────────────────────────────────────────── */
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid var(--gray-200);
+      margin-bottom: 22px;
+    }
+    .tab {
+      padding: 9px 22px;
+      background: transparent;
+      color: var(--gray-500);
+      border: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .tab:hover { color: var(--blue); }
+    .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ── Form ───────────────────────────────────────────────────────────── */
+    .search-row { display: flex; gap: 12px; margin-bottom: 14px; align-items: flex-end; }
+    .input-group { flex: 1; }
+    .input-group.narrow { flex: 0 0 175px; }
+    label { display: block; margin-bottom: 5px; font-size: 13px; font-weight: 500; color: var(--gray-700); }
+    .hint { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+
+    input[type="text"],
+    input[type="date"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 9px 13px;
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-family: inherit;
+      background: white;
+      color: var(--gray-900);
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--blue); }
+    textarea { resize: vertical; min-height: 108px; }
+
+    /* ── Buttons ────────────────────────────────────────────────────────── */
+    .btn {
+      padding: 9px 18px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-primary  { background: var(--blue);    color: white; }
+    .btn-primary:hover:not(:disabled)  { background: var(--blue-dark); }
+    .btn-secondary { background: var(--gray-500); color: white; }
+    .btn-secondary:hover:not(:disabled) { background: var(--gray-700); }
+    .btn-green    { background: var(--green);   color: white; }
+    .btn-green:hover:not(:disabled)    { background: #047857; }
+    .btn-red      { background: var(--red);     color: white; }
+    .btn-red:hover:not(:disabled)      { background: #b91c1c; }
+    .btn-sm { padding: 4px 9px; font-size: 12px; }
+
+    /* ── Date filter panel ──────────────────────────────────────────────── */
+    .date-filter-panel {
+      display: none;
+      background: #f0f9ff;
+      border: 2px solid var(--blue-mid);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 18px;
+    }
+    .date-filter-panel .search-row { margin-bottom: 0; }
+
+    /* ── Loading / progress ─────────────────────────────────────────────── */
+    .loading-wrap {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .spinner {
+      border: 4px solid var(--gray-100);
+      border-top: 4px solid var(--blue);
+      border-radius: 50%;
+      width: 42px; height: 42px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 14px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-wrap p { color: var(--gray-500); font-size: 14px; }
+
+    .progress-bar-wrap {
+      background: var(--blue-pale);
+      border: 1px solid var(--blue-mid);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin-bottom: 14px;
+    }
+    .progress-text  { color: #1e40af; font-size: 13px; margin-bottom: 7px; }
+    .progress-track { background: var(--gray-200); height: 5px; border-radius: 3px; overflow: hidden; }
+    .progress-fill  { background: var(--blue); height: 100%; border-radius: 3px; transition: width 0.3s; }
+
+    /* ── Stats card ─────────────────────────────────────────────────────── */
+    .stats-grid {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .stat-box {
+      flex: 1;
+      min-width: 120px;
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 13px 15px;
+    }
+    .stat-label { font-size: 11px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+    .stat-value { font-size: 19px; font-weight: 700; color: var(--gray-900); line-height: 1.2; }
+    .stat-value.highlight { color: var(--blue); }
+    .stat-value.sm { font-size: 13px; }
+    .stat-sub   { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
+
+    /* ── Chart panel ────────────────────────────────────────────────────── */
+    .chart-panel {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      margin-bottom: 20px;
+    }
+    .chart-panel h3 { font-size: 14px; font-weight: 600; color: var(--gray-700); margin-bottom: 14px; }
+
+    /* ── Fund cards ─────────────────────────────────────────────────────── */
+    .results-section { margin-top: 4px; }
+    .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .results-header h2 { font-size: 17px; font-weight: 600; }
+
+    .fund-card { border: 1px solid var(--gray-200); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; }
+    .fund-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--gray-50);
+      border-bottom: 1px solid var(--gray-200);
+      cursor: pointer;
+      user-select: none;
+    }
+    .fund-header:hover { background: var(--gray-100); }
+    .fund-name  { font-size: 14px; font-weight: 600; color: var(--gray-900); }
+    .fund-meta  { font-size: 12px; color: var(--gray-500); margin-top: 2px; }
+    .fund-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; margin-left: 12px; }
+    .toggle-arrow { font-size: 11px; color: var(--gray-400); transition: transform 0.2s; display: inline-block; }
+    .toggle-arrow.up { transform: rotate(180deg); }
+
+    .fund-table-wrap { max-height: 2000px; overflow: hidden; transition: max-height 0.3s ease; }
+    .fund-table-wrap.collapsed { max-height: 0; }
+
+    /* ── Table ──────────────────────────────────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      background: var(--gray-100);
+      padding: 9px 12px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--gray-700);
+      border-bottom: 1px solid var(--gray-200);
+      white-space: nowrap;
+    }
+    th.right, td.right { text-align: right; }
+    th.center, td.center { text-align: center; }
+    td { padding: 9px 12px; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr.row-hidden { opacity: 0.28; text-decoration: line-through; }
+    .price-cell { font-weight: 600; color: var(--blue); }
+    .title-cell { color: var(--gray-700); max-width: 300px; }
+
+    /* ── Export row ─────────────────────────────────────────────────────── */
+    .export-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid var(--gray-200);
+    }
+
+    /* ── Security section (batch) ───────────────────────────────────────── */
+    .security-section {
+      margin-bottom: 36px;
+      padding: 22px 24px;
+      border: 2px solid var(--gray-200);
+      border-radius: 10px;
+    }
+    .security-section-header {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: 18px;
+      padding-bottom: 11px;
+      border-bottom: 3px solid var(--blue);
+    }
+
+    code { background: var(--gray-100); padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <h1>SEC Private Investment Valuation Reporting</h1>
+  <p class="subtitle">Analyze real institutional holdings from NPORT-P filings</p>
+
+  <div class="alert alert-info">
+    <strong>Real SEC Data</strong>
+    Parses actual NPORT-P filings from the SEC EDGAR database. Designed to compare marks for private investments across funds that publish NPORT filings.
+  </div>
+
+  <div id="configWarning" class="alert alert-warning" style="display:none;">
+    <strong>User-Agent Not Configured</strong>
+    Copy <code>.env.example</code> to <code>.env</code> and set <code>SEC_USER_AGENT=Your Name email@example.com</code>. The SEC requires this header for EDGAR API access.
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('single')">Single Security</button>
+    <button class="tab"        onclick="switchTab('batch')">Batch Search</button>
+  </div>
+
+  <!-- Single tab -->
+  <div id="singleTab" class="tab-content active">
+    <div class="search-row">
+      <div class="input-group">
+        <label for="securityInput">Security Ticker or Name</label>
+        <input type="text" id="securityInput" placeholder="e.g., Anthropic, Patreon, OpenAI"
+               onkeydown="if(event.key==='Enter') searchNPORT()">
+      </div>
+      <div class="input-group narrow">
+        <label for="filingLimit">Max Filings</label>
+        <select id="filingLimit">
+          <option value="25">25 — Faster</option>
+          <option value="50" selected>50 — Balanced</option>
+          <option value="100">100 — Comprehensive</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="searchBtn" onclick="searchNPORT()">Search NPORT Filings</button>
+    </div>
+
+    <div class="date-filter-panel" id="dateFilterPanel">
+      <div class="search-row">
+        <div class="input-group"><label for="startDate">Start Date</label><input type="date" id="startDate"></div>
+        <div class="input-group"><label for="endDate">End Date</label><input type="date" id="endDate"></div>
+        <button class="btn btn-primary"   onclick="applyDateFilter()">Apply</button>
+        <button class="btn btn-secondary" onclick="clearDateFilter()">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Batch tab -->
+  <div id="batchTab" class="tab-content">
+    <div class="search-row" style="align-items: flex-start;">
+      <div class="input-group">
+        <label for="batchInput">Securities (one per line, max 10)</label>
+        <textarea id="batchInput" placeholder="Anthropic&#10;Patreon&#10;OpenAI"></textarea>
+        <div class="hint">Each security is searched and displayed as a separate section.</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div class="input-group narrow">
+          <label for="batchFilingLimit">Max Filings Each</label>
+          <select id="batchFilingLimit">
+            <option value="25" selected>25 — Faster</option>
+            <option value="50">50 — Balanced</option>
+            <option value="100">100 — Comprehensive</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="batchBtn" onclick="searchBatch()">Search All Securities</button>
+      </div>
+    </div>
+
+    <div class="date-filter-panel" id="batchDateFilterPanel">
+      <div class="search-row">
+        <div class="input-group"><label for="batchStartDate">Start Date</label><input type="date" id="batchStartDate"></div>
+        <div class="input-group"><label for="batchEndDate">End Date</label><input type="date" id="batchEndDate"></div>
+        <button class="btn btn-primary"   onclick="applyBatchDateFilter()">Apply</button>
+        <button class="btn btn-secondary" onclick="clearBatchDateFilter()">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="msgBox"></div>
+  <div id="progressBox"></div>
+  <div id="loadingBox"></div>
+  <div id="resultsContainer"></div>
+
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let allResults  = {};
+let singleChart = null;
+let batchCharts = {}; // { canvasId: Chart }
+
+// ── 15-color palette so charts look good with many funds ──────────────────
+const COLORS = [
+  '#2563eb','#dc2626','#059669','#7c3aed','#ea580c',
+  '#0891b2','#be185d','#65a30d','#9f1239','#1d4ed8',
+  '#0d9488','#9333ea','#b45309','#0369a1','#166534'
+];
+const getColor = i => COLORS[i % COLORS.length];
+
+// ── Init: check server config ──────────────────────────────────────────────
+(async () => {
+  try {
+    const cfg = await fetchJSON('/api/config');
+    if (!cfg.userAgentConfigured) {
+      document.getElementById('configWarning').style.display = 'block';
+    }
+  } catch (_) {}
+})();
+
+// ── Tab management ─────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((el, i) =>
+    el.classList.toggle('active', (i === 0) === (tab === 'single'))
+  );
+  document.getElementById('singleTab').classList.toggle('active', tab === 'single');
+  document.getElementById('batchTab').classList.toggle('active',  tab === 'batch');
+  clearResults();
+}
+
+// ── Single search ──────────────────────────────────────────────────────────
+async function searchNPORT() {
+  const security = document.getElementById('securityInput').value.trim();
+  if (!security) return showMsg('Please enter a security name or ticker.', 'error');
+
+  clearResults();
+  showLoading('Searching SEC EDGAR...');
+
+  try {
+    const data = await fetchJSON('/api/search-nport?security=' + enc(security));
+    if (!data.hits?.hits?.length) {
+      hideLoading();
+      return showMsg('No NPORT-P filings found. Try a different name or ticker.', 'error');
+    }
+
+    const limit   = +document.getElementById('filingLimit').value;
+    const filings = sortFilings(data.hits.hits.slice(0, limit));
+    const holdings = await parseFilings(filings, security);
+
+    hideLoading();
+    hideProgress();
+
+    if (!holdings.length) {
+      return showMsg(`No holdings found for "${security}" in these filings.`, 'error');
+    }
+
+    const companiesMap = groupAndDedupe(holdings);
+    allResults = { mode: 'single', single: companiesMap };
+
+    const funds = Object.keys(companiesMap).length;
+    showMsg(`Found ${holdings.length} holding(s) across ${funds} fund(s).`, 'success');
+    document.getElementById('dateFilterPanel').style.display = 'block';
+    renderSingleResults(companiesMap);
+
+  } catch (err) {
+    hideLoading();
+    hideProgress();
+    showMsg('Error: ' + err.message, 'error');
+  }
+}
+
+// ── Batch search ───────────────────────────────────────────────────────────
+async function searchBatch() {
+  const raw = document.getElementById('batchInput').value.trim();
+  if (!raw) return showMsg('Please enter at least one security.', 'error');
+
+  const securities = raw.split('\n').map(s => s.trim()).filter(Boolean);
+  if (!securities.length) return showMsg('Please enter at least one security.', 'error');
+  if (securities.length > 10) return showMsg('Maximum 10 securities allowed.', 'error');
+
+  clearResults();
+  showLoading('Starting batch search...');
+
+  const limit       = +document.getElementById('batchFilingLimit').value;
+  const batchResults = {};
+
+  for (let i = 0; i < securities.length; i++) {
+    const security = securities[i];
+    showProgress(`Searching ${i + 1}/${securities.length}: ${security}`, (i / securities.length) * 100);
+
+    try {
+      const data = await fetchJSON('/api/search-nport?security=' + enc(security));
+      if (!data.hits?.hits?.length) continue;
+
+      const filings  = sortFilings(data.hits.hits.slice(0, limit));
+      const holdings = await parseFilings(filings, security);
+      if (holdings.length) {
+        batchResults[security] = groupAndDedupe(holdings);
+      }
+    } catch (err) {
+      console.error('Batch error for', security, err);
+    }
+  }
+
+  hideLoading();
+  hideProgress();
+
+  if (!Object.keys(batchResults).length) {
+    return showMsg('No holdings found for any of the securities.', 'error');
+  }
+
+  const found = Object.keys(batchResults).length;
+  showMsg(`Found holdings for ${found} of ${securities.length} securities.`, 'success');
+  document.getElementById('batchDateFilterPanel').style.display = 'block';
+  allResults = { mode: 'batch', batch: batchResults };
+  renderBatchResults(batchResults);
+}
+
+// ── Parse filings (parallel batches of 5) ─────────────────────────────────
+async function parseFilings(filings, security) {
+  const all = [];
+  const batchSize = 5;
+
+  for (let i = 0; i < filings.length; i += batchSize) {
+    showProgress(
+      `Parsing filings ${i + 1}–${Math.min(i + batchSize, filings.length)} of ${filings.length}…`,
+      (i / filings.length) * 100
+    );
+
+    const batch = filings.slice(i, i + batchSize);
+    const results = await Promise.all(batch.map(async filing => {
+      const src     = filing._source;
+      const cik     = src.ciks?.[0];
+      const accession = src.adsh;
+      const company = src.display_names?.[0] || 'Unknown Fund';
+      if (!cik || !accession) return [];
+      try {
+        const url    = `/api/parse-nport?cik=${cik}&accession=${enc(accession)}&security=${enc(security)}`;
+        const parsed = await fetchJSON(url);
+        return (parsed.holdings || []).map(h => ({ ...h, company, cik }));
+      } catch { return []; }
+    }));
+
+    results.forEach(r => all.push(...r));
+    if (i + batchSize < filings.length) await sleep(100);
+  }
+
+  return all;
+}
+
+// ── Group by company, deduplicate ──────────────────────────────────────────
+function groupAndDedupe(holdings) {
+  const map = {};
+  holdings.forEach(h => {
+    if (!map[h.company]) map[h.company] = [];
+    map[h.company].push(h);
+  });
+
+  Object.keys(map).forEach(company => {
+    map[company].sort((a, b) => dateCmp(a.reportDate, b.reportDate));
+    const seen = new Set();
+    map[company] = map[company].filter(h => {
+      const key = `${h.reportDate}_${h.shares}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  });
+
+  return map;
+}
+
+// ── Compute summary stats ─────────────────────────────────────────────────
+function computeStats(companiesMap) {
+  const all = Object.values(companiesMap).flat();
+  if (!all.length) return null;
+
+  const prices = all.map(h => h.pricePerShare).filter(p => p > 0);
+  const dates  = all.map(h => h.reportDate).filter(Boolean).sort();
+  const sorted = [...all].sort((a, b) => dateCmp(b.reportDate, a.reportDate));
+
+  return {
+    latestPrice: sorted[0]?.pricePerShare || 0,
+    latestDate:  sorted[0]?.reportDate    || '',
+    minPrice:    Math.min(...prices),
+    maxPrice:    Math.max(...prices),
+    fundCount:   Object.keys(companiesMap).length,
+    dataPoints:  all.length,
+    firstDate:   dates[0]                  || '',
+    lastDate:    dates[dates.length - 1]   || ''
+  };
+}
+
+function statsHTML(stats) {
+  if (!stats) return '';
+  return `
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-label">Latest Price</div>
+        <div class="stat-value highlight">${fmtCurrency(stats.latestPrice)}</div>
+        <div class="stat-sub">${stats.latestDate || '—'}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Price Range</div>
+        <div class="stat-value sm">${fmtCurrency(stats.minPrice)} – ${fmtCurrency(stats.maxPrice)}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Reporting Funds</div>
+        <div class="stat-value">${stats.fundCount}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Data Points</div>
+        <div class="stat-value">${stats.dataPoints}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Date Range</div>
+        <div class="stat-value sm">${stats.firstDate}<br>${stats.lastDate}</div>
+      </div>
+    </div>`;
+}
+
+// ── Render: single results ─────────────────────────────────────────────────
+function renderSingleResults(companiesMap) {
+  const stats = computeStats(companiesMap);
+  let html = '<div class="results-section">';
+  html += statsHTML(stats);
+  html += '<div class="chart-panel"><h3>Price Per Share Over Time</h3><canvas id="singleChart"></canvas></div>';
+  html += '<div class="results-header"><h2>Holdings by Fund</h2></div>';
+  html += renderFundCards(companiesMap, 'single');
+  html += `<div class="export-row">
+    <button class="btn btn-green" onclick="doExportCSV()">&#x2193; CSV</button>
+    <button class="btn btn-green" onclick="doExportExcel()">&#x1F4CA; Excel</button>
+    <button class="btn btn-red"   onclick="doExportPDF()">&#x1F4C4; PDF</button>
+  </div>`;
+  html += '</div>';
+
+  document.getElementById('resultsContainer').innerHTML = html;
+  buildChart('singleChart', companiesMap, true);
+}
+
+// ── Render: batch results ──────────────────────────────────────────────────
+function renderBatchResults(batchResults) {
+  let html = '';
+
+  Object.keys(batchResults).forEach(security => {
+    const companiesMap = batchResults[security];
+    const stats  = computeStats(companiesMap);
+    const chartId = 'chart_' + cleanId(security);
+
+    html += `<div class="security-section">`;
+    html += `<div class="security-section-header">${esc(security)}</div>`;
+    html += statsHTML(stats);
+    html += `<div class="chart-panel"><h3>Price Per Share Over Time</h3><canvas id="${chartId}"></canvas></div>`;
+    html += '<div class="results-header"><h2>Holdings by Fund</h2></div>';
+    html += renderFundCards(companiesMap, cleanId(security));
+    html += `</div>`;
+  });
+
+  html += `<div class="export-row">
+    <button class="btn btn-green" onclick="doExportCSV()">&#x2193; CSV (All)</button>
+    <button class="btn btn-green" onclick="doExportExcel()">&#x1F4CA; Excel (All)</button>
+    <button class="btn btn-red"   onclick="doExportPDF()">&#x1F4C4; PDF (All)</button>
+  </div>`;
+
+  document.getElementById('resultsContainer').innerHTML = html;
+
+  Object.keys(batchResults).forEach(security => {
+    buildChart('chart_' + cleanId(security), batchResults[security], false);
+  });
+}
+
+// ── Fund card HTML ─────────────────────────────────────────────────────────
+function renderFundCards(companiesMap, prefix) {
+  let html = '';
+  let rowIndex = 0;
+
+  Object.keys(companiesMap).forEach((company, compIdx) => {
+    const wrapId   = `wrap_${prefix}_${compIdx}`;
+    const arrowId  = `arrow_${prefix}_${compIdx}`;
+    const holdings = companiesMap[company];
+    const latestH  = [...holdings].sort((a, b) => dateCmp(b.reportDate, a.reportDate))[0];
+    const latestP  = latestH ? fmtCurrency(latestH.pricePerShare) : '—';
+
+    html += `
+      <div class="fund-card">
+        <div class="fund-header" onclick="toggleFund('${wrapId}','${arrowId}')">
+          <div>
+            <div class="fund-name">${esc(company)}</div>
+            <div class="fund-meta">${holdings.length} data point(s) &bull; Latest: ${latestP}</div>
+          </div>
+          <div class="fund-actions">
+            <button class="btn btn-sm btn-primary"   onclick="event.stopPropagation(); selectAllRows('${wrapId}', true)">All</button>
+            <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); selectAllRows('${wrapId}', false)">None</button>
+            <span class="toggle-arrow up" id="${arrowId}">&#9660;</span>
+          </div>
+        </div>
+        <div class="fund-table-wrap" id="${wrapId}">
+          <table>
+            <thead><tr>
+              <th class="center" style="width:38px">Show</th>
+              <th>Report Date</th>
+              <th>Investment Title</th>
+              <th class="right">Shares</th>
+              <th class="right">Market Value</th>
+              <th class="right">Price / Share</th>
+              <th class="center">CCY</th>
+            </tr></thead>
+            <tbody>`;
+
+    holdings.forEach(h => {
+      const rowId = `row_${prefix}_${rowIndex}`;
+      const cbId  = `cb_${prefix}_${rowIndex}`;
+      html += `
+        <tr id="${rowId}" data-company="${esc(company)}" data-date="${h.reportDate}" data-price="${h.pricePerShare}">
+          <td class="center">
+            <input type="checkbox" id="${cbId}" class="chart-checkbox" data-prefix="${prefix}" checked
+                   onchange="onCheckboxChange(this)">
+          </td>
+          <td>${h.reportDate || '—'}</td>
+          <td class="title-cell">${esc(h.title || h.name || '—')}</td>
+          <td class="right">${fmtNum(h.shares)}</td>
+          <td class="right">${fmtCurrency(h.marketValue)}</td>
+          <td class="right price-cell">${fmtCurrency(h.pricePerShare)}</td>
+          <td class="center">${h.currency || 'USD'}</td>
+        </tr>`;
+      rowIndex++;
+    });
+
+    html += `</tbody></table></div></div>`;
+  });
+
+  return html;
+}
+
+// ── Toggle fund table expand/collapse ──────────────────────────────────────
+function toggleFund(wrapId, arrowId) {
+  const wrap  = document.getElementById(wrapId);
+  const arrow = document.getElementById(arrowId);
+  const collapsed = wrap.classList.contains('collapsed');
+  wrap.classList.toggle('collapsed', !collapsed);
+  arrow.classList.toggle('up', !collapsed);  // up when expanded
+}
+
+// ── Select / deselect all rows in a fund ──────────────────────────────────
+function selectAllRows(wrapId, checked) {
+  const wrap = document.getElementById(wrapId);
+  wrap.querySelectorAll('.chart-checkbox').forEach(cb => {
+    cb.checked = checked;
+    cb.closest('tr').classList.toggle('row-hidden', !checked);
+  });
+  rebuildAllCharts();
+}
+
+// ── Checkbox change ────────────────────────────────────────────────────────
+function onCheckboxChange(cb) {
+  cb.closest('tr').classList.toggle('row-hidden', !cb.checked);
+  rebuildAllCharts();
+}
+
+// ── Build chart ────────────────────────────────────────────────────────────
+function buildChart(canvasId, companiesMap, isSingle) {
+  const ctx = document.getElementById(canvasId)?.getContext('2d');
+  if (!ctx) return;
+
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: { datasets: buildDatasets(companiesMap) },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14, font: { size: 11 } } },
+        tooltip: {
+          callbacks: { label: c => `${c.dataset.label}: ${fmtCurrency(c.parsed.y)}` }
+        }
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: { unit: 'month' },
+          title: { display: true, text: 'Report Date' }
+        },
+        y: {
+          title: { display: true, text: 'Price Per Share' },
+          ticks: { callback: v => '$' + v.toFixed(2) }
+        }
+      }
+    }
+  });
+
+  if (isSingle) {
+    singleChart = chart;
+  } else {
+    batchCharts[canvasId] = chart;
+  }
+}
+
+function buildDatasets(companiesMap) {
+  return Object.keys(companiesMap).map((company, i) => ({
+    label: company.substring(0, 46),
+    data: companiesMap[company]
+      .filter(h => h.reportDate)
+      .map(h => ({ x: h.reportDate, y: h.pricePerShare })),
+    borderColor:     getColor(i),
+    backgroundColor: getColor(i) + '22',
+    pointRadius:     4,
+    pointHoverRadius: 6,
+    tension: 0.35
+  }));
+}
+
+// ── Rebuild charts from checkbox state ────────────────────────────────────
+function rebuildAllCharts() {
+  if (allResults.mode === 'single') {
+    rebuildChart('singleChart', singleChart, allResults.single);
+  } else if (allResults.mode === 'batch') {
+    Object.keys(allResults.batch).forEach(security => {
+      const id = 'chart_' + cleanId(security);
+      rebuildChart(id, batchCharts[id], allResults.batch[security]);
+    });
+  }
+}
+
+function rebuildChart(canvasId, chart, companiesMap) {
+  if (!chart) return;
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+
+  // Scope row lookups to the containing section so batch charts stay independent
+  const section = canvas.closest('.security-section')
+                || canvas.closest('.results-section')
+                || document;
+  const allRows = Array.from(section.querySelectorAll('tr[data-company]'));
+
+  const datasets = Object.keys(companiesMap).map((company, i) => {
+    const data = [];
+    allRows.forEach(row => {
+      if (row.dataset.company === company) {
+        const cb = row.querySelector('.chart-checkbox');
+        if (cb?.checked) {
+          data.push({ x: row.dataset.date, y: parseFloat(row.dataset.price) });
+        }
+      }
+    });
+    return {
+      label: company.substring(0, 46),
+      data,
+      borderColor:     getColor(i),
+      backgroundColor: getColor(i) + '22',
+      pointRadius:     4,
+      tension: 0.35
+    };
+  }).filter(d => d.data.length > 0);
+
+  chart.data.datasets = datasets;
+  chart.update();
+}
+
+// ── Date filters ───────────────────────────────────────────────────────────
+function applyDateFilter()      { filterByDate(val('startDate'),      val('endDate')); }
+function clearDateFilter()      { setVal('startDate',''); setVal('endDate','');       filterByDate('',''); }
+function applyBatchDateFilter() { filterByDate(val('batchStartDate'), val('batchEndDate')); }
+function clearBatchDateFilter() { setVal('batchStartDate',''); setVal('batchEndDate',''); filterByDate('',''); }
+
+function filterByDate(start, end) {
+  const startTs = start ? new Date(start).getTime() : 0;
+  const endTs   = end   ? new Date(end).getTime()   : Infinity;
+  let count = 0;
+
+  document.querySelectorAll('.chart-checkbox').forEach(cb => {
+    const row      = cb.closest('tr');
+    const dateText = row.querySelector('td:nth-child(2)')?.textContent || '';
+    const ts       = new Date(dateText).getTime();
+    const inRange  = ts >= startTs && ts <= endTs;
+    cb.checked = inRange;
+    row.classList.toggle('row-hidden', !inRange);
+    if (inRange) count++;
+  });
+
+  rebuildAllCharts();
+  showMsg(`Filter applied: ${count} data point(s) visible.`, 'success');
+}
+
+// ── Export: CSV ────────────────────────────────────────────────────────────
+function doExportCSV() {
+  const isSingle = allResults.mode === 'single';
+  const rows = isSingle
+    ? [['Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency']]
+    : [['Security','Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency']];
+
+  if (isSingle) {
+    Object.entries(allResults.single).forEach(([co, hs]) =>
+      hs.forEach(h => rows.push([co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare.toFixed(4), h.currency||'USD']))
+    );
+  } else {
+    Object.entries(allResults.batch).forEach(([sec, map]) =>
+      Object.entries(map).forEach(([co, hs]) =>
+        hs.forEach(h => rows.push([sec, co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare.toFixed(4), h.currency||'USD']))
+      )
+    );
+  }
+
+  const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')).join('\n');
+  downloadBlob(csv, 'text/csv', `nport_${allResults.mode}_${today()}.csv`);
+}
+
+// ── Export: Excel ──────────────────────────────────────────────────────────
+function doExportExcel() {
+  const wb = XLSX.utils.book_new();
+
+  if (allResults.mode === 'single') {
+    const data = [['Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency']];
+    Object.entries(allResults.single).forEach(([co, hs]) =>
+      hs.forEach(h => data.push([co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare, h.currency||'USD']))
+    );
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [{wch:42},{wch:12},{wch:42},{wch:14},{wch:18},{wch:14},{wch:10}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Holdings');
+
+  } else {
+    // One sheet per security
+    Object.entries(allResults.batch).forEach(([sec, map]) => {
+      const data = [['Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency']];
+      Object.entries(map).forEach(([co, hs]) =>
+        hs.forEach(h => data.push([co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare, h.currency||'USD']))
+      );
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      ws['!cols'] = [{wch:42},{wch:12},{wch:42},{wch:14},{wch:18},{wch:14},{wch:10}];
+      XLSX.utils.book_append_sheet(wb, ws, sec.substring(0, 31));
+    });
+
+    // Combined sheet
+    const combined = [['Security','Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency']];
+    Object.entries(allResults.batch).forEach(([sec, map]) =>
+      Object.entries(map).forEach(([co, hs]) =>
+        hs.forEach(h => combined.push([sec, co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare, h.currency||'USD']))
+      )
+    );
+    const ws2 = XLSX.utils.aoa_to_sheet(combined);
+    ws2['!cols'] = [{wch:14},{wch:42},{wch:12},{wch:42},{wch:14},{wch:18},{wch:14},{wch:10}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'All Holdings');
+  }
+
+  XLSX.writeFile(wb, `nport_${allResults.mode}_${today()}.xlsx`);
+}
+
+// ── Export: PDF ────────────────────────────────────────────────────────────
+function doExportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc    = new jsPDF({ orientation: 'landscape' });
+  const margin = 14;
+  const pageW  = doc.internal.pageSize.width;
+
+  // Page header
+  const writePageHeader = (title, yStart) => {
+    let y = yStart;
+    doc.setFontSize(16);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(37, 99, 235);
+    doc.text(title, margin, y);
+    y += 7;
+    doc.setFontSize(8.5);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(100);
+    doc.text('Generated: ' + new Date().toLocaleString(), margin, y);
+    y += 8;
+    doc.setTextColor(0);
+    return y;
+  };
+
+  // Draw one section: chart image + autotable
+  const drawSection = (companiesMap, title, chartId, yStart) => {
+    let y = writePageHeader(title, yStart);
+
+    const canvas = chartId ? document.getElementById(chartId) : null;
+    if (canvas) {
+      const imgH = 68;
+      const imgW = pageW - margin * 2;
+      doc.addImage(canvas.toDataURL('image/png'), 'PNG', margin, y, imgW, imgH);
+      y += imgH + 6;
+    }
+
+    const rows = [];
+    Object.entries(companiesMap).forEach(([co, hs]) =>
+      hs.forEach(h => rows.push([
+        co.substring(0, 36),
+        h.reportDate || '',
+        (h.title || h.name || '').substring(0, 36),
+        fmtNum(h.shares),
+        fmtCurrency(h.marketValue),
+        fmtCurrency(h.pricePerShare),
+        h.currency || 'USD'
+      ]))
+    );
+
+    if (rows.length) {
+      doc.autoTable({
+        startY: y,
+        head: [['Fund','Date','Title','Shares','Mkt Value','Price/Share','CCY']],
+        body: rows,
+        margin: { left: margin, right: margin },
+        styles: { fontSize: 7.5, cellPadding: 2.5 },
+        headStyles: { fillColor: [37, 99, 235], fontStyle: 'bold', fontSize: 8 },
+        columnStyles: {
+          0: { cellWidth: 54 },
+          1: { cellWidth: 20 },
+          2: { cellWidth: 54 },
+          3: { cellWidth: 24, halign: 'right' },
+          4: { cellWidth: 26, halign: 'right' },
+          5: { cellWidth: 26, halign: 'right' },
+          6: { cellWidth: 16, halign: 'center' }
+        },
+        alternateRowStyles: { fillColor: [249, 250, 251] }
+      });
+    }
+  };
+
+  if (allResults.mode === 'single') {
+    drawSection(allResults.single, 'SEC NPORT-P Holdings Analysis', 'singleChart', margin);
+  } else {
+    Object.keys(allResults.batch).forEach((security, i) => {
+      if (i > 0) doc.addPage();
+      const chartId = 'chart_' + cleanId(security);
+      drawSection(allResults.batch[security], security, chartId, margin);
+    });
+  }
+
+  doc.save(`nport_${allResults.mode}_${today()}.pdf`);
+}
+
+// ── UI helpers ─────────────────────────────────────────────────────────────
+function showLoading(msg) {
+  document.getElementById('loadingBox').innerHTML =
+    `<div class="loading-wrap"><div class="spinner"></div><p>${msg || 'Loading…'}</p></div>`;
+  setBtnsDisabled(true);
+}
+function hideLoading() {
+  document.getElementById('loadingBox').innerHTML = '';
+  setBtnsDisabled(false);
+}
+function showProgress(text, pct) {
+  document.getElementById('progressBox').innerHTML = `
+    <div class="progress-bar-wrap">
+      <div class="progress-text">${text}</div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>`;
+}
+function hideProgress() { document.getElementById('progressBox').innerHTML = ''; }
+function showMsg(msg, type) {
+  document.getElementById('msgBox').innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+}
+function clearResults() {
+  document.getElementById('msgBox').innerHTML         = '';
+  document.getElementById('resultsContainer').innerHTML = '';
+  document.getElementById('dateFilterPanel').style.display      = 'none';
+  document.getElementById('batchDateFilterPanel').style.display = 'none';
+  if (singleChart) { singleChart.destroy(); singleChart = null; }
+  Object.values(batchCharts).forEach(c => c.destroy());
+  batchCharts = {};
+  allResults  = {};
+}
+function setBtnsDisabled(v) {
+  document.getElementById('searchBtn').disabled = v;
+  document.getElementById('batchBtn').disabled  = v;
+}
+
+// ── Utilities ──────────────────────────────────────────────────────────────
+async function fetchJSON(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function enc(s) { return encodeURIComponent(s); }
+function val(id) { return document.getElementById(id).value; }
+function setVal(id, v) { document.getElementById(id).value = v; }
+function esc(s) {
+  return String(s || '').replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])
+  );
+}
+function cleanId(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
+function dateCmp(a, b) { return new Date(a) - new Date(b); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function sortFilings(arr) {
+  return arr.sort((a, b) => dateCmp(
+    b._source.file_date || b._source.period_ending || 0,
+    a._source.file_date || a._source.period_ending || 0
+  ));
+}
+function fmtCurrency(v) {
+  return new Intl.NumberFormat('en-US', { style:'currency', currency:'USD', minimumFractionDigits:2, maximumFractionDigits:2 }).format(v);
+}
+function fmtNum(v) { return new Intl.NumberFormat('en-US').format(Math.round(v)); }
+function downloadBlob(content, type, filename) {
+  const url = URL.createObjectURL(new Blob([content], { type }));
+  const a   = Object.assign(document.createElement('a'), { href: url, download: filename });
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
