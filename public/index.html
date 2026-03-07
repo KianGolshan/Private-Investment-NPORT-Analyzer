@@ -300,6 +300,7 @@
   <div class="tabs">
     <button class="tab active" onclick="switchTab('single')">Single Security</button>
     <button class="tab"        onclick="switchTab('batch')">Batch Search</button>
+    <button class="tab"        onclick="switchTab('credit')">Private Credit Analysis</button>
   </div>
 
   <!-- Single tab -->
@@ -362,6 +363,38 @@
     </div>
   </div>
 
+  <!-- Private Credit tab -->
+  <div id="creditTab" class="tab-content">
+    <div class="search-row">
+      <div class="input-group">
+        <label for="creditIssuerInput">Issuer Name</label>
+        <input type="text" id="creditIssuerInput" placeholder="e.g., West Star Aviation, Apogee Education"
+               onkeydown="if(event.key==='Enter') searchPrivateCredit()">
+      </div>
+      <div class="input-group narrow">
+        <label for="creditFilingLimit">Max Filings to Parse</label>
+        <select id="creditFilingLimit">
+          <option value="20">20 — Fast</option>
+          <option value="40" selected>40 — Balanced</option>
+          <option value="80">80 — Comprehensive</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="creditBtn" onclick="searchPrivateCredit()">Search BDC Filings</button>
+    </div>
+    <div class="alert alert-info" style="margin-top:4px; margin-bottom:0;">
+      Searches all 196 registered BDC funds using edgartools. Returns confirmed filings first (guaranteed to contain the issuer), then full filing history per fund for complete time-series coverage.
+    </div>
+
+    <div class="date-filter-panel" id="creditDateFilterPanel">
+      <div class="search-row">
+        <div class="input-group"><label for="creditStartDate">Start Date</label><input type="date" id="creditStartDate"></div>
+        <div class="input-group"><label for="creditEndDate">End Date</label><input type="date" id="creditEndDate"></div>
+        <button class="btn btn-primary"   onclick="applyCreditDateFilter()">Apply</button>
+        <button class="btn btn-secondary" onclick="clearCreditDateFilter()">Clear</button>
+      </div>
+    </div>
+  </div>
+
   <div id="msgBox"></div>
   <div id="progressBox"></div>
   <div id="loadingBox"></div>
@@ -371,9 +404,11 @@
 
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
-let allResults  = {};
-let singleChart = null;
-let batchCharts = {}; // { canvasId: Chart }
+let allResults       = {};
+let singleChart      = null;
+let batchCharts      = {}; // { canvasId: Chart }
+let allCreditResults = {};
+let creditChart      = null;
 
 // ── 15-color palette so charts look good with many funds ──────────────────
 const COLORS = [
@@ -395,11 +430,13 @@ const getColor = i => COLORS[i % COLORS.length];
 
 // ── Tab management ─────────────────────────────────────────────────────────
 function switchTab(tab) {
+  const tabNames = ['single', 'batch', 'credit'];
   document.querySelectorAll('.tab').forEach((el, i) =>
-    el.classList.toggle('active', (i === 0) === (tab === 'single'))
+    el.classList.toggle('active', tabNames[i] === tab)
   );
-  document.getElementById('singleTab').classList.toggle('active', tab === 'single');
-  document.getElementById('batchTab').classList.toggle('active',  tab === 'batch');
+  document.getElementById('singleTab').classList.toggle('active',  tab === 'single');
+  document.getElementById('batchTab').classList.toggle('active',   tab === 'batch');
+  document.getElementById('creditTab').classList.toggle('active',  tab === 'credit');
   clearResults();
 }
 
@@ -1024,18 +1061,22 @@ function showMsg(msg, type) {
   document.getElementById('msgBox').innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
 }
 function clearResults() {
-  document.getElementById('msgBox').innerHTML         = '';
-  document.getElementById('resultsContainer').innerHTML = '';
-  document.getElementById('dateFilterPanel').style.display      = 'none';
-  document.getElementById('batchDateFilterPanel').style.display = 'none';
+  document.getElementById('msgBox').innerHTML            = '';
+  document.getElementById('resultsContainer').innerHTML  = '';
+  document.getElementById('dateFilterPanel').style.display       = 'none';
+  document.getElementById('batchDateFilterPanel').style.display  = 'none';
+  document.getElementById('creditDateFilterPanel').style.display = 'none';
   if (singleChart) { singleChart.destroy(); singleChart = null; }
+  if (creditChart) { creditChart.destroy(); creditChart = null; }
   Object.values(batchCharts).forEach(c => c.destroy());
-  batchCharts = {};
-  allResults  = {};
+  batchCharts      = {};
+  allResults       = {};
+  allCreditResults = {};
 }
 function setBtnsDisabled(v) {
-  document.getElementById('searchBtn').disabled = v;
-  document.getElementById('batchBtn').disabled  = v;
+  document.getElementById('searchBtn').disabled  = v;
+  document.getElementById('batchBtn').disabled   = v;
+  document.getElementById('creditBtn').disabled  = v;
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────
@@ -1066,6 +1107,389 @@ function fmtCurrency(v) {
   return new Intl.NumberFormat('en-US', { style:'currency', currency:'USD', minimumFractionDigits:2, maximumFractionDigits:2 }).format(v);
 }
 function fmtNum(v) { return new Intl.NumberFormat('en-US').format(Math.round(v)); }
+// ── Private Credit: Search ─────────────────────────────────────────────────
+async function searchPrivateCredit() {
+  const issuer = document.getElementById('creditIssuerInput').value.trim();
+  if (!issuer) return showMsg('Please enter an issuer name.', 'error');
+
+  clearResults();
+  showLoading('Searching SEC EDGAR for 10-Q filings...');
+
+  try {
+    const data = await fetchJSON('/api/search-10q?issuer=' + enc(issuer));
+    if (!data.filings?.length) {
+      hideLoading();
+      return showMsg(
+        'No BDC 10-Q filings found for that issuer. The company may not be held by any reporting BDC, or try a more specific name.',
+        'error'
+      );
+    }
+
+    const limit = +document.getElementById('creditFilingLimit').value;
+    // Always parse confirmed (EFTS-matched) filings first; fill remaining slots with historical
+    const confirmed  = data.filings.filter(f => f.confirmed);
+    const historical = data.filings.filter(f => !f.confirmed);
+    const toparse    = [...confirmed, ...historical].slice(0, limit);
+
+    if (data.bdcFunds?.length) {
+      showMsg(`Found ${data.bdcFunds.length} BDC fund(s) holding this issuer (${data.confirmed} confirmed filings). Parsing…`, 'info');
+    }
+
+    const holdings = await parseCreditFilings(toparse, issuer);
+
+    hideLoading();
+    hideProgress();
+
+    if (!holdings.length) {
+      return showMsg(`No schedule of investments data found for "${issuer}" in these 10-Q filings. The filings may mention this issuer in text, not in investment tables.`, 'error');
+    }
+
+    const fundsMap = groupCreditByFund(holdings);
+    allCreditResults = { mode: 'credit', credit: fundsMap };
+
+    const funds = Object.keys(fundsMap).length;
+    showMsg(`Found ${holdings.length} holding tranche(s) across ${funds} BDC fund(s).`, 'success');
+    document.getElementById('creditDateFilterPanel').style.display = 'block';
+    renderCreditResults(fundsMap, issuer);
+
+  } catch (err) {
+    hideLoading();
+    hideProgress();
+    showMsg('Error: ' + err.message, 'error');
+  }
+}
+
+// ── Parse credit filings (batches of 4 — confirmed BDC-only filings) ──────
+async function parseCreditFilings(filings, issuer) {
+  const all = [];
+  const batchSize = 4;
+
+  for (let i = 0; i < filings.length; i += batchSize) {
+    const batch = filings.slice(i, i + batchSize);
+    const pct   = Math.round((i / filings.length) * 100);
+    const label = batch.map(f => f.company.split(' ').slice(0,3).join(' ')).join(', ');
+    showProgress(
+      `Parsing ${i + 1}–${Math.min(i + batchSize, filings.length)} of ${filings.length}: ${label}…`,
+      pct
+    );
+
+    const results = await Promise.all(batch.map(async filing => {
+      // New flat format from Python search
+      const { cik, accession, company, period, fileDate, confirmed } = filing;
+      const reportDate = period || fileDate || '';
+      if (!cik || !accession) return [];
+      try {
+        const url    = `/api/parse-10q?cik=${enc(cik)}&accession=${enc(accession)}&issuer=${enc(issuer)}&reportDate=${enc(reportDate)}`;
+        const parsed = await fetchJSON(url);
+        return (parsed.holdings || []).map(h => ({
+          ...h,
+          company,
+          cik,
+          reportDate:   h.reportDate || reportDate,
+          confirmed:    !!confirmed,
+        }));
+      } catch { return []; }
+    }));
+
+    results.forEach(r => all.push(...r));
+    if (i + batchSize < filings.length) await sleep(200);
+  }
+
+  return all;
+}
+
+// ── Group credit holdings by fund, deduplicate ────────────────────────────
+function groupCreditByFund(holdings) {
+  const map = {};
+  holdings.forEach(h => {
+    if (!map[h.company]) map[h.company] = [];
+    map[h.company].push(h);
+  });
+
+  Object.keys(map).forEach(company => {
+    map[company].sort((a, b) => dateCmp(a.reportDate, b.reportDate));
+    const seen = new Set();
+    map[company] = map[company].filter(h => {
+      const key = `${h.reportDate}_${h.investmentType}_${h.principal}_${h.fairValue}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  });
+
+  return map;
+}
+
+// ── Credit stats ──────────────────────────────────────────────────────────
+function computeCreditStats(fundsMap) {
+  const all = Object.values(fundsMap).flat();
+  if (!all.length) return null;
+
+  const marks = all.map(h => h.fairValueMark).filter(m => m !== null && m > 0);
+  const dates = all.map(h => h.reportDate).filter(Boolean).sort();
+  const sorted = [...all].filter(h => h.fairValueMark !== null).sort((a, b) => dateCmp(b.reportDate, a.reportDate));
+
+  return {
+    latestMark:  sorted[0]?.fairValueMark ?? null,
+    latestDate:  sorted[0]?.reportDate    || '',
+    minMark:     marks.length ? Math.min(...marks) : null,
+    maxMark:     marks.length ? Math.max(...marks) : null,
+    fundCount:   Object.keys(fundsMap).length,
+    dataPoints:  all.length,
+    firstDate:   dates[0]                || '',
+    lastDate:    dates[dates.length - 1] || ''
+  };
+}
+
+function creditStatsHTML(stats) {
+  if (!stats) return '';
+  const fmtMark = v => v !== null ? v.toFixed(2) + '%' : '—';
+  return `
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-label">Latest Mark</div>
+        <div class="stat-value highlight">${fmtMark(stats.latestMark)}</div>
+        <div class="stat-sub">${stats.latestDate || '—'}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Mark Range</div>
+        <div class="stat-value sm">${fmtMark(stats.minMark)} – ${fmtMark(stats.maxMark)}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Reporting Funds</div>
+        <div class="stat-value">${stats.fundCount}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Data Points</div>
+        <div class="stat-value">${stats.dataPoints}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Date Range</div>
+        <div class="stat-value sm">${stats.firstDate}<br>${stats.lastDate}</div>
+      </div>
+    </div>`;
+}
+
+// ── Build weighted-average mark datasets for chart ────────────────────────
+function buildCreditDatasets(fundsMap) {
+  return Object.keys(fundsMap).map((company, i) => {
+    const holdings = fundsMap[company];
+
+    // Weighted avg mark per date (weighted by principal)
+    const byDate = {};
+    holdings.forEach(h => {
+      if (!h.reportDate) return;
+      if (!byDate[h.reportDate]) byDate[h.reportDate] = { totalFV: 0, totalPrincipal: 0 };
+      if (h.principal && h.principal > 0 && h.fairValue !== null) {
+        byDate[h.reportDate].totalFV        += h.fairValue;
+        byDate[h.reportDate].totalPrincipal += h.principal;
+      }
+    });
+
+    const data = Object.entries(byDate)
+      .map(([date, { totalFV, totalPrincipal }]) => ({
+        x: date,
+        y: totalPrincipal > 0 ? parseFloat((totalFV / totalPrincipal * 100).toFixed(2)) : null
+      }))
+      .filter(p => p.y !== null)
+      .sort((a, b) => dateCmp(a.x, b.x));
+
+    return {
+      label:           company.substring(0, 46),
+      data,
+      borderColor:     getColor(i),
+      backgroundColor: getColor(i) + '22',
+      pointRadius:     4,
+      pointHoverRadius: 6,
+      tension:         0.35
+    };
+  });
+}
+
+// ── Render credit results ─────────────────────────────────────────────────
+function renderCreditResults(fundsMap, issuer) {
+  const stats = computeCreditStats(fundsMap);
+
+  let html = '<div class="results-section">';
+  html += creditStatsHTML(stats);
+  html += '<div class="chart-panel"><h3>Fair Value Mark (% of Par) Over Time</h3><canvas id="creditChartCanvas"></canvas></div>';
+  html += '<div class="results-header"><h2>Holdings by Fund</h2></div>';
+  html += renderCreditFundCards(fundsMap);
+  html += `<div class="export-row">
+    <button class="btn btn-green" onclick="doCreditExportCSV()">&#x2193; CSV</button>
+    <button class="btn btn-green" onclick="doCreditExportExcel()">&#x1F4CA; Excel</button>
+  </div>`;
+  html += '</div>';
+
+  document.getElementById('resultsContainer').innerHTML = html;
+
+  const ctx = document.getElementById('creditChartCanvas')?.getContext('2d');
+  if (ctx) {
+    if (creditChart) { creditChart.destroy(); creditChart = null; }
+    creditChart = new Chart(ctx, {
+      type: 'line',
+      data: { datasets: buildCreditDatasets(fundsMap) },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14, font: { size: 11 } } },
+          tooltip: {
+            callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y.toFixed(2)}%` }
+          }
+        },
+        scales: {
+          x: {
+            type: 'time',
+            time: { unit: 'month' },
+            title: { display: true, text: 'Report Date' }
+          },
+          y: {
+            title: { display: true, text: 'Fair Value Mark (% of Par)' },
+            ticks: { callback: v => v.toFixed(1) + '%' }
+          }
+        }
+      }
+    });
+  }
+}
+
+// ── Render credit fund cards ──────────────────────────────────────────────
+function renderCreditFundCards(fundsMap) {
+  let html = '';
+
+  Object.keys(fundsMap).forEach((company, compIdx) => {
+    const holdings = fundsMap[company];
+    const latestH  = [...holdings].filter(h => h.fairValueMark !== null)
+                       .sort((a, b) => dateCmp(b.reportDate, a.reportDate))[0];
+    const latestMark = latestH ? latestH.fairValueMark.toFixed(2) + '%' : '—';
+    const wrapId  = `cwrap_${compIdx}`;
+    const arrowId = `carrow_${compIdx}`;
+
+    html += `
+      <div class="fund-card">
+        <div class="fund-header" onclick="toggleFund('${wrapId}','${arrowId}')">
+          <div>
+            <div class="fund-name">${esc(company)}</div>
+            <div class="fund-meta">${holdings.length} tranche(s) &bull; Latest Mark: ${latestMark}</div>
+          </div>
+          <div class="fund-actions">
+            <span class="toggle-arrow up" id="${arrowId}">&#9660;</span>
+          </div>
+        </div>
+        <div class="fund-table-wrap" id="${wrapId}">
+          <table>
+            <thead><tr>
+              <th>Report Date</th>
+              <th>Portfolio Company</th>
+              <th>Industry</th>
+              <th>Index</th>
+              <th class="right">Spread</th>
+              <th class="right">Cash Int. Rate</th>
+              <th class="right">PIK</th>
+              <th>Maturity</th>
+              <th class="right">Principal ($K)</th>
+              <th class="right">Cost ($K)</th>
+              <th class="right">Fair Value ($K)</th>
+              <th class="right">Mark (%)</th>
+              <th>Notes</th>
+            </tr></thead>
+            <tbody>`;
+
+    holdings.forEach(h => {
+      const mark = h.fairValueMark;
+      const markStyle = mark === null ? '' :
+        mark >= 95 ? '' :
+        mark >= 85 ? 'style="color:var(--amber)"' :
+                     'style="color:var(--red)"';
+
+      html += `
+        <tr>
+          <td>${h.reportDate || '—'}</td>
+          <td class="title-cell">${esc(h.portfolioCompany || '—')}</td>
+          <td>${esc(h.industry || '—')}</td>
+          <td>${esc(h.index || '—')}</td>
+          <td class="right">${esc(h.spread || '—')}</td>
+          <td class="right">${esc(h.cashInterestRate || '—')}</td>
+          <td class="right">${esc(h.pik || '—')}</td>
+          <td>${esc(h.maturityDate || '—')}</td>
+          <td class="right">${h.principal !== null ? fmtNum(h.principal) : '—'}</td>
+          <td class="right">${h.cost      !== null ? fmtNum(h.cost)      : '—'}</td>
+          <td class="right">${h.fairValue !== null ? fmtNum(h.fairValue) : '—'}</td>
+          <td class="right price-cell" ${markStyle}>${mark !== null ? mark.toFixed(2) + '%' : '—'}</td>
+          <td style="font-size:11px;color:var(--gray-500)">${esc(h.notes || '')}</td>
+        </tr>`;
+    });
+
+    html += `</tbody></table></div></div>`;
+  });
+
+  return html;
+}
+
+// ── Credit date filters ───────────────────────────────────────────────────
+function applyCreditDateFilter() {
+  if (!allCreditResults.credit) return;
+  const startTs = val('creditStartDate') ? new Date(val('creditStartDate')).getTime() : 0;
+  const endTs   = val('creditEndDate')   ? new Date(val('creditEndDate')).getTime()   : Infinity;
+
+  const filtered = {};
+  Object.entries(allCreditResults.credit).forEach(([fund, holdings]) => {
+    const filt = holdings.filter(h => {
+      const ts = new Date(h.reportDate).getTime();
+      return ts >= startTs && ts <= endTs;
+    });
+    if (filt.length) filtered[fund] = filt;
+  });
+
+  if (!Object.keys(filtered).length) {
+    showMsg('No data in selected date range.', 'error');
+    return;
+  }
+  renderCreditResults(filtered, '');
+  showMsg(`Filter applied: ${Object.values(filtered).flat().length} data point(s) visible.`, 'success');
+}
+
+function clearCreditDateFilter() {
+  setVal('creditStartDate', '');
+  setVal('creditEndDate', '');
+  if (allCreditResults.credit) renderCreditResults(allCreditResults.credit, '');
+}
+
+// ── Credit CSV export ─────────────────────────────────────────────────────
+function doCreditExportCSV() {
+  const rows = [['Fund','Report Date','Portfolio Company','Industry','Investment Type','Index','Spread','Cash Int. Rate','PIK','Maturity Date','Principal ($K)','Cost ($K)','Fair Value ($K)','Fair Value Mark (%)','Notes']];
+  Object.entries(allCreditResults.credit || {}).forEach(([co, hs]) =>
+    hs.forEach(h => rows.push([
+      co, h.reportDate, h.portfolioCompany, h.industry, h.investmentType,
+      h.index, h.spread, h.cashInterestRate, h.pik, h.maturityDate,
+      h.principal ?? '', h.cost ?? '', h.fairValue ?? '',
+      h.fairValueMark !== null ? h.fairValueMark.toFixed(2) : '',
+      h.notes
+    ]))
+  );
+  const csv = rows.map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
+  downloadBlob(csv, 'text/csv', `private_credit_${today()}.csv`);
+}
+
+// ── Credit Excel export ───────────────────────────────────────────────────
+function doCreditExportExcel() {
+  const wb = XLSX.utils.book_new();
+  const data = [['Fund','Report Date','Portfolio Company','Industry','Investment Type','Index','Spread','Cash Int. Rate','PIK','Maturity Date','Principal ($K)','Cost ($K)','Fair Value ($K)','Fair Value Mark (%)','Notes']];
+  Object.entries(allCreditResults.credit || {}).forEach(([co, hs]) =>
+    hs.forEach(h => data.push([
+      co, h.reportDate, h.portfolioCompany, h.industry, h.investmentType,
+      h.index, h.spread, h.cashInterestRate, h.pik, h.maturityDate,
+      h.principal, h.cost, h.fairValue,
+      h.fairValueMark !== null ? parseFloat(h.fairValueMark.toFixed(2)) : null,
+      h.notes
+    ]))
+  );
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [{wch:40},{wch:12},{wch:40},{wch:22},{wch:30},{wch:10},{wch:10},{wch:14},{wch:10},{wch:14},{wch:14},{wch:14},{wch:14},{wch:16},{wch:20}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Private Credit');
+  XLSX.writeFile(wb, `private_credit_${today()}.xlsx`);
+}
+
 function downloadBlob(content, type, filename) {
   const url = URL.createObjectURL(new Blob([content], { type }));
   const a   = Object.assign(document.createElement('a'), { href: url, download: filename });
