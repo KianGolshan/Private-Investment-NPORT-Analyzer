@@ -4,6 +4,7 @@ const axios = require('axios');
 const cors = require('cors');
 const xml2js = require('xml2js');
 const cheerio  = require('cheerio');
+const rateLimit = require('express-rate-limit');
 const cache = require('./cache');
 const { extractHoldings, extractCreditHoldings } = require('./parsers');
 
@@ -14,12 +15,38 @@ app.use(express.static('public'));
 
 const USER_AGENT = process.env.SEC_USER_AGENT || '';
 const EFFECTIVE_USER_AGENT = USER_AGENT || 'NPORT-Analyzer internal-tool@localhost';
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 if (!USER_AGENT) {
   console.warn('\n⚠️  WARNING: SEC_USER_AGENT not set.');
   console.warn('   Copy .env.example to .env and add your name and email.');
   console.warn('   The SEC requires this header for EDGAR API access.\n');
+
+  // In production this app's own outbound requests to SEC (not just this
+  // one user's) all share EFFECTIVE_USER_AGENT — running a public instance
+  // with the generic fallback risks SEC rate-limiting/blocking that IP for
+  // everyone using it. Local/dev usage is unaffected: it still just warns
+  // and runs, same as before.
+  if (IS_PRODUCTION) {
+    console.error('❌ Refusing to start in production without a real SEC_USER_AGENT.');
+    console.error('   Set SEC_USER_AGENT in the environment before deploying.\n');
+    process.exit(1);
+  }
 }
+
+// Rate limiting on the SEC-hitting API routes — not to throttle a normal
+// single-user session (batch/watchlist runs can legitimately fire well over
+// a hundred requests in a burst), but to bound a scripted flood hitting this
+// server directly and either exhausting it or getting our shared
+// SEC_USER_AGENT blocked by SEC for every user of a public deployment.
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests — please slow down and try again shortly.' },
+});
+app.use('/api/', apiLimiter);
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
