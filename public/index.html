@@ -92,7 +92,7 @@
     .tab-content.active { display: block; }
 
     /* ── Form ───────────────────────────────────────────────────────────── */
-    .search-row { display: flex; gap: 12px; margin-bottom: 14px; align-items: flex-end; }
+    .search-row { display: flex; gap: 12px; margin-bottom: 14px; align-items: flex-end; flex-wrap: wrap; }
     .input-group { flex: 1; }
     .input-group.narrow { flex: 0 0 175px; }
     label { display: block; margin-bottom: 5px; font-size: 13px; font-weight: 500; color: var(--gray-700); }
@@ -278,6 +278,19 @@
     }
 
     code { background: var(--gray-100); padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+
+    /* ── Watchlist ──────────────────────────────────────────────────────── */
+    .watchlist-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+    .watchlist-item {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--gray-50); border: 1px solid var(--gray-200);
+      border-radius: 999px; padding: 6px 6px 6px 14px; font-size: 13px;
+    }
+    .watchlist-item .btn-sm { padding: 3px 10px; border-radius: 999px; }
+
+    /* ── Source-filing link ────────────────────────────────────────────── */
+    .source-link { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--gray-400); }
+    .source-link:hover { color: var(--blue); border-bottom-color: var(--blue); }
   </style>
 </head>
 <body>
@@ -301,6 +314,7 @@
     <button class="tab active" onclick="switchTab('single')">Single Security</button>
     <button class="tab"        onclick="switchTab('batch')">Batch Search</button>
     <button class="tab"        onclick="switchTab('credit')">Private Credit Analysis</button>
+    <button class="tab"        onclick="switchTab('watchlist')">Watchlist</button>
   </div>
 
   <!-- Single tab -->
@@ -320,6 +334,7 @@
         </select>
       </div>
       <button class="btn btn-primary" id="searchBtn" onclick="searchNPORT()">Search NPORT Filings</button>
+      <button class="btn btn-secondary" onclick="quickAddToWatchlist('securityInput')" title="Save this issuer to your watchlist for one-click re-runs later">+ Watchlist</button>
     </div>
 
     <div class="date-filter-panel" id="dateFilterPanel">
@@ -329,6 +344,18 @@
         <button class="btn btn-primary"   onclick="applyDateFilter()">Apply</button>
         <button class="btn btn-secondary" onclick="clearDateFilter()">Clear</button>
       </div>
+    </div>
+
+    <div class="date-filter-panel" id="referencePanel">
+      <div class="search-row">
+        <div class="input-group narrow">
+          <label for="referencePrice">Reference Price ($)</label>
+          <input type="number" id="referencePrice" placeholder="e.g., 150.00" step="0.01" min="0">
+        </div>
+        <button class="btn btn-primary"   onclick="applyReference()">Plot Reference</button>
+        <button class="btn btn-secondary" onclick="clearReference()">Clear</button>
+      </div>
+      <div class="hint">Optional — plot any price (a cost basis, ask price, or your own benchmark) as a dashed line against peer marks, and see the divergence vs. the peer median. Stays in your browser only.</div>
     </div>
   </div>
 
@@ -380,9 +407,10 @@
         </select>
       </div>
       <button class="btn btn-primary" id="creditBtn" onclick="searchPrivateCredit()">Search BDC Filings</button>
+      <button class="btn btn-secondary" onclick="quickAddToWatchlist('creditIssuerInput')" title="Save this issuer to your watchlist for one-click re-runs later">+ Watchlist</button>
     </div>
     <div class="alert alert-info" style="margin-top:4px; margin-bottom:0;">
-      Searches all 196 registered BDC funds using edgartools. Returns confirmed filings first (guaranteed to contain the issuer), then full filing history per fund for complete time-series coverage.
+      Searches all registered BDC funds (identified via SEC's 814- Investment Company Act file number) for 10-Q filings mentioning this issuer. Returns confirmed filings first (guaranteed to contain the issuer), then full filing history per fund for complete time-series coverage.
     </div>
 
     <div class="date-filter-panel" id="creditDateFilterPanel">
@@ -393,6 +421,52 @@
         <button class="btn btn-secondary" onclick="clearCreditDateFilter()">Clear</button>
       </div>
     </div>
+
+    <div class="date-filter-panel" id="creditReferencePanel">
+      <div class="search-row">
+        <div class="input-group narrow">
+          <label for="creditReferenceMark">Reference Mark (%)</label>
+          <input type="number" id="creditReferenceMark" placeholder="e.g., 92.00" step="0.01" min="0">
+        </div>
+        <button class="btn btn-primary"   onclick="applyCreditReference()">Plot Reference</button>
+        <button class="btn btn-secondary" onclick="clearCreditReference()">Clear</button>
+      </div>
+      <div class="hint">Optional — plot any fair-value mark (% of par) as a dashed line against peer marks, and see the divergence vs. the peer median. Stays in your browser only.</div>
+    </div>
+  </div>
+
+  <!-- Watchlist tab -->
+  <div id="watchlistTab" class="tab-content">
+    <div class="alert alert-info">
+      <strong>Persistent Issuer Watchlist</strong>
+      Save the issuers you track repeatedly and re-run the full list in one click — no re-typing. Saved in this browser only (not synced or shared).
+    </div>
+
+    <div class="search-row">
+      <div class="input-group">
+        <label for="watchlistInput">Add Issuer Name</label>
+        <input type="text" id="watchlistInput" placeholder="e.g., Anthropic"
+               onkeydown="if(event.key==='Enter') addWatchlistItem()">
+      </div>
+      <button class="btn btn-primary" onclick="addWatchlistItem()">Add</button>
+    </div>
+
+    <div id="watchlistItems" class="watchlist-list"></div>
+
+    <div class="search-row" style="margin-top: 8px;">
+      <div class="input-group narrow">
+        <label for="watchlistFilingLimit">Max Filings Each</label>
+        <select id="watchlistFilingLimit">
+          <option value="25" selected>25 — Faster</option>
+          <option value="50">50 — Balanced</option>
+          <option value="100">100 — Comprehensive</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="watchlistRunBtn" onclick="runWatchlist()" disabled>
+        Run Watchlist Search (<span id="watchlistCount">0</span>)
+      </button>
+    </div>
+    <div class="hint">Runs the same NPORT-P peer-comparison search as Batch Search, but against your full saved list (no 10-issuer cap).</div>
   </div>
 
   <div id="msgBox"></div>
@@ -404,11 +478,15 @@
 
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
-let allResults       = {};
-let singleChart      = null;
-let batchCharts      = {}; // { canvasId: Chart }
-let allCreditResults = {};
-let creditChart      = null;
+let allResults          = {};
+let singleChart         = null;
+let batchCharts         = {}; // { canvasId: Chart }
+let allCreditResults    = {};
+let creditChart         = null;
+let singleReferenceValue = null; // optional user-entered $ price to overlay/diff against peers
+let creditReferenceValue = null; // optional user-entered mark (%) to overlay/diff against peers
+
+const WATCHLIST_KEY = 'nportWatchlist';
 
 // ── 15-color palette so charts look good with many funds ──────────────────
 const COLORS = [
@@ -426,18 +504,21 @@ const getColor = i => COLORS[i % COLORS.length];
       document.getElementById('configWarning').style.display = 'block';
     }
   } catch (_) {}
+  renderWatchlist();
 })();
 
 // ── Tab management ─────────────────────────────────────────────────────────
 function switchTab(tab) {
-  const tabNames = ['single', 'batch', 'credit'];
+  const tabNames = ['single', 'batch', 'credit', 'watchlist'];
   document.querySelectorAll('.tab').forEach((el, i) =>
     el.classList.toggle('active', tabNames[i] === tab)
   );
-  document.getElementById('singleTab').classList.toggle('active',  tab === 'single');
-  document.getElementById('batchTab').classList.toggle('active',   tab === 'batch');
-  document.getElementById('creditTab').classList.toggle('active',  tab === 'credit');
+  document.getElementById('singleTab').classList.toggle('active',     tab === 'single');
+  document.getElementById('batchTab').classList.toggle('active',      tab === 'batch');
+  document.getElementById('creditTab').classList.toggle('active',     tab === 'credit');
+  document.getElementById('watchlistTab').classList.toggle('active',  tab === 'watchlist');
   clearResults();
+  if (tab === 'watchlist') renderWatchlist();
 }
 
 // ── Single search ──────────────────────────────────────────────────────────
@@ -457,21 +538,30 @@ async function searchNPORT() {
 
     const limit   = +document.getElementById('filingLimit').value;
     const filings = sortFilings(data.hits.hits.slice(0, limit));
-    const holdings = await parseFilings(filings, security);
+    const { holdings, failures } = await parseFilings(filings, security);
 
     hideLoading();
     hideProgress();
 
     if (!holdings.length) {
-      return showMsg(`No holdings found for "${security}" in these filings.`, 'error');
+      return showMsg(
+        `No holdings found for "${security}" in these filings.` +
+        (failures.length ? ` (${failures.length} filing(s) failed to fetch/parse and may be missing data.)` : ''),
+        'error'
+      );
     }
 
     const companiesMap = groupAndDedupe(holdings);
     allResults = { mode: 'single', single: companiesMap };
 
     const funds = Object.keys(companiesMap).length;
-    showMsg(`Found ${holdings.length} holding(s) across ${funds} fund(s).`, 'success');
+    showMsg(
+      `Found ${holdings.length} holding(s) across ${funds} fund(s).` +
+      (failures.length ? ` ${failures.length} filing(s) failed to parse and were skipped — data may be incomplete.` : ''),
+      failures.length ? 'warning' : 'success'
+    );
     document.getElementById('dateFilterPanel').style.display = 'block';
+    document.getElementById('referencePanel').style.display  = 'block';
     renderSingleResults(companiesMap);
 
   } catch (err) {
@@ -490,11 +580,26 @@ async function searchBatch() {
   if (!securities.length) return showMsg('Please enter at least one security.', 'error');
   if (securities.length > 10) return showMsg('Maximum 10 securities allowed.', 'error');
 
-  clearResults();
-  showLoading('Starting batch search...');
+  const limit = +document.getElementById('batchFilingLimit').value;
+  await runBatchPipeline(securities, limit);
+}
 
-  const limit       = +document.getElementById('batchFilingLimit').value;
+// ── Watchlist "run all" — same pipeline, no 10-issuer cap ─────────────────
+async function runWatchlist() {
+  const securities = getWatchlist();
+  if (!securities.length) return showMsg('Your watchlist is empty — add some issuers first.', 'error');
+
+  const limit = +document.getElementById('watchlistFilingLimit').value;
+  await runBatchPipeline(securities, limit);
+}
+
+// ── Shared batch pipeline (used by both Batch Search and Watchlist) ───────
+async function runBatchPipeline(securities, limit) {
+  clearResults();
+  showLoading(`Starting search across ${securities.length} issuer(s)...`);
+
   const batchResults = {};
+  let totalFailures   = 0;
 
   for (let i = 0; i < securities.length; i++) {
     const security = securities[i];
@@ -504,8 +609,9 @@ async function searchBatch() {
       const data = await fetchJSON('/api/search-nport?security=' + enc(security));
       if (!data.hits?.hits?.length) continue;
 
-      const filings  = sortFilings(data.hits.hits.slice(0, limit));
-      const holdings = await parseFilings(filings, security);
+      const filings = sortFilings(data.hits.hits.slice(0, limit));
+      const { holdings, failures } = await parseFilings(filings, security);
+      totalFailures += failures.length;
       if (holdings.length) {
         batchResults[security] = groupAndDedupe(holdings);
       }
@@ -518,19 +624,31 @@ async function searchBatch() {
   hideProgress();
 
   if (!Object.keys(batchResults).length) {
-    return showMsg('No holdings found for any of the securities.', 'error');
+    return showMsg(
+      'No holdings found for any of the securities.' +
+      (totalFailures ? ` (${totalFailures} filing(s) failed to fetch/parse.)` : ''),
+      'error'
+    );
   }
 
   const found = Object.keys(batchResults).length;
-  showMsg(`Found holdings for ${found} of ${securities.length} securities.`, 'success');
+  showMsg(
+    `Found holdings for ${found} of ${securities.length} securities.` +
+    (totalFailures ? ` ${totalFailures} filing(s) failed to parse across all searches — data may be incomplete.` : ''),
+    totalFailures ? 'warning' : 'success'
+  );
   document.getElementById('batchDateFilterPanel').style.display = 'block';
   allResults = { mode: 'batch', batch: batchResults };
   renderBatchResults(batchResults);
 }
 
 // ── Parse filings (parallel batches of 5) ─────────────────────────────────
+// Returns { holdings, failures } — failures are filings that errored or the
+// server couldn't fetch/parse, distinct from filings that simply had no
+// matching holdings (both used to be silently collapsed to []).
 async function parseFilings(filings, security) {
   const all = [];
+  const failures = [];
   const batchSize = 5;
 
   for (let i = 0; i < filings.length; i += batchSize) {
@@ -545,19 +663,29 @@ async function parseFilings(filings, security) {
       const cik     = src.ciks?.[0];
       const accession = src.adsh;
       const company = src.display_names?.[0] || 'Unknown Fund';
-      if (!cik || !accession) return [];
+      if (!cik || !accession) {
+        failures.push({ company, reason: 'missing CIK/accession' });
+        return [];
+      }
       try {
         const url    = `/api/parse-nport?cik=${cik}&accession=${enc(accession)}&security=${enc(security)}`;
         const parsed = await fetchJSON(url);
-        return (parsed.holdings || []).map(h => ({ ...h, company, cik }));
-      } catch { return []; }
+        if (!parsed.success) {
+          failures.push({ company, reason: parsed.error || 'Unknown error' });
+          return [];
+        }
+        return (parsed.holdings || []).map(h => ({ ...h, company, cik, accession }));
+      } catch (err) {
+        failures.push({ company, reason: err.message });
+        return [];
+      }
     }));
 
     results.forEach(r => all.push(...r));
-    if (i + batchSize < filings.length) await sleep(100);
+    if (i + batchSize < filings.length) await sleep(250);
   }
 
-  return all;
+  return { holdings: all, failures };
 }
 
 // ── Group by company, deduplicate ──────────────────────────────────────────
@@ -572,7 +700,7 @@ function groupAndDedupe(holdings) {
     map[company].sort((a, b) => dateCmp(a.reportDate, b.reportDate));
     const seen = new Set();
     map[company] = map[company].filter(h => {
-      const key = `${h.reportDate}_${h.shares}`;
+      const key = `${h.reportDate}_${h.shares}_${h.title || h.name}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -583,6 +711,13 @@ function groupAndDedupe(holdings) {
 }
 
 // ── Compute summary stats ─────────────────────────────────────────────────
+function median(arr) {
+  if (!arr.length) return 0;
+  const s = [...arr].sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+}
+
 function computeStats(companiesMap) {
   const all = Object.values(companiesMap).flat();
   if (!all.length) return null;
@@ -596,6 +731,7 @@ function computeStats(companiesMap) {
     latestDate:  sorted[0]?.reportDate    || '',
     minPrice:    Math.min(...prices),
     maxPrice:    Math.max(...prices),
+    medianPrice: median(prices),
     fundCount:   Object.keys(companiesMap).length,
     dataPoints:  all.length,
     firstDate:   dates[0]                  || '',
@@ -603,7 +739,21 @@ function computeStats(companiesMap) {
   };
 }
 
-function statsHTML(stats) {
+// ── Reference/benchmark divergence stat box (shared shape for $ and %) ────
+function referenceStatBoxHTML(referenceValue, peerMedian, fmt, unitLabel) {
+  if (referenceValue == null || !peerMedian) return '';
+  const diffPct = ((referenceValue - peerMedian) / peerMedian) * 100;
+  const sign  = diffPct > 0 ? '+' : '';
+  const color = diffPct > 0 ? 'var(--green)' : diffPct < 0 ? 'var(--red)' : 'var(--gray-900)';
+  return `
+    <div class="stat-box">
+      <div class="stat-label">Reference vs Peer Median</div>
+      <div class="stat-value" style="color:${color}">${sign}${diffPct.toFixed(1)}%</div>
+      <div class="stat-sub">Ref: ${fmt(referenceValue)} · Median: ${fmt(peerMedian)}${unitLabel || ''}</div>
+    </div>`;
+}
+
+function statsHTML(stats, referenceValue) {
   if (!stats) return '';
   return `
     <div class="stats-grid">
@@ -628,6 +778,7 @@ function statsHTML(stats) {
         <div class="stat-label">Date Range</div>
         <div class="stat-value sm">${stats.firstDate}<br>${stats.lastDate}</div>
       </div>
+      ${referenceStatBoxHTML(referenceValue, stats.medianPrice, fmtCurrency)}
     </div>`;
 }
 
@@ -635,7 +786,7 @@ function statsHTML(stats) {
 function renderSingleResults(companiesMap) {
   const stats = computeStats(companiesMap);
   let html = '<div class="results-section">';
-  html += statsHTML(stats);
+  html += `<div id="statsGrid">${statsHTML(stats, singleReferenceValue)}</div>`;
   html += '<div class="chart-panel"><h3>Price Per Share Over Time</h3><canvas id="singleChart"></canvas></div>';
   html += '<div class="results-header"><h2>Holdings by Fund</h2></div>';
   html += renderFundCards(companiesMap, 'single');
@@ -659,7 +810,7 @@ function renderBatchResults(batchResults) {
     const stats  = computeStats(companiesMap);
     const chartId = 'chart_' + cleanId(security);
 
-    html += `<div class="security-section">`;
+    html += `<div class="security-section" id="secsection_${cleanId(security)}">`;
     html += `<div class="security-section-header">${esc(security)}</div>`;
     html += statsHTML(stats);
     html += `<div class="chart-panel"><h3>Price Per Share Over Time</h3><canvas id="${chartId}"></canvas></div>`;
@@ -679,6 +830,21 @@ function renderBatchResults(batchResults) {
   Object.keys(batchResults).forEach(security => {
     buildChart('chart_' + cleanId(security), batchResults[security], false);
   });
+}
+
+// ── Source-of-truth: link back to the original EDGAR filing ───────────────
+function edgarFilingUrl(cik, accession) {
+  if (!cik || !accession) return null;
+  const cikNum    = String(cik).replace(/^0+/, '');
+  const accNoDash = String(accession).replace(/-/g, '');
+  return `https://www.sec.gov/Archives/edgar/data/${cikNum}/${accNoDash}/${accession}-index.htm`;
+}
+function sourceLinkHTML(cik, accession, dateLabel) {
+  const url = edgarFilingUrl(cik, accession);
+  const label = dateLabel || '—';
+  return url
+    ? `<a class="source-link" href="${url}" target="_blank" rel="noopener noreferrer" title="View source filing on EDGAR">${label} ↗</a>`
+    : label;
 }
 
 // ── Fund card HTML ─────────────────────────────────────────────────────────
@@ -719,16 +885,16 @@ function renderFundCards(companiesMap, prefix) {
             </tr></thead>
             <tbody>`;
 
-    holdings.forEach(h => {
+    holdings.forEach((h, hIdx) => {
       const rowId = `row_${prefix}_${rowIndex}`;
       const cbId  = `cb_${prefix}_${rowIndex}`;
       html += `
-        <tr id="${rowId}" data-company="${esc(company)}" data-date="${h.reportDate}" data-price="${h.pricePerShare}">
+        <tr id="${rowId}" data-company="${esc(company)}" data-idx="${hIdx}" data-date="${h.reportDate}" data-price="${h.pricePerShare}">
           <td class="center">
             <input type="checkbox" id="${cbId}" class="chart-checkbox" data-prefix="${prefix}" checked
                    onchange="onCheckboxChange(this)">
           </td>
-          <td>${h.reportDate || '—'}</td>
+          <td>${sourceLinkHTML(h.cik, h.accession, h.reportDate)}</td>
           <td class="title-cell">${esc(h.title || h.name || '—')}</td>
           <td class="right">${fmtNum(h.shares)}</td>
           <td class="right">${fmtCurrency(h.marketValue)}</td>
@@ -863,8 +1029,52 @@ function rebuildChart(canvasId, chart, companiesMap) {
     };
   }).filter(d => d.data.length > 0);
 
+  if (canvasId === 'singleChart' && singleReferenceValue != null) {
+    const refDs = buildReferenceLineDataset(datasets, singleReferenceValue, 'Reference Price');
+    if (refDs) datasets.push(refDs);
+  }
+
   chart.data.datasets = datasets;
   chart.update();
+}
+
+// ── Reference/benchmark line: a flat dashed line spanning the plotted range ─
+function buildReferenceLineDataset(datasets, value, label) {
+  const allX = datasets.flatMap(d => d.data.map(p => p.x)).filter(Boolean).sort();
+  if (!allX.length) return null;
+  return {
+    label,
+    data: [{ x: allX[0], y: value }, { x: allX[allX.length - 1], y: value }],
+    borderColor: '#111827',
+    borderDash: [8, 4],
+    borderWidth: 2,
+    pointRadius: 0,
+    pointHoverRadius: 0,
+    fill: false,
+    tension: 0
+  };
+}
+
+// ── Reference/benchmark price (Single Security tab) ────────────────────────
+function applyReference() {
+  const raw = document.getElementById('referencePrice').value.trim();
+  const value = parseFloat(raw);
+  if (!raw || isNaN(value) || value <= 0) {
+    return showMsg('Enter a valid positive reference price.', 'error');
+  }
+  singleReferenceValue = value;
+  refreshSingleView();
+}
+function clearReference() {
+  singleReferenceValue = null;
+  setVal('referencePrice', '');
+  refreshSingleView();
+}
+function refreshSingleView() {
+  if (!allResults.single) return;
+  const statsEl = document.getElementById('statsGrid');
+  if (statsEl) statsEl.innerHTML = statsHTML(computeStats(allResults.single), singleReferenceValue);
+  rebuildChart('singleChart', singleChart, allResults.single);
 }
 
 // ── Date filters ───────────────────────────────────────────────────────────
@@ -880,8 +1090,7 @@ function filterByDate(start, end) {
 
   document.querySelectorAll('.chart-checkbox').forEach(cb => {
     const row      = cb.closest('tr');
-    const dateText = row.querySelector('td:nth-child(2)')?.textContent || '';
-    const ts       = new Date(dateText).getTime();
+    const ts       = new Date(row.dataset.date || '').getTime();
     const inRange  = ts >= startTs && ts <= endTs;
     cb.checked = inRange;
     row.classList.toggle('row-hidden', !inRange);
@@ -892,21 +1101,53 @@ function filterByDate(start, end) {
   showMsg(`Filter applied: ${count} data point(s) visible.`, 'success');
 }
 
+// ── Collect only checked/visible rows (respects checkboxes + date filter) ──
+// Exports must reflect what's actually on screen, not the raw unfiltered
+// result set — otherwise unchecking rows or applying a date filter has no
+// effect on what gets exported.
+function collectVisible(companiesMap, container) {
+  const result = {};
+  if (!container) return companiesMap; // fallback: nothing rendered, export everything
+  container.querySelectorAll('tr[data-company]').forEach(row => {
+    const cb = row.querySelector('.chart-checkbox');
+    if (!cb || !cb.checked) return;
+    const company = row.dataset.company;
+    const idx     = +row.dataset.idx;
+    const h       = companiesMap[company]?.[idx];
+    if (!h) return;
+    if (!result[company]) result[company] = [];
+    result[company].push(h);
+  });
+  return result;
+}
+
+function visibleSingleMap() {
+  return collectVisible(allResults.single, document.querySelector('.results-section'));
+}
+function visibleBatchMap() {
+  const out = {};
+  Object.entries(allResults.batch).forEach(([sec, map]) => {
+    const container = document.getElementById('secsection_' + cleanId(sec));
+    out[sec] = collectVisible(map, container);
+  });
+  return out;
+}
+
 // ── Export: CSV ────────────────────────────────────────────────────────────
 function doExportCSV() {
   const isSingle = allResults.mode === 'single';
   const rows = isSingle
-    ? [['Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency']]
-    : [['Security','Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency']];
+    ? [['Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency','Source Filing URL']]
+    : [['Security','Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency','Source Filing URL']];
 
   if (isSingle) {
-    Object.entries(allResults.single).forEach(([co, hs]) =>
-      hs.forEach(h => rows.push([co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare.toFixed(4), h.currency||'USD']))
+    Object.entries(visibleSingleMap()).forEach(([co, hs]) =>
+      hs.forEach(h => rows.push([co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare.toFixed(4), h.currency||'USD', edgarFilingUrl(h.cik, h.accession) || '']))
     );
   } else {
-    Object.entries(allResults.batch).forEach(([sec, map]) =>
+    Object.entries(visibleBatchMap()).forEach(([sec, map]) =>
       Object.entries(map).forEach(([co, hs]) =>
-        hs.forEach(h => rows.push([sec, co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare.toFixed(4), h.currency||'USD']))
+        hs.forEach(h => rows.push([sec, co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare.toFixed(4), h.currency||'USD', edgarFilingUrl(h.cik, h.accession) || '']))
       )
     );
   }
@@ -920,35 +1161,37 @@ function doExportExcel() {
   const wb = XLSX.utils.book_new();
 
   if (allResults.mode === 'single') {
-    const data = [['Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency']];
-    Object.entries(allResults.single).forEach(([co, hs]) =>
-      hs.forEach(h => data.push([co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare, h.currency||'USD']))
+    const data = [['Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency','Source Filing URL']];
+    Object.entries(visibleSingleMap()).forEach(([co, hs]) =>
+      hs.forEach(h => data.push([co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare, h.currency||'USD', edgarFilingUrl(h.cik, h.accession) || '']))
     );
     const ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = [{wch:42},{wch:12},{wch:42},{wch:14},{wch:18},{wch:14},{wch:10}];
+    ws['!cols'] = [{wch:42},{wch:12},{wch:42},{wch:14},{wch:18},{wch:14},{wch:10},{wch:50}];
     XLSX.utils.book_append_sheet(wb, ws, 'Holdings');
 
   } else {
+    const visibleBatch = visibleBatchMap();
+
     // One sheet per security
-    Object.entries(allResults.batch).forEach(([sec, map]) => {
-      const data = [['Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency']];
+    Object.entries(visibleBatch).forEach(([sec, map]) => {
+      const data = [['Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency','Source Filing URL']];
       Object.entries(map).forEach(([co, hs]) =>
-        hs.forEach(h => data.push([co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare, h.currency||'USD']))
+        hs.forEach(h => data.push([co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare, h.currency||'USD', edgarFilingUrl(h.cik, h.accession) || '']))
       );
       const ws = XLSX.utils.aoa_to_sheet(data);
-      ws['!cols'] = [{wch:42},{wch:12},{wch:42},{wch:14},{wch:18},{wch:14},{wch:10}];
+      ws['!cols'] = [{wch:42},{wch:12},{wch:42},{wch:14},{wch:18},{wch:14},{wch:10},{wch:50}];
       XLSX.utils.book_append_sheet(wb, ws, sec.substring(0, 31));
     });
 
     // Combined sheet
-    const combined = [['Security','Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency']];
-    Object.entries(allResults.batch).forEach(([sec, map]) =>
+    const combined = [['Security','Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency','Source Filing URL']];
+    Object.entries(visibleBatch).forEach(([sec, map]) =>
       Object.entries(map).forEach(([co, hs]) =>
-        hs.forEach(h => combined.push([sec, co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare, h.currency||'USD']))
+        hs.forEach(h => combined.push([sec, co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare, h.currency||'USD', edgarFilingUrl(h.cik, h.accession) || '']))
       )
     );
     const ws2 = XLSX.utils.aoa_to_sheet(combined);
-    ws2['!cols'] = [{wch:14},{wch:42},{wch:12},{wch:42},{wch:14},{wch:18},{wch:14},{wch:10}];
+    ws2['!cols'] = [{wch:14},{wch:42},{wch:12},{wch:42},{wch:14},{wch:18},{wch:14},{wch:10},{wch:50}];
     XLSX.utils.book_append_sheet(wb, ws2, 'All Holdings');
   }
 
@@ -1027,12 +1270,13 @@ function doExportPDF() {
   };
 
   if (allResults.mode === 'single') {
-    drawSection(allResults.single, 'SEC NPORT-P Holdings Analysis', 'singleChart', margin);
+    drawSection(visibleSingleMap(), 'SEC NPORT-P Holdings Analysis', 'singleChart', margin);
   } else {
+    const visibleBatch = visibleBatchMap();
     Object.keys(allResults.batch).forEach((security, i) => {
       if (i > 0) doc.addPage();
       const chartId = 'chart_' + cleanId(security);
-      drawSection(allResults.batch[security], security, chartId, margin);
+      drawSection(visibleBatch[security], security, chartId, margin);
     });
   }
 
@@ -1063,9 +1307,15 @@ function showMsg(msg, type) {
 function clearResults() {
   document.getElementById('msgBox').innerHTML            = '';
   document.getElementById('resultsContainer').innerHTML  = '';
-  document.getElementById('dateFilterPanel').style.display       = 'none';
-  document.getElementById('batchDateFilterPanel').style.display  = 'none';
-  document.getElementById('creditDateFilterPanel').style.display = 'none';
+  document.getElementById('dateFilterPanel').style.display        = 'none';
+  document.getElementById('batchDateFilterPanel').style.display   = 'none';
+  document.getElementById('creditDateFilterPanel').style.display  = 'none';
+  document.getElementById('referencePanel').style.display         = 'none';
+  document.getElementById('creditReferencePanel').style.display   = 'none';
+  setVal('referencePrice', '');
+  setVal('creditReferenceMark', '');
+  singleReferenceValue = null;
+  creditReferenceValue = null;
   if (singleChart) { singleChart.destroy(); singleChart = null; }
   if (creditChart) { creditChart.destroy(); creditChart = null; }
   Object.values(batchCharts).forEach(c => c.destroy());
@@ -1077,6 +1327,8 @@ function setBtnsDisabled(v) {
   document.getElementById('searchBtn').disabled  = v;
   document.getElementById('batchBtn').disabled   = v;
   document.getElementById('creditBtn').disabled  = v;
+  const wbtn = document.getElementById('watchlistRunBtn');
+  if (wbtn) wbtn.disabled = v || getWatchlist().length === 0;
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────
@@ -1135,21 +1387,30 @@ async function searchPrivateCredit() {
       showMsg(`Found ${data.bdcFunds.length} BDC fund(s) holding this issuer (${data.confirmed} confirmed filings). Parsing…`, 'info');
     }
 
-    const holdings = await parseCreditFilings(toparse, issuer);
+    const { holdings, failures } = await parseCreditFilings(toparse, issuer);
 
     hideLoading();
     hideProgress();
 
     if (!holdings.length) {
-      return showMsg(`No schedule of investments data found for "${issuer}" in these 10-Q filings. The filings may mention this issuer in text, not in investment tables.`, 'error');
+      return showMsg(
+        `No schedule of investments data found for "${issuer}" in these 10-Q filings. The filings may mention this issuer in text, not in investment tables.` +
+        (failures.length ? ` (${failures.length} filing(s) also failed to fetch/parse.)` : ''),
+        'error'
+      );
     }
 
     const fundsMap = groupCreditByFund(holdings);
     allCreditResults = { mode: 'credit', credit: fundsMap };
 
     const funds = Object.keys(fundsMap).length;
-    showMsg(`Found ${holdings.length} holding tranche(s) across ${funds} BDC fund(s).`, 'success');
+    showMsg(
+      `Found ${holdings.length} holding tranche(s) across ${funds} BDC fund(s).` +
+      (failures.length ? ` ${failures.length} filing(s) failed to parse and were skipped — data may be incomplete.` : ''),
+      failures.length ? 'warning' : 'success'
+    );
     document.getElementById('creditDateFilterPanel').style.display = 'block';
+    document.getElementById('creditReferencePanel').style.display  = 'block';
     renderCreditResults(fundsMap, issuer);
 
   } catch (err) {
@@ -1159,9 +1420,12 @@ async function searchPrivateCredit() {
   }
 }
 
-// ── Parse credit filings (batches of 4 — confirmed BDC-only filings) ──────
+// ── Parse credit filings (batches of 4) ───────────────────────────────────
+// Returns { holdings, failures } — see parseFilings() above for why failures
+// are tracked separately from "filing legitimately had no matching rows".
 async function parseCreditFilings(filings, issuer) {
   const all = [];
+  const failures = [];
   const batchSize = 4;
 
   for (let i = 0; i < filings.length; i += batchSize) {
@@ -1174,28 +1438,38 @@ async function parseCreditFilings(filings, issuer) {
     );
 
     const results = await Promise.all(batch.map(async filing => {
-      // New flat format from Python search
       const { cik, accession, company, period, fileDate, confirmed } = filing;
       const reportDate = period || fileDate || '';
-      if (!cik || !accession) return [];
+      if (!cik || !accession) {
+        failures.push({ company, reason: 'missing CIK/accession' });
+        return [];
+      }
       try {
         const url    = `/api/parse-10q?cik=${enc(cik)}&accession=${enc(accession)}&issuer=${enc(issuer)}&reportDate=${enc(reportDate)}`;
         const parsed = await fetchJSON(url);
+        if (!parsed.success) {
+          failures.push({ company, reason: parsed.error || 'Unknown error' });
+          return [];
+        }
         return (parsed.holdings || []).map(h => ({
           ...h,
           company,
           cik,
+          accession,
           reportDate:   h.reportDate || reportDate,
           confirmed:    !!confirmed,
         }));
-      } catch { return []; }
+      } catch (err) {
+        failures.push({ company, reason: err.message });
+        return [];
+      }
     }));
 
     results.forEach(r => all.push(...r));
-    if (i + batchSize < filings.length) await sleep(200);
+    if (i + batchSize < filings.length) await sleep(350);
   }
 
-  return all;
+  return { holdings: all, failures };
 }
 
 // ── Group credit holdings by fund, deduplicate ────────────────────────────
@@ -1210,7 +1484,7 @@ function groupCreditByFund(holdings) {
     map[company].sort((a, b) => dateCmp(a.reportDate, b.reportDate));
     const seen = new Set();
     map[company] = map[company].filter(h => {
-      const key = `${h.reportDate}_${h.investmentType}_${h.principal}_${h.fairValue}`;
+      const key = `${h.reportDate}_${h.investmentType}_${h.principal}_${h.fairValue}_${h.maturityDate}_${h.spread}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -1234,6 +1508,7 @@ function computeCreditStats(fundsMap) {
     latestDate:  sorted[0]?.reportDate    || '',
     minMark:     marks.length ? Math.min(...marks) : null,
     maxMark:     marks.length ? Math.max(...marks) : null,
+    medianMark:  median(marks),
     fundCount:   Object.keys(fundsMap).length,
     dataPoints:  all.length,
     firstDate:   dates[0]                || '',
@@ -1241,7 +1516,7 @@ function computeCreditStats(fundsMap) {
   };
 }
 
-function creditStatsHTML(stats) {
+function creditStatsHTML(stats, referenceValue) {
   if (!stats) return '';
   const fmtMark = v => v !== null ? v.toFixed(2) + '%' : '—';
   return `
@@ -1267,6 +1542,7 @@ function creditStatsHTML(stats) {
         <div class="stat-label">Date Range</div>
         <div class="stat-value sm">${stats.firstDate}<br>${stats.lastDate}</div>
       </div>
+      ${referenceStatBoxHTML(referenceValue, stats.medianMark, fmtMark)}
     </div>`;
 }
 
@@ -1308,10 +1584,14 @@ function buildCreditDatasets(fundsMap) {
 
 // ── Render credit results ─────────────────────────────────────────────────
 function renderCreditResults(fundsMap, issuer) {
+  // Track whatever is actually being displayed (full set or date-filtered)
+  // so exports match what's on screen instead of always dumping everything.
+  allCreditResults.view = fundsMap;
+
   const stats = computeCreditStats(fundsMap);
 
   let html = '<div class="results-section">';
-  html += creditStatsHTML(stats);
+  html += creditStatsHTML(stats, creditReferenceValue);
   html += '<div class="chart-panel"><h3>Fair Value Mark (% of Par) Over Time</h3><canvas id="creditChartCanvas"></canvas></div>';
   html += '<div class="results-header"><h2>Holdings by Fund</h2></div>';
   html += renderCreditFundCards(fundsMap);
@@ -1326,9 +1606,14 @@ function renderCreditResults(fundsMap, issuer) {
   const ctx = document.getElementById('creditChartCanvas')?.getContext('2d');
   if (ctx) {
     if (creditChart) { creditChart.destroy(); creditChart = null; }
+    const creditDatasets = buildCreditDatasets(fundsMap);
+    if (creditReferenceValue != null) {
+      const refDs = buildReferenceLineDataset(creditDatasets, creditReferenceValue, 'Reference Mark');
+      if (refDs) creditDatasets.push(refDs);
+    }
     creditChart = new Chart(ctx, {
       type: 'line',
-      data: { datasets: buildCreditDatasets(fundsMap) },
+      data: { datasets: creditDatasets },
       options: {
         responsive: true,
         plugins: {
@@ -1404,7 +1689,7 @@ function renderCreditFundCards(fundsMap) {
 
       html += `
         <tr>
-          <td>${h.reportDate || '—'}</td>
+          <td>${sourceLinkHTML(h.cik, h.accession, h.reportDate)}</td>
           <td class="title-cell">${esc(h.portfolioCompany || '—')}</td>
           <td>${esc(h.industry || '—')}</td>
           <td>${esc(h.index || '—')}</td>
@@ -1455,16 +1740,35 @@ function clearCreditDateFilter() {
   if (allCreditResults.credit) renderCreditResults(allCreditResults.credit, '');
 }
 
+// ── Reference/benchmark mark (Private Credit tab) ─────────────────────────
+// Re-renders the current view (full or date-filtered) with the reference
+// line applied — same pattern as the date filter, since credit cards have
+// no per-row checkboxes to preserve across a re-render.
+function applyCreditReference() {
+  const raw = document.getElementById('creditReferenceMark').value.trim();
+  const value = parseFloat(raw);
+  if (!raw || isNaN(value) || value < 0) {
+    return showMsg('Enter a valid reference mark (%).', 'error');
+  }
+  creditReferenceValue = value;
+  if (allCreditResults.view) renderCreditResults(allCreditResults.view, '');
+}
+function clearCreditReference() {
+  creditReferenceValue = null;
+  setVal('creditReferenceMark', '');
+  if (allCreditResults.view) renderCreditResults(allCreditResults.view, '');
+}
+
 // ── Credit CSV export ─────────────────────────────────────────────────────
 function doCreditExportCSV() {
-  const rows = [['Fund','Report Date','Portfolio Company','Industry','Investment Type','Index','Spread','Cash Int. Rate','PIK','Maturity Date','Principal ($K)','Cost ($K)','Fair Value ($K)','Fair Value Mark (%)','Notes']];
-  Object.entries(allCreditResults.credit || {}).forEach(([co, hs]) =>
+  const rows = [['Fund','Report Date','Portfolio Company','Industry','Investment Type','Index','Spread','Cash Int. Rate','PIK','Maturity Date','Principal ($K)','Cost ($K)','Fair Value ($K)','Fair Value Mark (%)','Notes','Source Filing URL']];
+  Object.entries(allCreditResults.view || allCreditResults.credit || {}).forEach(([co, hs]) =>
     hs.forEach(h => rows.push([
       co, h.reportDate, h.portfolioCompany, h.industry, h.investmentType,
       h.index, h.spread, h.cashInterestRate, h.pik, h.maturityDate,
       h.principal ?? '', h.cost ?? '', h.fairValue ?? '',
       h.fairValueMark !== null ? h.fairValueMark.toFixed(2) : '',
-      h.notes
+      h.notes, edgarFilingUrl(h.cik, h.accession) || ''
     ]))
   );
   const csv = rows.map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
@@ -1474,18 +1778,18 @@ function doCreditExportCSV() {
 // ── Credit Excel export ───────────────────────────────────────────────────
 function doCreditExportExcel() {
   const wb = XLSX.utils.book_new();
-  const data = [['Fund','Report Date','Portfolio Company','Industry','Investment Type','Index','Spread','Cash Int. Rate','PIK','Maturity Date','Principal ($K)','Cost ($K)','Fair Value ($K)','Fair Value Mark (%)','Notes']];
-  Object.entries(allCreditResults.credit || {}).forEach(([co, hs]) =>
+  const data = [['Fund','Report Date','Portfolio Company','Industry','Investment Type','Index','Spread','Cash Int. Rate','PIK','Maturity Date','Principal ($K)','Cost ($K)','Fair Value ($K)','Fair Value Mark (%)','Notes','Source Filing URL']];
+  Object.entries(allCreditResults.view || allCreditResults.credit || {}).forEach(([co, hs]) =>
     hs.forEach(h => data.push([
       co, h.reportDate, h.portfolioCompany, h.industry, h.investmentType,
       h.index, h.spread, h.cashInterestRate, h.pik, h.maturityDate,
       h.principal, h.cost, h.fairValue,
       h.fairValueMark !== null ? parseFloat(h.fairValueMark.toFixed(2)) : null,
-      h.notes
+      h.notes, edgarFilingUrl(h.cik, h.accession) || ''
     ]))
   );
   const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [{wch:40},{wch:12},{wch:40},{wch:22},{wch:30},{wch:10},{wch:10},{wch:14},{wch:10},{wch:14},{wch:14},{wch:14},{wch:14},{wch:16},{wch:20}];
+  ws['!cols'] = [{wch:40},{wch:12},{wch:40},{wch:22},{wch:30},{wch:10},{wch:10},{wch:14},{wch:10},{wch:14},{wch:14},{wch:14},{wch:14},{wch:16},{wch:20},{wch:50}];
   XLSX.utils.book_append_sheet(wb, ws, 'Private Credit');
   XLSX.writeFile(wb, `private_credit_${today()}.xlsx`);
 }
@@ -1495,6 +1799,68 @@ function downloadBlob(content, type, filename) {
   const a   = Object.assign(document.createElement('a'), { href: url, download: filename });
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// ── Watchlist: persisted issuer list (localStorage — this browser only) ───
+function getWatchlist() {
+  try {
+    const raw = localStorage.getItem(WATCHLIST_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+function saveWatchlist(list) {
+  try { localStorage.setItem(WATCHLIST_KEY, JSON.stringify(list)); } catch (_) {}
+}
+function addWatchlistItem() {
+  const input = document.getElementById('watchlistInput');
+  const name = input.value.trim();
+  if (!name) return;
+  const list = getWatchlist();
+  if (list.some(n => n.toLowerCase() === name.toLowerCase())) {
+    input.value = '';
+    return showMsg(`"${name}" is already on your watchlist.`, 'info');
+  }
+  list.push(name);
+  saveWatchlist(list);
+  input.value = '';
+  renderWatchlist();
+}
+function removeWatchlistItem(name) {
+  saveWatchlist(getWatchlist().filter(n => n !== name));
+  renderWatchlist();
+}
+function quickAddToWatchlist(inputId) {
+  const name = document.getElementById(inputId).value.trim();
+  if (!name) return showMsg('Enter a security or issuer name first.', 'error');
+  const list = getWatchlist();
+  if (list.some(n => n.toLowerCase() === name.toLowerCase())) {
+    return showMsg(`"${name}" is already on your watchlist.`, 'info');
+  }
+  list.push(name);
+  saveWatchlist(list);
+  renderWatchlist();
+  showMsg(`Added "${name}" to your watchlist.`, 'success');
+}
+function renderWatchlist() {
+  const list      = getWatchlist();
+  const container = document.getElementById('watchlistItems');
+  const countEl   = document.getElementById('watchlistCount');
+  const runBtn    = document.getElementById('watchlistRunBtn');
+
+  if (countEl) countEl.textContent = list.length;
+  if (runBtn)  runBtn.disabled     = list.length === 0;
+  if (!container) return;
+
+  if (!list.length) {
+    container.innerHTML = '<div class="hint">No issuers saved yet. Add names above, or use the "+ Watchlist" button next to a search box.</div>';
+    return;
+  }
+  container.innerHTML = list.map(name => `
+    <div class="watchlist-item">
+      <span>${esc(name)}</span>
+      <button class="btn btn-sm btn-red" data-name="${esc(name)}" onclick="removeWatchlistItem(this.dataset.name)">Remove</button>
+    </div>
+  `).join('');
 }
 </script>
 </body>

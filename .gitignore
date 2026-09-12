@@ -1,3 +1,6 @@
 node_modules/
 .env
 .claude/
+cache.db
+cache.db-wal
+cache.db-shm

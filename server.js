@@ -4,8 +4,7 @@ const axios = require('axios');
 const cors = require('cors');
 const xml2js = require('xml2js');
 const cheerio  = require('cheerio');
-const { execFile } = require('child_process');
-const path         = require('path');
+const cache = require('./cache');
 
 const app = express();
 app.use(cors());
@@ -23,6 +22,76 @@ if (!USER_AGENT) {
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Retry SEC requests on 429 (rate limit) with exponential backoff.
+// SEC's fair-access guidance is ~10 req/sec; transient 429s should be
+// retried rather than silently treated as "no data" by callers.
+async function fetchWithRetry(config, maxRetries = 3) {
+  let attempt = 0;
+  for (;;) {
+    try {
+      return await axios(config);
+    } catch (err) {
+      const status = err.response?.status;
+      if (status === 429 && attempt < maxRetries) {
+        await delay(500 * Math.pow(2, attempt));
+        attempt++;
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
+// Fetch a filer's complete filing history from the EDGAR submissions API,
+// flattening the paginated "files" (older filings) alongside "recent".
+async function fetchSubmissionsAllPages(cikPadded) {
+  const entries = [];
+  const pushEntries = (block) => {
+    const forms      = block.form            || [];
+    const accs       = block.accessionNumber || [];
+    const fileDates   = block.filingDate      || [];
+    const periods     = block.reportDate      || [];
+    const primaryDocs = block.primaryDocument || [];
+    for (let i = 0; i < accs.length; i++) {
+      entries.push({
+        form: forms[i], accessionNumber: accs[i],
+        filingDate: fileDates[i], reportDate: periods[i],
+        primaryDocument: primaryDocs[i]
+      });
+    }
+  };
+
+  const subUrl  = `https://data.sec.gov/submissions/CIK${cikPadded}.json`;
+  const subResp = await fetchWithRetry({
+    url: subUrl, method: 'get',
+    headers: { 'User-Agent': EFFECTIVE_USER_AGENT, 'Accept': 'application/json' },
+    timeout: 15000
+  });
+  pushEntries(subResp.data.filings?.recent || {});
+
+  const files = subResp.data.filings?.files || [];
+  for (const file of files) {
+    try {
+      const pageResp = await fetchWithRetry({
+        url: `https://data.sec.gov/submissions/${file.name}`, method: 'get',
+        headers: { 'User-Agent': EFFECTIVE_USER_AGENT, 'Accept': 'application/json' },
+        timeout: 10000
+      });
+      pushEntries(pageResp.data);
+    } catch (e) {
+      console.error(`Submissions page error (${file.name}):`, e.message);
+    }
+  }
+  return entries;
+}
+
+// Strip trailing ticker/CIK parentheticals from EFTS display names,
+// e.g. "FS KKR Capital Corp (FSK)" -> "FS KKR Capital Corp".
+function cleanFilerName(raw) {
+  const name = String(raw || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+  return name || String(raw || 'Unknown');
+}
+
 // Config endpoint — lets the frontend show a warning if user-agent isn't set
 app.get('/api/config', (_req, res) => {
   res.json({ userAgentConfigured: !!USER_AGENT });
@@ -30,26 +99,38 @@ app.get('/api/config', (_req, res) => {
 
 // Search for NPORT-P filings matching a security name/ticker
 app.get('/api/search-nport', async (req, res) => {
-  const { security } = req.query;
+  const { security, refresh } = req.query;
   if (!security) return res.status(400).json({ error: 'security parameter required' });
 
+  const cacheKey = cache.searchKey('search:nport', security);
+  if (!refresh) {
+    const cached = cache.getSearch(cacheKey);
+    if (cached) return res.json({ ...cached, cached: true });
+  }
+
   try {
-    const response = await axios.get('https://efts.sec.gov/LATEST/search-index', {
-      params: {
-        q: security,
-        category: 'form-cat1',
-        forms: 'NPORT-P',
-        page: 1,
-        from: 0,
-        size: 100
-      },
-      headers: {
-        'User-Agent': EFFECTIVE_USER_AGENT,
-        'Accept': 'application/json'
-      },
-      timeout: 30000
+    const data = await cache.withInFlight(cacheKey, async () => {
+      const response = await fetchWithRetry({
+        url: 'https://efts.sec.gov/LATEST/search-index',
+        method: 'get',
+        params: {
+          q: security,
+          category: 'form-cat1',
+          forms: 'NPORT-P',
+          page: 1,
+          from: 0,
+          size: 100
+        },
+        headers: {
+          'User-Agent': EFFECTIVE_USER_AGENT,
+          'Accept': 'application/json'
+        },
+        timeout: 30000
+      });
+      cache.setSearch(cacheKey, response.data);
+      return response.data;
     });
-    res.json(response.data);
+    res.json({ ...data, cached: false });
   } catch (error) {
     console.error('Search error:', error.message);
     res.status(500).json({ error: error.message });
@@ -58,35 +139,56 @@ app.get('/api/search-nport', async (req, res) => {
 
 // Fetch and parse a single NPORT-P XML filing, returning matching holdings
 app.get('/api/parse-nport', async (req, res) => {
-  const { cik, accession, security } = req.query;
+  const { cik, accession, security, refresh } = req.query;
   if (!cik || !accession || !security) {
     return res.status(400).json({ error: 'cik, accession, and security are required' });
   }
 
+  // A given (cik, accession, security) is a specific historical filing's
+  // content — it never changes, so this is cached indefinitely (no TTL).
+  const cacheKey = cache.holdingsKey('holdings:nport', cik, accession, security);
+  if (!refresh) {
+    const cached = cache.getHoldings(cacheKey);
+    if (cached) {
+      return res.json({
+        success: true,
+        holdings: cached,
+        message: cached.length > 0 ? 'Found holdings' : 'No matching holdings',
+        cached: true
+      });
+    }
+  }
+
   try {
-    const accessionFormatted = accession.replace(/-/g, '');
-    await delay(50);
+    const holdings = await cache.withInFlight(cacheKey, async () => {
+      const accessionFormatted = accession.replace(/-/g, '');
+      await delay(50);
 
-    const xmlUrl = `https://www.sec.gov/Archives/edgar/data/${cik}/${accessionFormatted}/primary_doc.xml`;
-    const xmlResponse = await axios.get(xmlUrl, {
-      headers: { 'User-Agent': EFFECTIVE_USER_AGENT },
-      timeout: 30000
+      const xmlUrl = `https://www.sec.gov/Archives/edgar/data/${cik}/${accessionFormatted}/primary_doc.xml`;
+      const xmlResponse = await fetchWithRetry({
+        url: xmlUrl, method: 'get',
+        headers: { 'User-Agent': EFFECTIVE_USER_AGENT },
+        timeout: 30000
+      });
+
+      const parser = new xml2js.Parser({
+        explicitArray: false,
+        mergeAttrs: true,
+        normalizeTags: true,
+        tagNameProcessors: [xml2js.processors.stripPrefix]
+      });
+
+      const result = await parser.parseStringPromise(xmlResponse.data);
+      const parsed = extractHoldings(result, security);
+      cache.setHoldings(cacheKey, parsed);
+      return parsed;
     });
-
-    const parser = new xml2js.Parser({
-      explicitArray: false,
-      mergeAttrs: true,
-      normalizeTags: true,
-      tagNameProcessors: [xml2js.processors.stripPrefix]
-    });
-
-    const result = await parser.parseStringPromise(xmlResponse.data);
-    const holdings = extractHoldings(result, security);
 
     res.json({
       success: true,
       holdings,
-      message: holdings.length > 0 ? 'Found holdings' : 'No matching holdings'
+      message: holdings.length > 0 ? 'Found holdings' : 'No matching holdings',
+      cached: false
     });
   } catch (error) {
     res.json({ success: false, holdings: [], error: error.message });
@@ -145,11 +247,11 @@ function extractHoldings(xml, securitySearchTerm) {
         inv.fxRate || inv.fxrate || 1
       );
 
-      const priceInUSD   = valUSD / balance;
-      const pricePerShare =
-        currencyCode !== 'USD' && exchangeRate > 0 && exchangeRate !== 1
-          ? priceInUSD * exchangeRate
-          : priceInUSD;
+      // NPORT's valUSD is already expressed in USD by schema, so
+      // valUSD / balance is already the correct USD price per share.
+      // (Previously this was re-multiplied by exchangeRate for non-USD
+      // holdings, silently corrupting the price shown for foreign marks.)
+      const pricePerShare = valUSD / balance;
 
       holdings.push({
         name,
@@ -158,7 +260,6 @@ function extractHoldings(xml, securitySearchTerm) {
         shares: balance,
         marketValue: valUSD,
         pricePerShare,
-        priceInUSD,
         currency: currencyCode,
         exchangeRate,
         reportDate,
@@ -172,98 +273,170 @@ function extractHoldings(xml, securitySearchTerm) {
   return holdings;
 }
 
-// ── Private Credit: Search BDC 10-Q filings via Python/edgartools ─────────
-app.get('/api/search-10q', (req, res) => {
-  const { issuer, maxPerFund } = req.query;
+// ── Private Credit: Search BDC 10-Q filings ───────────────────────────────
+// BDC identification strategy: SEC EDGAR assigns Investment Company Act file
+// numbers starting with "814-" to Business Development Companies. This is
+// present on every EFTS search hit and is authoritative — no hard-coded CIK
+// lists needed. We first pull EFTS full-text-search hits that actually
+// mention the issuer (confirmed), then fetch each identified BDC's complete
+// 10-Q filing history via the submissions API to close gaps where EFTS may
+// not surface every quarter for older filings.
+app.get('/api/search-10q', async (req, res) => {
+  const { issuer, maxPerFund, refresh } = req.query;
   if (!issuer) return res.status(400).json({ error: 'issuer parameter required' });
+  const maxPerFundNum = maxPerFund ? parseInt(maxPerFund, 10) : null;
 
-  const scriptPath = path.join(__dirname, 'credit_analyzer.py');
-  const args = ['search', issuer];
-  if (maxPerFund) args.push(String(maxPerFund));
+  const cacheKey = cache.searchKey('search:10q', issuer, maxPerFund || '');
+  if (!refresh) {
+    const cached = cache.getSearch(cacheKey);
+    if (cached) return res.json({ ...cached, cached: true });
+  }
 
-  execFile('python3', [scriptPath, ...args], {
-    env:     { ...process.env, SEC_USER_AGENT: EFFECTIVE_USER_AGENT },
-    timeout: 45000,
-    maxBuffer: 4 * 1024 * 1024
-  }, (err, stdout, stderr) => {
-    if (err) {
-      console.error('credit_analyzer search error:', err.message, stderr);
-      return res.status(500).json({ error: err.message });
-    }
-    try {
-      res.json(JSON.parse(stdout));
-    } catch (e) {
-      console.error('credit_analyzer bad JSON:', stdout.slice(0, 200));
-      res.status(500).json({ error: 'Invalid response from analyzer' });
-    }
-  });
+  try {
+    const result = await cache.withInFlight(cacheKey, async () => {
+      const searchResp = await fetchWithRetry({
+        url: 'https://efts.sec.gov/LATEST/search-index',
+        method: 'get',
+        params: { q: `"${issuer}"`, forms: '10-Q', from: 0, size: 200 },
+        headers: { 'User-Agent': EFFECTIVE_USER_AGENT, 'Accept': 'application/json' },
+        timeout: 30000
+      });
+      const hits = searchResp.data?.hits?.hits || [];
+
+      const confirmed = [];
+      const bdcCikName = {};          // { "1422183": "FS KKR Capital Corp" }
+      const confirmedAccessions = new Set();
+
+      for (const hit of hits) {
+        const src = hit._source || {};
+        const fileNums = src.file_num || [];
+        if (!fileNums.some(fn => String(fn).startsWith('814-'))) continue;
+
+        const ciks = src.ciks || [];
+        const cik = ciks[0] ? String(ciks[0]) : '';
+        const cikStripped = cik.replace(/^0+/, '');
+        const name = cleanFilerName(src.display_names?.[0]);
+        if (cikStripped) bdcCikName[cikStripped] = name;
+
+        const accession = src.adsh || '';
+        confirmed.push({
+          cik, accession, company: name,
+          period:   src.period_ending || src.file_date || '',
+          fileDate: src.file_date || '',
+          confirmed: true
+        });
+        if (accession) confirmedAccessions.add(accession);
+      }
+
+      const historical = [];
+      for (const [cikStripped, name] of Object.entries(bdcCikName)) {
+        try {
+          const cikPadded   = cikStripped.padStart(10, '0');
+          const allFilings  = await fetchSubmissionsAllPages(cikPadded);
+          let count = 0;
+          for (const f of allFilings) {
+            if (f.form !== '10-Q') continue;
+            if (maxPerFundNum && count >= maxPerFundNum) break;
+            const acc = f.accessionNumber || '';
+            if (!acc || confirmedAccessions.has(acc)) { count++; continue; }
+            historical.push({
+              cik: cikStripped, accession: acc, company: name,
+              period: f.reportDate || '', fileDate: f.filingDate || '',
+              confirmed: false
+            });
+            count++;
+          }
+          await delay(50);
+        } catch (e) {
+          console.error('Filing history error for', name, e.message);
+        }
+      }
+
+      const byPeriod = f => f.period || f.fileDate || '';
+      confirmed.sort((a, b) => byPeriod(b).localeCompare(byPeriod(a)));
+      historical.sort((a, b) => byPeriod(b).localeCompare(byPeriod(a)));
+
+      const payload = {
+        filings:   [...confirmed, ...historical],
+        bdcFunds:  [...new Set(Object.values(bdcCikName))].sort(),
+        confirmed: confirmed.length,
+        total:     confirmed.length + historical.length
+      };
+      cache.setSearch(cacheKey, payload);
+      return payload;
+    });
+    res.json({ ...result, cached: false });
+  } catch (error) {
+    console.error('search-10q error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ── Private Credit: Parse a single 10-Q filing ────────────────────────────
 app.get('/api/parse-10q', async (req, res) => {
-  const { cik, accession, issuer, reportDate } = req.query;
+  const { cik, accession, issuer, reportDate, refresh } = req.query;
   if (!cik || !accession || !issuer) {
     return res.status(400).json({ error: 'cik, accession, and issuer are required' });
   }
 
-  try {
-    const accNodash = accession.replace(/-/g, '');
-    await delay(100);
-
-    // Use the EDGAR submissions API to find the primary document
-    const cikPadded = String(cik).replace(/^0+/, '').padStart(10, '0');
-    let mainDocName = null;
-    try {
-      const subUrl = `https://data.sec.gov/submissions/CIK${cikPadded}.json`;
-      const subResp = await axios.get(subUrl, {
-        headers: { 'User-Agent': EFFECTIVE_USER_AGENT },
-        timeout: 15000
+  // Same rationale as /api/parse-nport: a given (cik, accession, issuer,
+  // reportDate) is a specific historical filing's content — immutable —
+  // so it's cached indefinitely.
+  const cacheKey = cache.holdingsKey('holdings:10q', cik, accession, issuer, reportDate || '');
+  if (!refresh) {
+    const cached = cache.getHoldings(cacheKey);
+    if (cached) {
+      return res.json({
+        success: true,
+        holdings: cached,
+        message: cached.length > 0 ? 'Found holdings' : 'No matching holdings',
+        cached: true
       });
-      const recent = subResp.data.filings?.recent || {};
-      const accList = recent.accessionNumber || [];
-      let idx = accList.indexOf(accession);
-      // Also try without dashes match
-      if (idx < 0) idx = accList.findIndex(a => a.replace(/-/g, '') === accNodash);
-      if (idx >= 0 && recent.primaryDocument?.[idx]) {
-        mainDocName = recent.primaryDocument[idx];
-      }
-      // If not in recent filings, check older filing pages
-      if (!mainDocName && subResp.data.filings?.files?.length) {
-        for (const file of subResp.data.filings.files) {
-          const pageResp = await axios.get(`https://data.sec.gov/submissions/${file.name}`, {
-            headers: { 'User-Agent': EFFECTIVE_USER_AGENT }, timeout: 10000
-          });
-          const pageAcc = pageResp.data.accessionNumber || [];
-          let pidx = pageAcc.indexOf(accession);
-          if (pidx < 0) pidx = pageAcc.findIndex(a => a.replace(/-/g, '') === accNodash);
-          if (pidx >= 0 && pageResp.data.primaryDocument?.[pidx]) {
-            mainDocName = pageResp.data.primaryDocument[pidx];
-            break;
-          }
-        }
-      }
-    } catch (e) {
-      console.error('Submissions API error:', e.message);
     }
+  }
 
-    if (!mainDocName) {
-      return res.json({ success: false, holdings: [], error: 'Could not locate main 10-Q document via submissions API' });
-    }
+  try {
+    const holdings = await cache.withInFlight(cacheKey, async () => {
+      const accNodash = accession.replace(/-/g, '');
+      await delay(100);
 
-    const docUrl = `https://www.sec.gov/Archives/edgar/data/${cik}/${accNodash}/${mainDocName}`;
-    const htmlResp = await axios.get(docUrl, {
-      headers: { 'User-Agent': EFFECTIVE_USER_AGENT, 'Accept': 'text/html,application/xhtml+xml' },
-      timeout: 60000,
-      maxContentLength: 25 * 1024 * 1024
+      // Use the EDGAR submissions API to find the primary document
+      const cikPadded = String(cik).replace(/^0+/, '').padStart(10, '0');
+      let mainDocName = null;
+      try {
+        const allFilings = await fetchSubmissionsAllPages(cikPadded);
+        const match = allFilings.find(f =>
+          f.accessionNumber === accession ||
+          f.accessionNumber?.replace(/-/g, '') === accNodash
+        );
+        if (match?.primaryDocument) mainDocName = match.primaryDocument;
+      } catch (e) {
+        console.error('Submissions API error:', e.message);
+      }
+
+      if (!mainDocName) {
+        throw new Error('Could not locate main 10-Q document via submissions API');
+      }
+
+      const docUrl = `https://www.sec.gov/Archives/edgar/data/${cik}/${accNodash}/${mainDocName}`;
+      const htmlResp = await fetchWithRetry({
+        url: docUrl, method: 'get',
+        headers: { 'User-Agent': EFFECTIVE_USER_AGENT, 'Accept': 'text/html,application/xhtml+xml' },
+        timeout: 60000,
+        maxContentLength: 25 * 1024 * 1024
+      });
+
+      const $ = cheerio.load(htmlResp.data);
+      const parsed = extractCreditHoldings($, issuer, reportDate || '');
+      cache.setHoldings(cacheKey, parsed);
+      return parsed;
     });
-
-    const $ = cheerio.load(htmlResp.data);
-    const holdings = extractCreditHoldings($, issuer, reportDate || '');
 
     res.json({
       success: true,
       holdings,
-      message: holdings.length > 0 ? 'Found holdings' : 'No matching holdings'
+      message: holdings.length > 0 ? 'Found holdings' : 'No matching holdings',
+      cached: false
     });
   } catch (error) {
     console.error('10-Q parse error:', error.message);
