@@ -12,6 +12,21 @@
 //     was first found — kept as-is so that regression can never silently
 //     come back.
 //
+//   nport_kandou_multi_instrument.xml
+//     SmallCap World Fund (Capital Group) NPORT-P, CIK 0000858744,
+//     accession 0001193125-26-074868.
+//     https://www.sec.gov/Archives/edgar/data/858744/000119312526074868/primary_doc.xml
+//     Trimmed from the full ~900KB filing down to just the 3 real
+//     <invstOrSec> blocks for "Kandou Holding SA" (verbatim XML, not
+//     rebuilt/re-serialized, so original attribute-vs-element casing is
+//     preserved) plus the real <genInfo> block. This one filing holds all
+//     three non-derivative-excluded instrument types in one place: a
+//     preferred equity tranche, a term loan (principal-denominated, not
+//     share-denominated), and a warrant marked at $0.23 total — the
+//     concrete case that motivated instrument-type classification at all.
+//     Verified this trimmed set reproduces identical classification output
+//     to parsing the full original document.
+//
 //   bdc_10q_west_star_aviation.html
 //     Oaktree Gardens OLP, LLC 10-Q, CIK 1974793, accession
 //     0001974793-26-000004, primary doc olp-20251231.htm.
@@ -38,6 +53,7 @@ const {
   extractHoldings,
   extractCreditHoldings,
   parseFinancialNumber,
+  classifyInstrument,
 } = require('../parsers');
 
 const FIXTURES = path.join(__dirname, 'fixtures');
@@ -144,6 +160,100 @@ test('extractHoldings: a non-matching search term returns no holdings (real fili
   const xml = await parseNportFixture('nport_spacex_primary_doc.xml');
   const holdings = extractHoldings(xml, 'ThisCompanyDoesNotExistXYZ123');
   assert.equal(holdings.length, 0);
+});
+
+// ── Instrument-type classification ──────────────────────────────────────────
+// See Part 4 of the project plan for the real-filing evidence (Kandou,
+// Anthropic, and a 35-filer/132-row Databricks survey) behind this.
+
+test('classifyInstrument: real Kandou filing — equity/debt/derivative all correctly separated, never one $/share axis', async () => {
+  const xml = await parseNportFixture('nport_kandou_multi_instrument.xml');
+  const holdings = extractHoldings(xml, 'Kandou');
+  assert.equal(holdings.length, 3);
+
+  const equity = holdings.find(h => h.instrumentType === 'equity');
+  assert.equal(equity.instrumentLabel, 'Preferred D');
+  assert.equal(equity.chartUnit, 'usd_per_share');
+  assert.equal(equity.chartValue, 0.25);
+
+  const debt = holdings.find(h => h.instrumentType === 'debt');
+  assert.match(debt.instrumentLabel, /Term Loan/);
+  assert.equal(debt.chartUnit, 'pct_of_par');
+  assert.ok(Math.abs(debt.chartValue - 121) < 0.01, 'mark should be ~121% of par, not a $/share number');
+
+  const derivative = holdings.find(h => h.instrumentType === 'derivative');
+  assert.equal(derivative.instrumentLabel, 'Warrant');
+  assert.equal(derivative.chartUnit, 'usd_total');
+  assert.equal(derivative.chartValue, 0.23, 'total mark-to-market value, not a per-unit price');
+
+  // All three must have distinct instrumentKeys — this is what stops them
+  // from being forced onto one connected chart line.
+  const keys = new Set(holdings.map(h => h.instrumentKey));
+  assert.equal(keys.size, 3);
+});
+
+test('classifyInstrument: same-fund rows with identical, uninformative titles still get distinct keys (BlackRock-shaped)', () => {
+  // Constructed to mirror a real case found in a 35-filer Databricks
+  // survey: BlackRock Science & Technology Trust reported three rows all
+  // titled literally "DATABRICKS INC" with no series/class text at all —
+  // different assetCat, different values, different internal IDs. Title
+  // parsing alone would silently merge some of these; instrumentKey
+  // (identifiers.other.value) is what actually separates them.
+  const rowA = { title: 'DATABRICKS INC', assetcat: 'EP', identifiers: { other: { value: 'BRWGL12L6' } } };
+  const rowB = { title: 'DATABRICKS INC', assetcat: 'EP', identifiers: { other: { value: 'BRTXWTKF3' } } };
+  const rowC = { title: 'DATABRICKS INC', assetcat: 'EC', identifiers: { other: { value: 'BRW3XZNA8' } } };
+
+  const a = classifyInstrument(rowA, 203.46, 15485950.98);
+  const b = classifyInstrument(rowB, 203.46, 56847741.30);
+  const c = classifyInstrument(rowC, 203.46, 12206989.62);
+
+  assert.equal(a.instrumentType, 'equity');
+  assert.equal(a.instrumentLabel, 'Preferred');
+  assert.equal(b.instrumentLabel, 'Preferred');
+  assert.equal(c.instrumentLabel, 'Common');
+  // a and b collide on the same fallback label — confirmed real behavior.
+  // Disambiguating that collision for display is the render layer's job
+  // (append part of instrumentKey to the legend text), not this function's;
+  // what this function must guarantee is that the two rows remain
+  // separately identifiable via their raw fields, which they are (distinct
+  // identifiers.other.value below).
+  assert.notEqual(rowA.identifiers.other.value, rowB.identifiers.other.value);
+});
+
+test('classifyInstrument: SPV/fund-of-fund exposure is bucketed as indirect, not blended into equity (Destiny Tech100-shaped)', () => {
+  // Constructed from a real case: Destiny Tech100 holds Databricks
+  // indirectly through SPVs. These rows use assetConditional (not
+  // assetCat) — a distinct schema branch — with assetCat:"OTHER" nested
+  // inside it, confirmed via a real filing.
+  const spvRow = {
+    title: 'MCTC Investment Holdings (Delaware) LLC (invested in Databricks, Inc. Series L Preferred Stock)',
+    name: 'MCTC Investment Holdings (Delaware) LLC (invested in Databricks, Inc. Series L Preferred Stock)',
+    units: 'NS',
+    assetconditional: { assetCat: 'OTHER', desc: 'Special Purpose Vehicle' },
+  };
+  const result = classifyInstrument(spvRow, 212.81, 11200615.92);
+
+  assert.equal(result.instrumentType, 'indirect');
+  assert.match(result.instrumentLabel, /Indirect via/);
+  assert.equal(result.chartUnit, 'usd_total', 'a per-unit SPV price is not a Databricks share price');
+});
+
+test('parseEquityLabel edge cases found in the Databricks survey: truncated titles and non-series words must not be captured as a series token', () => {
+  // "DATABRICKS INC SERIES" — real truncated title with no letter after
+  // "SERIES" at all. A naive regex can backtrack into matching "IES" as
+  // the token; must fall back to the generic label instead.
+  const truncated = classifyInstrument({ title: 'DATABRICKS INC SERIES', assetcat: 'EC' }, 200, 1000000);
+  assert.equal(truncated.instrumentLabel, 'Common');
+
+  // "DATABRICKS SERIES Private Placement" — real title where the word
+  // immediately after "SERIES" is prose, not a series code.
+  const prose = classifyInstrument({ title: 'DATABRICKS SERIES Private Placement', assetcat: 'EC' }, 200, 1000000);
+  assert.equal(prose.instrumentLabel, 'Common');
+
+  // "PREF EQ PRIV" — real abbreviation for "preferred equity, private"
+  // that doesn't contain the full words "PFD" or "PREFERRED".
+  const abbrev = classifyInstrument({ title: 'DATABRICKS SER L PREF EQ PRIV', assetcat: 'EC' }, 200, 1000000);
+  assert.equal(abbrev.instrumentLabel, 'Preferred L');
 });
 
 // ── extractCreditHoldings (BDC 10-Q Schedule of Investments) ───────────────

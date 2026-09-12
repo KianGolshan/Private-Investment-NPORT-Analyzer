@@ -16,6 +16,123 @@ function extractIdString(val) {
   return '';
 }
 
+// ── Instrument classification ───────────────────────────────────────────────
+// Distinguishes economically incomparable NPORT holdings (equity vs debt vs
+// derivative vs indirect/fund-of-fund exposure) so they never get forced
+// onto one $/share chart axis. Precedence chain and field names verified
+// against real filings (Kandou/Capital Group, Anthropic/Capital Group+
+// Fidelity, and a 35-filer/132-row Databricks survey) — see Part 4 of the
+// project plan for the underlying evidence. Note: xml2js's normalizeTags
+// lowercases XML child-element tag names but NOT attribute names merged in
+// via mergeAttrs, so some nested fields (derivCat, assetCat inside
+// assetConditional) keep mixed case while their parent elements are
+// lowercase — both casings are checked below defensively.
+function classifyInstrument(inv, pricePerShare, valUSD) {
+  // 1. Derivative (warrants/options/etc.) — structural signal, takes
+  //    precedence over assetCat since a warrant is still tagged assetCat:EC
+  //    (confirmed: Kandou's and a second real warrant both do this).
+  const derivInfo = inv.derivativeinfo || inv.derivativeInfo;
+  if (derivInfo) {
+    const deriv = derivInfo.optionswaptionwarrantderiv || derivInfo.optionsWaptionWarrantDeriv
+               || derivInfo.futrderiv || derivInfo.futrDeriv
+               || derivInfo.swapderiv || derivInfo.swapDeriv
+               || derivInfo.fwdderiv  || derivInfo.fwdDeriv;
+    const cat = String(deriv?.derivCat || deriv?.derivcat || '').toUpperCase();
+    const label = { WAR: 'Warrant', OPT: 'Option', FUT: 'Future', SWO: 'Swaption' }[cat] || 'Derivative';
+    return { instrumentType: 'derivative', instrumentLabel: label, chartValue: valUSD, chartUnit: 'usd_total' };
+  }
+
+  // 2. Indirect / fund-of-fund exposure — a distinct schema branch
+  //    (assetConditional, not assetCat) confirmed against real Destiny
+  //    Tech100 filings holding a target company through an SPV.
+  const assetConditional = inv.assetconditional || inv.assetConditional;
+  const conditionalCat = String(assetConditional?.assetCat || assetConditional?.assetcat || '').toUpperCase();
+  if (assetConditional && (conditionalCat === 'OTHER' || assetConditional.desc)) {
+    const vehicle = String(inv.name || inv.title || '').split('(')[0].trim();
+    return {
+      instrumentType: 'indirect',
+      instrumentLabel: vehicle ? `Indirect via ${vehicle}` : 'Indirect / Fund Exposure',
+      chartValue: valUSD,
+      chartUnit: 'usd_total',
+    };
+  }
+
+  // 3. Debt — units=PA (principal amount) is the general, robust signal
+  //    that `balance` denominates principal, not shares.
+  const units = String(inv.units || '').toUpperCase();
+  if (units === 'PA') {
+    return {
+      instrumentType: 'debt',
+      instrumentLabel: parseDebtLabel(inv.title),
+      chartValue: pricePerShare * 100,
+      chartUnit: 'pct_of_par',
+    };
+  }
+
+  // 4. Equity (default) — sub-labeled via assetCat + title parsing.
+  return {
+    instrumentType: 'equity',
+    instrumentLabel: parseEquityLabel(inv),
+    chartValue: pricePerShare,
+    chartUnit: 'usd_per_share',
+  };
+}
+
+// Best-effort equity sub-class label. assetCat (EP/EC) reliably flags
+// preferred vs. common once derivatives are excluded (verified across 35
+// filers); a class/series token is parsed from title text when present,
+// but real filings often omit it entirely (confirmed: e.g. BlackRock's
+// bare "DATABRICKS INC" with no distinguishing text at all) — that's a
+// label-quality gap, not a mis-grouping one (instrumentKey handles that).
+function parseEquityLabel(inv) {
+  const t = String(inv.title || '').toUpperCase();
+  const assetCat = String(inv.assetcat || inv.assetCat || '').toUpperCase();
+
+  const isPreferred = assetCat === 'EP' || /\bPFD\b|\bPREF\b|\bPREFERRED\b|\bCVT\b|\bCVY\b/.test(t);
+  const isCommon = !isPreferred && (assetCat === 'EC' || /\bCOM(?:MON)?\b/.test(t));
+  const isSegregated = /SEGREGATED/.test(t);
+
+  // Matches "SER H", "SERIES H", "CL G-1", "CLASS G-1" — the conventions
+  // seen across Kandou, Anthropic, and the 35-filer Databricks survey.
+  // Two guards found necessary by that survey, not assumed up front:
+  // (1) \b right after SER(?:IES)? plus a required separator, so a bare
+  //     "...SERIES" with nothing after it (a real truncated-title case)
+  //     doesn't let the engine backtrack into matching "IES" as the token;
+  // (2) the captured token is capped at a few characters, so a real title
+  //     like "SERIES Private Placement" doesn't capture the ordinary
+  //     word "PRIVATE" as if it were a series code — actual series
+  //     identifiers seen across 35 filers were never longer than this.
+  const seriesMatch = t.match(/\b(?:SER(?:IES)?|CL(?:ASS)?)\b[.\s]+([A-Z0-9]{1,3}(?:-[A-Z0-9]{1,2})?)\b/);
+
+  let base;
+  if (seriesMatch) {
+    base = `${isPreferred ? 'Preferred' : isCommon ? 'Common' : 'Class'} ${seriesMatch[1]}`;
+  } else if (isPreferred) {
+    base = 'Preferred';
+  } else if (isCommon) {
+    base = 'Common';
+  } else {
+    base = 'Equity';
+  }
+  return isSegregated ? `${base} (segregated)` : base;
+}
+
+// Best-effort debt label from title text, e.g. "TL PP (PHYSICAL) 7.0%
+// 03-31-26" -> "Term Loan · 7.0% due 03-31-26".
+function parseDebtLabel(title) {
+  const t = String(title || '');
+  const rateMatch = t.match(/(\d+\.?\d*)\s*%/);
+  const dateMatch = t.match(/(\d{1,2}-\d{1,2}-\d{2,4})/);
+  const kind = /\bTL\b/i.test(t) ? 'Term Loan'
+             : /\bNOTE\b/i.test(t) ? 'Note'
+             : /\bBOND\b/i.test(t) ? 'Bond'
+             : 'Debt';
+  let label = kind;
+  if (rateMatch) label += ` · ${rateMatch[1]}%`;
+  if (dateMatch) label += ` due ${dateMatch[1]}`;
+  return label;
+}
+
 function extractHoldings(xml, securitySearchTerm) {
   const holdings = [];
   try {
@@ -73,6 +190,18 @@ function extractHoldings(xml, securitySearchTerm) {
       // (Previously this was re-multiplied by exchangeRate for non-USD
       // holdings, silently corrupting the price shown for foreign marks.)
       const pricePerShare = valUSD / balance;
+      const cusip = extractIdString(inv.identifiers?.cusip) || extractIdString(inv.cusip) || extractIdString(inv.CUSIP);
+
+      const { instrumentType, instrumentLabel, chartValue, chartUnit } = classifyInstrument(inv, pricePerShare, valUSD);
+
+      // Grouping key for chart lines / dedup: prefer the filer's own
+      // per-instrument internal symbol (identifiers.other.value — present
+      // on 132/132 real rows checked across 35 independent filers, and the
+      // only thing that correctly separates same-fund holdings that share
+      // identical, uninformative title text), then a real CUSIP, then the
+      // title itself as a last resort.
+      const otherIdValue = extractIdString(inv.identifiers?.other?.value) || String(inv.identifiers?.other?.value || '').trim();
+      const instrumentKey = otherIdValue || (cusip && cusip.toUpperCase() !== 'N/A' ? cusip : '') || title || name;
 
       holdings.push({
         name,
@@ -84,8 +213,13 @@ function extractHoldings(xml, securitySearchTerm) {
         currency: currencyCode,
         exchangeRate,
         reportDate,
-        cusip: extractIdString(inv.identifiers?.cusip) || extractIdString(inv.cusip) || extractIdString(inv.CUSIP),
-        ticker
+        cusip,
+        ticker,
+        instrumentType,
+        instrumentLabel,
+        instrumentKey,
+        chartValue,
+        chartUnit,
       });
     }
   } catch (err) {
@@ -307,4 +441,7 @@ module.exports = {
   extractHoldings,
   parseFinancialNumber,
   extractCreditHoldings,
+  classifyInstrument,
+  parseEquityLabel,
+  parseDebtLabel,
 };
