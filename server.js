@@ -195,6 +195,19 @@ app.get('/api/parse-nport', async (req, res) => {
   }
 });
 
+// NPORT identifier elements (e.g. <ticker value="XYZ"/>) parse via xml2js
+// (mergeAttrs, no text content) into { value: "XYZ" } rather than a plain
+// string, so a bare String(...) on them yields "[object Object]".
+function extractIdString(val) {
+  if (typeof val === 'string') return val;
+  if (typeof val === 'number') return String(val);
+  if (val && typeof val === 'object') {
+    if (typeof val.value === 'string') return val.value;
+    if (typeof val._ === 'string') return val._;
+  }
+  return '';
+}
+
 function extractHoldings(xml, securitySearchTerm) {
   const holdings = [];
   try {
@@ -222,7 +235,7 @@ function extractHoldings(xml, securitySearchTerm) {
     for (const inv of investments) {
       const name      = String(inv.name      || inv.Name      || inv.issuerName || '');
       const issuer    = String(inv.issuer?.name || inv.issuer?.Name || inv.issuerName || '');
-      const ticker    = String(inv.identifiers?.ticker || inv.ticker || inv.Ticker || '');
+      const ticker    = extractIdString(inv.identifiers?.ticker) || extractIdString(inv.ticker) || extractIdString(inv.Ticker);
       const title     = String(inv.title || inv.Title || inv.desc || inv.description || '');
 
       const matches =
@@ -263,7 +276,7 @@ function extractHoldings(xml, securitySearchTerm) {
         currency: currencyCode,
         exchangeRate,
         reportDate,
-        cusip: String(inv.identifiers?.cusip || inv.cusip || inv.CUSIP || ''),
+        cusip: extractIdString(inv.identifiers?.cusip) || extractIdString(inv.cusip) || extractIdString(inv.CUSIP),
         ticker
       });
     }

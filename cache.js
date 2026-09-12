@@ -17,13 +17,15 @@
 // PARSE_VERSION guards against the indefinite holdings cache masking a
 // future fix to the extraction logic (extractHoldings / extractCreditHoldings):
 // bump it whenever that logic changes and old cached rows are automatically
-// treated as misses, without needing to wipe the whole cache file. There is
-// a known in-flight fix elsewhere (ticker rendering as "[object Object]")
-// that touches extractHoldings — whoever merges it should bump PARSE_VERSION.
+// treated as misses, without needing to wipe the whole cache file.
+//
+// v2: merged the ticker/cusip "[object Object]" fix (extractIdString) into
+// extractHoldings — bumped so any rows cached under v1 with the bad values
+// are treated as misses and re-parsed.
 const path = require('path');
 const Database = require('better-sqlite3');
 
-const PARSE_VERSION = 1;
+const PARSE_VERSION = 2;
 const SEARCH_TTL_MS = parseInt(process.env.SEARCH_CACHE_TTL_MS, 10) || 60 * 60 * 1000; // 1 hour default
 
 const DB_PATH = process.env.CACHE_DB_PATH || path.join(__dirname, 'cache.db');
