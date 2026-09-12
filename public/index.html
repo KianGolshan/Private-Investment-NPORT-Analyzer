@@ -205,12 +205,43 @@
       margin-bottom: 20px;
     }
     .chart-panel h3 { font-size: 14px; font-weight: 600; color: var(--gray-700); margin-bottom: 14px; }
+    .chart-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .chart-panel-header h3 { margin-bottom: 0; }
     /* Chart.js sizes off this wrapper's height (maintainAspectRatio:false) —
        without an explicit height, a narrow (mobile) container collapses to
        a sliver too short for axis labels or the bottom legend to fit,
-       overlapping and clipping both. */
+       overlapping and clipping both. Default height is set inline per
+       render (scales with series count); this is just a fallback. */
     .chart-canvas-wrap { position: relative; height: 320px; }
     @media (max-width: 480px) { .chart-canvas-wrap { height: 280px; } }
+    /* Expanded (fullscreen-ish) chart overlay */
+    .chart-canvas-wrap.expanded {
+      position: fixed;
+      top: 5vh; left: 5vw; right: 5vw; bottom: 5vh;
+      height: auto !important;
+      z-index: 1001;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      padding: 20px;
+    }
+    .chart-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; }
+
+    /* ── Class chips (one-click toggle for an exact class label) ────────── */
+    .class-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .chip {
+      padding: 4px 12px;
+      border: 1.5px solid var(--blue-mid);
+      border-radius: 999px;
+      background: var(--blue-pale);
+      color: var(--blue-dark);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chip:hover { background: var(--blue-mid); }
+    .chip:not(.active) { background: var(--gray-100); border-color: var(--gray-200); color: var(--gray-500); }
 
     /* ── Fund cards ─────────────────────────────────────────────────────── */
     .results-section { margin-top: 4px; }
@@ -547,21 +578,25 @@ const INSTRUMENT_META = {
     sectionTitle: 'Equity', unitNoun: 'Price',
     chartTitle: 'Price Per Share Over Time', axisLabel: 'Price Per Share',
     valueLabel: 'Price / Share', fmt: fmtCurrency, tickFmt: v => '$' + v.toFixed(2),
+    showMarketValueColumn: true, // distinct from the per-share value
   },
   debt: {
     sectionTitle: 'Debt / Loans', unitNoun: 'Mark',
     chartTitle: 'Mark (% of Par) Over Time', axisLabel: 'Mark (% of Par)',
     valueLabel: 'Mark (%)', fmt: v => v.toFixed(2) + '%', tickFmt: v => v.toFixed(1) + '%',
+    showMarketValueColumn: true, // distinct from the % mark
   },
   derivative: {
     sectionTitle: 'Derivatives (Warrants/Options)', unitNoun: 'Value',
     chartTitle: 'Market Value Over Time', axisLabel: 'Market Value ($)',
     valueLabel: 'Value', fmt: fmtCurrency, tickFmt: v => '$' + fmtNum(v),
+    showMarketValueColumn: false, // chartValue IS marketValue here — showing both is a confusing duplicate
   },
   indirect: {
     sectionTitle: 'Indirect / Fund Exposure', unitNoun: 'Value',
     chartTitle: 'Market Value Over Time', axisLabel: 'Market Value ($)',
     valueLabel: 'Value', fmt: fmtCurrency, tickFmt: v => '$' + fmtNum(v),
+    showMarketValueColumn: false, // same as derivative — chartValue IS marketValue
   },
 };
 const INSTRUMENT_ORDER = ['equity', 'debt', 'derivative', 'indirect'];
@@ -997,8 +1032,17 @@ function renderInstrumentSectionHTML(companiesMap, type, canvasBaseId, tablePref
     html += `<div class="alert alert-warning" style="margin-bottom:14px;">Wide ${meta.unitNoun.toLowerCase()} range in this view (${meta.fmt(stats.minValue)} – ${meta.fmt(stats.maxValue)}) — check for mismatched classes.</div>`;
   }
 
-  if (type === 'equity' && opts.allowClassFilter) {
+  // Class chips + free-text filter, shown whenever this bucket actually has
+  // more than one distinct class label to tell apart (not equity-only —
+  // debt/derivative can have multiple tranches too). Chips are a one-click
+  // toggle for exact labels actually present; the text field stays for
+  // fuzzy cross-convention matches ("G" also catching "G-1").
+  const distinctLabels = [...new Set(getSeriesGroups(companiesMap).map(g => g.shortLabel))].sort();
+  if (distinctLabels.length > 1) {
     const filterId = `classFilter_${tablePrefix}`;
+    html += `<div class="class-chips" data-prefix="${tablePrefix}">` +
+      distinctLabels.map(l => `<button type="button" class="chip active" onclick="toggleClassChip(this)">${esc(l)}</button>`).join('') +
+      `</div>`;
     html += `
       <div class="search-row" style="margin-bottom:14px;">
         <div class="input-group narrow">
@@ -1006,10 +1050,23 @@ function renderInstrumentSectionHTML(companiesMap, type, canvasBaseId, tablePref
           <input type="text" id="${filterId}" placeholder="e.g., G" oninput="applyClassFilter(this)">
         </div>
       </div>
-      <div class="hint" style="margin-top:-8px; margin-bottom:14px;">Matches against each row's parsed class label — lets you compare e.g. "Series G" across every fund shown, without assuming different filers' labels mean exactly the same thing.</div>`;
+      <div class="hint" style="margin-top:-8px; margin-bottom:14px;">Click a chip to toggle one class everywhere in this section, or type to fuzzy-match across naming conventions (e.g. "G" also catches "G-1") — without assuming different filers' labels mean exactly the same thing.</div>`;
   }
 
-  html += `<div class="chart-panel"><h3>${esc(meta.chartTitle)}</h3><div class="chart-canvas-wrap"><canvas id="${canvasId}"></canvas></div></div>`;
+  // Default chart height scales with how many lines will actually be drawn
+  // — a fixed height meant for 3-4 funds visibly crushes both the plot area
+  // and the legend once a search returns 15+ funds/classes (real case:
+  // "Anthropic" across 18 funds). The expand button covers the rest.
+  const seriesCount = getSeriesGroups(companiesMap).length;
+  const chartHeight = Math.min(640, 320 + Math.max(0, seriesCount - 5) * 16);
+
+  html += `<div class="chart-panel">
+    <div class="chart-panel-header">
+      <h3>${esc(meta.chartTitle)}</h3>
+      <button type="button" class="btn btn-sm btn-secondary chart-expand-btn" onclick="toggleChartExpand(this)">&#10021; Expand</button>
+    </div>
+    <div class="chart-canvas-wrap" style="height:${chartHeight}px;"><canvas id="${canvasId}"></canvas></div>
+  </div>`;
   html += '<div class="results-header"><h2>Holdings by Fund</h2></div>';
   html += renderFundCards(companiesMap, tablePrefix, type);
   html += '</div>';
@@ -1029,9 +1086,8 @@ function renderSingleResults(buckets) {
 
   types.forEach(type => {
     html += renderInstrumentSectionHTML(buckets[type], type, 'singleChart', 'single_' + type, multi, {
-      allowReference:  type === 'equity',
-      allowClassFilter: type === 'equity',
-      statsGridId:     type === 'equity' ? 'statsGrid' : '',
+      allowReference: type === 'equity',
+      statsGridId:    type === 'equity' ? 'statsGrid' : '',
     });
   });
 
@@ -1063,9 +1119,7 @@ function renderBatchResults(batchResults) {
       html += `<div class="alert alert-info">Holdings span ${esc(names)} — shown in separate sections below since they aren't directly comparable on one chart.</div>`;
     }
     types.forEach(type => {
-      html += renderInstrumentSectionHTML(buckets[type], type, 'chart_' + secId, secId + '_' + type, multi, {
-        allowClassFilter: type === 'equity',
-      });
+      html += renderInstrumentSectionHTML(buckets[type], type, 'chart_' + secId, secId + '_' + type, multi, {});
     });
     html += `</div>`;
   });
@@ -1136,7 +1190,7 @@ function renderFundCards(companiesMap, prefix, type) {
               <th>Class</th>
               <th>Investment Title</th>
               <th class="right">Shares</th>
-              <th class="right">Market Value</th>
+              ${meta.showMarketValueColumn ? '<th class="right">Market Value</th>' : ''}
               <th class="right">${esc(meta.valueLabel)}</th>
               <th class="center">CCY</th>
             </tr></thead>
@@ -1160,7 +1214,7 @@ function renderFundCards(companiesMap, prefix, type) {
             <td>${esc(g.shortLabel)}</td>
             <td class="title-cell">${esc(h.title || h.name || '—')}</td>
             <td class="right">${fmtNum(h.shares)}</td>
-            <td class="right">${fmtCurrency(h.marketValue)}</td>
+            ${meta.showMarketValueColumn ? `<td class="right">${fmtCurrency(h.marketValue)}</td>` : ''}
             <td class="right price-cell">${meta.fmt(h.chartValue)}</td>
             <td class="center">${h.currency || 'USD'}</td>
           </tr>`;
@@ -1314,7 +1368,7 @@ function rebuildChart(canvasId, chart, companiesMap, type) {
   chart.update();
 }
 
-// ── Class quick-filter (equity sections only) ─────────────────────────────
+// ── Class quick-filter ─────────────────────────────────────────────────────
 // Word-boundary-matches each row's parsed class label (not the raw title)
 // and toggles the same checkboxes the date filter uses — lets an analyst
 // isolate e.g. "Series G" across every fund shown in one section without
@@ -1327,16 +1381,91 @@ function applyClassFilter(inputEl) {
   if (!section) return;
   const q = inputEl.value.trim();
   const re = q ? new RegExp('\\b' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') : null;
-  let count = 0;
   section.querySelectorAll('tr[data-company]').forEach(row => {
     const label = row.dataset.label || '';
     const match = !re || re.test(label);
     const cb = row.querySelector('.chart-checkbox');
     if (cb) cb.checked = match;
     row.classList.toggle('row-hidden', !match);
-    if (match) count++;
+  });
+  // Typing a query overrides whatever the chips show — keep them in sync
+  // rather than leaving stale "active" chips that no longer match reality.
+  section.querySelectorAll('.class-chips .chip').forEach(chip => {
+    chip.classList.toggle('active', !re || re.test(chip.textContent));
   });
   rebuildAllCharts();
+}
+
+// One-click toggle for a single exact class label across an entire section
+// (every fund at once) — the "easier, more discoverable" complement to
+// typing into the filter box above. Multiple chips can be active at once.
+function toggleClassChip(btn) {
+  btn.classList.toggle('active');
+  const section = btn.closest('.instrument-section');
+  if (!section) return;
+  const activeLabels = new Set(
+    [...section.querySelectorAll('.class-chips .chip.active')].map(b => b.textContent)
+  );
+  section.querySelectorAll('tr[data-company]').forEach(row => {
+    const match = activeLabels.has(row.dataset.label);
+    const cb = row.querySelector('.chart-checkbox');
+    if (cb) cb.checked = match;
+    row.classList.toggle('row-hidden', !match);
+  });
+  rebuildAllCharts();
+}
+
+// ── Chart expand/collapse ───────────────────────────────────────────────────
+// Toggles one chart into a large fixed overlay — the default height scales
+// with series count already, but a search with many funds/classes (e.g.
+// 18+ for a popular name) can still outgrow any fixed size. Uses
+// Chart.getChart() to find the right instance regardless of which state
+// map (singleCharts/batchCharts/creditChart) it lives in.
+function toggleChartExpand(btn) {
+  const panel = btn.closest('.chart-panel');
+  const wrap  = panel?.querySelector('.chart-canvas-wrap');
+  const canvas = wrap?.querySelector('canvas');
+  if (!wrap || !canvas) return;
+
+  const expanding = !wrap.classList.contains('expanded');
+  wrap.classList.toggle('expanded', expanding);
+  btn.innerHTML = expanding ? '&#10005; Close' : '&#10021; Expand';
+  // The button lives in .chart-panel-header, a normal-flow sibling of the
+  // now position:fixed wrap — without this it scrolls out from under the
+  // overlay and becomes invisible/unclickable, leaving only Escape or a
+  // backdrop click to close (found live: the button was there in the DOM
+  // but not actually visible once expanded).
+  btn.style.cssText = expanding
+    ? 'position:fixed; top:calc(5vh + 12px); right:calc(5vw + 12px); z-index:1002;'
+    : '';
+  // Stashed so the module-level Escape handler (a stable function reference,
+  // needed so add/removeEventListener actually match) can find its way back
+  // to the right button without closing over a stale one.
+  wrap._expandBtn = expanding ? btn : null;
+
+  let backdrop = document.getElementById('chartBackdrop');
+  if (expanding) {
+    if (!backdrop) {
+      backdrop = document.createElement('div');
+      backdrop.id = 'chartBackdrop';
+      backdrop.className = 'chart-backdrop';
+      document.body.appendChild(backdrop);
+    }
+    backdrop.onclick = () => toggleChartExpand(btn);
+    document.addEventListener('keydown', handleChartExpandEscape);
+  } else {
+    backdrop?.remove();
+    document.removeEventListener('keydown', handleChartExpandEscape);
+  }
+
+  // Chart.js's own ResizeObserver usually catches this, but the abrupt
+  // position:fixed jump doesn't always fire it reliably — nudge explicitly.
+  setTimeout(() => Chart.getChart(canvas)?.resize(), 50);
+}
+function handleChartExpandEscape(e) {
+  if (e.key !== 'Escape') return;
+  const wrap = document.querySelector('.chart-canvas-wrap.expanded');
+  if (wrap?._expandBtn) toggleChartExpand(wrap._expandBtn);
 }
 
 // ── Reference/benchmark line: a flat dashed line spanning the plotted range ─
