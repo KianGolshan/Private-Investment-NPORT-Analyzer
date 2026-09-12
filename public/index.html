@@ -205,6 +205,12 @@
       margin-bottom: 20px;
     }
     .chart-panel h3 { font-size: 14px; font-weight: 600; color: var(--gray-700); margin-bottom: 14px; }
+    /* Chart.js sizes off this wrapper's height (maintainAspectRatio:false) —
+       without an explicit height, a narrow (mobile) container collapses to
+       a sliver too short for axis labels or the bottom legend to fit,
+       overlapping and clipping both. */
+    .chart-canvas-wrap { position: relative; height: 320px; }
+    @media (max-width: 480px) { .chart-canvas-wrap { height: 280px; } }
 
     /* ── Fund cards ─────────────────────────────────────────────────────── */
     .results-section { margin-top: 4px; }
@@ -505,10 +511,42 @@ const getColor = i => COLORS[i % COLORS.length];
     }
   } catch (_) {}
   renderWatchlist();
+  applyURLParams();
 })();
 
+// ── Shareable / pre-fillable URL ────────────────────────────────────────────
+// ?security=Anthropic&limit=50            -> Single Security tab, auto-run
+// ?tab=credit&issuer=West+Star&limit=40   -> Private Credit tab, auto-run
+// After a successful search the address bar is updated to match (via
+// history.replaceState, no reload), so the current view is always a
+// copy-pasteable link without any extra step.
+function applyURLParams() {
+  const params = new URLSearchParams(window.location.search);
+  const tab     = params.get('tab');
+  const limit   = params.get('limit');
+  const issuer  = params.get('issuer');
+  const security = params.get('security');
+
+  if (tab === 'credit' && issuer) {
+    switchTab('credit', { skipUrlReset: true });
+    document.getElementById('creditIssuerInput').value = issuer;
+    if (['20', '40', '80'].includes(limit)) document.getElementById('creditFilingLimit').value = limit;
+    searchPrivateCredit();
+  } else if (security) {
+    document.getElementById('securityInput').value = security;
+    if (['25', '50', '100'].includes(limit)) document.getElementById('filingLimit').value = limit;
+    searchNPORT();
+  }
+}
+function updateURLParams(params) {
+  const url = new URL(window.location.href);
+  url.search = '';
+  Object.entries(params).forEach(([k, v]) => { if (v) url.searchParams.set(k, v); });
+  window.history.replaceState({}, '', url);
+}
+
 // ── Tab management ─────────────────────────────────────────────────────────
-function switchTab(tab) {
+function switchTab(tab, { skipUrlReset } = {}) {
   const tabNames = ['single', 'batch', 'credit', 'watchlist'];
   document.querySelectorAll('.tab').forEach((el, i) =>
     el.classList.toggle('active', tabNames[i] === tab)
@@ -518,6 +556,9 @@ function switchTab(tab) {
   document.getElementById('creditTab').classList.toggle('active',     tab === 'credit');
   document.getElementById('watchlistTab').classList.toggle('active',  tab === 'watchlist');
   clearResults();
+  // Skipped when applyURLParams() is driving the tab switch on page load —
+  // it still has incoming ?security=/?issuer= params to read and act on.
+  if (!skipUrlReset) window.history.replaceState({}, '', window.location.pathname);
   if (tab === 'watchlist') renderWatchlist();
 }
 
@@ -562,6 +603,7 @@ async function searchNPORT() {
     );
     document.getElementById('dateFilterPanel').style.display = 'block';
     document.getElementById('referencePanel').style.display  = 'block';
+    updateURLParams({ security, limit });
     renderSingleResults(companiesMap);
 
   } catch (err) {
@@ -787,7 +829,7 @@ function renderSingleResults(companiesMap) {
   const stats = computeStats(companiesMap);
   let html = '<div class="results-section">';
   html += `<div id="statsGrid">${statsHTML(stats, singleReferenceValue)}</div>`;
-  html += '<div class="chart-panel"><h3>Price Per Share Over Time</h3><canvas id="singleChart"></canvas></div>';
+  html += '<div class="chart-panel"><h3>Price Per Share Over Time</h3><div class="chart-canvas-wrap"><canvas id="singleChart"></canvas></div></div>';
   html += '<div class="results-header"><h2>Holdings by Fund</h2></div>';
   html += renderFundCards(companiesMap, 'single');
   html += `<div class="export-row">
@@ -813,7 +855,7 @@ function renderBatchResults(batchResults) {
     html += `<div class="security-section" id="secsection_${cleanId(security)}">`;
     html += `<div class="security-section-header">${esc(security)}</div>`;
     html += statsHTML(stats);
-    html += `<div class="chart-panel"><h3>Price Per Share Over Time</h3><canvas id="${chartId}"></canvas></div>`;
+    html += `<div class="chart-panel"><h3>Price Per Share Over Time</h3><div class="chart-canvas-wrap"><canvas id="${chartId}"></canvas></div></div>`;
     html += '<div class="results-header"><h2>Holdings by Fund</h2></div>';
     html += renderFundCards(companiesMap, cleanId(security));
     html += `</div>`;
@@ -945,6 +987,7 @@ function buildChart(canvasId, companiesMap, isSingle) {
     data: { datasets: buildDatasets(companiesMap) },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14, font: { size: 11 } } },
         tooltip: {
@@ -1411,6 +1454,7 @@ async function searchPrivateCredit() {
     );
     document.getElementById('creditDateFilterPanel').style.display = 'block';
     document.getElementById('creditReferencePanel').style.display  = 'block';
+    updateURLParams({ tab: 'credit', issuer, limit });
     renderCreditResults(fundsMap, issuer);
 
   } catch (err) {
@@ -1592,7 +1636,7 @@ function renderCreditResults(fundsMap, issuer) {
 
   let html = '<div class="results-section">';
   html += creditStatsHTML(stats, creditReferenceValue);
-  html += '<div class="chart-panel"><h3>Fair Value Mark (% of Par) Over Time</h3><canvas id="creditChartCanvas"></canvas></div>';
+  html += '<div class="chart-panel"><h3>Fair Value Mark (% of Par) Over Time</h3><div class="chart-canvas-wrap"><canvas id="creditChartCanvas"></canvas></div></div>';
   html += '<div class="results-header"><h2>Holdings by Fund</h2></div>';
   html += renderCreditFundCards(fundsMap);
   html += `<div class="export-row">
@@ -1616,6 +1660,7 @@ function renderCreditResults(fundsMap, issuer) {
       data: { datasets: creditDatasets },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
           legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14, font: { size: 11 } } },
           tooltip: {
