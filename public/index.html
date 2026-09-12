@@ -923,7 +923,13 @@ function groupCompanyByInstrumentKey(company, holdings) {
     const collision = multi && labelCounts[baseLabel] > 1;
     const shortLabel = collision ? `${baseLabel} (…${String(k).slice(-6)})` : baseLabel;
     const fullLabel = multi ? `${company} — ${shortLabel}` : company;
-    return { company, key: k, shortLabel, fullLabel, holdings: hs };
+    // baseLabel (pre-disambiguation) is what chips/filtering group by —
+    // the disambiguation suffix exists so two colliding rows are tellable
+    // apart *within one fund's table*, not to fragment the section-wide
+    // "toggle everything in this class" control into one chip per
+    // collision (real case: ~15 funds each with one unlabeled "Common"
+    // row produced ~15 near-duplicate chips before this fix).
+    return { company, key: k, baseLabel, shortLabel, fullLabel, holdings: hs };
   });
 }
 
@@ -1043,7 +1049,7 @@ function renderInstrumentSectionHTML(companiesMap, type, canvasBaseId, tablePref
   // debt/derivative can have multiple tranches too). Chips are a one-click
   // toggle for exact labels actually present; the text field stays for
   // fuzzy cross-convention matches ("G" also catching "G-1").
-  const distinctLabels = [...new Set(getSeriesGroups(companiesMap).map(g => g.shortLabel))].sort();
+  const distinctLabels = [...new Set(getSeriesGroups(companiesMap).map(g => g.baseLabel))].sort();
   if (distinctLabels.length > 1) {
     const filterId = `classFilter_${tablePrefix}`;
     html += `<div class="class-chips" data-prefix="${tablePrefix}">` +
@@ -1211,7 +1217,7 @@ function renderFundCards(companiesMap, prefix, type) {
         const rowId = `row_${prefix}_${rowIndex}`;
         const cbId  = `cb_${prefix}_${rowIndex}`;
         html += `
-          <tr id="${rowId}" data-company="${esc(company)}" data-idx="${hIdx}" data-key="${esc(g.key)}" data-label="${esc(g.shortLabel)}" data-bucket="${type}" data-date="${h.reportDate}" data-value="${h.chartValue}">
+          <tr id="${rowId}" data-company="${esc(company)}" data-idx="${hIdx}" data-key="${esc(g.key)}" data-label="${esc(g.baseLabel)}" data-bucket="${type}" data-date="${h.reportDate}" data-value="${h.chartValue}">
             <td class="center">
               <input type="checkbox" id="${cbId}" class="chart-checkbox" data-prefix="${prefix}" checked
                      onchange="onCheckboxChange(this)">
