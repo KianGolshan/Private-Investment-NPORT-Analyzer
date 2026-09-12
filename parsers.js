@@ -39,7 +39,15 @@ function classifyInstrument(inv, pricePerShare, valUSD) {
                || derivInfo.fwdderiv  || derivInfo.fwdDeriv;
     const cat = String(deriv?.derivCat || deriv?.derivcat || '').toUpperCase();
     const label = { WAR: 'Warrant', OPT: 'Option', FUT: 'Future', SWO: 'Swaption' }[cat] || 'Derivative';
-    return { instrumentType: 'derivative', instrumentLabel: label, chartValue: valUSD, chartUnit: 'usd_total' };
+    // Per-unit (valUSD / balance), not total valUSD: same convention as
+    // every other type, and it's what stays comparable across periods even
+    // if the fund's position *size* changes (buying more warrants would
+    // inflate a total-value chart without the mark itself having moved).
+    // Earlier design used total value here on the theory that per-warrant
+    // prices are usually too tiny to read — real data proved that wrong
+    // (the same Kandou warrant went from ~$0.0000001/unit in 2023 to a
+    // perfectly normal $0.01/unit by 2026), so it's per-unit like the rest.
+    return { instrumentType: 'derivative', instrumentLabel: label, chartValue: pricePerShare, chartUnit: 'usd_per_unit' };
   }
 
   // 2. Indirect / fund-of-fund exposure — a distinct schema branch
@@ -52,8 +60,8 @@ function classifyInstrument(inv, pricePerShare, valUSD) {
     return {
       instrumentType: 'indirect',
       instrumentLabel: vehicle ? `Indirect via ${vehicle}` : 'Indirect / Fund Exposure',
-      chartValue: valUSD,
-      chartUnit: 'usd_total',
+      chartValue: pricePerShare, // per-unit, same rationale as derivatives above
+      chartUnit: 'usd_per_unit',
     };
   }
 

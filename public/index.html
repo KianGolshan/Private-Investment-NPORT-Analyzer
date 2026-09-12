@@ -588,15 +588,21 @@ const INSTRUMENT_META = {
   },
   derivative: {
     sectionTitle: 'Derivatives (Warrants/Options)', unitNoun: 'Value',
-    chartTitle: 'Market Value Over Time', axisLabel: 'Market Value ($)',
-    valueLabel: 'Value', fmt: fmtCurrency, tickFmt: v => '$' + fmtNum(v),
-    showMarketValueColumn: false, // chartValue IS marketValue here — showing both is a confusing duplicate
+    chartTitle: 'Value Per Unit Over Time', axisLabel: 'Value Per Unit ($)',
+    // Per-unit (valUSD / balance), same convention as every other type —
+    // NOT total position value. A per-warrant price can be a tiny fraction
+    // of a cent early in a warrant's life and a normal-looking number
+    // later (real Kandou case: ~$0.0000001 in 2023 -> $0.01 by 2026);
+    // total value would also conflate "the mark moved" with "the fund
+    // bought/sold units," which per-unit avoids.
+    valueLabel: 'Value / Unit', fmt: fmtCurrency, tickFmt: v => '$' + v.toFixed(2),
+    showMarketValueColumn: true, // now genuinely distinct from the per-unit value
   },
   indirect: {
     sectionTitle: 'Indirect / Fund Exposure', unitNoun: 'Value',
-    chartTitle: 'Market Value Over Time', axisLabel: 'Market Value ($)',
-    valueLabel: 'Value', fmt: fmtCurrency, tickFmt: v => '$' + fmtNum(v),
-    showMarketValueColumn: false, // same as derivative — chartValue IS marketValue
+    chartTitle: 'Value Per Unit Over Time', axisLabel: 'Value Per Unit ($)',
+    valueLabel: 'Value / Unit', fmt: fmtCurrency, tickFmt: v => '$' + v.toFixed(2),
+    showMarketValueColumn: true, // same rationale as derivative above
   },
 };
 const INSTRUMENT_ORDER = ['equity', 'debt', 'derivative', 'indirect'];

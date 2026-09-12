@@ -26,10 +26,16 @@
 // instrumentKey/chartValue/chartUnit) to extractHoldings — bumped so rows
 // cached under v1/v2 (which lack these fields entirely) are treated as
 // misses rather than silently falling back to instrumentType:undefined.
+// v4: changed chartValue for derivative/indirect rows from total position
+// value to per-unit (valUSD/balance) — a user caught the total-value
+// convention live (dividing the shown $ by shares themselves didn't match,
+// since the number on screen was the total, not price-per-unit like every
+// other type). Bumped so rows cached under v3 with the old (total-value)
+// convention get re-parsed instead of silently showing the wrong number.
 const path = require('path');
 const Database = require('better-sqlite3');
 
-const PARSE_VERSION = 3;
+const PARSE_VERSION = 4;
 const SEARCH_TTL_MS = parseInt(process.env.SEARCH_CACHE_TTL_MS, 10) || 60 * 60 * 1000; // 1 hour default
 
 const DB_PATH = process.env.CACHE_DB_PATH || path.join(__dirname, 'cache.db');

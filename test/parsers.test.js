@@ -183,8 +183,12 @@ test('classifyInstrument: real Kandou filing — equity/debt/derivative all corr
 
   const derivative = holdings.find(h => h.instrumentType === 'derivative');
   assert.equal(derivative.instrumentLabel, 'Warrant');
-  assert.equal(derivative.chartUnit, 'usd_total');
-  assert.equal(derivative.chartValue, 0.23, 'total mark-to-market value, not a per-unit price');
+  assert.equal(derivative.chartUnit, 'usd_per_unit');
+  // Per-unit (valUSD / balance), same convention as every other type — NOT
+  // the raw $0.23 total position value, which would be a different number
+  // than what marketValue/shares actually divides out to (a real
+  // discrepancy a user caught by doing exactly that division themselves).
+  assert.ok(Math.abs(derivative.chartValue - (0.23 / 2257143)) < 1e-9);
 
   // All three must have distinct instrumentKeys — this is what stops them
   // from being forced onto one connected chart line.
@@ -235,7 +239,11 @@ test('classifyInstrument: SPV/fund-of-fund exposure is bucketed as indirect, not
 
   assert.equal(result.instrumentType, 'indirect');
   assert.match(result.instrumentLabel, /Indirect via/);
-  assert.equal(result.chartUnit, 'usd_total', 'a per-unit SPV price is not a Databricks share price');
+  // Per-unit (of the SPV's own units, not a Databricks share) — total value
+  // alone would conflate "the mark went up" with "the fund bought more
+  // units," which per-unit avoids.
+  assert.equal(result.chartUnit, 'usd_per_unit');
+  assert.equal(result.chartValue, 212.81);
 });
 
 test('parseEquityLabel edge cases found in the Databricks survey: truncated titles and non-series words must not be captured as a series token', () => {
