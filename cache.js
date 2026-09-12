@@ -22,10 +22,14 @@
 // v2: merged the ticker/cusip "[object Object]" fix (extractIdString) into
 // extractHoldings — bumped so any rows cached under v1 with the bad values
 // are treated as misses and re-parsed.
+// v3: added instrument-type classification (instrumentType/instrumentLabel/
+// instrumentKey/chartValue/chartUnit) to extractHoldings — bumped so rows
+// cached under v1/v2 (which lack these fields entirely) are treated as
+// misses rather than silently falling back to instrumentType:undefined.
 const path = require('path');
 const Database = require('better-sqlite3');
 
-const PARSE_VERSION = 2;
+const PARSE_VERSION = 3;
 const SEARCH_TTL_MS = parseInt(process.env.SEARCH_CACHE_TTL_MS, 10) || 60 * 60 * 1000; // 1 hour default
 
 const DB_PATH = process.env.CACHE_DB_PATH || path.join(__dirname, 'cache.db');

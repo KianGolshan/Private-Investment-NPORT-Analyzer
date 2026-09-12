@@ -283,6 +283,20 @@
       border-bottom: 3px solid var(--blue);
     }
 
+    /* ── Instrument-type section (only visually distinct when 2+ types
+       are present for one search — see INSTRUMENT_META) ─────────────── */
+    .instrument-section + .instrument-section {
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 2px dashed var(--gray-200);
+    }
+    .instrument-section-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--blue);
+      margin-bottom: 14px;
+    }
+
     code { background: var(--gray-100); padding: 1px 5px; border-radius: 3px; font-size: 12px; }
 
     /* ── About/why blurb ────────────────────────────────────────────────── */
@@ -513,14 +527,62 @@
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
 let allResults          = {};
-let singleChart         = null;
+let singleCharts        = {}; // { instrumentType: Chart } — one per bucket shown on Single Security
 let batchCharts         = {}; // { canvasId: Chart }
 let allCreditResults    = {};
 let creditChart         = null;
-let singleReferenceValue = null; // optional user-entered $ price to overlay/diff against peers
+let singleReferenceValue = null; // optional user-entered $ price to overlay/diff against peers (equity bucket only)
 let creditReferenceValue = null; // optional user-entered mark (%) to overlay/diff against peers
 
 const WATCHLIST_KEY = 'nportWatchlist';
+
+// ── Instrument-type metadata ────────────────────────────────────────────────
+// A single search can return economically incomparable holdings (equity,
+// debt, warrants, indirect/SPV exposure) — see parsers.js classifyInstrument
+// for the real-filing evidence. Each type gets its own chart/table section
+// with the axis and formatting that actually makes sense for it, instead of
+// forcing everything onto one $/share line.
+const INSTRUMENT_META = {
+  equity: {
+    sectionTitle: 'Equity', unitNoun: 'Price',
+    chartTitle: 'Price Per Share Over Time', axisLabel: 'Price Per Share',
+    valueLabel: 'Price / Share', fmt: fmtCurrency, tickFmt: v => '$' + v.toFixed(2),
+  },
+  debt: {
+    sectionTitle: 'Debt / Loans', unitNoun: 'Mark',
+    chartTitle: 'Mark (% of Par) Over Time', axisLabel: 'Mark (% of Par)',
+    valueLabel: 'Mark (%)', fmt: v => v.toFixed(2) + '%', tickFmt: v => v.toFixed(1) + '%',
+  },
+  derivative: {
+    sectionTitle: 'Derivatives (Warrants/Options)', unitNoun: 'Value',
+    chartTitle: 'Market Value Over Time', axisLabel: 'Market Value ($)',
+    valueLabel: 'Value', fmt: fmtCurrency, tickFmt: v => '$' + fmtNum(v),
+  },
+  indirect: {
+    sectionTitle: 'Indirect / Fund Exposure', unitNoun: 'Value',
+    chartTitle: 'Market Value Over Time', axisLabel: 'Market Value ($)',
+    valueLabel: 'Value', fmt: fmtCurrency, tickFmt: v => '$' + fmtNum(v),
+  },
+};
+const INSTRUMENT_ORDER = ['equity', 'debt', 'derivative', 'indirect'];
+
+// Canvas id for one bucket's chart. Equity always keeps the caller's own
+// base id (e.g. "singleChart", unchanged from before this feature existed)
+// so every equity-only-target function (reference overlay, PDF export)
+// keeps working without special-casing; other buckets get a suffixed id.
+function bucketCanvasId(baseId, type) {
+  return type === 'equity' ? baseId : `${baseId}_${type}`;
+}
+function nonEmptyBuckets(buckets) {
+  return INSTRUMENT_ORDER.filter(t => buckets[t] && Object.keys(buckets[t]).length > 0);
+}
+// Distinct fund count across all buckets (a fund holding e.g. both equity
+// and debt in the same company should still count once).
+function countDistinctFunds(buckets) {
+  const funds = new Set();
+  Object.values(buckets).forEach(map => Object.keys(map).forEach(c => funds.add(c)));
+  return funds.size;
+}
 
 // ── 15-color palette so charts look good with many funds ──────────────────
 const COLORS = [
@@ -620,19 +682,20 @@ async function searchNPORT() {
       );
     }
 
-    const companiesMap = groupAndDedupe(holdings);
-    allResults = { mode: 'single', single: companiesMap };
+    const buckets = groupAndDedupe(holdings);
+    allResults = { mode: 'single', single: buckets };
 
-    const funds = Object.keys(companiesMap).length;
+    const funds = countDistinctFunds(buckets);
     showMsg(
       `Found ${holdings.length} holding(s) across ${funds} fund(s).` +
       (failures.length ? ` ${failures.length} filing(s) failed to parse and were skipped — data may be incomplete.` : ''),
       failures.length ? 'warning' : 'success'
     );
     document.getElementById('dateFilterPanel').style.display = 'block';
-    document.getElementById('referencePanel').style.display  = 'block';
+    document.getElementById('referencePanel').style.display  =
+      (buckets.equity && Object.keys(buckets.equity).length) ? 'block' : 'none';
     updateURLParams({ security, limit });
-    renderSingleResults(companiesMap);
+    renderSingleResults(buckets);
 
   } catch (err) {
     hideLoading();
@@ -758,26 +821,75 @@ async function parseFilings(filings, security) {
   return { holdings: all, failures };
 }
 
-// ── Group by company, deduplicate ──────────────────────────────────────────
+// ── Group by instrument type, then by company, deduplicate ─────────────────
+// Returns { equity: {company: holdings[]}, debt: {...}, derivative: {...},
+// indirect: {...} } — bucketed by instrument type first (see INSTRUMENT_META)
+// so economically incomparable holdings never end up on the same chart
+// axis, then grouped by company same as before within each bucket.
 function groupAndDedupe(holdings) {
-  const map = {};
+  const buckets = { equity: {}, debt: {}, derivative: {}, indirect: {} };
+
   holdings.forEach(h => {
-    if (!map[h.company]) map[h.company] = [];
-    map[h.company].push(h);
+    const type = buckets[h.instrumentType] ? h.instrumentType : 'equity'; // safety net, should not trigger
+    if (!buckets[type][h.company]) buckets[type][h.company] = [];
+    buckets[type][h.company].push(h);
   });
 
-  Object.keys(map).forEach(company => {
-    map[company].sort((a, b) => dateCmp(a.reportDate, b.reportDate));
-    const seen = new Set();
-    map[company] = map[company].filter(h => {
-      const key = `${h.reportDate}_${h.shares}_${h.title || h.name}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
+  Object.values(buckets).forEach(map => {
+    Object.keys(map).forEach(company => {
+      map[company].sort((a, b) => dateCmp(a.reportDate, b.reportDate));
+      const seen = new Set();
+      map[company] = map[company].filter(h => {
+        // instrumentKey (identifiers.other.value, falling back to CUSIP/
+        // title) is a stronger dedupe key than title/name alone — it's
+        // still unique per instrument even when two different classes
+        // share identical, uninformative title text.
+        const key = `${h.reportDate}_${h.shares}_${h.instrumentKey}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     });
   });
 
-  return map;
+  return buckets;
+}
+
+// Splits one company's holdings into per-instrument series, computing a
+// disambiguated label so same-fund holdings that collide on the same
+// fallback label (e.g. two rows both generically "Preferred", per the real
+// BlackRock case found in the Databricks survey) are still visually
+// distinguishable even though instrumentKey already keeps them as separate
+// data series.
+function groupCompanyByInstrumentKey(company, holdings) {
+  const byKey = {};
+  holdings.forEach(h => {
+    const k = h.instrumentKey || company;
+    (byKey[k] ||= []).push(h);
+  });
+  const keys = Object.keys(byKey);
+  const multi = keys.length > 1;
+
+  const labelCounts = {};
+  keys.forEach(k => {
+    const lbl = byKey[k][0].instrumentLabel || '';
+    labelCounts[lbl] = (labelCounts[lbl] || 0) + 1;
+  });
+
+  return keys.map(k => {
+    const hs = byKey[k].slice().sort((a, b) => dateCmp(a.reportDate, b.reportDate));
+    const baseLabel = hs[0].instrumentLabel || '';
+    const collision = multi && labelCounts[baseLabel] > 1;
+    const shortLabel = collision ? `${baseLabel} (…${String(k).slice(-6)})` : baseLabel;
+    const fullLabel = multi ? `${company} — ${shortLabel}` : company;
+    return { company, key: k, shortLabel, fullLabel, holdings: hs };
+  });
+}
+
+// Flat list of (company, instrumentKey) series across an entire bucket —
+// what the chart actually plots one line per.
+function getSeriesGroups(companiesMap) {
+  return Object.keys(companiesMap).flatMap(company => groupCompanyByInstrumentKey(company, companiesMap[company]));
 }
 
 // ── Compute summary stats ─────────────────────────────────────────────────
@@ -792,16 +904,16 @@ function computeStats(companiesMap) {
   const all = Object.values(companiesMap).flat();
   if (!all.length) return null;
 
-  const prices = all.map(h => h.pricePerShare).filter(p => p > 0);
+  const values = all.map(h => h.chartValue).filter(v => v != null && v > 0);
   const dates  = all.map(h => h.reportDate).filter(Boolean).sort();
   const sorted = [...all].sort((a, b) => dateCmp(b.reportDate, a.reportDate));
 
   return {
-    latestPrice: sorted[0]?.pricePerShare || 0,
-    latestDate:  sorted[0]?.reportDate    || '',
-    minPrice:    Math.min(...prices),
-    maxPrice:    Math.max(...prices),
-    medianPrice: median(prices),
+    latestValue: sorted[0]?.chartValue ?? 0,
+    latestDate:  sorted[0]?.reportDate ?? '',
+    minValue:    values.length ? Math.min(...values) : 0,
+    maxValue:    values.length ? Math.max(...values) : 0,
+    medianValue: median(values),
     fundCount:   Object.keys(companiesMap).length,
     dataPoints:  all.length,
     firstDate:   dates[0]                  || '',
@@ -823,18 +935,20 @@ function referenceStatBoxHTML(referenceValue, peerMedian, fmt, unitLabel) {
     </div>`;
 }
 
-function statsHTML(stats, referenceValue) {
+function statsHTML(stats, referenceValue, meta) {
   if (!stats) return '';
+  meta = meta || INSTRUMENT_META.equity;
+  const fmt = meta.fmt;
   return `
     <div class="stats-grid">
       <div class="stat-box">
-        <div class="stat-label">Latest Price</div>
-        <div class="stat-value highlight">${fmtCurrency(stats.latestPrice)}</div>
+        <div class="stat-label">Latest ${esc(meta.unitNoun)}</div>
+        <div class="stat-value highlight">${fmt(stats.latestValue)}</div>
         <div class="stat-sub">${stats.latestDate || '—'}</div>
       </div>
       <div class="stat-box">
-        <div class="stat-label">Price Range</div>
-        <div class="stat-value sm">${fmtCurrency(stats.minPrice)} – ${fmtCurrency(stats.maxPrice)}</div>
+        <div class="stat-label">${esc(meta.unitNoun)} Range</div>
+        <div class="stat-value sm">${fmt(stats.minValue)} – ${fmt(stats.maxValue)}</div>
       </div>
       <div class="stat-box">
         <div class="stat-label">Reporting Funds</div>
@@ -848,18 +962,79 @@ function statsHTML(stats, referenceValue) {
         <div class="stat-label">Date Range</div>
         <div class="stat-value sm">${stats.firstDate}<br>${stats.lastDate}</div>
       </div>
-      ${referenceStatBoxHTML(referenceValue, stats.medianPrice, fmtCurrency)}
+      ${referenceValue != null ? referenceStatBoxHTML(referenceValue, stats.medianValue, fmt) : ''}
     </div>`;
 }
 
-// ── Render: single results ─────────────────────────────────────────────────
-function renderSingleResults(companiesMap) {
+// ── Render: one instrument-type section (stats + chart + table) ───────────
+// Shared by Single Security and Batch Search. In the common case (one
+// instrument type present) this renders with no visible section header or
+// wrapper styling beyond what already existed — visually identical to
+// before this feature. Only when 2+ types are present for the same search
+// does the section header/border show, to explain why the results are
+// split.
+function renderInstrumentSectionHTML(companiesMap, type, canvasBaseId, tablePrefix, showHeader, opts) {
+  opts = opts || {};
+  const meta  = INSTRUMENT_META[type];
   const stats = computeStats(companiesMap);
-  let html = '<div class="results-section">';
-  html += `<div id="statsGrid">${statsHTML(stats, singleReferenceValue)}</div>`;
-  html += '<div class="chart-panel"><h3>Price Per Share Over Time</h3><div class="chart-canvas-wrap"><canvas id="singleChart"></canvas></div></div>';
+  const canvasId = bucketCanvasId(canvasBaseId, type);
+  const referenceValue = (type === 'equity' && opts.allowReference) ? singleReferenceValue : null;
+  const statsGridId = opts.statsGridId || '';
+
+  let html = `<div class="instrument-section" data-bucket="${type}">`;
+  if (showHeader) {
+    html += `<h3 class="instrument-section-title">${esc(meta.sectionTitle)}</h3>`;
+  }
+  html += `<div${statsGridId ? ` id="${statsGridId}"` : ''}>${statsHTML(stats, referenceValue, meta)}</div>`;
+
+  // Wide-range safety valve: if this bucket's values span a huge ratio,
+  // say so rather than silently rendering a chart where most lines
+  // flatline near zero against one outlier (verified real cases going both
+  // ways — Databricks stayed in a tight $150-$237 band across 35 filers,
+  // Kandou's classes would have spanned $0.0000001-$0.25 if not already
+  // split by instrument type).
+  if (stats && stats.minValue > 0 && stats.maxValue / stats.minValue > 20) {
+    html += `<div class="alert alert-warning" style="margin-bottom:14px;">Wide ${meta.unitNoun.toLowerCase()} range in this view (${meta.fmt(stats.minValue)} – ${meta.fmt(stats.maxValue)}) — check for mismatched classes.</div>`;
+  }
+
+  if (type === 'equity' && opts.allowClassFilter) {
+    const filterId = `classFilter_${tablePrefix}`;
+    html += `
+      <div class="search-row" style="margin-bottom:14px;">
+        <div class="input-group narrow">
+          <label for="${filterId}">Filter by Class</label>
+          <input type="text" id="${filterId}" placeholder="e.g., G" oninput="applyClassFilter(this)">
+        </div>
+      </div>
+      <div class="hint" style="margin-top:-8px; margin-bottom:14px;">Matches against each row's parsed class label — lets you compare e.g. "Series G" across every fund shown, without assuming different filers' labels mean exactly the same thing.</div>`;
+  }
+
+  html += `<div class="chart-panel"><h3>${esc(meta.chartTitle)}</h3><div class="chart-canvas-wrap"><canvas id="${canvasId}"></canvas></div></div>`;
   html += '<div class="results-header"><h2>Holdings by Fund</h2></div>';
-  html += renderFundCards(companiesMap, 'single');
+  html += renderFundCards(companiesMap, tablePrefix, type);
+  html += '</div>';
+  return html;
+}
+
+// ── Render: single results ─────────────────────────────────────────────────
+function renderSingleResults(buckets) {
+  const types = nonEmptyBuckets(buckets);
+  const multi = types.length > 1;
+
+  let html = '<div class="results-section">';
+  if (multi) {
+    const names = types.map(t => INSTRUMENT_META[t].sectionTitle.toLowerCase()).join(', ');
+    html += `<div class="alert alert-info">Holdings span ${esc(names)} — shown in separate sections below since they aren't directly comparable on one chart.</div>`;
+  }
+
+  types.forEach(type => {
+    html += renderInstrumentSectionHTML(buckets[type], type, 'singleChart', 'single_' + type, multi, {
+      allowReference:  type === 'equity',
+      allowClassFilter: type === 'equity',
+      statsGridId:     type === 'equity' ? 'statsGrid' : '',
+    });
+  });
+
   html += `<div class="export-row">
     <button class="btn btn-green" onclick="doExportCSV()">&#x2193; CSV</button>
     <button class="btn btn-green" onclick="doExportExcel()">&#x1F4CA; Excel</button>
@@ -868,7 +1043,7 @@ function renderSingleResults(companiesMap) {
   html += '</div>';
 
   document.getElementById('resultsContainer').innerHTML = html;
-  buildChart('singleChart', companiesMap, true);
+  types.forEach(type => buildChart(bucketCanvasId('singleChart', type), buckets[type], type, true));
 }
 
 // ── Render: batch results ──────────────────────────────────────────────────
@@ -876,16 +1051,22 @@ function renderBatchResults(batchResults) {
   let html = '';
 
   Object.keys(batchResults).forEach(security => {
-    const companiesMap = batchResults[security];
-    const stats  = computeStats(companiesMap);
-    const chartId = 'chart_' + cleanId(security);
+    const buckets = batchResults[security];
+    const types   = nonEmptyBuckets(buckets);
+    const multi   = types.length > 1;
+    const secId   = cleanId(security);
 
-    html += `<div class="security-section" id="secsection_${cleanId(security)}">`;
+    html += `<div class="security-section" id="secsection_${secId}">`;
     html += `<div class="security-section-header">${esc(security)}</div>`;
-    html += statsHTML(stats);
-    html += `<div class="chart-panel"><h3>Price Per Share Over Time</h3><div class="chart-canvas-wrap"><canvas id="${chartId}"></canvas></div></div>`;
-    html += '<div class="results-header"><h2>Holdings by Fund</h2></div>';
-    html += renderFundCards(companiesMap, cleanId(security));
+    if (multi) {
+      const names = types.map(t => INSTRUMENT_META[t].sectionTitle.toLowerCase()).join(', ');
+      html += `<div class="alert alert-info">Holdings span ${esc(names)} — shown in separate sections below since they aren't directly comparable on one chart.</div>`;
+    }
+    types.forEach(type => {
+      html += renderInstrumentSectionHTML(buckets[type], type, 'chart_' + secId, secId + '_' + type, multi, {
+        allowClassFilter: type === 'equity',
+      });
+    });
     html += `</div>`;
   });
 
@@ -898,7 +1079,10 @@ function renderBatchResults(batchResults) {
   document.getElementById('resultsContainer').innerHTML = html;
 
   Object.keys(batchResults).forEach(security => {
-    buildChart('chart_' + cleanId(security), batchResults[security], false);
+    const secId = cleanId(security);
+    nonEmptyBuckets(batchResults[security]).forEach(type => {
+      buildChart(bucketCanvasId('chart_' + secId, type), batchResults[security][type], type, false);
+    });
   });
 }
 
@@ -918,7 +1102,8 @@ function sourceLinkHTML(cik, accession, dateLabel) {
 }
 
 // ── Fund card HTML ─────────────────────────────────────────────────────────
-function renderFundCards(companiesMap, prefix) {
+function renderFundCards(companiesMap, prefix, type) {
+  const meta = INSTRUMENT_META[type] || INSTRUMENT_META.equity;
   let html = '';
   let rowIndex = 0;
 
@@ -926,15 +1111,16 @@ function renderFundCards(companiesMap, prefix) {
     const wrapId   = `wrap_${prefix}_${compIdx}`;
     const arrowId  = `arrow_${prefix}_${compIdx}`;
     const holdings = companiesMap[company];
+    const groups   = groupCompanyByInstrumentKey(company, holdings);
     const latestH  = [...holdings].sort((a, b) => dateCmp(b.reportDate, a.reportDate))[0];
-    const latestP  = latestH ? fmtCurrency(latestH.pricePerShare) : '—';
+    const latestV  = latestH ? meta.fmt(latestH.chartValue) : '—';
 
     html += `
       <div class="fund-card">
         <div class="fund-header" onclick="toggleFund('${wrapId}','${arrowId}')">
           <div>
             <div class="fund-name">${esc(company)}</div>
-            <div class="fund-meta">${holdings.length} data point(s) &bull; Latest: ${latestP}</div>
+            <div class="fund-meta">${holdings.length} data point(s) &bull; Latest: ${latestV}</div>
           </div>
           <div class="fund-actions">
             <button class="btn btn-sm btn-primary"   onclick="event.stopPropagation(); selectAllRows('${wrapId}', true)">All</button>
@@ -947,31 +1133,39 @@ function renderFundCards(companiesMap, prefix) {
             <thead><tr>
               <th class="center" style="width:38px">Show</th>
               <th>Report Date</th>
+              <th>Class</th>
               <th>Investment Title</th>
               <th class="right">Shares</th>
               <th class="right">Market Value</th>
-              <th class="right">Price / Share</th>
+              <th class="right">${esc(meta.valueLabel)}</th>
               <th class="center">CCY</th>
             </tr></thead>
             <tbody>`;
 
-    holdings.forEach((h, hIdx) => {
-      const rowId = `row_${prefix}_${rowIndex}`;
-      const cbId  = `cb_${prefix}_${rowIndex}`;
-      html += `
-        <tr id="${rowId}" data-company="${esc(company)}" data-idx="${hIdx}" data-date="${h.reportDate}" data-price="${h.pricePerShare}">
-          <td class="center">
-            <input type="checkbox" id="${cbId}" class="chart-checkbox" data-prefix="${prefix}" checked
-                   onchange="onCheckboxChange(this)">
-          </td>
-          <td>${sourceLinkHTML(h.cik, h.accession, h.reportDate)}</td>
-          <td class="title-cell">${esc(h.title || h.name || '—')}</td>
-          <td class="right">${fmtNum(h.shares)}</td>
-          <td class="right">${fmtCurrency(h.marketValue)}</td>
-          <td class="right price-cell">${fmtCurrency(h.pricePerShare)}</td>
-          <td class="center">${h.currency || 'USD'}</td>
-        </tr>`;
-      rowIndex++;
+    // Rows are ordered by instrument-key group (not raw date order across
+    // the whole fund) so that a fund holding e.g. two share classes shows
+    // each class's history as a contiguous block, not interleaved.
+    groups.forEach(g => {
+      g.holdings.forEach(h => {
+        const hIdx  = holdings.indexOf(h); // index into companiesMap[company] — export relies on this
+        const rowId = `row_${prefix}_${rowIndex}`;
+        const cbId  = `cb_${prefix}_${rowIndex}`;
+        html += `
+          <tr id="${rowId}" data-company="${esc(company)}" data-idx="${hIdx}" data-key="${esc(g.key)}" data-label="${esc(g.shortLabel)}" data-bucket="${type}" data-date="${h.reportDate}" data-value="${h.chartValue}">
+            <td class="center">
+              <input type="checkbox" id="${cbId}" class="chart-checkbox" data-prefix="${prefix}" checked
+                     onchange="onCheckboxChange(this)">
+            </td>
+            <td>${sourceLinkHTML(h.cik, h.accession, h.reportDate)}</td>
+            <td>${esc(g.shortLabel)}</td>
+            <td class="title-cell">${esc(h.title || h.name || '—')}</td>
+            <td class="right">${fmtNum(h.shares)}</td>
+            <td class="right">${fmtCurrency(h.marketValue)}</td>
+            <td class="right price-cell">${meta.fmt(h.chartValue)}</td>
+            <td class="center">${h.currency || 'USD'}</td>
+          </tr>`;
+        rowIndex++;
+      });
     });
 
     html += `</tbody></table></div></div>`;
@@ -1006,9 +1200,10 @@ function onCheckboxChange(cb) {
 }
 
 // ── Build chart ────────────────────────────────────────────────────────────
-function buildChart(canvasId, companiesMap, isSingle) {
+function buildChart(canvasId, companiesMap, type, isSingle) {
   const ctx = document.getElementById(canvasId)?.getContext('2d');
   if (!ctx) return;
+  const meta = INSTRUMENT_META[type] || INSTRUMENT_META.equity;
 
   const chart = new Chart(ctx, {
     type: 'line',
@@ -1019,7 +1214,7 @@ function buildChart(canvasId, companiesMap, isSingle) {
       plugins: {
         legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14, font: { size: 11 } } },
         tooltip: {
-          callbacks: { label: c => `${c.dataset.label}: ${fmtCurrency(c.parsed.y)}` }
+          callbacks: { label: c => `${c.dataset.label}: ${meta.fmt(c.parsed.y)}` }
         }
       },
       scales: {
@@ -1029,26 +1224,26 @@ function buildChart(canvasId, companiesMap, isSingle) {
           title: { display: true, text: 'Report Date' }
         },
         y: {
-          title: { display: true, text: 'Price Per Share' },
-          ticks: { callback: v => '$' + v.toFixed(2) }
+          title: { display: true, text: meta.axisLabel },
+          ticks: { callback: meta.tickFmt }
         }
       }
     }
   });
 
   if (isSingle) {
-    singleChart = chart;
+    singleCharts[type] = chart;
   } else {
     batchCharts[canvasId] = chart;
   }
 }
 
 function buildDatasets(companiesMap) {
-  return Object.keys(companiesMap).map((company, i) => ({
-    label: company.substring(0, 46),
-    data: companiesMap[company]
+  return getSeriesGroups(companiesMap).map((g, i) => ({
+    label: g.fullLabel.substring(0, 60),
+    data: g.holdings
       .filter(h => h.reportDate)
-      .map(h => ({ x: h.reportDate, y: h.pricePerShare })),
+      .map(h => ({ x: h.reportDate, y: h.chartValue })),
     borderColor:     getColor(i),
     backgroundColor: getColor(i) + '22',
     pointRadius:     4,
@@ -1060,38 +1255,48 @@ function buildDatasets(companiesMap) {
 // ── Rebuild charts from checkbox state ────────────────────────────────────
 function rebuildAllCharts() {
   if (allResults.mode === 'single') {
-    rebuildChart('singleChart', singleChart, allResults.single);
+    Object.entries(allResults.single || {}).forEach(([type, map]) => {
+      if (!Object.keys(map).length) return;
+      const id = bucketCanvasId('singleChart', type);
+      rebuildChart(id, singleCharts[type], map, type);
+    });
   } else if (allResults.mode === 'batch') {
-    Object.keys(allResults.batch).forEach(security => {
-      const id = 'chart_' + cleanId(security);
-      rebuildChart(id, batchCharts[id], allResults.batch[security]);
+    Object.entries(allResults.batch || {}).forEach(([security, buckets]) => {
+      const baseId = 'chart_' + cleanId(security);
+      Object.entries(buckets).forEach(([type, map]) => {
+        if (!Object.keys(map).length) return;
+        const id = bucketCanvasId(baseId, type);
+        rebuildChart(id, batchCharts[id], map, type);
+      });
     });
   }
 }
 
-function rebuildChart(canvasId, chart, companiesMap) {
+function rebuildChart(canvasId, chart, companiesMap, type) {
   if (!chart) return;
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
 
-  // Scope row lookups to the containing section so batch charts stay independent
+  // Scope row lookups to the containing section AND bucket, so a security
+  // with multiple instrument-type sections (each its own table) doesn't
+  // cross-contaminate, and batch charts stay independent per security.
   const section = canvas.closest('.security-section')
                 || canvas.closest('.results-section')
                 || document;
-  const allRows = Array.from(section.querySelectorAll('tr[data-company]'));
+  const allRows = Array.from(section.querySelectorAll(`tr[data-bucket="${type}"]`));
 
-  const datasets = Object.keys(companiesMap).map((company, i) => {
+  const datasets = getSeriesGroups(companiesMap).map((g, i) => {
     const data = [];
     allRows.forEach(row => {
-      if (row.dataset.company === company) {
+      if (row.dataset.company === g.company && row.dataset.key === g.key) {
         const cb = row.querySelector('.chart-checkbox');
         if (cb?.checked) {
-          data.push({ x: row.dataset.date, y: parseFloat(row.dataset.price) });
+          data.push({ x: row.dataset.date, y: parseFloat(row.dataset.value) });
         }
       }
     });
     return {
-      label: company.substring(0, 46),
+      label: g.fullLabel.substring(0, 60),
       data,
       borderColor:     getColor(i),
       backgroundColor: getColor(i) + '22',
@@ -1100,13 +1305,38 @@ function rebuildChart(canvasId, chart, companiesMap) {
     };
   }).filter(d => d.data.length > 0);
 
-  if (canvasId === 'singleChart' && singleReferenceValue != null) {
+  if (type === 'equity' && singleReferenceValue != null) {
     const refDs = buildReferenceLineDataset(datasets, singleReferenceValue, 'Reference Price');
     if (refDs) datasets.push(refDs);
   }
 
   chart.data.datasets = datasets;
   chart.update();
+}
+
+// ── Class quick-filter (equity sections only) ─────────────────────────────
+// Word-boundary-matches each row's parsed class label (not the raw title)
+// and toggles the same checkboxes the date filter uses — lets an analyst
+// isolate e.g. "Series G" across every fund shown in one section without
+// the tool asserting that different filers' labels mean the same thing.
+// Word-boundary (not plain substring) matters here: labels are always
+// "{Common|Preferred|Class} {code}", and a plain substring match on a
+// single-letter query like "D" would also match "Preferre[d]" itself.
+function applyClassFilter(inputEl) {
+  const section = inputEl.closest('.instrument-section');
+  if (!section) return;
+  const q = inputEl.value.trim();
+  const re = q ? new RegExp('\\b' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') : null;
+  let count = 0;
+  section.querySelectorAll('tr[data-company]').forEach(row => {
+    const label = row.dataset.label || '';
+    const match = !re || re.test(label);
+    const cb = row.querySelector('.chart-checkbox');
+    if (cb) cb.checked = match;
+    row.classList.toggle('row-hidden', !match);
+    if (match) count++;
+  });
+  rebuildAllCharts();
 }
 
 // ── Reference/benchmark line: a flat dashed line spanning the plotted range ─
@@ -1142,10 +1372,11 @@ function clearReference() {
   refreshSingleView();
 }
 function refreshSingleView() {
-  if (!allResults.single) return;
+  const equityMap = allResults.single?.equity;
+  if (!equityMap || !Object.keys(equityMap).length) return;
   const statsEl = document.getElementById('statsGrid');
-  if (statsEl) statsEl.innerHTML = statsHTML(computeStats(allResults.single), singleReferenceValue);
-  rebuildChart('singleChart', singleChart, allResults.single);
+  if (statsEl) statsEl.innerHTML = statsHTML(computeStats(equityMap), singleReferenceValue, INSTRUMENT_META.equity);
+  rebuildChart('singleChart', singleCharts.equity, equityMap, 'equity');
 }
 
 // ── Date filters ───────────────────────────────────────────────────────────
@@ -1192,34 +1423,65 @@ function collectVisible(companiesMap, container) {
   return result;
 }
 
-function visibleSingleMap() {
-  return collectVisible(allResults.single, document.querySelector('.results-section'));
-}
-function visibleBatchMap() {
+// Bucket-aware: each instrument-type section has its own scoped container
+// (data-bucket) so a company appearing in multiple buckets (or two
+// securities sharing a company name, in batch mode) can't cross-contaminate
+// via data-idx collisions.
+function visibleSingleBuckets() {
   const out = {};
-  Object.entries(allResults.batch).forEach(([sec, map]) => {
-    const container = document.getElementById('secsection_' + cleanId(sec));
-    out[sec] = collectVisible(map, container);
+  Object.keys(allResults.single || {}).forEach(type => {
+    const container = document.querySelector(`.results-section .instrument-section[data-bucket="${type}"]`);
+    out[type] = collectVisible(allResults.single[type], container);
   });
   return out;
+}
+function visibleBatchBuckets() {
+  const out = {};
+  Object.entries(allResults.batch || {}).forEach(([sec, buckets]) => {
+    out[sec] = {};
+    Object.keys(buckets).forEach(type => {
+      const container = document.querySelector(`#secsection_${cleanId(sec)} .instrument-section[data-bucket="${type}"]`);
+      out[sec][type] = collectVisible(buckets[type], container);
+    });
+  });
+  return out;
+}
+
+// Flattens one bucket's companiesMap into export-ready rows, each carrying
+// its instrument Type/Class alongside the existing fields.
+function flattenBucketRows(type, companiesMap, security) {
+  const meta = INSTRUMENT_META[type] || INSTRUMENT_META.equity;
+  const rows = [];
+  Object.entries(companiesMap).forEach(([co, hs]) => {
+    groupCompanyByInstrumentKey(co, hs).forEach(g => {
+      g.holdings.forEach(h => rows.push({
+        security, type: meta.sectionTitle, cls: g.shortLabel, company: co,
+        reportDate: h.reportDate, title: h.title || '', shares: h.shares,
+        marketValue: h.marketValue, value: h.chartValue,
+        currency: h.currency || 'USD', url: edgarFilingUrl(h.cik, h.accession) || '',
+      }));
+    });
+  });
+  return rows;
 }
 
 // ── Export: CSV ────────────────────────────────────────────────────────────
 function doExportCSV() {
   const isSingle = allResults.mode === 'single';
-  const rows = isSingle
-    ? [['Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency','Source Filing URL']]
-    : [['Security','Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency','Source Filing URL']];
+  const header = isSingle
+    ? ['Type','Class','Fund','Report Date','Title','Shares','Market Value (USD)','Value','Currency','Source Filing URL']
+    : ['Security','Type','Class','Fund','Report Date','Title','Shares','Market Value (USD)','Value','Currency','Source Filing URL'];
+  const rows = [header];
+
+  const pushRows = list => list.forEach(r => rows.push(
+    (isSingle ? [] : [r.security]).concat([r.type, r.cls, r.company, r.reportDate, r.title, r.shares, r.marketValue, r.value.toFixed(4), r.currency, r.url])
+  ));
 
   if (isSingle) {
-    Object.entries(visibleSingleMap()).forEach(([co, hs]) =>
-      hs.forEach(h => rows.push([co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare.toFixed(4), h.currency||'USD', edgarFilingUrl(h.cik, h.accession) || '']))
-    );
+    Object.entries(visibleSingleBuckets()).forEach(([type, map]) => pushRows(flattenBucketRows(type, map)));
   } else {
-    Object.entries(visibleBatchMap()).forEach(([sec, map]) =>
-      Object.entries(map).forEach(([co, hs]) =>
-        hs.forEach(h => rows.push([sec, co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare.toFixed(4), h.currency||'USD', edgarFilingUrl(h.cik, h.accession) || '']))
-      )
+    Object.entries(visibleBatchBuckets()).forEach(([sec, buckets]) =>
+      Object.entries(buckets).forEach(([type, map]) => pushRows(flattenBucketRows(type, map, sec)))
     );
   }
 
@@ -1230,39 +1492,40 @@ function doExportCSV() {
 // ── Export: Excel ──────────────────────────────────────────────────────────
 function doExportExcel() {
   const wb = XLSX.utils.book_new();
+  const bucketCols = [{wch:20},{wch:20},{wch:42},{wch:12},{wch:42},{wch:14},{wch:18},{wch:14},{wch:10},{wch:50}];
 
   if (allResults.mode === 'single') {
-    const data = [['Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency','Source Filing URL']];
-    Object.entries(visibleSingleMap()).forEach(([co, hs]) =>
-      hs.forEach(h => data.push([co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare, h.currency||'USD', edgarFilingUrl(h.cik, h.accession) || '']))
-    );
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = [{wch:42},{wch:12},{wch:42},{wch:14},{wch:18},{wch:14},{wch:10},{wch:50}];
-    XLSX.utils.book_append_sheet(wb, ws, 'Holdings');
+    // One sheet per instrument type present (Equity/Debt/Derivatives/
+    // Indirect) — mirrors the per-security sheet pattern batch mode uses.
+    Object.entries(visibleSingleBuckets()).forEach(([type, map]) => {
+      const rows = flattenBucketRows(type, map);
+      if (!rows.length) return;
+      const data = [['Type','Class','Fund','Report Date','Title','Shares','Market Value (USD)','Value','Currency','Source Filing URL']];
+      rows.forEach(r => data.push([r.type, r.cls, r.company, r.reportDate, r.title, r.shares, r.marketValue, r.value, r.currency, r.url]));
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      ws['!cols'] = bucketCols;
+      XLSX.utils.book_append_sheet(wb, ws, INSTRUMENT_META[type].sectionTitle.substring(0, 31));
+    });
 
   } else {
-    const visibleBatch = visibleBatchMap();
+    const visibleBatch = visibleBatchBuckets();
+    const combined = [['Security','Type','Class','Fund','Report Date','Title','Shares','Market Value (USD)','Value','Currency','Source Filing URL']];
 
-    // One sheet per security
-    Object.entries(visibleBatch).forEach(([sec, map]) => {
-      const data = [['Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency','Source Filing URL']];
-      Object.entries(map).forEach(([co, hs]) =>
-        hs.forEach(h => data.push([co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare, h.currency||'USD', edgarFilingUrl(h.cik, h.accession) || '']))
-      );
+    Object.entries(visibleBatch).forEach(([sec, buckets]) => {
+      const allRows = Object.keys(buckets).flatMap(type => flattenBucketRows(type, buckets[type], sec));
+      if (!allRows.length) return;
+      const data = [['Type','Class','Fund','Report Date','Title','Shares','Market Value (USD)','Value','Currency','Source Filing URL']];
+      allRows.forEach(r => {
+        data.push([r.type, r.cls, r.company, r.reportDate, r.title, r.shares, r.marketValue, r.value, r.currency, r.url]);
+        combined.push([sec, r.type, r.cls, r.company, r.reportDate, r.title, r.shares, r.marketValue, r.value, r.currency, r.url]);
+      });
       const ws = XLSX.utils.aoa_to_sheet(data);
-      ws['!cols'] = [{wch:42},{wch:12},{wch:42},{wch:14},{wch:18},{wch:14},{wch:10},{wch:50}];
+      ws['!cols'] = bucketCols;
       XLSX.utils.book_append_sheet(wb, ws, sec.substring(0, 31));
     });
 
-    // Combined sheet
-    const combined = [['Security','Fund','Report Date','Title','Shares','Market Value (USD)','Price/Share','Currency','Source Filing URL']];
-    Object.entries(visibleBatch).forEach(([sec, map]) =>
-      Object.entries(map).forEach(([co, hs]) =>
-        hs.forEach(h => combined.push([sec, co, h.reportDate, h.title||'', h.shares, h.marketValue, h.pricePerShare, h.currency||'USD', edgarFilingUrl(h.cik, h.accession) || '']))
-      )
-    );
     const ws2 = XLSX.utils.aoa_to_sheet(combined);
-    ws2['!cols'] = [{wch:14},{wch:42},{wch:12},{wch:42},{wch:14},{wch:18},{wch:14},{wch:10},{wch:50}];
+    ws2['!cols'] = [{wch:14}, ...bucketCols];
     XLSX.utils.book_append_sheet(wb, ws2, 'All Holdings');
   }
 
@@ -1294,8 +1557,9 @@ function doExportPDF() {
   };
 
   // Draw one section: chart image + autotable
-  const drawSection = (companiesMap, title, chartId, yStart) => {
+  const drawSection = (companiesMap, title, chartId, type, yStart) => {
     let y = writePageHeader(title, yStart);
+    const meta = INSTRUMENT_META[type] || INSTRUMENT_META.equity;
 
     const canvas = chartId ? document.getElementById(chartId) : null;
     if (canvas) {
@@ -1307,33 +1571,37 @@ function doExportPDF() {
 
     const rows = [];
     Object.entries(companiesMap).forEach(([co, hs]) =>
-      hs.forEach(h => rows.push([
-        co.substring(0, 36),
-        h.reportDate || '',
-        (h.title || h.name || '').substring(0, 36),
-        fmtNum(h.shares),
-        fmtCurrency(h.marketValue),
-        fmtCurrency(h.pricePerShare),
-        h.currency || 'USD'
-      ]))
+      groupCompanyByInstrumentKey(co, hs).forEach(g =>
+        g.holdings.forEach(h => rows.push([
+          co.substring(0, 30),
+          g.shortLabel.substring(0, 20),
+          h.reportDate || '',
+          (h.title || h.name || '').substring(0, 30),
+          fmtNum(h.shares),
+          fmtCurrency(h.marketValue),
+          meta.fmt(h.chartValue),
+          h.currency || 'USD'
+        ]))
+      )
     );
 
     if (rows.length) {
       doc.autoTable({
         startY: y,
-        head: [['Fund','Date','Title','Shares','Mkt Value','Price/Share','CCY']],
+        head: [['Fund','Class','Date','Title','Shares','Mkt Value', meta.valueLabel,'CCY']],
         body: rows,
         margin: { left: margin, right: margin },
         styles: { fontSize: 7.5, cellPadding: 2.5 },
         headStyles: { fillColor: [37, 99, 235], fontStyle: 'bold', fontSize: 8 },
         columnStyles: {
-          0: { cellWidth: 54 },
-          1: { cellWidth: 20 },
-          2: { cellWidth: 54 },
-          3: { cellWidth: 24, halign: 'right' },
-          4: { cellWidth: 26, halign: 'right' },
-          5: { cellWidth: 26, halign: 'right' },
-          6: { cellWidth: 16, halign: 'center' }
+          0: { cellWidth: 46 },
+          1: { cellWidth: 34 },
+          2: { cellWidth: 20 },
+          3: { cellWidth: 46 },
+          4: { cellWidth: 22, halign: 'right' },
+          5: { cellWidth: 24, halign: 'right' },
+          6: { cellWidth: 24, halign: 'right' },
+          7: { cellWidth: 14, halign: 'center' }
         },
         alternateRowStyles: { fillColor: [249, 250, 251] }
       });
@@ -1341,13 +1609,24 @@ function doExportPDF() {
   };
 
   if (allResults.mode === 'single') {
-    drawSection(visibleSingleMap(), 'SEC NPORT-P Holdings Analysis', 'singleChart', margin);
-  } else {
-    const visibleBatch = visibleBatchMap();
-    Object.keys(allResults.batch).forEach((security, i) => {
+    const buckets = visibleSingleBuckets();
+    nonEmptyBuckets(buckets).forEach((type, i) => {
       if (i > 0) doc.addPage();
-      const chartId = 'chart_' + cleanId(security);
-      drawSection(visibleBatch[security], security, chartId, margin);
+      const canvasId = bucketCanvasId('singleChart', type);
+      drawSection(buckets[type], `SEC NPORT-P Holdings Analysis — ${INSTRUMENT_META[type].sectionTitle}`, canvasId, type, margin);
+    });
+  } else {
+    const visibleBatch = visibleBatchBuckets();
+    let firstPage = true;
+    Object.keys(allResults.batch).forEach(security => {
+      const secId = cleanId(security);
+      const buckets = visibleBatch[security] || {};
+      nonEmptyBuckets(buckets).forEach(type => {
+        if (!firstPage) doc.addPage();
+        firstPage = false;
+        const canvasId = bucketCanvasId('chart_' + secId, type);
+        drawSection(buckets[type], `${security} — ${INSTRUMENT_META[type].sectionTitle}`, canvasId, type, margin);
+      });
     });
   }
 
@@ -1387,7 +1666,8 @@ function clearResults() {
   setVal('creditReferenceMark', '');
   singleReferenceValue = null;
   creditReferenceValue = null;
-  if (singleChart) { singleChart.destroy(); singleChart = null; }
+  Object.values(singleCharts).forEach(c => c.destroy());
+  singleCharts     = {};
   if (creditChart) { creditChart.destroy(); creditChart = null; }
   Object.values(batchCharts).forEach(c => c.destroy());
   batchCharts      = {};
