@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edgarSubmission xmlns="http://www.sec.gov/edgar/nport">
+<formData>
+<genInfo>
+      <regName>SMALLCAP World Fund Inc</regName>
+      <regFileNumber>811-05888</regFileNumber>
+      <regCik>0000858744</regCik>
+      <regLei>QUU75Y6VVBVQ4LBGTL77</regLei>
+      <regStreet1>6455 Irvine Center Drive</regStreet1>
+      <regCity>Irvine</regCity>
+      <regStateConditional regCountry="US" regState="US-CA"/>
+      <regZipOrPostalCode>92618</regZipOrPostalCode>
+      <regPhone>9499755000</regPhone>
+      <seriesName>SMALLCAP World Fund Inc</seriesName>
+      <seriesId>S000009599</seriesId>
+      <seriesLei>QUU75Y6VVBVQ4LBGTL77</seriesLei>
+      <repPdEnd>2026-09-30</repPdEnd>
+      <repPdDate>2025-12-31</repPdDate>
+      <isFinalFiling>N</isFinalFiling>
+    </genInfo>
+<invstOrSecs>
+<invstOrSec>
+        <name>KANDOU HOLDING SA</name>
+        <lei>N/A</lei>
+        <title>KANDOU HOLDING SA PFD SER D PP (PHYSICAL) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="ECK298924"/>
+        </identifiers>
+        <balance>4400000.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1100000.000000000000</valUSD>
+        <pctVal>0.0013343087</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>CH</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>KANDOU HOLDING SA</name>
+        <lei>N/A</lei>
+        <title>KANDOU HOLDING SA TL PP (PHYSICAL) 7.0% 03-31-26</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="FLK13772"/>
+        </identifiers>
+        <balance>5000000.000000000000</balance>
+        <units>PA</units>
+        <curCd>USD</curCd>
+        <valUSD>6050000.000000000000</valUSD>
+        <pctVal>0.0073386979</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>LON</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>CH</invCountry>
+
+        <isRestrictedSec>Y</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <debtSec>
+          <maturityDt>2026-03-31</maturityDt>
+          <couponKind>Fixed</couponKind>
+          <annualizedRt>7.000000000000</annualizedRt>
+          <isDefault>N</isDefault>
+          <areIntrstPmntsInArrs>N</areIntrstPmntsInArrs>
+          <isPaidKind>N</isPaidKind>
+        </debtSec>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>KANDOU HOLDING SA</name>
+        <lei>N/A</lei>
+        <title>KANDOU HOLDING SA WTS 1:1 @ USD 3.50 08-18-28 PP (PHYSICAL) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="EWK21391"/>
+        </identifiers>
+        <balance>2257143.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>0.230000000000</valUSD>
+        <pctVal>0.0000000003</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>CH</invCountry>
+
+        <isRestrictedSec>Y</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="WAR">
+            <counterparties>
+              <counterpartyName>N/A</counterpartyName>
+              <counterpartyLei>N/A</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>KANDOU HOLDING SA</issuerName>
+                <issueTitle>KANDOU HOLDING SA (NOT LISTED OR TRADING)</issueTitle>
+                <identifiers>
+                  <other otherDesc="CGSymbol" value="ECK327696"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>2257143.000000000000</shareNo>
+            <exercisePrice>3.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2028-08-18</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>0.230000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+</invstOrSecs>
+</formData>
+</edgarSubmission>

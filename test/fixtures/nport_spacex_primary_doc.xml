@@ -1,0 +1,4511 @@
+<?xml version="1.0" encoding="UTF-8"?><edgarSubmission xmlns="http://www.sec.gov/edgar/nport" xmlns:com="http://www.sec.gov/edgar/common" xmlns:ncom="http://www.sec.gov/edgar/nportcommon" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <headerData>
+    <submissionType>NPORT-P</submissionType>
+    <isConfidential>false</isConfidential>
+    <filerInfo>
+
+      <filer>
+        <issuerCredentials>
+          <cik>0002043954</cik>
+          <ccc>XXXXXXXX</ccc>
+        </issuerCredentials>
+      </filer>
+
+
+      <seriesClassInfo>
+        <seriesId>S000096102</seriesId>
+        <classId>C000264889</classId>
+      </seriesClassInfo>
+
+
+    </filerInfo>
+  </headerData>
+  <formData>
+    <genInfo>
+      <regName>REX ETF Trust</regName>
+      <regFileNumber>811-24023</regFileNumber>
+      <regCik>0002043954</regCik>
+      <regLei>529900HJ88CACDMNTC36</regLei>
+      <regStreet1>777 Brickell Avenue</regStreet1>
+      <regStreet2>Suite 500</regStreet2>
+      <regCity>Miami</regCity>
+      <regStateConditional regCountry="US" regState="US-FL"/>
+      <regZipOrPostalCode>33131</regZipOrPostalCode>
+      <regPhone>203-654-7008</regPhone>
+      <seriesName>REX IncomeMax Option Strategy ETF</seriesName>
+      <seriesId>S000096102</seriesId>
+      <seriesLei>5299008H38XHO9JHQB68</seriesLei>
+      <repPdEnd>2026-12-31</repPdEnd>
+      <repPdDate>2026-06-30</repPdDate>
+      <isFinalFiling>N</isFinalFiling>
+    </genInfo>
+    <fundInfo>
+      <totAssets>43880599.800000000000</totAssets>
+      <totLiabs>4722662.190000000000</totLiabs>
+      <netAssets>39157937.610000000000</netAssets>
+      <assetsAttrMiscSec>0.000000000000</assetsAttrMiscSec>
+      <assetsInvested>0.000000000000</assetsInvested>
+      <amtPayOneYrBanksBorr>0.000000000000</amtPayOneYrBanksBorr>
+      <amtPayOneYrCtrldComp>0.000000000000</amtPayOneYrCtrldComp>
+      <amtPayOneYrOthAffil>0.000000000000</amtPayOneYrOthAffil>
+      <amtPayOneYrOther>0.000000000000</amtPayOneYrOther>
+      <amtPayAftOneYrBanksBorr>0.000000000000</amtPayAftOneYrBanksBorr>
+      <amtPayAftOneYrCtrldComp>0.000000000000</amtPayAftOneYrCtrldComp>
+      <amtPayAftOneYrOthAffil>0.000000000000</amtPayAftOneYrOthAffil>
+      <amtPayAftOneYrOther>0.000000000000</amtPayAftOneYrOther>
+      <delayDeliv>0.000000000000</delayDeliv>
+      <standByCommit>0.000000000000</standByCommit>
+      <liquidPref>0.000000000000</liquidPref>
+      <cshNotRptdInCorD>406667.820000000000</cshNotRptdInCorD>
+      <isNonCashCollateral>N</isNonCashCollateral>
+      <returnInfo>
+        <monthlyTotReturns>
+          <monthlyTotReturn classId="C000264889" rtn1="18.770000000000" rtn2="17.240000000000" rtn3="-18.150000000000"/>
+        </monthlyTotReturns>
+        <monthlyReturnCats>
+          <equityContracts>
+            <mon1 netRealizedGain="1716708.270000000000" netUnrealizedAppr="122683.830000000000"/>
+            <mon2 netRealizedGain="3638159.020000000000" netUnrealizedAppr="-2424142.280000000000"/>
+            <mon3 netRealizedGain="3044273.920000000000" netUnrealizedAppr="1661168.970000000000"/>
+            <optionCategory>
+              <instrMon1 netRealizedGain="1716708.270000000000" netUnrealizedAppr="122683.830000000000"/>
+              <instrMon2 netRealizedGain="3638159.020000000000" netUnrealizedAppr="-2424142.280000000000"/>
+              <instrMon3 netRealizedGain="3044273.920000000000" netUnrealizedAppr="1661168.970000000000"/>
+            </optionCategory>
+          </equityContracts>
+        </monthlyReturnCats>
+        <othMon1 netRealizedGain="1435475.46" netUnrealizedAppr="1994272.97"/>
+        <othMon2 netRealizedGain="3431952.69" netUnrealizedAppr="1182074.36"/>
+        <othMon3 netRealizedGain="-11636475.810000000000" netUnrealizedAppr="-921076.550000000000"/>
+      </returnInfo>
+      <mon1Flow redemption=".000000000000" reinvestment=".000000000000" sales="10588692.500000000000"/>
+      <mon2Flow redemption=".000000000000" reinvestment=".000000000000" sales="8678567.500000000000"/>
+      <mon3Flow redemption=".000000000000" reinvestment=".000000000000" sales="9863745.000000000000"/>
+
+      <varInfo>
+
+        <fundsDesignatedInfo>
+          <nameDesignatedIndex>Melanion Bitcoin Exposure Index</nameDesignatedIndex>
+          <indexIdentifier>MBCEXI</indexIdentifier>
+
+        </fundsDesignatedInfo>
+
+      </varInfo>
+    </fundInfo>
+    <invstOrSecs>
+      <invstOrSec>
+        <name>Applied Materials Inc</name>
+        <lei>41BNNE1AFPNAZELZ6K07</lei>
+        <title>Applied Materials Inc</title>
+        <cusip>038222105</cusip>
+        <identifiers>
+          <isin value="US0382221051"/>
+          <ticker value="AMAT"/>
+        </identifiers>
+        <balance>2800.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>2024400.000000000000</valUSD>
+        <pctVal>5.1698330493</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>Cleanspark Inc</name>
+        <lei>254900VO7KBRJQDGY810</lei>
+        <title>Cleanspark Inc</title>
+        <cusip>18452B209</cusip>
+        <identifiers>
+          <isin value="US18452B2097"/>
+          <ticker value="CLSK"/>
+        </identifiers>
+        <balance>110900.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1613595.000000000000</valUSD>
+        <pctVal>4.1207354076</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>Core Scientific Inc</name>
+        <lei>5299003RGB2LAZ65RK73</lei>
+        <title>Core Scientific Inc</title>
+        <cusip>21874A106</cusip>
+        <identifiers>
+          <isin value="US21874A1060"/>
+          <ticker value="CORZ"/>
+        </identifiers>
+        <balance>66200.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1694058.000000000000</valUSD>
+        <pctVal>4.3262186504</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>Corning Inc</name>
+        <lei>549300X2937PB0CJ7I56</lei>
+        <title>Corning Inc</title>
+        <cusip>219350105</cusip>
+        <identifiers>
+          <isin value="US2193501051"/>
+          <ticker value="GLW"/>
+        </identifiers>
+        <balance>8300.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>2120069.000000000000</valUSD>
+        <pctVal>5.4141487765</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>Dell Technologies Inc</name>
+        <lei>549300TJB5YBRUPOG437</lei>
+        <title>Dell Technologies Inc</title>
+        <cusip>24703L202</cusip>
+        <identifiers>
+          <isin value="US24703L2025"/>
+          <ticker value="DELL"/>
+        </identifiers>
+        <balance>4600.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1984716.000000000000</valUSD>
+        <pctVal>5.0684896119</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>Enphase Energy Inc</name>
+        <lei>5493008U7KIGMI59Z314</lei>
+        <title>Enphase Energy Inc</title>
+        <cusip>29355A107</cusip>
+        <identifiers>
+          <isin value="US29355A1079"/>
+          <ticker value="ENPH"/>
+        </identifiers>
+        <balance>38000.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1871120.000000000000</valUSD>
+        <pctVal>4.7783926177</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>First American Government Obli</name>
+        <lei>549300R5MYM6VZF1RM44</lei>
+        <title>First American Government Obligations Fund</title>
+        <cusip>31846V336</cusip>
+        <identifiers>
+          <isin value="US31846V3362"/>
+          <ticker value="FGXXX"/>
+        </identifiers>
+        <balance>2539505.350000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>2539505.350000000000</valUSD>
+        <pctVal>6.4852888201</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>STIV</assetCat>
+        <issuerCat>RF</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>Intuitive Machines Inc</name>
+        <lei>254900386IE2PEPLVM59</lei>
+        <title>Intuitive Machines Inc</title>
+        <cusip>46125A100</cusip>
+        <identifiers>
+          <isin value="US46125A1007"/>
+          <ticker value="LUNR"/>
+        </identifiers>
+        <balance>91100.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1948629.000000000000</valUSD>
+        <pctVal>4.9763320515</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>Lam Research Corp</name>
+        <lei>549300I4GMO6D34U1T02</lei>
+        <title>Lam Research Corp</title>
+        <cusip>512807306</cusip>
+        <identifiers>
+          <isin value="US5128073062"/>
+          <ticker value="LRCX"/>
+        </identifiers>
+        <balance>4700.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>2036651.000000000000</valUSD>
+        <pctVal>5.2011191710</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>Moderna Inc</name>
+        <lei>549300EI6OKH5K5Q2G38</lei>
+        <title>Moderna Inc</title>
+        <cusip>60770K107</cusip>
+        <identifiers>
+          <isin value="US60770K1079"/>
+          <ticker value="MRNA"/>
+        </identifiers>
+        <balance>27100.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1897813.000000000000</valUSD>
+        <pctVal>4.8465601506</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Applied Materials Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="AMAT 7 C642.5"/>
+          <other otherDesc="BBGID" value="BBG0235FCQV7"/>
+        </identifiers>
+        <balance>-28.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-233380.000000000000</valUSD>
+        <pctVal>-0.5959966593</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Applied Materials Inc</issuerName>
+                <issueTitle>Applied Materials Inc</issueTitle>
+                <identifiers>
+                  <cusip value="038222105"/>
+                  <isin value="US0382221051"/>
+                  <ticker value="AMAT"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>642.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-175504.520000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Applied Materials Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="AMAT 7 C697.5"/>
+          <other otherDesc="BBGID" value="BBG0235F8MK3"/>
+        </identifiers>
+        <balance>28.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>134372.000000000000</valUSD>
+        <pctVal>0.3431539254</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Applied Materials Inc</issuerName>
+                <issueTitle>Applied Materials Inc</issueTitle>
+                <identifiers>
+                  <cusip value="038222105"/>
+                  <isin value="US0382221051"/>
+                  <ticker value="AMAT"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>697.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>116199.480000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Applied Materials Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="AMAT 7 P587.5"/>
+          <other otherDesc="BBGID" value="BBG0235F80V9"/>
+        </identifiers>
+        <balance>28.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>1120.000000000000</valUSD>
+        <pctVal>0.0028602119</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Applied Materials Inc</issuerName>
+                <issueTitle>Applied Materials Inc</issueTitle>
+                <identifiers>
+                  <cusip value="038222105"/>
+                  <isin value="US0382221051"/>
+                  <ticker value="AMAT"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>587.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-30660.520000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Bitdeer Technologies Group</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="BTDR 7 C17"/>
+          <other otherDesc="BBGID" value="BBG022HHTC90"/>
+        </identifiers>
+        <balance>-1042.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-36470.000000000000</valUSD>
+        <pctVal>-0.0931356507</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Bitdeer Technologies Group</issuerName>
+                <issueTitle>Bitdeer Technologies Group</issueTitle>
+                <identifiers>
+                  <cusip value="N/A"/>
+                  <isin value="KYG114481008"/>
+                  <ticker value="BTDR"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>17.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>121894.510000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Bitdeer Technologies Group</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="BTDR 7 C20"/>
+          <other otherDesc="BBGID" value="BBG022JN7V97"/>
+        </identifiers>
+        <balance>1042.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>10420.000000000000</valUSD>
+        <pctVal>0.0266101859</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Bitdeer Technologies Group</issuerName>
+                <issueTitle>Bitdeer Technologies Group</issueTitle>
+                <identifiers>
+                  <cusip value="N/A"/>
+                  <isin value="KYG114481008"/>
+                  <ticker value="BTDR"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>20.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-53161.490000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Bitdeer Technologies Group</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="BTDR 7 P14"/>
+          <other otherDesc="BBGID" value="BBG022HHHBK2"/>
+        </identifiers>
+        <balance>1042.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>20840.000000000000</valUSD>
+        <pctVal>0.0532203718</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Bitdeer Technologies Group</issuerName>
+                <issueTitle>Bitdeer Technologies Group</issueTitle>
+                <identifiers>
+                  <cusip value="N/A"/>
+                  <isin value="KYG114481008"/>
+                  <ticker value="BTDR"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>14.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-6271.490000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Bitdeer Technologies Group</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="BTDR 7 P17"/>
+          <other otherDesc="BBGID" value="BBG022HHVPJ7"/>
+        </identifiers>
+        <balance>-1042.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-205274.000000000000</valUSD>
+        <pctVal>-0.5242206626</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Bitdeer Technologies Group</issuerName>
+                <issueTitle>Bitdeer Technologies Group</issueTitle>
+                <identifiers>
+                  <cusip value="N/A"/>
+                  <isin value="KYG114481008"/>
+                  <ticker value="BTDR"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>17.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-59413.490000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Cleanspark Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="CLSK 7 P16"/>
+          <other otherDesc="BBGID" value="BBG022HM8WQ9"/>
+        </identifiers>
+        <balance>-1109.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-158587.000000000000</valUSD>
+        <pctVal>-0.4049932394</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Cleanspark Inc</issuerName>
+                <issueTitle>Cleanspark Inc</issueTitle>
+                <identifiers>
+                  <cusip value="18452B209"/>
+                  <isin value="US18452B2097"/>
+                  <ticker value="CLSK"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>16.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-94285.740000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Core Scientific Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="CORZ 7 C27"/>
+          <other otherDesc="BBGID" value="BBG022HJB3C1"/>
+        </identifiers>
+        <balance>-662.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-7282.000000000000</valUSD>
+        <pctVal>-0.0185964850</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Core Scientific Inc</issuerName>
+                <issueTitle>Core Scientific Inc</issueTitle>
+                <identifiers>
+                  <cusip value="21874A106"/>
+                  <isin value="US21874A1060"/>
+                  <ticker value="CORZ"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>27.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>74131.620000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>Bitdeer Technologies Group</name>
+        <lei>2549007M2KGWVJ9XFP20</lei>
+        <title>Bitdeer Technologies Group</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <isin value="KYG114481008"/>
+          <ticker value="BTDR"/>
+        </identifiers>
+        <balance>104200.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1653654.000000000000</valUSD>
+        <pctVal>4.2230365053</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>SG</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Corning Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="GLW 7 C235"/>
+          <other otherDesc="BBGID" value="BBG022JTKJN0"/>
+        </identifiers>
+        <balance>83.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>190900.000000000000</valUSD>
+        <pctVal>0.4875129071</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Corning Inc</issuerName>
+                <issueTitle>Corning Inc</issueTitle>
+                <identifiers>
+                  <cusip value="219350105"/>
+                  <isin value="US2193501051"/>
+                  <ticker value="GLW"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>235.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>153631.450000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Hims &amp; Hers Health Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="HIMS 7 P31"/>
+          <other otherDesc="BBGID" value="BBG022JT4GT8"/>
+        </identifiers>
+        <balance>526.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>6312.000000000000</valUSD>
+        <pctVal>0.0161193372</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Hims &amp; Hers Health Inc</issuerName>
+                <issueTitle>Hims &amp; Hers Health Inc</issueTitle>
+                <identifiers>
+                  <cusip value="433000106"/>
+                  <isin value="US4330001060"/>
+                  <ticker value="HIMS"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>31.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-18419.840000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Hims &amp; Hers Health Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="HIMS 7 P34"/>
+          <other otherDesc="BBGID" value="BBG02302G231"/>
+        </identifiers>
+        <balance>-526.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-46288.000000000000</valUSD>
+        <pctVal>-0.1182084727</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Hims &amp; Hers Health Inc</issuerName>
+                <issueTitle>Hims &amp; Hers Health Inc</issueTitle>
+                <identifiers>
+                  <cusip value="433000106"/>
+                  <isin value="US4330001060"/>
+                  <ticker value="HIMS"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>34.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>34706.160000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Intel Corp</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="INTC 7 C128"/>
+          <other otherDesc="BBGID" value="BBG022HRQWC3"/>
+        </identifiers>
+        <balance>-140.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-183400.000000000000</valUSD>
+        <pctVal>-0.4683597023</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Intel Corp</issuerName>
+                <issueTitle>Intel Corp</issueTitle>
+                <identifiers>
+                  <cusip value="458140100"/>
+                  <isin value="US4581401001"/>
+                  <ticker value="INTC"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>128.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-102622.620000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Vertiv Holdings Co</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="VRT 7 C322.5"/>
+          <other otherDesc="BBGID" value="BBG023057Y52"/>
+        </identifiers>
+        <balance>59.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>91450.000000000000</valUSD>
+        <pctVal>0.2335414110</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>CHICAGO</counterpartyName>
+              <counterpartyLei>529900RLNSGA90UPEH54</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Vertiv Holdings Co</issuerName>
+                <issueTitle>Vertiv Holdings Co</issueTitle>
+                <identifiers>
+                  <cusip value="92537N108"/>
+                  <isin value="US92537N1081"/>
+                  <ticker value="VRT"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>322.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>69087.900000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Vertiv Holdings Co</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="VRT 7 P282.5"/>
+          <other otherDesc="BBGID" value="BBG023058368"/>
+        </identifiers>
+        <balance>59.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>944.000000000000</valUSD>
+        <pctVal>0.0024107500</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>CHICAGO</counterpartyName>
+              <counterpartyLei>529900RLNSGA90UPEH54</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Vertiv Holdings Co</issuerName>
+                <issueTitle>Vertiv Holdings Co</issueTitle>
+                <identifiers>
+                  <cusip value="92537N108"/>
+                  <isin value="US92537N1081"/>
+                  <ticker value="VRT"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>282.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-17465.100000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Vertiv Holdings Co</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="VRT 7 P302.5"/>
+          <other otherDesc="BBGID" value="BBG0230587C2"/>
+        </identifiers>
+        <balance>-59.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-2301.000000000000</valUSD>
+        <pctVal>-0.0058762032</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>CHICAGO</counterpartyName>
+              <counterpartyLei>529900RLNSGA90UPEH54</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Vertiv Holdings Co</issuerName>
+                <issueTitle>Vertiv Holdings Co</issueTitle>
+                <identifiers>
+                  <cusip value="92537N108"/>
+                  <isin value="US92537N1081"/>
+                  <ticker value="VRT"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>302.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>52095.900000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Core Scientific Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="CORZ 7 C29.5"/>
+          <other otherDesc="BBGID" value="BBG022JQKL33"/>
+        </identifiers>
+        <balance>662.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>1324.000000000000</valUSD>
+        <pctVal>0.0033811791</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Core Scientific Inc</issuerName>
+                <issueTitle>Core Scientific Inc</issueTitle>
+                <identifiers>
+                  <cusip value="21874A106"/>
+                  <isin value="US21874A1060"/>
+                  <ticker value="CORZ"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>29.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-22520.380000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Core Scientific Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="CORZ 7 P24.5"/>
+          <other otherDesc="BBGID" value="BBG022HJW3R2"/>
+        </identifiers>
+        <balance>662.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>26480.000000000000</valUSD>
+        <pctVal>0.0676235819</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Core Scientific Inc</issuerName>
+                <issueTitle>Core Scientific Inc</issueTitle>
+                <identifiers>
+                  <cusip value="21874A106"/>
+                  <isin value="US21874A1060"/>
+                  <ticker value="CORZ"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>24.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>7269.620000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Core Scientific Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="CORZ 7 P27"/>
+          <other otherDesc="BBGID" value="BBG022HJFKH4"/>
+        </identifiers>
+        <balance>-662.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-133062.000000000000</valUSD>
+        <pctVal>-0.3398084989</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Core Scientific Inc</issuerName>
+                <issueTitle>Core Scientific Inc</issueTitle>
+                <identifiers>
+                  <cusip value="21874A106"/>
+                  <isin value="US21874A1060"/>
+                  <ticker value="CORZ"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>27.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-68198.380000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Corning Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="GLW 7 C217.5"/>
+          <other otherDesc="BBGID" value="BBG0235T7923"/>
+        </identifiers>
+        <balance>-83.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-332000.000000000000</valUSD>
+        <pctVal>-0.8478485341</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Corning Inc</issuerName>
+                <issueTitle>Corning Inc</issueTitle>
+                <identifiers>
+                  <cusip value="219350105"/>
+                  <isin value="US2193501051"/>
+                  <ticker value="GLW"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>217.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-233729.550000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Sunrun Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="RUN 7 P13.5"/>
+          <other otherDesc="BBGID" value="BBG02305D1M8"/>
+        </identifiers>
+        <balance>-1334.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-64032.000000000000</valUSD>
+        <pctVal>-0.1635224016</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>CHICAGO</counterpartyName>
+              <counterpartyLei>529900RLNSGA90UPEH54</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Sunrun Inc</issuerName>
+                <issueTitle>Sunrun Inc</issueTitle>
+                <identifiers>
+                  <cusip value="86771W105"/>
+                  <isin value="US86771W1053"/>
+                  <ticker value="RUN"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>13.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-1358.950000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Tempus AI Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="TEM 7 C56"/>
+          <other otherDesc="BBGID" value="BBG022NJ1HZ9"/>
+        </identifiers>
+        <balance>-322.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-112056.000000000000</valUSD>
+        <pctVal>-0.2861642028</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Tempus AI Inc</issuerName>
+                <issueTitle>Tempus AI Inc</issueTitle>
+                <identifiers>
+                  <cusip value="88023B103"/>
+                  <isin value="US88023B1035"/>
+                  <ticker value="TEM"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>56.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-41222.020000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Tempus AI Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="TEM 7 C60"/>
+          <other otherDesc="BBGID" value="BBG022K0KP39"/>
+        </identifiers>
+        <balance>322.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>24472.000000000000</valUSD>
+        <pctVal>0.0624956305</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Tempus AI Inc</issuerName>
+                <issueTitle>Tempus AI Inc</issueTitle>
+                <identifiers>
+                  <cusip value="88023B103"/>
+                  <isin value="US88023B1035"/>
+                  <ticker value="TEM"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>60.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-328.020000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Tempus AI Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="TEM 7 P52"/>
+          <other otherDesc="BBGID" value="BBG022J4PDN3"/>
+        </identifiers>
+        <balance>322.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>2254.000000000000</valUSD>
+        <pctVal>0.0057561765</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Tempus AI Inc</issuerName>
+                <issueTitle>Tempus AI Inc</issueTitle>
+                <identifiers>
+                  <cusip value="88023B103"/>
+                  <isin value="US88023B1035"/>
+                  <ticker value="TEM"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>52.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-22546.020000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Vertiv Holdings Co</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="VRT 7 C302.5"/>
+          <other otherDesc="BBGID" value="BBG023057Z04"/>
+        </identifiers>
+        <balance>-59.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-188800.000000000000</valUSD>
+        <pctVal>-0.4821500097</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>CHICAGO</counterpartyName>
+              <counterpartyLei>529900RLNSGA90UPEH54</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Vertiv Holdings Co</issuerName>
+                <issueTitle>Vertiv Holdings Co</issueTitle>
+                <identifiers>
+                  <cusip value="92537N108"/>
+                  <isin value="US92537N1081"/>
+                  <ticker value="VRT"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>302.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-119948.100000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>FuelCell Energy Inc</name>
+        <lei>549300SRU8020X1X9J22</lei>
+        <title>FuelCell Energy Inc</title>
+        <cusip>35952H700</cusip>
+        <identifiers>
+          <isin value="US35952H7008"/>
+          <ticker value="FCEL"/>
+        </identifiers>
+        <balance>75900.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>2733159.000000000000</valUSD>
+        <pctVal>6.9798338902</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>Hecla Mining Co</name>
+        <lei>5493009Y6HOBZD1QD537</lei>
+        <title>Hecla Mining Co</title>
+        <cusip>422704106</cusip>
+        <identifiers>
+          <isin value="US4227041062"/>
+          <ticker value="HL"/>
+        </identifiers>
+        <balance>114300.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1763649.000000000000</valUSD>
+        <pctVal>4.5039374074</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>Hims &amp; Hers Health Inc</name>
+        <lei>254900V041EIVTSB6D58</lei>
+        <title>Hims &amp; Hers Health Inc</title>
+        <cusip>433000106</cusip>
+        <identifiers>
+          <isin value="US4330001060"/>
+          <ticker value="HIMS"/>
+        </identifiers>
+        <balance>52600.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1823642.000000000000</valUSD>
+        <pctVal>4.6571451698</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>Intel Corp</name>
+        <lei>KNX4USFCNGPY45LOCE31</lei>
+        <title>Intel Corp</title>
+        <cusip>458140100</cusip>
+        <identifiers>
+          <isin value="US4581401001"/>
+          <ticker value="INTC"/>
+        </identifiers>
+        <balance>14000.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1954820.000000000000</valUSD>
+        <pctVal>4.9921423837</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Intel Corp</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="INTC 7 P128"/>
+          <other otherDesc="BBGID" value="BBG022HRTFL7"/>
+        </identifiers>
+        <balance>-140.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-8400.000000000000</valUSD>
+        <pctVal>-0.0214515894</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Intel Corp</issuerName>
+                <issueTitle>Intel Corp</issueTitle>
+                <identifiers>
+                  <cusip value="458140100"/>
+                  <isin value="US4581401001"/>
+                  <ticker value="INTC"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>128.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>66777.380000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Lam Research Corp</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="LRCX 7 C382.5"/>
+          <other otherDesc="BBGID" value="BBG02302ZHJ0"/>
+        </identifiers>
+        <balance>-47.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-204967.000000000000</valUSD>
+        <pctVal>-0.5234366581</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Lam Research Corp</issuerName>
+                <issueTitle>Lam Research Corp</issueTitle>
+                <identifiers>
+                  <cusip value="512807306"/>
+                  <isin value="US5128073062"/>
+                  <ticker value="LRCX"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>382.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-139731.880000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Intuitive Machines Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="LUNR 7 C19.5"/>
+          <other otherDesc="BBGID" value="BBG0235ZJ4Z1"/>
+        </identifiers>
+        <balance>-911.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-203153.000000000000</valUSD>
+        <pctVal>-0.5188041363</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Intuitive Machines Inc</issuerName>
+                <issueTitle>Intuitive Machines Inc</issueTitle>
+                <identifiers>
+                  <cusip value="46125A100"/>
+                  <isin value="US46125A1007"/>
+                  <ticker value="LUNR"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>19.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-89295.040000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Intuitive Machines Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="LUNR 7 C21.5"/>
+          <other otherDesc="BBGID" value="BBG0235ZJ5L3"/>
+        </identifiers>
+        <balance>911.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>65592.000000000000</valUSD>
+        <pctVal>0.1675062682</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Intuitive Machines Inc</issuerName>
+                <issueTitle>Intuitive Machines Inc</issueTitle>
+                <identifiers>
+                  <cusip value="46125A100"/>
+                  <isin value="US46125A1007"/>
+                  <ticker value="LUNR"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>21.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>19113.960000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Intuitive Machines Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="LUNR 7 P17.5"/>
+          <other otherDesc="BBGID" value="BBG0235ZJW52"/>
+        </identifiers>
+        <balance>911.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>4555.000000000000</valUSD>
+        <pctVal>0.0116323797</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Intuitive Machines Inc</issuerName>
+                <issueTitle>Intuitive Machines Inc</issueTitle>
+                <identifiers>
+                  <cusip value="46125A100"/>
+                  <isin value="US46125A1007"/>
+                  <ticker value="LUNR"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>17.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-29169.040000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Intuitive Machines Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="LUNR 7 P19.5"/>
+          <other otherDesc="BBGID" value="BBG0235ZDSF6"/>
+        </identifiers>
+        <balance>-911.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-18220.000000000000</valUSD>
+        <pctVal>-0.0465295189</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Intuitive Machines Inc</issuerName>
+                <issueTitle>Intuitive Machines Inc</issueTitle>
+                <identifiers>
+                  <cusip value="46125A100"/>
+                  <isin value="US46125A1007"/>
+                  <ticker value="LUNR"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>19.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>73773.960000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Moderna Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="MRNA 7 C72"/>
+          <other otherDesc="BBGID" value="BBG0233GSH77"/>
+        </identifiers>
+        <balance>271.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>35772.000000000000</valUSD>
+        <pctVal>0.0913531258</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Moderna Inc</issuerName>
+                <issueTitle>Moderna Inc</issueTitle>
+                <identifiers>
+                  <cusip value="60770K107"/>
+                  <isin value="US60770K1079"/>
+                  <ticker value="MRNA"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>72.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>3517.930000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Moderna Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="MRNA 7 P60"/>
+          <other otherDesc="BBGID" value="BBG022JW0FC5"/>
+        </identifiers>
+        <balance>271.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>2710.000000000000</valUSD>
+        <pctVal>0.0069206913</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Moderna Inc</issuerName>
+                <issueTitle>Moderna Inc</issueTitle>
+                <identifiers>
+                  <cusip value="60770K107"/>
+                  <isin value="US60770K1079"/>
+                  <ticker value="MRNA"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>60.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-13555.070000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Moderna Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="MRNA 7 P66"/>
+          <other otherDesc="BBGID" value="BBG0233GT527"/>
+        </identifiers>
+        <balance>-271.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-16260.000000000000</valUSD>
+        <pctVal>-0.0415241481</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Moderna Inc</issuerName>
+                <issueTitle>Moderna Inc</issueTitle>
+                <identifiers>
+                  <cusip value="60770K107"/>
+                  <isin value="US60770K1079"/>
+                  <ticker value="MRNA"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>66.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>48232.930000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Nebius Group NV</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="NBIS 7 C237.5"/>
+          <other otherDesc="BBGID" value="BBG022T0HS83"/>
+        </identifiers>
+        <balance>-76.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-323000.000000000000</valUSD>
+        <pctVal>-0.8248646883</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NSDQOMX PHLX</counterpartyName>
+              <counterpartyLei>549300L8X1Q78ERXFD06</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Nebius Group NV</issuerName>
+                <issueTitle>Nebius Group NV</issueTitle>
+                <identifiers>
+                  <cusip value="N/A"/>
+                  <isin value="NL0009805522"/>
+                  <ticker value="NBIS"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>237.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-205957.420000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Nebius Group NV</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="NBIS 7 C265"/>
+          <other otherDesc="BBGID" value="BBG022JW2Q20"/>
+        </identifiers>
+        <balance>76.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>130796.000000000000</valUSD>
+        <pctVal>0.3340216773</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NSDQOMX PHLX</counterpartyName>
+              <counterpartyLei>549300L8X1Q78ERXFD06</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Nebius Group NV</issuerName>
+                <issueTitle>Nebius Group NV</issueTitle>
+                <identifiers>
+                  <cusip value="N/A"/>
+                  <isin value="NL0009805522"/>
+                  <ticker value="NBIS"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>265.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>93022.580000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Nebius Group NV</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="NBIS 7 P210"/>
+          <other otherDesc="BBGID" value="BBG022HWFG66"/>
+        </identifiers>
+        <balance>76.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>2964.000000000000</valUSD>
+        <pctVal>0.0075693466</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NSDQOMX PHLX</counterpartyName>
+              <counterpartyLei>549300L8X1Q78ERXFD06</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Nebius Group NV</issuerName>
+                <issueTitle>Nebius Group NV</issueTitle>
+                <identifiers>
+                  <cusip value="N/A"/>
+                  <isin value="NL0009805522"/>
+                  <ticker value="NBIS"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>210.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-34429.420000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Nebius Group NV</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="NBIS 7 P237.5"/>
+          <other otherDesc="BBGID" value="BBG022T0HXP3"/>
+        </identifiers>
+        <balance>-76.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-9272.000000000000</valUSD>
+        <pctVal>-0.0236784687</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NSDQOMX PHLX</counterpartyName>
+              <counterpartyLei>549300L8X1Q78ERXFD06</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Nebius Group NV</issuerName>
+                <issueTitle>Nebius Group NV</issueTitle>
+                <identifiers>
+                  <cusip value="N/A"/>
+                  <isin value="NL0009805522"/>
+                  <ticker value="NBIS"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>237.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>88690.580000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Sunrun Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="RUN 7 C13.5"/>
+          <other otherDesc="BBGID" value="BBG0230591M3"/>
+        </identifiers>
+        <balance>-1334.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-46690.000000000000</valUSD>
+        <pctVal>-0.1192350845</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>CHICAGO</counterpartyName>
+              <counterpartyLei>529900RLNSGA90UPEH54</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Sunrun Inc</issuerName>
+                <issueTitle>Sunrun Inc</issueTitle>
+                <identifiers>
+                  <cusip value="86771W105"/>
+                  <isin value="US86771W1053"/>
+                  <ticker value="RUN"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>13.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>30657.050000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Sunrun Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="RUN 7 C14.5"/>
+          <other otherDesc="BBGID" value="BBG022JYCZN2"/>
+        </identifiers>
+        <balance>1334.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>14674.000000000000</valUSD>
+        <pctVal>0.0374738837</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>CHICAGO</counterpartyName>
+              <counterpartyLei>529900RLNSGA90UPEH54</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Sunrun Inc</issuerName>
+                <issueTitle>Sunrun Inc</issueTitle>
+                <identifiers>
+                  <cusip value="86771W105"/>
+                  <isin value="US86771W1053"/>
+                  <ticker value="RUN"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>14.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-13364.950000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Sunrun Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="RUN 7 P12.5"/>
+          <other otherDesc="BBGID" value="BBG02305CYS1"/>
+        </identifiers>
+        <balance>1334.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>14674.000000000000</valUSD>
+        <pctVal>0.0374738837</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>CHICAGO</counterpartyName>
+              <counterpartyLei>529900RLNSGA90UPEH54</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Sunrun Inc</issuerName>
+                <issueTitle>Sunrun Inc</issueTitle>
+                <identifiers>
+                  <cusip value="86771W105"/>
+                  <isin value="US86771W1053"/>
+                  <ticker value="RUN"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>12.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-9362.950000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Sandisk Corp</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="SNDK 7 P1850"/>
+          <other otherDesc="BBGID" value="BBG022JZDVT1"/>
+        </identifiers>
+        <balance>18.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>7380.000000000000</valUSD>
+        <pctVal>0.0188467536</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Sandisk Corp</issuerName>
+                <issueTitle>Sandisk Corp</issueTitle>
+                <identifiers>
+                  <cusip value="80004C200"/>
+                  <isin value="US80004C2008"/>
+                  <ticker value="SNDK"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>1850.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-43596.340000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Sandisk Corp</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="SNDK 7 P2140"/>
+          <other otherDesc="BBGID" value="BBG022JZCD49"/>
+        </identifiers>
+        <balance>-9.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-30330.000000000000</valUSD>
+        <pctVal>-0.0774555604</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Sandisk Corp</issuerName>
+                <issueTitle>Sandisk Corp</issueTitle>
+                <identifiers>
+                  <cusip value="80004C200"/>
+                  <isin value="US80004C2008"/>
+                  <ticker value="SNDK"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>2140.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>98432.830000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Space Exploration Technologies Corp</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="SPCX 7 C152.5"/>
+          <other otherDesc="BBGID" value="BBG023693K98"/>
+        </identifiers>
+        <balance>-118.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-218300.000000000000</valUSD>
+        <pctVal>-0.5574859488</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NASDAQ</counterpartyName>
+              <counterpartyLei>549300L8X1Q78ERXFD06</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>SPACEX</issuerName>
+                <issueTitle>Space Exploration Technologies Corp</issueTitle>
+                <identifiers>
+                  <cusip value="84615Q103"/>
+                  <isin value="US84615Q1031"/>
+                  <ticker value="SPCX"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>152.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-147974.210000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Space Exploration Technologies Corp</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="SPCX 7 C165"/>
+          <other otherDesc="BBGID" value="BBG0233ZGT63"/>
+        </identifiers>
+        <balance>118.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>92040.000000000000</valUSD>
+        <pctVal>0.2350481297</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NASDAQ</counterpartyName>
+              <counterpartyLei>549300L8X1Q78ERXFD06</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>SPACEX</issuerName>
+                <issueTitle>Space Exploration Technologies Corp</issueTitle>
+                <identifiers>
+                  <cusip value="84615Q103"/>
+                  <isin value="US84615Q1031"/>
+                  <ticker value="SPCX"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>165.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>68791.790000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Space Exploration Technologies Corp</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="SPCX 7 P141"/>
+          <other otherDesc="BBGID" value="BBG023690CR9"/>
+        </identifiers>
+        <balance>118.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>826.000000000000</valUSD>
+        <pctVal>0.0021094063</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NASDAQ</counterpartyName>
+              <counterpartyLei>549300L8X1Q78ERXFD06</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>SPACEX</issuerName>
+                <issueTitle>Space Exploration Technologies Corp</issueTitle>
+                <identifiers>
+                  <cusip value="84615Q103"/>
+                  <isin value="US84615Q1031"/>
+                  <ticker value="SPCX"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>141.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-17466.210000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>Sandisk Corp</name>
+        <lei>5299007I9R9N3RO43S32</lei>
+        <title>Sandisk Corp</title>
+        <cusip>80004C200</cusip>
+        <identifiers>
+          <isin value="US80004C2008"/>
+          <ticker value="SNDK"/>
+        </identifiers>
+        <balance>900.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>2046357.000000000000</valUSD>
+        <pctVal>5.2259059718</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>SPACEX</name>
+        <lei>549300B9WLO96RQCXP87</lei>
+        <title>Space Exploration Technologies Corp</title>
+        <cusip>84615Q103</cusip>
+        <identifiers>
+          <isin value="US84615Q1031"/>
+          <ticker value="SPCX"/>
+        </identifiers>
+        <balance>11800.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>2016148.000000000000</valUSD>
+        <pctVal>5.1487594165</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>Sunrun Inc</name>
+        <lei>54930007SJ77CI66U531</lei>
+        <title>Sunrun Inc</title>
+        <cusip>86771W105</cusip>
+        <identifiers>
+          <isin value="US86771W1053"/>
+          <ticker value="RUN"/>
+        </identifiers>
+        <balance>133400.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1784892.000000000000</valUSD>
+        <pctVal>4.5581869448</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>Tempus AI Inc</name>
+        <lei>2549009LA0KWRAGQBX50</lei>
+        <title>Tempus AI Inc</title>
+        <cusip>88023B103</cusip>
+        <identifiers>
+          <isin value="US88023B1035"/>
+          <ticker value="TEM"/>
+        </identifiers>
+        <balance>32200.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1865346.000000000000</valUSD>
+        <pctVal>4.7636472037</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>Vertiv Holdings Co</name>
+        <lei>549300KTTIRAOGXCRV69</lei>
+        <title>Vertiv Holdings Co</title>
+        <cusip>92537N108</cusip>
+        <identifiers>
+          <isin value="US92537N1081"/>
+          <ticker value="VRT"/>
+        </identifiers>
+        <balance>5900.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1975438.000000000000</valUSD>
+        <pctVal>5.0447958206</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>Nebius Group NV</name>
+        <lei>549300GGZHJ5Q1B18P93</lei>
+        <title>Nebius Group NV</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <isin value="NL0009805522"/>
+          <ticker value="NBIS"/>
+        </identifiers>
+        <balance>7600.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>2098892.000000000000</valUSD>
+        <pctVal>5.3600677873</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>NL</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Cleanspark Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="CLSK 7 C16"/>
+          <other otherDesc="BBGID" value="BBG022HM4VH5"/>
+        </identifiers>
+        <balance>-1109.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-8872.000000000000</valUSD>
+        <pctVal>-0.0226569644</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Cleanspark Inc</issuerName>
+                <issueTitle>Cleanspark Inc</issueTitle>
+                <identifiers>
+                  <cusip value="18452B209"/>
+                  <isin value="US18452B2097"/>
+                  <ticker value="CLSK"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>16.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>89808.260000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Cleanspark Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="CLSK 7 C17.5"/>
+          <other otherDesc="BBGID" value="BBG022HMH7Y5"/>
+        </identifiers>
+        <balance>1109.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>1109.000000000000</valUSD>
+        <pctVal>0.0028321206</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Cleanspark Inc</issuerName>
+                <issueTitle>Cleanspark Inc</issueTitle>
+                <identifiers>
+                  <cusip value="18452B209"/>
+                  <isin value="US18452B2097"/>
+                  <ticker value="CLSK"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>17.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-33290.740000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Cleanspark Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="CLSK 7 P14.5"/>
+          <other otherDesc="BBGID" value="BBG022HMHYK1"/>
+        </identifiers>
+        <balance>1109.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>43251.000000000000</valUSD>
+        <pctVal>0.1104527016</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Cleanspark Inc</issuerName>
+                <issueTitle>Cleanspark Inc</issueTitle>
+                <identifiers>
+                  <cusip value="18452B209"/>
+                  <isin value="US18452B2097"/>
+                  <ticker value="CLSK"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>14.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>24377.260000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Dell Technologies Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="DELL 7 C392.5"/>
+          <other otherDesc="BBGID" value="BBG02300QP06"/>
+        </identifiers>
+        <balance>-46.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-174018.000000000000</valUSD>
+        <pctVal>-0.4444003199</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Dell Technologies Inc</issuerName>
+                <issueTitle>Dell Technologies Inc</issueTitle>
+                <identifiers>
+                  <cusip value="24703L202"/>
+                  <isin value="US24703L2025"/>
+                  <ticker value="DELL"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>392.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-106536.860000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Dell Technologies Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="DELL 7 C422.5"/>
+          <other otherDesc="BBGID" value="BBG02300QMS3"/>
+        </identifiers>
+        <balance>46.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>73186.000000000000</valUSD>
+        <pctVal>0.1868995266</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Dell Technologies Inc</issuerName>
+                <issueTitle>Dell Technologies Inc</issueTitle>
+                <identifiers>
+                  <cusip value="24703L202"/>
+                  <isin value="US24703L2025"/>
+                  <ticker value="DELL"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>422.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>53681.140000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Dell Technologies Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="DELL 7 P365"/>
+          <other otherDesc="BBGID" value="BBG022JQ9LZ1"/>
+        </identifiers>
+        <balance>46.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>1150.000000000000</valUSD>
+        <pctVal>0.0029368247</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Dell Technologies Inc</issuerName>
+                <issueTitle>Dell Technologies Inc</issueTitle>
+                <identifiers>
+                  <cusip value="24703L202"/>
+                  <isin value="US24703L2025"/>
+                  <ticker value="DELL"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>365.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-20700.860000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Enphase Energy Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="ENPH 7 C47"/>
+          <other otherDesc="BBGID" value="BBG022HLQJ08"/>
+        </identifiers>
+        <balance>-380.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-124260.000000000000</valUSD>
+        <pctVal>-0.3173302977</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NASDAQ</counterpartyName>
+              <counterpartyLei>549300L8X1Q78ERXFD06</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Enphase Energy Inc</issuerName>
+                <issueTitle>Enphase Energy Inc</issueTitle>
+                <identifiers>
+                  <cusip value="29355A107"/>
+                  <isin value="US29355A1079"/>
+                  <ticker value="ENPH"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>47.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-35727.110000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Enphase Energy Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="ENPH 7 C51"/>
+          <other otherDesc="BBGID" value="BBG022HLQ7D0"/>
+        </identifiers>
+        <balance>380.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>39900.000000000000</valUSD>
+        <pctVal>0.1018950497</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NASDAQ</counterpartyName>
+              <counterpartyLei>549300L8X1Q78ERXFD06</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Enphase Energy Inc</issuerName>
+                <issueTitle>Enphase Energy Inc</issueTitle>
+                <identifiers>
+                  <cusip value="29355A107"/>
+                  <isin value="US29355A1079"/>
+                  <ticker value="ENPH"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>51.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>2325.900000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Enphase Energy Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="ENPH 7 P42.5"/>
+          <other otherDesc="BBGID" value="BBG0235QJB49"/>
+        </identifiers>
+        <balance>380.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>3800.000000000000</valUSD>
+        <pctVal>0.0097042905</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NASDAQ</counterpartyName>
+              <counterpartyLei>549300L8X1Q78ERXFD06</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Enphase Energy Inc</issuerName>
+                <issueTitle>Enphase Energy Inc</issueTitle>
+                <identifiers>
+                  <cusip value="29355A107"/>
+                  <isin value="US29355A1079"/>
+                  <ticker value="ENPH"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>42.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-11787.110000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Enphase Energy Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="ENPH 7 P47"/>
+          <other otherDesc="BBGID" value="BBG022HLRDM6"/>
+        </identifiers>
+        <balance>-380.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-29260.000000000000</valUSD>
+        <pctVal>-0.0747230365</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NASDAQ</counterpartyName>
+              <counterpartyLei>549300L8X1Q78ERXFD06</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Enphase Energy Inc</issuerName>
+                <issueTitle>Enphase Energy Inc</issueTitle>
+                <identifiers>
+                  <cusip value="29355A107"/>
+                  <isin value="US29355A1079"/>
+                  <ticker value="ENPH"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>47.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>44492.900000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>FuelCell Energy Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="FCEL 7 C23.5"/>
+          <other otherDesc="BBGID" value="BBG0235VYLX7"/>
+        </identifiers>
+        <balance>-759.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-1035276.000000000000</valUSD>
+        <pctVal>-2.6438471053</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>FuelCell Energy Inc</issuerName>
+                <issueTitle>FuelCell Energy Inc</issueTitle>
+                <identifiers>
+                  <cusip value="35952H700"/>
+                  <isin value="US35952H7008"/>
+                  <ticker value="FCEL"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>23.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-870587.190000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>FuelCell Energy Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="FCEL 7 C27"/>
+          <other otherDesc="BBGID" value="BBG022HP5469"/>
+        </identifiers>
+        <balance>759.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>751410.000000000000</valUSD>
+        <pctVal>1.9189212861</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>FuelCell Energy Inc</issuerName>
+                <issueTitle>FuelCell Energy Inc</issueTitle>
+                <identifiers>
+                  <cusip value="35952H700"/>
+                  <isin value="US35952H7008"/>
+                  <ticker value="FCEL"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>27.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>679290.810000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>FuelCell Energy Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="FCEL 7 P20"/>
+          <other otherDesc="BBGID" value="BBG022HP5NX7"/>
+        </identifiers>
+        <balance>759.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>3795.000000000000</valUSD>
+        <pctVal>0.0096915216</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>FuelCell Energy Inc</issuerName>
+                <issueTitle>FuelCell Energy Inc</issueTitle>
+                <identifiers>
+                  <cusip value="35952H700"/>
+                  <isin value="US35952H7008"/>
+                  <ticker value="FCEL"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>20.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-29615.190000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Corning Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="GLW 7 P200"/>
+          <other otherDesc="BBGID" value="BBG022HNGDK6"/>
+        </identifiers>
+        <balance>83.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>664.000000000000</valUSD>
+        <pctVal>0.0016956971</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Corning Inc</issuerName>
+                <issueTitle>Corning Inc</issueTitle>
+                <identifiers>
+                  <cusip value="219350105"/>
+                  <isin value="US2193501051"/>
+                  <ticker value="GLW"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>200.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-18095.550000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Hims &amp; Hers Health Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="HIMS 7 C34"/>
+          <other otherDesc="BBGID" value="BBG02302FYK3"/>
+        </identifiers>
+        <balance>-526.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-69958.000000000000</valUSD>
+        <pctVal>-0.1786559872</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Hims &amp; Hers Health Inc</issuerName>
+                <issueTitle>Hims &amp; Hers Health Inc</issueTitle>
+                <identifiers>
+                  <cusip value="433000106"/>
+                  <isin value="US4330001060"/>
+                  <ticker value="HIMS"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>34.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>4198.160000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Hims &amp; Hers Health Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="HIMS 7 C37"/>
+          <other otherDesc="BBGID" value="BBG02302FZR3"/>
+        </identifiers>
+        <balance>526.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>13676.000000000000</valUSD>
+        <pctVal>0.0349252306</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Hims &amp; Hers Health Inc</issuerName>
+                <issueTitle>Hims &amp; Hers Health Inc</issueTitle>
+                <identifiers>
+                  <cusip value="433000106"/>
+                  <isin value="US4330001060"/>
+                  <ticker value="HIMS"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>37.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-11581.840000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Hecla Mining Co</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="HL 7 C15.5"/>
+          <other otherDesc="BBGID" value="BBG022HNSTC7"/>
+        </identifiers>
+        <balance>-1143.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-36576.000000000000</valUSD>
+        <pctVal>-0.0934063493</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Hecla Mining Co</issuerName>
+                <issueTitle>Hecla Mining Co</issueTitle>
+                <identifiers>
+                  <cusip value="422704106"/>
+                  <isin value="US4227041062"/>
+                  <ticker value="HL"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>15.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>17123.630000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Hecla Mining Co</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="HL 7 C16.5"/>
+          <other otherDesc="BBGID" value="BBG022HNSSR3"/>
+        </identifiers>
+        <balance>1143.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>8001.000000000000</valUSD>
+        <pctVal>0.0204326389</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Hecla Mining Co</issuerName>
+                <issueTitle>Hecla Mining Co</issueTitle>
+                <identifiers>
+                  <cusip value="422704106"/>
+                  <isin value="US4227041062"/>
+                  <ticker value="HL"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>16.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-11451.370000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Hecla Mining Co</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="HL 7 P14.5"/>
+          <other otherDesc="BBGID" value="BBG022HNMR91"/>
+        </identifiers>
+        <balance>1143.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>4572.000000000000</valUSD>
+        <pctVal>0.0116757937</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Hecla Mining Co</issuerName>
+                <issueTitle>Hecla Mining Co</issueTitle>
+                <identifiers>
+                  <cusip value="422704106"/>
+                  <isin value="US4227041062"/>
+                  <ticker value="HL"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>14.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-14880.370000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Hecla Mining Co</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="HL 7 P15.5"/>
+          <other otherDesc="BBGID" value="BBG022HNTYL5"/>
+        </identifiers>
+        <balance>-1143.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-41148.000000000000</valUSD>
+        <pctVal>-0.1050821430</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Hecla Mining Co</issuerName>
+                <issueTitle>Hecla Mining Co</issueTitle>
+                <identifiers>
+                  <cusip value="422704106"/>
+                  <isin value="US4227041062"/>
+                  <ticker value="HL"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>15.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>14837.630000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Intel Corp</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="INTC 7 C139"/>
+          <other otherDesc="BBGID" value="BBG02301QBS5"/>
+        </identifiers>
+        <balance>140.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>58800.000000000000</valUSD>
+        <pctVal>0.1501611259</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Intel Corp</issuerName>
+                <issueTitle>Intel Corp</issueTitle>
+                <identifiers>
+                  <cusip value="458140100"/>
+                  <isin value="US4581401001"/>
+                  <ticker value="INTC"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>139.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>30937.380000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Intel Corp</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="INTC 7 P117"/>
+          <other otherDesc="BBGID" value="BBG022HRS077"/>
+        </identifiers>
+        <balance>140.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>1680.000000000000</valUSD>
+        <pctVal>0.0042903179</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Intel Corp</issuerName>
+                <issueTitle>Intel Corp</issueTitle>
+                <identifiers>
+                  <cusip value="458140100"/>
+                  <isin value="US4581401001"/>
+                  <ticker value="INTC"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>117.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-21282.620000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Lam Research Corp</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="LRCX 7 C412.5"/>
+          <other otherDesc="BBGID" value="BBG0236530X3"/>
+        </identifiers>
+        <balance>47.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>129720.000000000000</valUSD>
+        <pctVal>0.3312738308</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Lam Research Corp</issuerName>
+                <issueTitle>Lam Research Corp</issueTitle>
+                <identifiers>
+                  <cusip value="512807306"/>
+                  <isin value="US5128073062"/>
+                  <ticker value="LRCX"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>412.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>107300.120000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Lam Research Corp</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="LRCX 7 P352.5"/>
+          <other otherDesc="BBGID" value="BBG02303RRK3"/>
+        </identifiers>
+        <balance>47.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>752.000000000000</valUSD>
+        <pctVal>0.0019204280</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Put</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Lam Research Corp</issuerName>
+                <issueTitle>Lam Research Corp</issueTitle>
+                <identifiers>
+                  <cusip value="512807306"/>
+                  <isin value="US5128073062"/>
+                  <ticker value="LRCX"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>352.500000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-30127.880000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+      <invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>Moderna Inc</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="MRNA 7 C66"/>
+          <other otherDesc="BBGID" value="BBG0233GRZD1"/>
+        </identifiers>
+        <balance>-271.000000000000</balance>
+        <units>NC</units>
+        <curCd>USD</curCd>
+        <valUSD>-128996.000000000000</valUSD>
+        <pctVal>-0.3294249081</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="Equity Option" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="OPT">
+            <counterparties>
+              <counterpartyName>NYSEAmerican</counterpartyName>
+              <counterpartyLei>5493000F4ZO33MV32P92</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Written</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Moderna Inc</issuerName>
+                <issueTitle>Moderna Inc</issueTitle>
+                <identifiers>
+                  <cusip value="60770K107"/>
+                  <isin value="US60770K1079"/>
+                  <ticker value="MRNA"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>100.000000000000</shareNo>
+            <exercisePrice>66.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2026-07-02</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-40113.070000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+    </invstOrSecs>
+    <signature>
+      <ncom:dateSigned>2026-08-31</ncom:dateSigned>
+      <ncom:nameOfApplicant>REX ETF Trust</ncom:nameOfApplicant>
+      <ncom:signature>s/ Robert Rokose</ncom:signature>
+      <ncom:signerName>Robert Rokose</ncom:signerName>
+      <ncom:title>Chief Financial Officer</ncom:title>
+    </signature>
+  </formData>
+</edgarSubmission>

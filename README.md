@@ -14,6 +14,11 @@ Institutional funds registered with the SEC are required to file NPORT-P reports
 - Identify divergence in how funds price the same asset
 - Export data for further analysis
 
+It also includes a **Private Credit Analysis** mode that does the same thing
+for privately-held companies held as loans by Business Development Companies
+(BDCs), by parsing the Schedule of Investments tables in their 10-Q filings
+instead of NPORT-P.
+
 ---
 
 ## Features
@@ -24,7 +29,8 @@ Institutional funds registered with the SEC are required to file NPORT-P reports
 - **Interactive charts** — toggle individual data points on/off via checkboxes; chart updates live
 - **Date filtering** — filter all results to a specific date range
 - **Collapsible fund tables** — expand/collapse per-fund data; select all or none per fund
-- **Export** — download results as CSV, Excel (`.xlsx`), or PDF (landscape with chart + data table)
+- **Export** — download results as CSV, Excel (`.xlsx`), or PDF (landscape with chart + data table); exports reflect whatever is currently checked/filtered on screen
+- **Private Credit Analysis** — search any issuer name to find every BDC fund reporting it as a loan, and chart the fair-value mark (% of par) across funds and time
 
 ---
 
@@ -117,7 +123,24 @@ After a search, use the export buttons at the bottom of the results:
 4. **Price calculation** — `price per share = market value (USD) / shares`. For non-USD holdings with an exchange rate provided, the local-currency price is also computed as `price (USD) × exchange rate`
 5. **Display** — results are grouped by fund, deduplicated by `(reportDate, shares)`, and rendered with Chart.js
 
-Filings are fetched in parallel batches of 5 with a 50ms delay between requests to stay within SEC rate limits (~10 req/sec).
+Filings are fetched in parallel batches with a short delay between batches to
+stay within SEC's ~10 req/sec fair-access guidance; requests that hit a `429`
+are retried with exponential backoff server-side, and any filing that still
+fails to fetch/parse is reported to you as a failure count rather than being
+silently dropped.
+
+**Private Credit mode** works the same way but against 10-Q filings:
+
+1. Full-text search EDGAR for 10-Q filings mentioning the issuer, keeping
+   only filers whose Investment Company Act file number starts with `814-`
+   (the SEC's own BDC designation — no hard-coded fund list needed)
+2. Pull each identified BDC's complete 10-Q filing history from the EDGAR
+   submissions API, to fill in older quarters the full-text search index may
+   have missed
+3. Fetch each 10-Q's primary HTML document and heuristically locate its
+   Schedule of Investments table (column headers vary a lot between filers)
+4. Extract principal, cost, and fair value per tranche, and compute
+   `fair value mark = fair value / principal × 100`
 
 ---
 
@@ -138,7 +161,9 @@ Filings are fetched in parallel batches of 5 with a 50ms delay between requests 
 |-------|--------|-------------|
 | `/api/config` | GET | Returns whether `SEC_USER_AGENT` is configured |
 | `/api/search-nport?security=` | GET | Searches EDGAR for NPORT-P filings matching the query |
-| `/api/parse-nport?cik=&accession=&security=` | GET | Fetches and parses a single filing, returns matching holdings |
+| `/api/parse-nport?cik=&accession=&security=` | GET | Fetches and parses a single NPORT-P filing, returns matching holdings |
+| `/api/search-10q?issuer=&maxPerFund=` | GET | Finds BDC funds (814- file number) reporting the issuer, plus each fund's full 10-Q history |
+| `/api/parse-10q?cik=&accession=&issuer=&reportDate=` | GET | Fetches a single 10-Q, parses its Schedule of Investments table for the issuer |
 
 ---
 
@@ -151,6 +176,28 @@ Filings are fetched in parallel batches of 5 with a 50ms delay between requests 
 
 ---
 
+## Caching
+
+The same 70+ issuers tend to get re-checked repeatedly (especially via
+Watchlist "run all"), so results are cached server-side in a local SQLite
+file (`cache.db`, gitignored, created automatically on first run):
+
+- **Parsed filing holdings** (`/api/parse-nport`, `/api/parse-10q`) are
+  cached indefinitely, keyed by `(cik, accession, security)` /
+  `(cik, accession, issuer, reportDate)` — a specific historical filing's
+  content never changes.
+- **Search-result listings** (`/api/search-nport`, `/api/search-10q`) are
+  cached for 1 hour by default (override with `SEARCH_CACHE_TTL_MS` in
+  `.env`), since new filings get added over time.
+- Add `&refresh=1` to any of the four routes above to bypass the cache and
+  force a fresh SEC fetch for that request.
+- If the extraction logic in `extractHoldings()` / `extractCreditHoldings()`
+  ever changes, bump `PARSE_VERSION` in `cache.js` so old cached results
+  (parsed with the previous logic) are treated as misses instead of being
+  served forever.
+
+---
+
 ## Dependencies
 
 | Package | Purpose |
@@ -158,6 +205,8 @@ Filings are fetched in parallel batches of 5 with a 50ms delay between requests 
 | `express` | HTTP server |
 | `axios` | HTTP client for SEC EDGAR requests |
 | `xml2js` | XML parsing for NPORT filing documents |
+| `cheerio` | HTML table parsing for 10-Q Schedule of Investments |
+| `better-sqlite3` | Server-side cache for parsed filings and search results (see below) |
 | `cors` | Cross-origin headers |
 | `dotenv` | Environment variable loading |
 | [Chart.js](https://www.chartjs.org/) | Time-series charts (CDN) |
