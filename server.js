@@ -1,15 +1,18 @@
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
-const cors = require('cors');
 const xml2js = require('xml2js');
-const cheerio  = require('cheerio');
+const cheerio = require('cheerio');
 const rateLimit = require('express-rate-limit');
 const cache = require('./cache');
 const { extractHoldings, extractCreditHoldings } = require('./parsers');
 
 const app = express();
-app.use(cors());
+// The frontend is served from this same Express instance (express.static
+// below) and never needs to call /api/* cross-origin — so no CORS grant is
+// needed at all. Without this, cors() with no options reflects any Origin
+// header back with credentials-less wildcard access, letting any external
+// website's JS call these SEC-proxying endpoints on a visitor's behalf.
 app.use(express.json());
 app.use(express.static('public'));
 
@@ -48,7 +51,7 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 // Retry SEC requests on 429 (rate limit) with exponential backoff.
 // SEC's fair-access guidance is ~10 req/sec; transient 429s should be
@@ -74,26 +77,29 @@ async function fetchWithRetry(config, maxRetries = 3) {
 // flattening the paginated "files" (older filings) alongside "recent".
 async function fetchSubmissionsAllPages(cikPadded) {
   const entries = [];
-  const pushEntries = (block) => {
-    const forms      = block.form            || [];
-    const accs       = block.accessionNumber || [];
-    const fileDates   = block.filingDate      || [];
-    const periods     = block.reportDate      || [];
+  const pushEntries = block => {
+    const forms = block.form || [];
+    const accs = block.accessionNumber || [];
+    const fileDates = block.filingDate || [];
+    const periods = block.reportDate || [];
     const primaryDocs = block.primaryDocument || [];
     for (let i = 0; i < accs.length; i++) {
       entries.push({
-        form: forms[i], accessionNumber: accs[i],
-        filingDate: fileDates[i], reportDate: periods[i],
-        primaryDocument: primaryDocs[i]
+        form: forms[i],
+        accessionNumber: accs[i],
+        filingDate: fileDates[i],
+        reportDate: periods[i],
+        primaryDocument: primaryDocs[i],
       });
     }
   };
 
-  const subUrl  = `https://data.sec.gov/submissions/CIK${cikPadded}.json`;
+  const subUrl = `https://data.sec.gov/submissions/CIK${encodeURIComponent(cikPadded)}.json`;
   const subResp = await fetchWithRetry({
-    url: subUrl, method: 'get',
-    headers: { 'User-Agent': EFFECTIVE_USER_AGENT, 'Accept': 'application/json' },
-    timeout: 15000
+    url: subUrl,
+    method: 'get',
+    headers: { 'User-Agent': EFFECTIVE_USER_AGENT, Accept: 'application/json' },
+    timeout: 15000,
   });
   pushEntries(subResp.data.filings?.recent || {});
 
@@ -101,9 +107,10 @@ async function fetchSubmissionsAllPages(cikPadded) {
   for (const file of files) {
     try {
       const pageResp = await fetchWithRetry({
-        url: `https://data.sec.gov/submissions/${file.name}`, method: 'get',
-        headers: { 'User-Agent': EFFECTIVE_USER_AGENT, 'Accept': 'application/json' },
-        timeout: 10000
+        url: `https://data.sec.gov/submissions/${file.name}`,
+        method: 'get',
+        headers: { 'User-Agent': EFFECTIVE_USER_AGENT, Accept: 'application/json' },
+        timeout: 10000,
       });
       pushEntries(pageResp.data);
     } catch (e) {
@@ -116,7 +123,9 @@ async function fetchSubmissionsAllPages(cikPadded) {
 // Strip trailing ticker/CIK parentheticals from EFTS display names,
 // e.g. "FS KKR Capital Corp (FSK)" -> "FS KKR Capital Corp".
 function cleanFilerName(raw) {
-  const name = String(raw || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+  const name = String(raw || '')
+    .replace(/\s*\([^)]*\)\s*$/, '')
+    .trim();
   return name || String(raw || 'Unknown');
 }
 
@@ -147,13 +156,13 @@ app.get('/api/search-nport', async (req, res) => {
           forms: 'NPORT-P',
           page: 1,
           from: 0,
-          size: 100
+          size: 100,
         },
         headers: {
           'User-Agent': EFFECTIVE_USER_AGENT,
-          'Accept': 'application/json'
+          Accept: 'application/json',
         },
-        timeout: 30000
+        timeout: 30000,
       });
       cache.setSearch(cacheKey, response.data);
       return response.data;
@@ -182,7 +191,7 @@ app.get('/api/parse-nport', async (req, res) => {
         success: true,
         holdings: cached,
         message: cached.length > 0 ? 'Found holdings' : 'No matching holdings',
-        cached: true
+        cached: true,
       });
     }
   }
@@ -192,18 +201,19 @@ app.get('/api/parse-nport', async (req, res) => {
       const accessionFormatted = accession.replace(/-/g, '');
       await delay(50);
 
-      const xmlUrl = `https://www.sec.gov/Archives/edgar/data/${cik}/${accessionFormatted}/primary_doc.xml`;
+      const xmlUrl = `https://www.sec.gov/Archives/edgar/data/${encodeURIComponent(cik)}/${encodeURIComponent(accessionFormatted)}/primary_doc.xml`;
       const xmlResponse = await fetchWithRetry({
-        url: xmlUrl, method: 'get',
+        url: xmlUrl,
+        method: 'get',
         headers: { 'User-Agent': EFFECTIVE_USER_AGENT },
-        timeout: 30000
+        timeout: 30000,
       });
 
       const parser = new xml2js.Parser({
         explicitArray: false,
         mergeAttrs: true,
         normalizeTags: true,
-        tagNameProcessors: [xml2js.processors.stripPrefix]
+        tagNameProcessors: [xml2js.processors.stripPrefix],
       });
 
       const result = await parser.parseStringPromise(xmlResponse.data);
@@ -216,7 +226,7 @@ app.get('/api/parse-nport', async (req, res) => {
       success: true,
       holdings,
       message: holdings.length > 0 ? 'Found holdings' : 'No matching holdings',
-      cached: false
+      cached: false,
     });
   } catch (error) {
     res.json({ success: false, holdings: [], error: error.message });
@@ -248,13 +258,13 @@ app.get('/api/search-10q', async (req, res) => {
         url: 'https://efts.sec.gov/LATEST/search-index',
         method: 'get',
         params: { q: `"${issuer}"`, forms: '10-Q', from: 0, size: 200 },
-        headers: { 'User-Agent': EFFECTIVE_USER_AGENT, 'Accept': 'application/json' },
-        timeout: 30000
+        headers: { 'User-Agent': EFFECTIVE_USER_AGENT, Accept: 'application/json' },
+        timeout: 30000,
       });
       const hits = searchResp.data?.hits?.hits || [];
 
       const confirmed = [];
-      const bdcCikName = {};          // { "1422183": "FS KKR Capital Corp" }
+      const bdcCikName = {}; // { "1422183": "FS KKR Capital Corp" }
       const confirmedAccessions = new Set();
 
       for (const hit of hits) {
@@ -270,10 +280,12 @@ app.get('/api/search-10q', async (req, res) => {
 
         const accession = src.adsh || '';
         confirmed.push({
-          cik, accession, company: name,
-          period:   src.period_ending || src.file_date || '',
+          cik,
+          accession,
+          company: name,
+          period: src.period_ending || src.file_date || '',
           fileDate: src.file_date || '',
-          confirmed: true
+          confirmed: true,
         });
         if (accession) confirmedAccessions.add(accession);
       }
@@ -281,18 +293,24 @@ app.get('/api/search-10q', async (req, res) => {
       const historical = [];
       for (const [cikStripped, name] of Object.entries(bdcCikName)) {
         try {
-          const cikPadded   = cikStripped.padStart(10, '0');
-          const allFilings  = await fetchSubmissionsAllPages(cikPadded);
+          const cikPadded = cikStripped.padStart(10, '0');
+          const allFilings = await fetchSubmissionsAllPages(cikPadded);
           let count = 0;
           for (const f of allFilings) {
             if (f.form !== '10-Q') continue;
             if (maxPerFundNum && count >= maxPerFundNum) break;
             const acc = f.accessionNumber || '';
-            if (!acc || confirmedAccessions.has(acc)) { count++; continue; }
+            if (!acc || confirmedAccessions.has(acc)) {
+              count++;
+              continue;
+            }
             historical.push({
-              cik: cikStripped, accession: acc, company: name,
-              period: f.reportDate || '', fileDate: f.filingDate || '',
-              confirmed: false
+              cik: cikStripped,
+              accession: acc,
+              company: name,
+              period: f.reportDate || '',
+              fileDate: f.filingDate || '',
+              confirmed: false,
             });
             count++;
           }
@@ -307,10 +325,10 @@ app.get('/api/search-10q', async (req, res) => {
       historical.sort((a, b) => byPeriod(b).localeCompare(byPeriod(a)));
 
       const payload = {
-        filings:   [...confirmed, ...historical],
-        bdcFunds:  [...new Set(Object.values(bdcCikName))].sort(),
+        filings: [...confirmed, ...historical],
+        bdcFunds: [...new Set(Object.values(bdcCikName))].sort(),
         confirmed: confirmed.length,
-        total:     confirmed.length + historical.length
+        total: confirmed.length + historical.length,
       };
       cache.setSearch(cacheKey, payload);
       return payload;
@@ -340,7 +358,7 @@ app.get('/api/parse-10q', async (req, res) => {
         success: true,
         holdings: cached,
         message: cached.length > 0 ? 'Found holdings' : 'No matching holdings',
-        cached: true
+        cached: true,
       });
     }
   }
@@ -355,9 +373,8 @@ app.get('/api/parse-10q', async (req, res) => {
       let mainDocName = null;
       try {
         const allFilings = await fetchSubmissionsAllPages(cikPadded);
-        const match = allFilings.find(f =>
-          f.accessionNumber === accession ||
-          f.accessionNumber?.replace(/-/g, '') === accNodash
+        const match = allFilings.find(
+          f => f.accessionNumber === accession || f.accessionNumber?.replace(/-/g, '') === accNodash
         );
         if (match?.primaryDocument) mainDocName = match.primaryDocument;
       } catch (e) {
@@ -368,12 +385,13 @@ app.get('/api/parse-10q', async (req, res) => {
         throw new Error('Could not locate main 10-Q document via submissions API');
       }
 
-      const docUrl = `https://www.sec.gov/Archives/edgar/data/${cik}/${accNodash}/${mainDocName}`;
+      const docUrl = `https://www.sec.gov/Archives/edgar/data/${encodeURIComponent(cik)}/${encodeURIComponent(accNodash)}/${encodeURIComponent(mainDocName)}`;
       const htmlResp = await fetchWithRetry({
-        url: docUrl, method: 'get',
-        headers: { 'User-Agent': EFFECTIVE_USER_AGENT, 'Accept': 'text/html,application/xhtml+xml' },
+        url: docUrl,
+        method: 'get',
+        headers: { 'User-Agent': EFFECTIVE_USER_AGENT, Accept: 'text/html,application/xhtml+xml' },
         timeout: 60000,
-        maxContentLength: 25 * 1024 * 1024
+        maxContentLength: 25 * 1024 * 1024,
       });
 
       const $ = cheerio.load(htmlResp.data);
@@ -386,7 +404,7 @@ app.get('/api/parse-10q', async (req, res) => {
       success: true,
       holdings,
       message: holdings.length > 0 ? 'Found holdings' : 'No matching holdings',
-      cached: false
+      cached: false,
     });
   } catch (error) {
     console.error('10-Q parse error:', error.message);
@@ -394,8 +412,15 @@ app.get('/api/parse-10q', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`\n✅ NPORT Analyzer running at http://localhost:${PORT}`);
-  console.log(`   User-Agent: ${EFFECTIVE_USER_AGENT}\n`);
-});
+// Only actually bind a port when this file is run directly (`node server.js`
+// / `npm start`) — not when required by a test, so integration tests can
+// drive `app` in-process via supertest without opening a real socket.
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`\n✅ NPORT Analyzer running at http://localhost:${PORT}`);
+    console.log(`   User-Agent: ${EFFECTIVE_USER_AGENT}\n`);
+  });
+}
+
+module.exports = app;

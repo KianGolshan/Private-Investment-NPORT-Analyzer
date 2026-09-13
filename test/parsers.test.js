@@ -188,7 +188,7 @@ test('classifyInstrument: real Kandou filing — equity/debt/derivative all corr
   // the raw $0.23 total position value, which would be a different number
   // than what marketValue/shares actually divides out to (a real
   // discrepancy a user caught by doing exactly that division themselves).
-  assert.ok(Math.abs(derivative.chartValue - (0.23 / 2257143)) < 1e-9);
+  assert.ok(Math.abs(derivative.chartValue - 0.23 / 2257143) < 1e-9);
 
   // All three must have distinct instrumentKeys — this is what stops them
   // from being forced onto one connected chart line.
@@ -208,7 +208,7 @@ test('classifyInstrument: same-fund rows with identical, uninformative titles st
   const rowC = { title: 'DATABRICKS INC', assetcat: 'EC', identifiers: { other: { value: 'BRW3XZNA8' } } };
 
   const a = classifyInstrument(rowA, 203.46, 15485950.98);
-  const b = classifyInstrument(rowB, 203.46, 56847741.30);
+  const b = classifyInstrument(rowB, 203.46, 56847741.3);
   const c = classifyInstrument(rowC, 203.46, 12206989.62);
 
   assert.equal(a.instrumentType, 'equity');

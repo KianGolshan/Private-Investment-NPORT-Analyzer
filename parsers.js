@@ -27,16 +27,21 @@ function extractIdString(val) {
 // via mergeAttrs, so some nested fields (derivCat, assetCat inside
 // assetConditional) keep mixed case while their parent elements are
 // lowercase — both casings are checked below defensively.
-function classifyInstrument(inv, pricePerShare, valUSD) {
+function classifyInstrument(inv, pricePerShare, _valUSD) {
   // 1. Derivative (warrants/options/etc.) — structural signal, takes
   //    precedence over assetCat since a warrant is still tagged assetCat:EC
   //    (confirmed: Kandou's and a second real warrant both do this).
   const derivInfo = inv.derivativeinfo || inv.derivativeInfo;
   if (derivInfo) {
-    const deriv = derivInfo.optionswaptionwarrantderiv || derivInfo.optionsWaptionWarrantDeriv
-               || derivInfo.futrderiv || derivInfo.futrDeriv
-               || derivInfo.swapderiv || derivInfo.swapDeriv
-               || derivInfo.fwdderiv  || derivInfo.fwdDeriv;
+    const deriv =
+      derivInfo.optionswaptionwarrantderiv ||
+      derivInfo.optionsWaptionWarrantDeriv ||
+      derivInfo.futrderiv ||
+      derivInfo.futrDeriv ||
+      derivInfo.swapderiv ||
+      derivInfo.swapDeriv ||
+      derivInfo.fwdderiv ||
+      derivInfo.fwdDeriv;
     const cat = String(deriv?.derivCat || deriv?.derivcat || '').toUpperCase();
     const label = { WAR: 'Warrant', OPT: 'Option', FUT: 'Future', SWO: 'Swaption' }[cat] || 'Derivative';
     // Per-unit (valUSD / balance), not total valUSD: same convention as
@@ -47,7 +52,12 @@ function classifyInstrument(inv, pricePerShare, valUSD) {
     // prices are usually too tiny to read — real data proved that wrong
     // (the same Kandou warrant went from ~$0.0000001/unit in 2023 to a
     // perfectly normal $0.01/unit by 2026), so it's per-unit like the rest.
-    return { instrumentType: 'derivative', instrumentLabel: label, chartValue: pricePerShare, chartUnit: 'usd_per_unit' };
+    return {
+      instrumentType: 'derivative',
+      instrumentLabel: label,
+      chartValue: pricePerShare,
+      chartUnit: 'usd_per_unit',
+    };
   }
 
   // 2. Indirect / fund-of-fund exposure — a distinct schema branch
@@ -56,7 +66,9 @@ function classifyInstrument(inv, pricePerShare, valUSD) {
   const assetConditional = inv.assetconditional || inv.assetConditional;
   const conditionalCat = String(assetConditional?.assetCat || assetConditional?.assetcat || '').toUpperCase();
   if (assetConditional && (conditionalCat === 'OTHER' || assetConditional.desc)) {
-    const vehicle = String(inv.name || inv.title || '').split('(')[0].trim();
+    const vehicle = String(inv.name || inv.title || '')
+      .split('(')[0]
+      .trim();
     return {
       instrumentType: 'indirect',
       instrumentLabel: vehicle ? `Indirect via ${vehicle}` : 'Indirect / Fund Exposure',
@@ -131,10 +143,7 @@ function parseDebtLabel(title) {
   const t = String(title || '');
   const rateMatch = t.match(/(\d+\.?\d*)\s*%/);
   const dateMatch = t.match(/(\d{1,2}-\d{1,2}-\d{2,4})/);
-  const kind = /\bTL\b/i.test(t) ? 'Term Loan'
-             : /\bNOTE\b/i.test(t) ? 'Note'
-             : /\bBOND\b/i.test(t) ? 'Bond'
-             : 'Debt';
+  const kind = /\bTL\b/i.test(t) ? 'Term Loan' : /\bNOTE\b/i.test(t) ? 'Note' : /\bBOND\b/i.test(t) ? 'Bond' : 'Debt';
   let label = kind;
   if (rateMatch) label += ` · ${rateMatch[1]}%`;
   if (dateMatch) label += ` due ${dateMatch[1]}`;
@@ -156,9 +165,7 @@ function extractHoldings(xml, securitySearchTerm) {
     const reportDate = genInfo.repPdDate || genInfo.reppddate || genInfo.reportDate || '';
 
     let investments =
-      formData.invstOrSecs?.invstOrSec ||
-      formData.invstorsecs?.invstorsec ||
-      formData.investments?.investment;
+      formData.invstOrSecs?.invstOrSec || formData.invstorsecs?.invstorsec || formData.investments?.investment;
 
     if (!investments) return holdings;
     if (!Array.isArray(investments)) investments = [investments];
@@ -166,10 +173,11 @@ function extractHoldings(xml, securitySearchTerm) {
     const searchLower = securitySearchTerm.toLowerCase();
 
     for (const inv of investments) {
-      const name      = String(inv.name      || inv.Name      || inv.issuerName || '');
-      const issuer    = String(inv.issuer?.name || inv.issuer?.Name || inv.issuerName || '');
-      const ticker    = extractIdString(inv.identifiers?.ticker) || extractIdString(inv.ticker) || extractIdString(inv.Ticker);
-      const title     = String(inv.title || inv.Title || inv.desc || inv.description || '');
+      const name = String(inv.name || inv.Name || inv.issuerName || '');
+      const issuer = String(inv.issuer?.name || inv.issuer?.Name || inv.issuerName || '');
+      const ticker =
+        extractIdString(inv.identifiers?.ticker) || extractIdString(inv.ticker) || extractIdString(inv.Ticker);
+      const title = String(inv.title || inv.Title || inv.desc || inv.description || '');
 
       const matches =
         name.toLowerCase().includes(searchLower) ||
@@ -179,18 +187,30 @@ function extractHoldings(xml, securitySearchTerm) {
       if (!matches) continue;
 
       const balance = parseFloat(inv.balance || inv.Balance || inv.shares || inv.Shares || 0);
-      const valUSD  = parseFloat(inv.valUSD  || inv.valusd  || inv.marketValue || inv.MarketValue || 0);
+      const valUSD = parseFloat(inv.valUSD || inv.valusd || inv.marketValue || inv.MarketValue || 0);
       if (!(balance > 0 && valUSD > 0)) continue;
 
       const currencyCode = String(
-        inv.currencyconditional?.curCd || inv.currencyconditional?.curcd ||
-        inv.curCd || inv.curcd || inv.currencyCode || inv.currency || 'USD'
-      ).trim().toUpperCase();
+        inv.currencyconditional?.curCd ||
+          inv.currencyconditional?.curcd ||
+          inv.curCd ||
+          inv.curcd ||
+          inv.currencyCode ||
+          inv.currency ||
+          'USD'
+      )
+        .trim()
+        .toUpperCase();
 
       const exchangeRate = parseFloat(
-        inv.currencyconditional?.exchangeRt || inv.currencyconditional?.exchangert ||
-        inv.exchangeRt || inv.exchangert || inv.exchangeRate ||
-        inv.fxRate || inv.fxrate || 1
+        inv.currencyconditional?.exchangeRt ||
+          inv.currencyconditional?.exchangert ||
+          inv.exchangeRt ||
+          inv.exchangert ||
+          inv.exchangeRate ||
+          inv.fxRate ||
+          inv.fxrate ||
+          1
       );
 
       // NPORT's valUSD is already expressed in USD by schema, so
@@ -208,7 +228,8 @@ function extractHoldings(xml, securitySearchTerm) {
       // only thing that correctly separates same-fund holdings that share
       // identical, uninformative title text), then a real CUSIP, then the
       // title itself as a last resort.
-      const otherIdValue = extractIdString(inv.identifiers?.other?.value) || String(inv.identifiers?.other?.value || '').trim();
+      const otherIdValue =
+        extractIdString(inv.identifiers?.other?.value) || String(inv.identifiers?.other?.value || '').trim();
       const instrumentKey = otherIdValue || (cusip && cusip.toUpperCase() !== 'N/A' ? cusip : '') || title || name;
 
       holdings.push({
@@ -240,7 +261,9 @@ function extractHoldings(xml, securitySearchTerm) {
 
 function parseFinancialNumber(str) {
   if (str == null) return null;
-  const s = String(str).replace(/[$,\s]/g, '').trim();
+  const s = String(str)
+    .replace(/[$,\s]/g, '')
+    .trim();
   if (!s || s === '—' || s === '-' || s === '–') return null;
   const neg = s.startsWith('(') && s.endsWith(')');
   const n = parseFloat(neg ? '-' + s.slice(1, -1) : s);
@@ -249,15 +272,17 @@ function parseFinancialNumber(str) {
 
 function getRowCells($, row, expandColspan) {
   const cells = [];
-  $(row).find('td, th').each((_, cell) => {
-    const text = $(cell).text().replace(/\s+/g, ' ').trim();
-    if (expandColspan) {
-      const colspan = parseInt($(cell).attr('colspan') || '1');
-      for (let i = 0; i < colspan; i++) cells.push(text);
-    } else {
-      cells.push(text);
-    }
-  });
+  $(row)
+    .find('td, th')
+    .each((_, cell) => {
+      const text = $(cell).text().replace(/\s+/g, ' ').trim();
+      if (expandColspan) {
+        const colspan = parseInt($(cell).attr('colspan') || '1');
+        for (let i = 0; i < colspan; i++) cells.push(text);
+      } else {
+        cells.push(text);
+      }
+    });
   return cells;
 }
 
@@ -265,26 +290,49 @@ function tryBuildCreditColumnMap(cells) {
   const map = {};
   const MATCHERS = [
     ['portfolioCompany', c => c.includes('portfolio company') || c === 'company' || c === 'portfolio'],
-    ['industry',         c => c.startsWith('industry')],
-    ['investmentType',   c => c.includes('type of investment') || c.includes('investment type') || (c.includes('type') && c.includes('invest'))],
-    ['index',            c => c === 'index' || c.startsWith('index ')],
-    ['spread',           c => c.startsWith('spread')],
-    ['cashInterestRate', c => c.includes('cash interest') || (c.includes('interest rate') && !c.includes('pik')) || c.startsWith('current rate') || c.startsWith('rate (')],
-    ['pik',              c => c === 'pik' || c.startsWith('pik ')],
-    ['maturityDate',     c => c.includes('maturity')],
-    ['shares',           c => c.startsWith('shares') || c.startsWith('units/shares') || c === 'units'],
-    ['principal',        c => c.startsWith('principal') || c.startsWith('par value') || c.startsWith('par amount') || c === 'par'],
-    ['cost',             c => c === 'cost' || c.startsWith('amortized cost') || c.startsWith('cost (')],
-    ['fairValue',        c => c.includes('fair value')],
-    ['notes',            c => c.startsWith('note') || c.startsWith('footnote')],
+    ['industry', c => c.startsWith('industry')],
+    [
+      'investmentType',
+      c =>
+        c.includes('type of investment') ||
+        c.includes('investment type') ||
+        (c.includes('type') && c.includes('invest')),
+    ],
+    ['index', c => c === 'index' || c.startsWith('index ')],
+    ['spread', c => c.startsWith('spread')],
+    [
+      'cashInterestRate',
+      c =>
+        c.includes('cash interest') ||
+        (c.includes('interest rate') && !c.includes('pik')) ||
+        c.startsWith('current rate') ||
+        c.startsWith('rate ('),
+    ],
+    ['pik', c => c === 'pik' || c.startsWith('pik ')],
+    ['maturityDate', c => c.includes('maturity')],
+    ['shares', c => c.startsWith('shares') || c.startsWith('units/shares') || c === 'units'],
+    [
+      'principal',
+      c => c.startsWith('principal') || c.startsWith('par value') || c.startsWith('par amount') || c === 'par',
+    ],
+    ['cost', c => c === 'cost' || c.startsWith('amortized cost') || c.startsWith('cost (')],
+    ['fairValue', c => c.includes('fair value')],
+    ['notes', c => c.startsWith('note') || c.startsWith('footnote')],
   ];
 
   cells.forEach((raw, i) => {
     // Strip footnote references like (1)(2)(3) and normalize
-    const c = raw.toLowerCase().replace(/\([^)]*\)/g, '').replace(/[^a-z0-9 /]/g, ' ').replace(/\s+/g, ' ').trim();
+    const c = raw
+      .toLowerCase()
+      .replace(/\([^)]*\)/g, '')
+      .replace(/[^a-z0-9 /]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
     for (const [field, matcher] of MATCHERS) {
       if (map[field] !== undefined) continue;
-      if (matcher(c)) { map[field] = i; }
+      if (matcher(c)) {
+        map[field] = i;
+      }
     }
   });
 
@@ -335,7 +383,7 @@ function extractRateFieldsFromCells(rawCells) {
   if (result.index) {
     // Floating rate: first pct = spread, second = PIK or floor
     if (cleanPcts.length >= 1) result.spread = cleanPcts[0];
-    if (cleanPcts.length >= 2) result.pik    = cleanPcts[1];
+    if (cleanPcts.length >= 2) result.pik = cleanPcts[1];
   } else {
     // Fixed / no-index: first pct = cash interest rate
     if (cleanPcts.length >= 1) result.cashInterestRate = cleanPcts[0];
@@ -344,7 +392,10 @@ function extractRateFieldsFromCells(rawCells) {
       const cl = cell.toLowerCase();
       if (cl.includes('pik') && /\d+\.?\d*%/.test(cl)) {
         const m = cl.match(/(\d+\.?\d*)%/);
-        if (m) { result.pik = m[1] + '%'; break; }
+        if (m) {
+          result.pik = m[1] + '%';
+          break;
+        }
       }
     }
   }
@@ -369,7 +420,11 @@ function extractCreditHoldings($, issuerSearchTerm, reportDate) {
     for (let i = 0; i < Math.min(allRows.length, 15); i++) {
       const cells = getRowCells($, allRows[i], true);
       const map = tryBuildCreditColumnMap(cells);
-      if (map) { colMap = map; headerRowIdx = i; break; }
+      if (map) {
+        colMap = map;
+        headerRowIdx = i;
+        break;
+      }
     }
 
     // Continuation tables (page 2+ of schedule) have no header — reuse last map
@@ -386,13 +441,13 @@ function extractCreditHoldings($, issuerSearchTerm, reportDate) {
 
     for (let i = headerRowIdx + 1; i < allRows.length; i++) {
       // Expanded cells for colMap-based financial extraction
-      const cells    = getRowCells($, allRows[i], true);
+      const cells = getRowCells($, allRows[i], true);
       // Non-expanded cells for pattern-based rate/date extraction
       const rawCells = getRowCells($, allRows[i], false);
       if (cells.length < 5) continue;
 
       // Carry forward company and industry (BDC tables blank repeated cells)
-      const rawCompany  = getCreditCell(cells, colMap.portfolioCompany);
+      const rawCompany = getCreditCell(cells, colMap.portfolioCompany);
       const rawIndustry = getCreditCell(cells, colMap.industry);
       if (rawCompany.length > 2 && rawCompany !== '—' && rawCompany !== '-') {
         currentCompany = rawCompany;
@@ -405,38 +460,37 @@ function extractCreditHoldings($, issuerSearchTerm, reportDate) {
 
       const principalStr = getCreditCell(cells, colMap.principal);
       const fairValueStr = getCreditCell(cells, colMap.fairValue);
-      const principal    = parseFinancialNumber(principalStr);
-      const fairValue    = parseFinancialNumber(fairValueStr);
+      const principal = parseFinancialNumber(principalStr);
+      const fairValue = parseFinancialNumber(fairValueStr);
       if (principal === null && fairValue === null) continue;
 
-      const fairValueMark = (principal && principal !== 0 && fairValue !== null)
-        ? (fairValue / principal) * 100 : null;
+      const fairValueMark = principal && principal !== 0 && fairValue !== null ? (fairValue / principal) * 100 : null;
 
       // Rate fields: colMap first, fall back to pattern scan of raw cells
       const rf = extractRateFieldsFromCells(rawCells);
-      const index            = getCreditCell(cells, colMap.index)            || rf.index;
-      const spread           = getCreditCell(cells, colMap.spread)           || rf.spread;
-      const pik              = getCreditCell(cells, colMap.pik)              || rf.pik;
+      const index = getCreditCell(cells, colMap.index) || rf.index;
+      const spread = getCreditCell(cells, colMap.spread) || rf.spread;
+      const pik = getCreditCell(cells, colMap.pik) || rf.pik;
       const cashInterestRate = getCreditCell(cells, colMap.cashInterestRate) || rf.cashInterestRate;
-      const maturityDate     = getCreditCell(cells, colMap.maturityDate)     || rf.maturityDate;
-      const investmentType   = getCreditCell(cells, colMap.investmentType);
+      const maturityDate = getCreditCell(cells, colMap.maturityDate) || rf.maturityDate;
+      const investmentType = getCreditCell(cells, colMap.investmentType);
 
       holdings.push({
         reportDate,
         portfolioCompany: currentCompany,
-        industry:         rawIndustry.length > 2 ? rawIndustry : currentIndustry,
+        industry: rawIndustry.length > 2 ? rawIndustry : currentIndustry,
         investmentType,
         index,
         spread,
         cashInterestRate,
         pik,
         maturityDate,
-        shares:    getCreditCell(cells, colMap.shares),
+        shares: getCreditCell(cells, colMap.shares),
         principal,
-        cost:      parseFinancialNumber(getCreditCell(cells, colMap.cost)),
+        cost: parseFinancialNumber(getCreditCell(cells, colMap.cost)),
         fairValue,
         fairValueMark,
-        notes:     getCreditCell(cells, colMap.notes),
+        notes: getCreditCell(cells, colMap.notes),
       });
     }
   });

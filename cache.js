@@ -61,27 +61,47 @@ try {
   db = null;
 }
 
-const stmts = db ? {
-  getHoldings: db.prepare('SELECT value FROM holdings_cache WHERE key = ?'),
-  setHoldings: db.prepare(`
+const stmts = db
+  ? {
+      getHoldings: db.prepare('SELECT value FROM holdings_cache WHERE key = ?'),
+      setHoldings: db.prepare(`
     INSERT INTO holdings_cache (key, value, created_at) VALUES (?, ?, ?)
     ON CONFLICT(key) DO UPDATE SET value = excluded.value, created_at = excluded.created_at
   `),
-  getSearch: db.prepare('SELECT value, created_at FROM search_cache WHERE key = ?'),
-  setSearch: db.prepare(`
+      getSearch: db.prepare('SELECT value, created_at FROM search_cache WHERE key = ?'),
+      setSearch: db.prepare(`
     INSERT INTO search_cache (key, value, created_at) VALUES (?, ?, ?)
     ON CONFLICT(key) DO UPDATE SET value = excluded.value, created_at = excluded.created_at
   `),
-  delSearch: db.prepare('DELETE FROM search_cache WHERE key = ?'),
-} : null;
+      delSearch: db.prepare('DELETE FROM search_cache WHERE key = ?'),
+    }
+  : null;
 
 // Namespaced key builders — callers pass identifying parts, not raw strings,
 // so normalization (trim/lowercase) can't be forgotten at a call site.
 function holdingsKey(namespace, ...parts) {
-  return `${namespace}:v${PARSE_VERSION}:` + parts.map(p => String(p ?? '').trim().toLowerCase()).join(':');
+  return (
+    `${namespace}:v${PARSE_VERSION}:` +
+    parts
+      .map(p =>
+        String(p ?? '')
+          .trim()
+          .toLowerCase()
+      )
+      .join(':')
+  );
 }
 function searchKey(namespace, ...parts) {
-  return `${namespace}:` + parts.map(p => String(p ?? '').trim().toLowerCase()).join(':');
+  return (
+    `${namespace}:` +
+    parts
+      .map(p =>
+        String(p ?? '')
+          .trim()
+          .toLowerCase()
+      )
+      .join(':')
+  );
 }
 
 function getHoldings(key) {

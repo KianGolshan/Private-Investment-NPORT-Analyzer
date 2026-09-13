@@ -1,0 +1,8 @@
+node_modules/
+public/index.html
+cache.db*
+package-lock.json
+README.md
+# Real SEC filing snippets, kept byte-for-byte as fetched — see the file
+# header in test/parsers.test.js for why these must stay verbatim.
+test/fixtures/
