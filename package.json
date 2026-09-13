@@ -1,7 +1,7 @@
 {
   "name": "nport-analyzer",
   "version": "1.0.0",
-  "description": "SEC NPORT-P Filing Analyzer - Internal Tool",
+  "description": "Vantage - private investment exposure and valuation marks extracted from SEC filings",
   "main": "server.js",
   "engines": {
     "node": ">=22"

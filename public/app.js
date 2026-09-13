@@ -7,7 +7,7 @@
    clearDateFilter, applyBatchDateFilter, clearBatchDateFilter, doExportCSV,
    doExportExcel, doExportPDF, applyCreditDateFilter, clearCreditDateFilter,
    applyCreditReference, clearCreditReference, doCreditExportCSV, doCreditExportExcel,
-   addWatchlistItem, removeWatchlistItem, quickAddToWatchlist */
+   addWatchlistItem, removeWatchlistItem, quickAddToWatchlist, openAbout */
 
 // ── State ──────────────────────────────────────────────────────────────────
 let allResults = {};
@@ -95,22 +95,24 @@ function countDistinctFunds(buckets) {
 }
 
 // ── 15-color palette so charts look good with many funds ──────────────────
+// A coordinated navy/slate/gold set (matching the app's visual system)
+// rather than a bright default chart-library rainbow.
 const COLORS = [
-  '#2563eb',
-  '#dc2626',
-  '#059669',
-  '#7c3aed',
-  '#ea580c',
-  '#0891b2',
-  '#be185d',
-  '#65a30d',
-  '#9f1239',
-  '#1d4ed8',
-  '#0d9488',
-  '#9333ea',
-  '#b45309',
-  '#0369a1',
-  '#166534',
+  '#0f2440',
+  '#b8860b',
+  '#0f766e',
+  '#7f1d1d',
+  '#3b5170',
+  '#6b7a3a',
+  '#5b3a6b',
+  '#8a5a2b',
+  '#1e3a5f',
+  '#a16207',
+  '#2f4858',
+  '#844b2b',
+  '#4c6b53',
+  '#5c4a72',
+  '#7a6a3a',
 ];
 const getColor = i => COLORS[i % COLORS.length];
 
@@ -157,6 +159,19 @@ function updateURLParams(params) {
     if (v) url.searchParams.set(k, v);
   });
   window.history.replaceState({}, '', url);
+}
+
+// ── About modal ─────────────────────────────────────────────────────────────
+function openAbout() {
+  document.getElementById('aboutModal').style.display = 'flex';
+  document.addEventListener('keydown', handleAboutEscape);
+}
+function closeAbout() {
+  document.getElementById('aboutModal').style.display = 'none';
+  document.removeEventListener('keydown', handleAboutEscape);
+}
+function handleAboutEscape(e) {
+  if (e.key === 'Escape') closeAbout();
 }
 
 // ── Tab management ─────────────────────────────────────────────────────────
@@ -570,7 +585,7 @@ function renderInstrumentSectionHTML(companiesMap, type, canvasBaseId, tablePref
   html += `<div class="chart-panel">
     <div class="chart-panel-header">
       <h3>${esc(meta.chartTitle)}</h3>
-      <button type="button" class="btn btn-sm btn-secondary chart-expand-btn" onclick="toggleChartExpand(this)">&#10021; Expand</button>
+      <button type="button" class="btn btn-sm btn-secondary chart-expand-btn" onclick="toggleChartExpand(this)">Expand</button>
     </div>
     <div class="chart-canvas-wrap" style="height:${chartHeight}px;"><canvas id="${canvasId}"></canvas></div>
   </div>`;
@@ -599,9 +614,9 @@ function renderSingleResults(buckets) {
   });
 
   html += `<div class="export-row">
-    <button class="btn btn-green" onclick="doExportCSV()">&#x2193; CSV</button>
-    <button class="btn btn-green" onclick="doExportExcel()">&#x1F4CA; Excel</button>
-    <button class="btn btn-red"   onclick="doExportPDF()">&#x1F4C4; PDF</button>
+    <button class="btn btn-green" onclick="doExportCSV()">Export CSV</button>
+    <button class="btn btn-green" onclick="doExportExcel()">Export Excel</button>
+    <button class="btn btn-red"   onclick="doExportPDF()">Export PDF</button>
   </div>`;
   html += '</div>';
 
@@ -632,9 +647,9 @@ function renderBatchResults(batchResults) {
   });
 
   html += `<div class="export-row">
-    <button class="btn btn-green" onclick="doExportCSV()">&#x2193; CSV (All)</button>
-    <button class="btn btn-green" onclick="doExportExcel()">&#x1F4CA; Excel (All)</button>
-    <button class="btn btn-red"   onclick="doExportPDF()">&#x1F4C4; PDF (All)</button>
+    <button class="btn btn-green" onclick="doExportCSV()">Export CSV (All)</button>
+    <button class="btn btn-green" onclick="doExportExcel()">Export Excel (All)</button>
+    <button class="btn btn-red"   onclick="doExportPDF()">Export PDF (All)</button>
   </div>`;
 
   document.getElementById('resultsContainer').innerHTML = html;
@@ -932,7 +947,7 @@ function toggleChartExpand(btn) {
 
   const expanding = !wrap.classList.contains('expanded');
   wrap.classList.toggle('expanded', expanding);
-  btn.innerHTML = expanding ? '&#10005; Close' : '&#10021; Expand';
+  btn.innerHTML = expanding ? 'Close' : 'Expand';
   // The button lives in .chart-panel-header, a normal-flow sibling of the
   // now position:fixed wrap — without this it scrolls out from under the
   // overlay and becomes invisible/unclickable, leaving only Escape or a
@@ -982,7 +997,7 @@ function buildReferenceLineDataset(datasets, value, label) {
       { x: allX[0], y: value },
       { x: allX[allX.length - 1], y: value },
     ],
-    borderColor: '#111827',
+    borderColor: '#0f2440',
     borderDash: [8, 4],
     borderWidth: 2,
     pointRadius: 0,
@@ -1771,8 +1786,8 @@ function renderCreditResults(fundsMap, _issuer) {
   html += '<div class="results-header"><h2>Holdings by Fund</h2></div>';
   html += renderCreditFundCards(fundsMap);
   html += `<div class="export-row">
-    <button class="btn btn-green" onclick="doCreditExportCSV()">&#x2193; CSV</button>
-    <button class="btn btn-green" onclick="doCreditExportExcel()">&#x1F4CA; Excel</button>
+    <button class="btn btn-green" onclick="doCreditExportCSV()">Export CSV</button>
+    <button class="btn btn-green" onclick="doCreditExportExcel()">Export Excel</button>
   </div>`;
   html += '</div>';
 

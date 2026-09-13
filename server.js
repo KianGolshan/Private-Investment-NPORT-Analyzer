@@ -17,7 +17,7 @@ app.use(express.json());
 app.use(express.static('public'));
 
 const USER_AGENT = process.env.SEC_USER_AGENT || '';
-const EFFECTIVE_USER_AGENT = USER_AGENT || 'NPORT-Analyzer internal-tool@localhost';
+const EFFECTIVE_USER_AGENT = USER_AGENT || 'Vantage internal-tool@localhost';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 if (!USER_AGENT) {
@@ -418,7 +418,7 @@ app.get('/api/parse-10q', async (req, res) => {
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
-    console.log(`\n✅ NPORT Analyzer running at http://localhost:${PORT}`);
+    console.log(`\n✅ Vantage running at http://localhost:${PORT}`);
     console.log(`   User-Agent: ${EFFECTIVE_USER_AGENT}\n`);
   });
 }

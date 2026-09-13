@@ -1,4 +1,4 @@
-# Private Investment NPORT Analyzer
+# Vantage
 
 An internal tool for analyzing SEC NPORT-P filings to track and compare private investment valuations across institutional funds. Search by company name or ticker to see how different funds mark the same asset over time.
 
@@ -6,7 +6,7 @@ An internal tool for analyzing SEC NPORT-P filings to track and compare private 
 
 ## What It Does
 
-Institutional funds registered with the SEC are required to file NPORT-P reports disclosing their portfolio holdings quarterly. This tool queries the SEC EDGAR database in real time, parses the raw XML filings, and extracts price-per-share data for any security you search — letting you see how different funds value the same private company across reporting periods.
+Institutional funds registered with the SEC are required to file NPORT-P reports disclosing their portfolio holdings quarterly. Vantage queries the SEC EDGAR database in real time, parses the raw XML filings, and extracts price-per-share data for any security you search — letting you see how different funds value the same private company across reporting periods.
 
 **Use cases:**
 - Compare marks on private investments across funds (e.g., Anthropic, OpenAI, SpaceX)
@@ -25,12 +25,15 @@ instead of NPORT-P.
 
 - **Single security search** — search by company name or ticker, set a filing limit, and get all matching holdings plotted on a price-per-share timeline
 - **Batch search** — search up to 10 securities at once, each displayed as a separate section with its own chart
+- **Watchlist** — save issuers you track repeatedly (stored in your browser only) and re-run the full list in one click, with no per-search cap
+- **Private Credit Analysis** — search any issuer name to find every BDC fund reporting it as a loan, and chart the fair-value mark (% of par) across funds and time
 - **Summary stats** — latest price, price range, number of reporting funds, total data points, and date range shown at a glance
 - **Interactive charts** — toggle individual data points on/off via checkboxes; chart updates live
-- **Date filtering** — filter all results to a specific date range
+- **Reference line** — plot your own price or mark (a cost basis, ask price, or benchmark) against peer data and see the divergence from the peer median
+- **Date and class filtering** — narrow results to a date range, or isolate a specific share class/tranche via one-click chips or free-text matching
 - **Collapsible fund tables** — expand/collapse per-fund data; select all or none per fund
+- **Source links** — every data point links back to its originating filing on EDGAR
 - **Export** — download results as CSV, Excel (`.xlsx`), or PDF (landscape with chart + data table); exports reflect whatever is currently checked/filtered on screen
-- **Private Credit Analysis** — search any issuer name to find every BDC fund reporting it as a loan, and chart the fair-value mark (% of par) across funds and time
 
 ---
 
@@ -79,6 +82,14 @@ For development with auto-reload:
 npm run dev
 ```
 
+### Tests
+
+```bash
+npm test          # run the test suite (unit + integration, against real-filing fixtures)
+npm run lint       # check code style
+npm run format     # apply Prettier formatting
+```
+
 ---
 
 ## Usage
@@ -97,9 +108,17 @@ npm run dev
 3. Click **Search All Securities**
 4. Each security gets its own chart and fund breakdown
 
+### Watchlist
+
+1. Switch to the **Watchlist** tab and add issuer names you track repeatedly
+2. Click **Run Watchlist Search** to run the same peer-comparison search as Batch Search against your full saved list (no 10-issuer cap)
+3. The list is stored in your browser's local storage only — it isn't synced or shared
+
 ### Filtering
 
 - **Date filter** — appears after a search completes; set a start/end date to narrow the visible data points and chart
+- **Class filter** — click a chip to toggle one share class/tranche everywhere in a section, or type into the filter box to fuzzy-match across naming conventions
+- **Reference line** — enter a price (Single Security) or mark (Private Credit) to plot it as a dashed benchmark line and see its percentage divergence from the peer median
 - **Checkboxes** — uncheck individual rows to remove specific data points from the chart
 - **All / None buttons** — select or deselect all rows for a given fund at once
 
@@ -147,9 +166,13 @@ silently dropped.
 ## Project Structure
 
 ```
-├── server.js          # Express API server
+├── server.js          # Express API server and routes
+├── parsers.js          # NPORT-P / 10-Q XML and HTML extraction logic
+├── cache.js            # SQLite-backed cache for parsed filings and search results
 ├── public/
-│   └── index.html     # Single-page frontend (HTML + CSS + JS)
+│   ├── index.html     # Single-page frontend (HTML + CSS)
+│   └── app.js          # Frontend logic (search, rendering, charts, export)
+├── test/               # Unit and integration tests, with real-filing fixtures
 ├── package.json
 ├── .env.example       # Environment variable template
 └── .gitignore
@@ -207,8 +230,10 @@ file (`cache.db`, gitignored, created automatically on first run):
 | `xml2js` | XML parsing for NPORT filing documents |
 | `cheerio` | HTML table parsing for 10-Q Schedule of Investments |
 | `better-sqlite3` | Server-side cache for parsed filings and search results (see below) |
-| `cors` | Cross-origin headers |
+| `express-rate-limit` | Rate limiting on API routes |
 | `dotenv` | Environment variable loading |
 | [Chart.js](https://www.chartjs.org/) | Time-series charts (CDN) |
 | [SheetJS](https://sheetjs.com/) | Excel export (CDN) |
 | [jsPDF](https://github.com/parallax/jsPDF) + [jsPDF-AutoTable](https://github.com/simonbengtsson/jsPDF-AutoTable) | PDF export (CDN) |
+
+Dev tooling: `eslint` + `prettier` for linting/formatting, `nodemon` for auto-reload, `nock` + `supertest` for testing against mocked/real HTTP.

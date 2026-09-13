@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SEC NPORT Analyzer</title>
+  <title>Vantage</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f2440'/%3E%3Cpath d='M7 22 L14 12 L19 18 L25 8' stroke='%23b8860b' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -11,32 +12,34 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.1/dist/jspdf.plugin.autotable.min.js"></script>
   <style>
     :root {
-      --blue:       #2563eb;
-      --blue-dark:  #1d4ed8;
-      --blue-pale:  #dbeafe;
-      --blue-mid:   #93c5fd;
-      --green:      #059669;
-      --green-pale: #d1fae5;
-      --red:        #dc2626;
-      --red-pale:   #fee2e2;
-      --amber-pale: #fef3c7;
-      --amber:      #d97706;
-      --gray-50:    #f9fafb;
-      --gray-100:   #f3f4f6;
-      --gray-200:   #e5e7eb;
-      --gray-400:   #9ca3af;
-      --gray-500:   #6b7280;
-      --gray-700:   #374151;
-      --gray-900:   #111827;
-      --radius:     8px;
-      --shadow:     0 10px 30px rgba(0,0,0,0.08);
+      --navy:       #0f2440;
+      --navy-dark:  #0a1930;
+      --navy-pale:  #e6ebf1;
+      --navy-mid:   #7891ac;
+      --gold:       #b8860b;
+      --gold-pale:  #f8f0dc;
+      --green:      #15803d;
+      --green-pale: #e2f3e6;
+      --red:        #b91c1c;
+      --red-pale:   #fbe9e9;
+      --amber-pale: #fbf0dc;
+      --amber:      #b45309;
+      --gray-50:    #f8f9fa;
+      --gray-100:   #f1f3f5;
+      --gray-200:   #e2e6ea;
+      --gray-400:   #97a1ab;
+      --gray-500:   #667080;
+      --gray-700:   #364152;
+      --gray-900:   #131c26;
+      --radius:     6px;
+      --shadow:     0 1px 2px rgba(15,36,64,0.07), 0 1px 0 rgba(15,36,64,0.04);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      background: #eef1f4;
       min-height: 100vh;
       padding: 20px;
       color: var(--gray-700);
@@ -46,13 +49,72 @@
       max-width: 1400px;
       margin: 0 auto;
       background: white;
-      border-radius: 12px;
+      border-top: 3px solid var(--navy);
+      border-radius: 8px;
       box-shadow: var(--shadow);
-      padding: 36px 40px;
+      padding: 30px 40px 36px;
     }
 
-    h1 { color: var(--blue); margin-bottom: 6px; font-size: 26px; font-weight: 700; }
-    .subtitle { color: var(--gray-500); margin-bottom: 22px; font-size: 14px; }
+    /* ── Header (wordmark + subtitle + About trigger) ─────────────────────── */
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 22px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    h1 { color: var(--navy); margin-bottom: 4px; font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+    .subtitle { color: var(--gray-500); font-size: 13.5px; }
+    .about-trigger {
+      flex-shrink: 0;
+      padding: 7px 16px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius);
+      background: white;
+      color: var(--gray-700);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .about-trigger:hover { border-color: var(--navy-mid); color: var(--navy); }
+
+    /* ── About modal ────────────────────────────────────────────────────── */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(15,24,36,0.55);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px; z-index: 2000;
+    }
+    .modal {
+      background: white;
+      border-radius: 10px;
+      max-width: 560px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 32px 36px;
+      position: relative;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+    }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      width: 30px; height: 30px;
+      border: none; background: var(--gray-100); border-radius: 50%;
+      color: var(--gray-500); font-size: 16px; cursor: pointer; line-height: 1;
+    }
+    .modal-close:hover { background: var(--gray-200); color: var(--gray-900); }
+    .modal h2 { color: var(--navy); font-size: 19px; margin-bottom: 16px; }
+    .modal h3 { color: var(--gray-900); font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; margin: 18px 0 6px; }
+    .modal h3:first-of-type { margin-top: 0; }
+    .modal p { font-size: 14px; line-height: 1.6; color: var(--gray-700); }
+    .modal-footer {
+      margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--gray-200);
+      font-size: 13.5px; line-height: 1.7; color: var(--gray-700);
+    }
+    .modal-footer a { color: var(--navy); font-weight: 600; text-decoration: none; }
+    .modal-footer a:hover { text-decoration: underline; }
 
     /* ── Alerts ─────────────────────────────────────────────────────────── */
     .alert {
@@ -63,17 +125,25 @@
       line-height: 1.5;
     }
     .alert strong { display: block; margin-bottom: 2px; font-size: 13px; }
-    .alert-info    { background: var(--blue-pale);  border: 1px solid var(--blue-mid); color: #1e40af; }
-    .alert-warning { background: var(--amber-pale); border: 1px solid #f59e0b;         color: #92400e; }
-    .alert-success { background: var(--green-pale); border: 1px solid var(--green);    color: #065f46; }
-    .alert-error   { background: var(--red-pale);   border: 1px solid var(--red);      color: #991b1b; }
+    .alert-info    { background: var(--navy-pale);  border: 1px solid var(--navy-mid); color: var(--navy); }
+    .alert-warning { background: var(--amber-pale); border: 1px solid var(--amber);    color: #7c3a0a; }
+    .alert-success { background: var(--green-pale); border: 1px solid var(--green);    color: #0f5c2b; }
+    .alert-error   { background: var(--red-pale);   border: 1px solid var(--red);      color: #8f1d1d; }
 
     /* ── Tabs ───────────────────────────────────────────────────────────── */
+    /* Horizontally scrollable rather than wrapping/overflowing — four labels
+       ("Private Credit Analysis" included) don't fit one line under ~480px,
+       and letting each button's text wrap pushed the last tab off-screen
+       with no way to reach it. Single-line + scroll keeps every tab reachable. */
     .tabs {
       display: flex;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
       border-bottom: 2px solid var(--gray-200);
       margin-bottom: 22px;
     }
+    .tabs::-webkit-scrollbar { display: none; }
     .tab {
       padding: 9px 22px;
       background: transparent;
@@ -84,12 +154,17 @@
       cursor: pointer;
       font-size: 15px;
       font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
       transition: all 0.2s;
     }
-    .tab:hover { color: var(--blue); }
-    .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+    .tab:hover { color: var(--navy); }
+    .tab.active { color: var(--navy); border-bottom-color: var(--gold); background: var(--navy-pale); border-radius: 6px 6px 0 0; }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
+    @media (max-width: 480px) {
+      .tab { padding: 9px 14px; font-size: 13.5px; }
+    }
 
     /* ── Form ───────────────────────────────────────────────────────────── */
     .search-row { display: flex; gap: 12px; margin-bottom: 14px; align-items: flex-end; flex-wrap: wrap; }
@@ -112,7 +187,7 @@
       color: var(--gray-900);
       transition: border-color 0.2s;
     }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--blue); }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--navy); }
     textarea { resize: vertical; min-height: 108px; }
 
     /* ── Buttons ────────────────────────────────────────────────────────── */
@@ -127,21 +202,21 @@
       white-space: nowrap;
     }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-primary  { background: var(--blue);    color: white; }
-    .btn-primary:hover:not(:disabled)  { background: var(--blue-dark); }
+    .btn-primary  { background: var(--navy);    color: white; }
+    .btn-primary:hover:not(:disabled)  { background: var(--navy-dark); }
     .btn-secondary { background: var(--gray-500); color: white; }
     .btn-secondary:hover:not(:disabled) { background: var(--gray-700); }
     .btn-green    { background: var(--green);   color: white; }
-    .btn-green:hover:not(:disabled)    { background: #047857; }
+    .btn-green:hover:not(:disabled)    { background: #0f6631; }
     .btn-red      { background: var(--red);     color: white; }
-    .btn-red:hover:not(:disabled)      { background: #b91c1c; }
+    .btn-red:hover:not(:disabled)      { background: #921818; }
     .btn-sm { padding: 4px 9px; font-size: 12px; }
 
     /* ── Date filter panel ──────────────────────────────────────────────── */
     .date-filter-panel {
       display: none;
-      background: #f0f9ff;
-      border: 2px solid var(--blue-mid);
+      background: var(--navy-pale);
+      border: 2px solid var(--navy-mid);
       border-radius: var(--radius);
       padding: 14px 16px;
       margin-bottom: 18px;
@@ -155,7 +230,7 @@
     }
     .spinner {
       border: 4px solid var(--gray-100);
-      border-top: 4px solid var(--blue);
+      border-top: 4px solid var(--navy);
       border-radius: 50%;
       width: 42px; height: 42px;
       animation: spin 1s linear infinite;
@@ -165,15 +240,15 @@
     .loading-wrap p { color: var(--gray-500); font-size: 14px; }
 
     .progress-bar-wrap {
-      background: var(--blue-pale);
-      border: 1px solid var(--blue-mid);
+      background: var(--navy-pale);
+      border: 1px solid var(--navy-mid);
       border-radius: var(--radius);
       padding: 12px 16px;
       margin-bottom: 14px;
     }
-    .progress-text  { color: #1e40af; font-size: 13px; margin-bottom: 7px; }
+    .progress-text  { color: var(--navy); font-size: 13px; margin-bottom: 7px; }
     .progress-track { background: var(--gray-200); height: 5px; border-radius: 3px; overflow: hidden; }
-    .progress-fill  { background: var(--blue); height: 100%; border-radius: 3px; transition: width 0.3s; }
+    .progress-fill  { background: var(--navy); height: 100%; border-radius: 3px; transition: width 0.3s; }
 
     /* ── Stats card ─────────────────────────────────────────────────────── */
     .stats-grid {
@@ -191,8 +266,8 @@
       padding: 13px 15px;
     }
     .stat-label { font-size: 11px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
-    .stat-value { font-size: 19px; font-weight: 700; color: var(--gray-900); line-height: 1.2; }
-    .stat-value.highlight { color: var(--blue); }
+    .stat-value { font-size: 19px; font-weight: 700; color: var(--gray-900); line-height: 1.2; font-variant-numeric: tabular-nums; }
+    .stat-value.highlight { color: var(--gold); }
     .stat-value.sm { font-size: 13px; }
     .stat-sub   { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
 
@@ -231,16 +306,16 @@
     .class-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
     .chip {
       padding: 4px 12px;
-      border: 1.5px solid var(--blue-mid);
+      border: 1.5px solid var(--navy-mid);
       border-radius: 999px;
-      background: var(--blue-pale);
-      color: var(--blue-dark);
+      background: var(--navy-pale);
+      color: var(--navy);
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s;
     }
-    .chip:hover { background: var(--blue-mid); }
+    .chip:hover { background: var(--navy-mid); color: white; }
     .chip:not(.active) { background: var(--gray-100); border-color: var(--gray-200); color: var(--gray-500); }
 
     /* ── Fund cards ─────────────────────────────────────────────────────── */
@@ -248,7 +323,7 @@
     .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
     .results-header h2 { font-size: 17px; font-weight: 600; }
 
-    .fund-card { border: 1px solid var(--gray-200); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; }
+    .fund-card { border: 1px solid var(--gray-200); border-radius: 4px; margin-bottom: 10px; overflow: hidden; }
     .fund-header {
       display: flex;
       justify-content: space-between;
@@ -270,7 +345,7 @@
     .fund-table-wrap.collapsed { max-height: 0; }
 
     /* ── Table ──────────────────────────────────────────────────────────── */
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
     th {
       background: var(--gray-100);
       padding: 9px 12px;
@@ -285,7 +360,7 @@
     td { padding: 9px 12px; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
     tr:last-child td { border-bottom: none; }
     tr.row-hidden { opacity: 0.28; text-decoration: line-through; }
-    .price-cell { font-weight: 600; color: var(--blue); }
+    .price-cell { font-weight: 600; color: var(--navy); }
     .title-cell { color: var(--gray-700); max-width: 300px; }
 
     /* ── Export row ─────────────────────────────────────────────────────── */
@@ -311,7 +386,7 @@
       color: var(--gray-900);
       margin-bottom: 18px;
       padding-bottom: 11px;
-      border-bottom: 3px solid var(--blue);
+      border-bottom: 3px solid var(--navy);
     }
 
     /* ── Instrument-type section (only visually distinct when 2+ types
@@ -324,27 +399,11 @@
     .instrument-section-title {
       font-size: 15px;
       font-weight: 700;
-      color: var(--blue);
+      color: var(--navy);
       margin-bottom: 14px;
     }
 
     code { background: var(--gray-100); padding: 1px 5px; border-radius: 3px; font-size: 12px; }
-
-    /* ── About/why blurb ────────────────────────────────────────────────── */
-    .about-box {
-      border: 1px solid var(--gray-200);
-      border-radius: var(--radius);
-      padding: 12px 16px;
-      margin-bottom: 18px;
-      font-size: 13.5px;
-      line-height: 1.55;
-      color: var(--gray-700);
-    }
-    .about-box summary { cursor: pointer; font-weight: 600; color: var(--gray-900); list-style: none; }
-    .about-box summary::-webkit-details-marker { display: none; }
-    .about-box summary::before { content: '▸ '; color: var(--gray-400); }
-    .about-box[open] summary::before { content: '▾ '; }
-    .about-box p { margin-top: 8px; }
 
     /* ── Watchlist ──────────────────────────────────────────────────────── */
     .watchlist-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
@@ -357,35 +416,50 @@
 
     /* ── Source-filing link ────────────────────────────────────────────── */
     .source-link { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--gray-400); }
-    .source-link:hover { color: var(--blue); border-bottom-color: var(--blue); }
+    .source-link:hover { color: var(--navy); border-bottom-color: var(--navy); }
   </style>
 </head>
 <body>
 <div class="container">
 
-  <h1>SEC Private Investment Valuation Reporting</h1>
-  <p class="subtitle">Analyze real institutional holdings from NPORT-P filings</p>
-
-  <details class="about-box" open>
-    <summary>Why this exists</summary>
-    <p>
-      Institutional investors comparing how different funds mark the same private
-      holding traditionally do it by hand — opening dozens of SEC filings one at a
-      time and copying numbers into a spreadsheet, easily tens of hours across a
-      real coverage list. This tool queries EDGAR directly, extracts the price/mark
-      from every matching filing, and lets you chart peer marks, benchmark them
-      against a reference price, and export the result — in seconds.
-    </p>
-  </details>
-
-  <div class="alert alert-info">
-    <strong>Real SEC Data</strong>
-    Parses actual NPORT-P filings from the SEC EDGAR database. Designed to compare marks for private investments across funds that publish NPORT filings.
+  <div class="app-header">
+    <div class="brand">
+      <h1>Vantage</h1>
+      <p class="subtitle">Private investment exposure and valuation marks, extracted from SEC filings</p>
+    </div>
+    <button class="about-trigger" onclick="openAbout()">About</button>
   </div>
 
   <div id="configWarning" class="alert alert-warning" style="display:none;">
     <strong>User-Agent Not Configured</strong>
     Copy <code>.env.example</code> to <code>.env</code> and set <code>SEC_USER_AGENT=Your Name email@example.com</code>. The SEC requires this header for EDGAR API access.
+  </div>
+
+  <div id="aboutModal" class="modal-backdrop" style="display:none;" onclick="if(event.target===this) closeAbout()">
+    <div class="modal">
+      <button class="modal-close" onclick="closeAbout()" aria-label="Close">&times;</button>
+      <h2>About Vantage</h2>
+
+      <h3>What this is</h3>
+      <p>Vantage pulls valuation data directly from SEC EDGAR filings — NPORT-P holdings reports and BDC 10-Q schedules of investments — to show how institutional funds are exposed to a given private company and how they mark that position over time.</p>
+
+      <h3>Who it's for</h3>
+      <p>Analysts and investors who need visibility into private-company valuations across multiple funds without opening each filing by hand. Useful for spot-checking a fund's mark against its peers, tracking a valuation trend across quarters, or building a data set for further analysis.</p>
+
+      <h3>How it works</h3>
+      <p>Search by company name or ticker. Vantage queries EDGAR's full-text search, parses the matching filings, and extracts price per share (for equity and fund holdings) or fair-value mark as a percentage of par (for private credit and BDC positions). Results can be filtered by date, filtered by class, charted, and exported to CSV, Excel, or PDF.</p>
+
+      <h3>Data source</h3>
+      <p>All data comes directly from SEC EDGAR. This tool does not modify, estimate, or supplement filed figures — it extracts and organizes what funds have already disclosed.</p>
+
+      <div class="modal-footer">
+        Built by <strong>Kian Golshan</strong><br>
+        Independent Developer<br>
+        <a href="https://kiangolshan.com" target="_blank" rel="noopener noreferrer">kiangolshan.com</a>
+        &nbsp;·&nbsp;
+        <a href="https://www.linkedin.com/in/kian-golshan-058b32144/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+      </div>
+    </div>
   </div>
 
   <!-- Tabs -->
