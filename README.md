@@ -37,7 +37,7 @@ instead of NPORT-P.
 ## Setup
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) v18 or later
+- [Node.js](https://nodejs.org/) v20.18.1 or later
 - npm
 
 ### Install
