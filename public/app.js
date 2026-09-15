@@ -9,7 +9,7 @@
    applyCreditReference, clearCreditReference, doCreditExportCSV, doCreditExportExcel,
    addWatchlistItem, removeWatchlistItem, quickAddToWatchlist, openAbout,
    searchFundXray, runFundXray, doXrayExportCSV, selectXrayComparison,
-   onXrayCompareSelectChange, runFundXrayCompare, doXrayCompareExportCSV */
+   onXrayCompareSelectChange, runFundXrayCompare, doXrayCompareExportCSV, selectIndexedFund */
 
 // ── State ──────────────────────────────────────────────────────────────────
 let allResults = {};
@@ -23,6 +23,7 @@ let xrayFilings = []; // filings returned by the current Fund X-Ray search, sort
 let xraySnapshots = { current: null, prior: null }; // { xray, filing } per rendered period-detail section, for CSV export/re-render
 let currentXrayCompare = null; // most recently rendered QoQ/YoY comparison, for CSV export
 let xrayCompareMode = null; // 'qoq' | 'yoy' | null — re-resolved when Current Period changes; null for a manual pick or no comparison
+let fundIndex = []; // pre-built "Top Funds" shortlist from /api/fund-index (see scripts/build-fund-index.js)
 
 const WATCHLIST_KEY = 'nportWatchlist';
 
@@ -131,8 +132,70 @@ const getColor = i => COLORS[i % COLORS.length];
     }
   } catch (_) {}
   renderWatchlist();
+  loadFundIndex();
   applyURLParams();
 })();
+
+// ── Fund X-Ray: "Top Funds" pre-built shortlist ─────────────────────────────
+// Populates the quick-select dropdown from the pre-built index (see
+// scripts/build-fund-index.js) so a well-known fund can be pulled into Fund
+// X-Ray with one click instead of typing a name and resolving it live via
+// /api/search-fund.
+async function loadFundIndex() {
+  const select = document.getElementById('xrayTopFundsSelect');
+  try {
+    const data = await fetchJSON('/api/fund-index');
+    fundIndex = data.funds || [];
+    if (!fundIndex.length) throw new Error('empty index');
+    select.innerHTML =
+      '<option value="">— Pick a fund —</option>' +
+      fundIndex
+        .map(
+          f =>
+            `<option value="${esc(f.cik)}">${esc(f.name)} — ${fmtCompactCurrency(f.privateValueUSD)} PE (${(f.privatePctOfNetAssets ?? 0).toFixed(1)}% NAV)</option>`
+        )
+        .join('');
+  } catch (_) {
+    select.innerHTML = '<option value="">Unavailable — run `npm run build-fund-index`</option>';
+    document.getElementById('xrayTopFundsHint').textContent =
+      'Top Funds shortlist not built yet — see the README for how to generate it. You can still search any fund by name below.';
+  }
+}
+
+// Pulls a fund straight from the pre-built index into Fund X-Ray, bypassing
+// /api/search-fund entirely — the index already carries this fund's CIK and
+// its full trailing-3-year filing list, so there's no name to resolve and no
+// ambiguity to disambiguate.
+async function selectIndexedFund(cik) {
+  if (!cik) return;
+  const entry = fundIndex.find(f => String(f.cik) === String(cik));
+  if (!entry) return;
+
+  clearResults();
+  document.getElementById('xrayFundInput').value = entry.name;
+
+  const filings = entry.filings.map(f => ({
+    cik: String(entry.cik),
+    accession: f.accession,
+    company: entry.name,
+    period: f.reportDate || f.filingDate || '',
+    fileDate: f.filingDate || '',
+  }));
+  filings.sort((a, b) => dateCmp(b.period || b.fileDate, a.period || a.fileDate));
+
+  xrayFilings = filings;
+  xrayCompareMode = null;
+  currentXrayCompare = null;
+  document.getElementById('xraySelectorPanel').style.display = 'block';
+  const optionsHTML = filings
+    .map((f, i) => `<option value="${i}">${esc(f.period || f.fileDate)} — ${esc(f.company)}</option>`)
+    .join('');
+  document.getElementById('xrayFilingSelect').innerHTML = optionsHTML;
+  document.getElementById('xrayCompareSelect').innerHTML = '<option value="">— No comparison —</option>' + optionsHTML;
+  document.getElementById('xrayCompareResults')?.remove();
+
+  await runFundXray();
+}
 
 // ── Shareable / pre-fillable URL ────────────────────────────────────────────
 // ?security=Anthropic&limit=50            -> Single Security tab, auto-run

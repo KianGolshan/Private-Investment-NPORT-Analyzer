@@ -639,6 +639,15 @@
   <div id="xrayTab" class="tab-content">
     <div class="search-row">
       <div class="input-group">
+        <label for="xrayTopFundsSelect">Top Funds</label>
+        <select id="xrayTopFundsSelect" onchange="selectIndexedFund(this.value)">
+          <option value="">Loading…</option>
+        </select>
+      </div>
+    </div>
+    <div class="hint" id="xrayTopFundsHint" style="margin-top:-4px;">A curated shortlist of well-known funds with real private-equity exposure in their own NPORT-P filings — pick one for instant results, no typing required.</div>
+    <div class="search-row">
+      <div class="input-group">
         <label for="xrayFundInput">Fund / Registrant Name</label>
         <input type="text" id="xrayFundInput" placeholder="e.g., REX ETF Trust, SmallCap World Fund"
                onkeydown="if(event.key==='Enter') searchFundXray()">

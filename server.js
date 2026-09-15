@@ -1,4 +1,6 @@
 require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const axios = require('axios');
 const xml2js = require('xml2js');
@@ -618,6 +620,27 @@ app.get('/api/fund-xray-compare', async (req, res) => {
   }
 });
 
+// Serves the pre-built "Top Funds" convenience list for Fund X-Ray (see
+// scripts/build-fund-index.js) — a curated, quarterly-refreshed sample of
+// well-known funds with real private-equity exposure in their own NPORT-P
+// filings, so the UI can offer a one-click picker instead of requiring a
+// name typed into /api/search-fund every time. Read once and cached in
+// memory; the file only changes when the build script is rerun (a server
+// restart picks up a regenerated file).
+let fundIndexCache = null;
+app.get('/api/fund-index', (req, res) => {
+  if (!fundIndexCache) {
+    try {
+      fundIndexCache = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'fund-index.json'), 'utf8'));
+    } catch (_error) {
+      return res.status(404).json({
+        error: 'Fund index not built yet. Run `npm run build-fund-index` to generate data/fund-index.json.',
+      });
+    }
+  }
+  res.json(fundIndexCache);
+});
+
 // Only actually bind a port when this file is run directly (`node server.js`
 // / `npm start`) — not when required by a test, so integration tests can
 // drive `app` in-process via supertest without opening a real socket.
@@ -630,3 +653,10 @@ if (require.main === module) {
 }
 
 module.exports = app;
+// Exposed for scripts/build-fund-index.js, which reuses these directly
+// (name→CIK resolution, full NPORT-P history, single-filing PE breakdown)
+// rather than duplicating EDGAR-fetching logic — requiring this module
+// never binds a port (see require.main guard above).
+module.exports.lookupFundCiks = lookupFundCiks;
+module.exports.fetchFundNportHistory = fetchFundNportHistory;
+module.exports.getFundXray = getFundXray;
