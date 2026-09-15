@@ -266,7 +266,7 @@
       padding: 13px 15px;
     }
     .stat-label { font-size: 11px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
-    .stat-value { font-size: 19px; font-weight: 700; color: var(--gray-900); line-height: 1.2; font-variant-numeric: tabular-nums; }
+    .stat-value { font-size: 19px; font-weight: 700; color: var(--gray-900); line-height: 1.2; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
     .stat-value.highlight { color: var(--gold); }
     .stat-value.sm { font-size: 13px; }
     .stat-sub   { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
@@ -468,6 +468,7 @@
     <button class="tab"        onclick="switchTab('batch')">Batch Search</button>
     <button class="tab"        onclick="switchTab('credit')">Private Credit Analysis</button>
     <button class="tab"        onclick="switchTab('watchlist')">Watchlist</button>
+    <button class="tab"        onclick="switchTab('xray')">Fund X-Ray</button>
   </div>
 
   <!-- Single tab -->
@@ -585,6 +586,30 @@
         <button class="btn btn-secondary" onclick="clearCreditReference()">Clear</button>
       </div>
       <div class="hint">Optional — plot any fair-value mark (% of par) as a dashed line against peer marks, and see the divergence vs. the peer median. Stays in your browser only.</div>
+    </div>
+  </div>
+
+  <!-- Fund X-Ray tab -->
+  <div id="xrayTab" class="tab-content">
+    <div class="search-row">
+      <div class="input-group">
+        <label for="xrayFundInput">Fund / Registrant Name</label>
+        <input type="text" id="xrayFundInput" placeholder="e.g., REX ETF Trust, SmallCap World Fund"
+               onkeydown="if(event.key==='Enter') searchFundXray()">
+      </div>
+      <button class="btn btn-primary" id="xrayBtn" onclick="searchFundXray()">Search Fund</button>
+    </div>
+    <div class="alert alert-info" style="margin-top:4px; margin-bottom:0;">
+      Pulls a fund's own NPORT-P filing in full (not filtered to one security) and identifies its private EQUITY interests — common/preferred stock, warrants, and indirect/SPV vehicles in privately-held companies — using the filing's own SEC fair-value hierarchy: Level 3 only (valued with unobservable inputs, i.e. no real market for it). Bonds/loans are excluded even if Level 3, and Level 2 "restricted" securities (e.g. foreign-ownership-restricted but still publicly-traded stock) are excluded too, since neither is a privately-held equity stake.
+    </div>
+
+    <div class="date-filter-panel" id="xraySelectorPanel" style="display:none;">
+      <div class="search-row">
+        <div class="input-group">
+          <label for="xrayFilingSelect">Reporting Period</label>
+          <select id="xrayFilingSelect" onchange="runFundXray()"></select>
+        </div>
+      </div>
     </div>
   </div>
 

@@ -19,6 +19,12 @@ for privately-held companies held as loans by Business Development Companies
 (BDCs), by parsing the Schedule of Investments tables in their 10-Q filings
 instead of NPORT-P.
 
+A third mode, **Fund X-Ray**, flips the question around: instead of searching
+for a company and finding which funds hold it, you search for a *fund* and
+see its total private-equity book — every Level 3 (fair-value-hierarchy)
+equity, warrant, or SPV holding in its most recent NPORT-P filing, broken
+down by dollar exposure, % of net assets, instrument type, and geography.
+
 ---
 
 ## Features
@@ -27,6 +33,7 @@ instead of NPORT-P.
 - **Batch search** — search up to 10 securities at once, each displayed as a separate section with its own chart
 - **Watchlist** — save issuers you track repeatedly (stored in your browser only) and re-run the full list in one click, with no per-search cap
 - **Private Credit Analysis** — search any issuer name to find every BDC fund reporting it as a loan, and chart the fair-value mark (% of par) across funds and time
+- **Fund X-Ray** — search a fund/registrant name to pull its own NPORT-P filing in full and see its total private-equity exposure: $ value and % of NAV, broken down by instrument type (common/preferred/warrant/SPV) and country, with every private holding listed
 - **Summary stats** — latest price, price range, number of reporting funds, total data points, and date range shown at a glance
 - **Interactive charts** — toggle individual data points on/off via checkboxes; chart updates live
 - **Reference line** — plot your own price or mark (a cost basis, ask price, or benchmark) against peer data and see the divergence from the peer median
@@ -114,6 +121,13 @@ npm run format     # apply Prettier formatting
 2. Click **Run Watchlist Search** to run the same peer-comparison search as Batch Search against your full saved list (no 10-issuer cap)
 3. The list is stored in your browser's local storage only — it isn't synced or shared
 
+### Fund X-Ray
+
+1. Switch to the **Fund X-Ray** tab and enter a fund/registrant name (e.g., `SmallCap World Fund`, `REX ETF Trust`) — this looks the fund up by name on EDGAR directly (not full-text search), so it finds the fund's own filings rather than other funds that merely mention it
+2. If the name matches more than one registrant, every match's filings appear together in the **Reporting Period** dropdown, labeled by fund name, so you can pick the exact one you meant
+3. Results show the fund's total private-equity $ exposure, % of net assets, an instrument-type breakdown (common/preferred/warrant/SPV), a country breakdown, and every private holding found — not just a preview; export CSV to save the full list
+4. A holding counts as private equity only if it's flagged **Fair Value Level 3** (valued with unobservable inputs — no real market for it) **and** is an equity-type instrument. Bonds and loans are excluded even at Level 3 (they're creditor claims, not equity stakes), and a "restricted security" flag alone doesn't qualify a holding either — a foreign-ownership-restricted but still publicly-traded stock (Level 2) is a real public company, not a private one
+
 ### Filtering
 
 - **Date filter** — appears after a search completes; set a start/end date to narrow the visible data points and chart
@@ -161,6 +175,14 @@ silently dropped.
 4. Extract principal, cost, and fair value per tranche, and compute
    `fair value mark = fair value / principal × 100`
 
+**Fund X-Ray mode** works against the same NPORT-P filings, but resolves and reads them differently:
+
+1. Resolves the fund name to its registrant CIK via EDGAR's company-name lookup (`browse-edgar?action=getcompany`) — not full-text search, which matches filing *content* and would mostly surface unrelated funds-of-funds that merely mention the fund as one of their own holdings
+2. Pulls that CIK's complete NPORT-P filing history via the EDGAR submissions API, paginating into older filing pages when a filing-heavy multi-series trust's "recent" submissions block (capped across *all* its form types, not just NPORT-P) would otherwise truncate the history
+3. Fetches the selected filing's `primary_doc.xml` and parses **every** holding in it — unlike Single Security/Batch, which only extract holdings matching a search term
+4. Classifies each holding as private equity if it's Fair Value Level 3 **and** an equity-type instrument (common/preferred stock, warrant, or indirect/SPV vehicle); debt is excluded outright regardless of its fair-value level, and a restricted-security flag alone never qualifies a holding
+5. Aggregates the private book into $ exposure, % of net assets, instrument-type mix, and country mix
+
 ---
 
 ## Project Structure
@@ -187,6 +209,8 @@ silently dropped.
 | `/api/parse-nport?cik=&accession=&security=` | GET | Fetches and parses a single NPORT-P filing, returns matching holdings |
 | `/api/search-10q?issuer=&maxPerFund=` | GET | Finds BDC funds (814- file number) reporting the issuer, plus each fund's full 10-Q history |
 | `/api/parse-10q?cik=&accession=&issuer=&reportDate=` | GET | Fetches a single 10-Q, parses its Schedule of Investments table for the issuer |
+| `/api/search-fund?fund=` | GET | Resolves a fund/registrant name to its EDGAR CIK(s) via company-name lookup, then returns each match's full NPORT-P filing history |
+| `/api/fund-xray?cik=&accession=` | GET | Fetches and parses one NPORT-P filing in full, returns the fund's private-equity exposure breakdown |
 
 ---
 
@@ -205,19 +229,19 @@ The same 70+ issuers tend to get re-checked repeatedly (especially via
 Watchlist "run all"), so results are cached server-side in a local SQLite
 file (`cache.db`, gitignored, created automatically on first run):
 
-- **Parsed filing holdings** (`/api/parse-nport`, `/api/parse-10q`) are
-  cached indefinitely, keyed by `(cik, accession, security)` /
-  `(cik, accession, issuer, reportDate)` — a specific historical filing's
-  content never changes.
-- **Search-result listings** (`/api/search-nport`, `/api/search-10q`) are
-  cached for 1 hour by default (override with `SEARCH_CACHE_TTL_MS` in
-  `.env`), since new filings get added over time.
-- Add `&refresh=1` to any of the four routes above to bypass the cache and
+- **Parsed filing holdings** (`/api/parse-nport`, `/api/parse-10q`,
+  `/api/fund-xray`) are cached indefinitely, keyed by `(cik, accession,
+  security)` / `(cik, accession, issuer, reportDate)` / `(cik, accession)`
+  — a specific historical filing's content never changes.
+- **Search-result listings** (`/api/search-nport`, `/api/search-10q`,
+  `/api/search-fund`) are cached for 1 hour by default (override with
+  `SEARCH_CACHE_TTL_MS` in `.env`), since new filings get added over time.
+- Add `&refresh=1` to any of the six routes above to bypass the cache and
   force a fresh SEC fetch for that request.
 - If the extraction logic in `extractHoldings()` / `extractCreditHoldings()`
-  ever changes, bump `PARSE_VERSION` in `cache.js` so old cached results
-  (parsed with the previous logic) are treated as misses instead of being
-  served forever.
+  / `extractAllHoldings()` ever changes, bump `PARSE_VERSION` in `cache.js`
+  so old cached results (parsed with the previous logic) are treated as
+  misses instead of being served forever.
 
 ---
 

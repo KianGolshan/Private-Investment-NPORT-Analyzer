@@ -5,7 +5,7 @@ const xml2js = require('xml2js');
 const cheerio = require('cheerio');
 const rateLimit = require('express-rate-limit');
 const cache = require('./cache');
-const { extractHoldings, extractCreditHoldings } = require('./parsers');
+const { extractHoldings, extractCreditHoldings, extractFundMeta, extractAllHoldings, buildFundXRay } = require('./parsers');
 
 const app = express();
 // The frontend is served from this same Express instance (express.static
@@ -75,6 +75,10 @@ async function fetchWithRetry(config, maxRetries = 3) {
 
 // Fetch a filer's complete filing history from the EDGAR submissions API,
 // flattening the paginated "files" (older filings) alongside "recent".
+// Returns both the registrant's name and its full filing history — the
+// name is read off the same first response that "recent" comes from, so
+// exposing it here costs nothing extra and lets callers avoid a second,
+// redundant fetch just to learn who the filer is (see fetchFundNportHistory).
 async function fetchSubmissionsAllPages(cikPadded) {
   const entries = [];
   const pushEntries = block => {
@@ -117,7 +121,7 @@ async function fetchSubmissionsAllPages(cikPadded) {
       console.error(`Submissions page error (${file.name}):`, e.message);
     }
   }
-  return entries;
+  return { name: subResp.data.name || '', entries };
 }
 
 // Strip trailing ticker/CIK parentheticals from EFTS display names,
@@ -294,7 +298,7 @@ app.get('/api/search-10q', async (req, res) => {
       for (const [cikStripped, name] of Object.entries(bdcCikName)) {
         try {
           const cikPadded = cikStripped.padStart(10, '0');
-          const allFilings = await fetchSubmissionsAllPages(cikPadded);
+          const { entries: allFilings } = await fetchSubmissionsAllPages(cikPadded);
           let count = 0;
           for (const f of allFilings) {
             if (f.form !== '10-Q') continue;
@@ -372,7 +376,7 @@ app.get('/api/parse-10q', async (req, res) => {
       const cikPadded = String(cik).replace(/^0+/, '').padStart(10, '0');
       let mainDocName = null;
       try {
-        const allFilings = await fetchSubmissionsAllPages(cikPadded);
+        const { entries: allFilings } = await fetchSubmissionsAllPages(cikPadded);
         const match = allFilings.find(
           f => f.accessionNumber === accession || f.accessionNumber?.replace(/-/g, '') === accNodash
         );
@@ -409,6 +413,171 @@ app.get('/api/parse-10q', async (req, res) => {
   } catch (error) {
     console.error('10-Q parse error:', error.message);
     res.json({ success: false, holdings: [], error: error.message });
+  }
+});
+
+// ── Fund X-Ray: total private-market exposure in a fund's own NPORT-P ─────
+// Distinct from /api/search-nport (which uses EDGAR full-text search to
+// find OTHER funds mentioning a security in their own filing text — the
+// right tool for that job). Full-text search is the WRONG tool here: it
+// matches filing *content*, so searching for a fund by name mostly returns
+// unrelated funds-of-funds that merely hold this fund as one of their own
+// positions — real case found live: searching "SMALLCAP World Fund" this
+// way returned 10,000+ hits, 97% of the first 100 from unrelated American
+// Funds target-date series that just mention it, burying the actual
+// SmallCap World Fund Inc filings. This instead resolves the fund/
+// registrant's own CIK via EDGAR's company-name lookup, then pulls that
+// CIK's own filing history — so its own filing can be found and pulled in
+// full (not just ones matching a search term) for classification.
+
+// EDGAR's company-name search (NOT full-text search) — matches the
+// registrant itself. Returns candidate CIKs only: on an unambiguous name
+// this feed's own <company-info><cik> is authoritative; on an ambiguous
+// name (matches multiple registrants) SEC's atom output has a long-standing
+// bug where each candidate's *name* is unserializable ("ARRAY(0x...)"), so
+// only the CIK can be trusted here — the real name is recovered per-CIK via
+// fetchFundNportHistory below.
+async function lookupFundCiks(fundName) {
+  const response = await fetchWithRetry({
+    url: 'https://www.sec.gov/cgi-bin/browse-edgar',
+    method: 'get',
+    params: {
+      action: 'getcompany',
+      company: fundName,
+      type: 'NPORT-P',
+      dateb: '',
+      owner: 'include',
+      count: 100,
+      output: 'atom',
+    },
+    headers: { 'User-Agent': EFFECTIVE_USER_AGENT, Accept: 'application/xml' },
+    timeout: 20000,
+  });
+
+  const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: false });
+  const result = await parser.parseStringPromise(response.data);
+
+  const singleCik = result?.feed?.['company-info']?.cik;
+  if (singleCik) return [String(singleCik).replace(/^0+/, '')];
+
+  let entries = result?.feed?.entry;
+  if (!entries) return [];
+  if (!Array.isArray(entries)) entries = [entries];
+  const ciks = entries
+    .map(e => e?.content?.['company-info']?.cik)
+    .filter(Boolean)
+    .map(c => String(c).replace(/^0+/, ''));
+  return [...new Set(ciks)].slice(0, 5);
+}
+
+// A fund's own NPORT-P filing history with a clean registrant name.
+// Reuses fetchSubmissionsAllPages (the same helper the Private Credit flow
+// already relies on) rather than reading only the submissions API's
+// "recent" block directly — that block is capped across ALL of a filer's
+// form types combined, not just NPORT-P, so a filing-heavy multi-series
+// trust can push its own older NPORT-P filings out of "recent" entirely.
+// Confirmed live against a real registrant: American Funds Insurance
+// Series (CIK 729528) has filed NPORT-P since the form existed in 2019,
+// but a "recent"-only read silently truncated its history to 2022+ —
+// fetchSubmissionsAllPages' pagination into "files" is what recovers the
+// missing 2019-2021 filings.
+async function fetchFundNportHistory(cik) {
+  const cikPadded = cik.padStart(10, '0');
+  const { name, entries } = await fetchSubmissionsAllPages(cikPadded);
+  const filings = entries
+    .filter(f => f.form === 'NPORT-P' && f.accessionNumber)
+    .map(f => ({ accession: f.accessionNumber, filingDate: f.filingDate || '', reportDate: f.reportDate || '' }));
+  return { cik, name: name || cik, filings };
+}
+
+app.get('/api/search-fund', async (req, res) => {
+  const { fund, refresh } = req.query;
+  if (!fund) return res.status(400).json({ error: 'fund parameter required' });
+
+  // v2: switched from full-text-search (matched filing content, so a fund
+  // name mostly returned unrelated funds mentioning it — see comment above)
+  // to a company-name lookup returning { matches }. Namespace bumped so any
+  // pre-fix cached response (the old raw EFTS shape) is a miss, not a stale
+  // hit — search-cache keys aren't version-gated the way holdings-cache
+  // keys are via PARSE_VERSION, so this is done by hand here.
+  const cacheKey = cache.searchKey('search:fundxray:v2', fund);
+  if (!refresh) {
+    const cached = cache.getSearch(cacheKey);
+    if (cached) return res.json({ ...cached, cached: true });
+  }
+
+  try {
+    const data = await cache.withInFlight(cacheKey, async () => {
+      const ciks = await lookupFundCiks(fund);
+      const matches = [];
+      for (const cik of ciks) {
+        try {
+          const match = await fetchFundNportHistory(cik);
+          if (match.filings.length) matches.push(match);
+          await delay(50);
+        } catch (e) {
+          console.error('Fund history error for CIK', cik, e.message);
+        }
+      }
+      const payload = { matches };
+      cache.setSearch(cacheKey, payload);
+      return payload;
+    });
+    res.json({ ...data, cached: false });
+  } catch (error) {
+    console.error('Fund search error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Fetch and parse one NPORT-P filing in full, returning the fund's
+// private-vs-public exposure breakdown (Fund X-Ray).
+app.get('/api/fund-xray', async (req, res) => {
+  const { cik, accession, refresh } = req.query;
+  if (!cik || !accession) {
+    return res.status(400).json({ error: 'cik and accession are required' });
+  }
+
+  // Immutable historical filing content, same rationale as /api/parse-nport
+  // — cached indefinitely.
+  const cacheKey = cache.holdingsKey('fundxray', cik, accession);
+  if (!refresh) {
+    const cached = cache.getHoldings(cacheKey);
+    if (cached) return res.json({ success: true, xray: cached, cached: true });
+  }
+
+  try {
+    const xray = await cache.withInFlight(cacheKey, async () => {
+      const accessionFormatted = accession.replace(/-/g, '');
+      await delay(50);
+
+      const xmlUrl = `https://www.sec.gov/Archives/edgar/data/${encodeURIComponent(cik)}/${encodeURIComponent(accessionFormatted)}/primary_doc.xml`;
+      const xmlResponse = await fetchWithRetry({
+        url: xmlUrl,
+        method: 'get',
+        headers: { 'User-Agent': EFFECTIVE_USER_AGENT },
+        timeout: 30000,
+      });
+
+      const parser = new xml2js.Parser({
+        explicitArray: false,
+        mergeAttrs: true,
+        normalizeTags: true,
+        tagNameProcessors: [xml2js.processors.stripPrefix],
+      });
+
+      const result = await parser.parseStringPromise(xmlResponse.data);
+      const fundMeta = extractFundMeta(result);
+      const holdings = extractAllHoldings(result);
+      const xrayResult = buildFundXRay(holdings, fundMeta);
+      cache.setHoldings(cacheKey, xrayResult);
+      return xrayResult;
+    });
+
+    res.json({ success: true, xray, cached: false });
+  } catch (error) {
+    console.error('Fund X-Ray error:', error.message);
+    res.json({ success: false, xray: null, error: error.message });
   }
 });
 

@@ -262,6 +262,228 @@ test('GET /api/parse-10q: reports success:false when the primary doc cannot be l
   assert.match(res.body.error, /Could not locate/);
 });
 
+// ── /api/search-fund ─────────────────────────────────────────────────────
+// Resolves a fund by its EDGAR company-name lookup (browse-edgar), not
+// full-text search — full-text search matches filing *content*, so a fund
+// name mostly surfaces unrelated funds-of-funds that merely mention it as
+// one of their own holdings, burying the actual fund (a real bug found live
+// against "SMALLCAP World Fund": 10,000+ full-text hits, 97% irrelevant).
+
+test('GET /api/search-fund: 400 when fund is missing', async () => {
+  const res = await request(app).get('/api/search-fund');
+  assert.equal(res.status, 400);
+  assert.match(res.body.error, /fund/);
+});
+
+test('GET /api/search-fund: unambiguous name — resolves via company-info in the atom feed itself, then serves the second identical request from cache', async () => {
+  const atomFeed = `<?xml version="1.0" encoding="ISO-8859-1" ?>
+    <feed xmlns="http://www.w3.org/2005/Atom">
+      <company-info>
+        <cik>0002043954</cik>
+        <conformed-name>REX ETF Trust</conformed-name>
+      </company-info>
+      <entry><content type="text/xml">
+        <accession-number>0000894189-26-024397</accession-number>
+        <filing-date>2026-07-15</filing-date>
+        <filing-type>NPORT-P</filing-type>
+      </content></entry>
+    </feed>`;
+  const browseScope = nock(SEC)
+    .get('/cgi-bin/browse-edgar')
+    .query(q => q.company === 'REX ETF Trust' && q.type === 'NPORT-P')
+    .reply(200, atomFeed, { 'Content-Type': 'application/atom+xml' });
+
+  const subScope = nock(DATA_SEC)
+    .get('/submissions/CIK0002043954.json')
+    .reply(200, {
+      name: 'REX ETF Trust',
+      filings: {
+        recent: {
+          form: ['NPORT-P', '485BPOS'],
+          accessionNumber: ['0000894189-26-024397', '0000894189-26-000001'],
+          filingDate: ['2026-07-15', '2026-01-01'],
+          reportDate: ['2026-06-30', ''],
+        },
+        files: [],
+      },
+    });
+
+  const first = await request(app).get('/api/search-fund?fund=REX ETF Trust');
+  assert.equal(first.status, 200);
+  assert.equal(first.body.cached, false);
+  assert.equal(first.body.matches.length, 1);
+  assert.equal(first.body.matches[0].cik, '2043954');
+  assert.equal(first.body.matches[0].name, 'REX ETF Trust');
+  // The 485BPOS in the same submissions history must be excluded (NPORT-P only).
+  assert.equal(first.body.matches[0].filings.length, 1);
+  assert.equal(first.body.matches[0].filings[0].accession, '0000894189-26-024397');
+  assert.ok(browseScope.isDone());
+  assert.ok(subScope.isDone());
+
+  // No second interceptor registered for either upstream call — a cache hit
+  // proves neither was re-fetched.
+  const second = await request(app).get('/api/search-fund?fund=REX ETF Trust');
+  assert.equal(second.status, 200);
+  assert.equal(second.body.cached, true);
+  assert.deepEqual(second.body.matches, first.body.matches);
+});
+
+test('GET /api/search-fund: a filing-heavy registrant\'s older NPORT-P filings (pushed out of "recent" by other form types) are recovered via files pagination', async () => {
+  // Regression test for a real bug found live: the submissions API's
+  // "recent" block is capped across a filer's TOTAL submission volume
+  // (every form type combined), not just NPORT-P — so a filing-heavy
+  // multi-series trust can have its own older NPORT-P filings pushed out of
+  // "recent" entirely. Confirmed against the real American Funds Insurance
+  // Series (CIK 729528): a "recent"-only read returned NPORT-P history
+  // truncated to 2022+, silently missing 2019-2021 — fetchFundNportHistory
+  // must paginate into "files" (via fetchSubmissionsAllPages, the same
+  // helper the Private Credit flow already relies on) to recover them.
+  const atomFeed = `<?xml version="1.0" encoding="ISO-8859-1" ?>
+    <feed xmlns="http://www.w3.org/2005/Atom">
+      <company-info>
+        <cik>0000729528</cik>
+        <conformed-name>AMERICAN FUNDS INSURANCE SERIES</conformed-name>
+      </company-info>
+      <entry><content type="text/xml">
+        <accession-number>0001193125-26-100000</accession-number>
+        <filing-date>2026-05-28</filing-date>
+        <filing-type>NPORT-P</filing-type>
+      </content></entry>
+    </feed>`;
+  nock(SEC)
+    .get('/cgi-bin/browse-edgar')
+    .query(q => q.company === 'American Funds Insurance Series')
+    .reply(200, atomFeed, { 'Content-Type': 'application/atom+xml' });
+
+  // "recent" only reaches back to 2022 — thousands of other-form-type
+  // filings for this trust have pushed 2019-2021 NPORT-P filings onto an
+  // older page.
+  nock(DATA_SEC)
+    .get('/submissions/CIK0000729528.json')
+    .reply(200, {
+      name: 'AMERICAN FUNDS INSURANCE SERIES',
+      filings: {
+        recent: {
+          form: ['NPORT-P'],
+          accessionNumber: ['0001193125-26-100000'],
+          filingDate: ['2026-05-28'],
+          reportDate: ['2026-03-31'],
+        },
+        files: [{ name: 'CIK0000729528-submissions-001.json' }],
+      },
+    });
+  nock(DATA_SEC)
+    .get('/submissions/CIK0000729528-submissions-001.json')
+    .reply(200, {
+      form: ['NPORT-P', '485BPOS'],
+      accessionNumber: ['0001145549-19-047688', '0001145549-19-000001'],
+      filingDate: ['2019-11-27', '2019-01-01'],
+      reportDate: ['2019-09-30', ''],
+    });
+
+  const res = await request(app).get('/api/search-fund?fund=American Funds Insurance Series');
+  assert.equal(res.status, 200);
+  assert.equal(res.body.matches.length, 1);
+  const filings = res.body.matches[0].filings;
+  assert.equal(filings.length, 2, 'both the recent 2026 filing and the paginated 2019 filing must be present');
+  assert.ok(
+    filings.some(f => f.accession === '0001145549-19-047688' && f.reportDate === '2019-09-30'),
+    'the older, paginated-in filing must not be dropped'
+  );
+});
+
+test('GET /api/search-fund: ambiguous name — recovers CIKs from the buggy multi-match atom feed, then a clean name per CIK', async () => {
+  // Real SEC behavior for an ambiguous company-name prefix: no top-level
+  // company-info, and each candidate's own company-info has an
+  // unserializable name ("ARRAY(0x...)") — only its <cik> can be trusted.
+  const atomFeed = `<?xml version="1.0" encoding="ISO-8859-1" ?>
+    <feed xmlns="http://www.w3.org/2005/Atom">
+      <entry title="ARRAY(0xdeadbeef)"><content type="text/xml">
+        <company-info name="ARRAY(0xdeadbeef)"><cik>0000111111</cik></company-info>
+      </content></entry>
+    </feed>`;
+  nock(SEC)
+    .get('/cgi-bin/browse-edgar')
+    .query(q => q.company === 'Ambiguous Fund')
+    .reply(200, atomFeed, { 'Content-Type': 'application/atom+xml' });
+
+  nock(DATA_SEC)
+    .get('/submissions/CIK0000111111.json')
+    .reply(200, {
+      name: 'Ambiguous Fund Series A',
+      filings: {
+        recent: {
+          form: ['NPORT-P'],
+          accessionNumber: ['0001111111-26-000001'],
+          filingDate: ['2026-05-01'],
+          reportDate: ['2026-03-31'],
+        },
+        files: [],
+      },
+    });
+
+  const res = await request(app).get('/api/search-fund?fund=Ambiguous Fund');
+  assert.equal(res.status, 200);
+  assert.equal(res.body.matches.length, 1);
+  assert.equal(res.body.matches[0].cik, '111111');
+  assert.equal(res.body.matches[0].name, 'Ambiguous Fund Series A');
+});
+
+test('GET /api/search-fund: no company match — returns an empty match list, not an error', async () => {
+  nock(SEC)
+    .get('/cgi-bin/browse-edgar')
+    .query(q => q.company === 'TotallyFakeFundXYZ')
+    .reply(
+      200,
+      `<?xml version="1.0" encoding="ISO-8859-1" ?><feed xmlns="http://www.w3.org/2005/Atom"></feed>`,
+      { 'Content-Type': 'application/atom+xml' }
+    );
+
+  const res = await request(app).get('/api/search-fund?fund=TotallyFakeFundXYZ');
+  assert.equal(res.status, 200);
+  assert.deepEqual(res.body.matches, []);
+});
+
+// ── /api/fund-xray ───────────────────────────────────────────────────────
+
+test('GET /api/fund-xray: 400 when required params are missing', async () => {
+  const res = await request(app).get('/api/fund-xray?cik=123');
+  assert.equal(res.status, 400);
+});
+
+test('GET /api/fund-xray: fetches and parses a real filing end-to-end, then caches it', async () => {
+  const scope = nock(SEC)
+    .get('/Archives/edgar/data/2043954/000089418926024397/primary_doc.xml')
+    .reply(200, spacexXml, { 'Content-Type': 'application/xml' });
+
+  const first = await request(app).get('/api/fund-xray?cik=2043954&accession=0000894189-26-024397');
+  assert.equal(first.status, 200);
+  assert.equal(first.body.success, true);
+  assert.equal(first.body.cached, false);
+  // Same fixture parsers.test.js verifies as a fully public book (every
+  // holding fairValLevel 1) — zero private exposure, not a thrown error.
+  assert.equal(first.body.xray.privateHoldingsCount, 0);
+  assert.ok(first.body.xray.totalHoldingsCount > 20);
+  assert.equal(first.body.xray.fund.registrantName, 'REX ETF Trust');
+  assert.ok(scope.isDone());
+
+  // Same (cik, accession) is one immutable filing — served from cache
+  // without a second SEC fetch (no interceptor registered for it).
+  const second = await request(app).get('/api/fund-xray?cik=2043954&accession=0000894189-26-024397');
+  assert.equal(second.status, 200);
+  assert.equal(second.body.cached, true);
+  assert.deepEqual(second.body.xray, first.body.xray);
+});
+
+test('GET /api/fund-xray: a fetch failure is reported as success:false, not a thrown error', async () => {
+  nock(SEC).get('/Archives/edgar/data/999/000000000000000002/primary_doc.xml').reply(404);
+
+  const res = await request(app).get('/api/fund-xray?cik=999&accession=0000000000-00-000002');
+  assert.equal(res.status, 200);
+  assert.equal(res.body.success, false);
+  assert.ok(res.body.error);
+});
+
 // ── Unknown routes ──────────────────────────────────────────────────────
 
 test('GET /api/does-not-exist: 404', async () => {

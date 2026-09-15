@@ -7,7 +7,8 @@
    clearDateFilter, applyBatchDateFilter, clearBatchDateFilter, doExportCSV,
    doExportExcel, doExportPDF, applyCreditDateFilter, clearCreditDateFilter,
    applyCreditReference, clearCreditReference, doCreditExportCSV, doCreditExportExcel,
-   addWatchlistItem, removeWatchlistItem, quickAddToWatchlist, openAbout */
+   addWatchlistItem, removeWatchlistItem, quickAddToWatchlist, openAbout,
+   searchFundXray, runFundXray, doXrayExportCSV */
 
 // ── State ──────────────────────────────────────────────────────────────────
 let allResults = {};
@@ -17,6 +18,8 @@ let allCreditResults = {};
 let creditChart = null;
 let singleReferenceValue = null; // optional user-entered $ price to overlay/diff against peers (equity bucket only)
 let creditReferenceValue = null; // optional user-entered mark (%) to overlay/diff against peers
+let xrayFilings = []; // filings returned by the current Fund X-Ray search, sorted newest-first
+let currentXray = null; // most recently rendered Fund X-Ray result, for CSV export
 
 const WATCHLIST_KEY = 'nportWatchlist';
 
@@ -176,12 +179,13 @@ function handleAboutEscape(e) {
 
 // ── Tab management ─────────────────────────────────────────────────────────
 function switchTab(tab, { skipUrlReset } = {}) {
-  const tabNames = ['single', 'batch', 'credit', 'watchlist'];
+  const tabNames = ['single', 'batch', 'credit', 'watchlist', 'xray'];
   document.querySelectorAll('.tab').forEach((el, i) => el.classList.toggle('active', tabNames[i] === tab));
   document.getElementById('singleTab').classList.toggle('active', tab === 'single');
   document.getElementById('batchTab').classList.toggle('active', tab === 'batch');
   document.getElementById('creditTab').classList.toggle('active', tab === 'credit');
   document.getElementById('watchlistTab').classList.toggle('active', tab === 'watchlist');
+  document.getElementById('xrayTab').classList.toggle('active', tab === 'xray');
   clearResults();
   // Skipped when applyURLParams() is driving the tab switch on page load —
   // it still has incoming ?security=/?issuer= params to read and act on.
@@ -1469,10 +1473,13 @@ function clearResults() {
   document.getElementById('creditDateFilterPanel').style.display = 'none';
   document.getElementById('referencePanel').style.display = 'none';
   document.getElementById('creditReferencePanel').style.display = 'none';
+  document.getElementById('xraySelectorPanel').style.display = 'none';
   setVal('referencePrice', '');
   setVal('creditReferenceMark', '');
   singleReferenceValue = null;
   creditReferenceValue = null;
+  xrayFilings = [];
+  currentXray = null;
   Object.values(singleCharts).forEach(c => c.destroy());
   singleCharts = {};
   if (creditChart) {
@@ -1488,6 +1495,7 @@ function setBtnsDisabled(v) {
   document.getElementById('searchBtn').disabled = v;
   document.getElementById('batchBtn').disabled = v;
   document.getElementById('creditBtn').disabled = v;
+  document.getElementById('xrayBtn').disabled = v;
   const wbtn = document.getElementById('watchlistRunBtn');
   if (wbtn) wbtn.disabled = v || getWatchlist().length === 0;
 }
@@ -2144,4 +2152,189 @@ function renderWatchlist() {
   `
     )
     .join('');
+}
+
+// ── Fund X-Ray: total private-market exposure in a fund's own NPORT-P ─────
+// Unlike Single Security / Batch / Watchlist (which search for funds
+// mentioning a security), this searches for the fund itself, then pulls its
+// own filing in full — every holding, not just ones matching a search term
+// — so the fund's total private/illiquid book can be measured directly.
+async function searchFundXray() {
+  const fund = document.getElementById('xrayFundInput').value.trim();
+  if (!fund) return showMsg('Please enter a fund or registrant name.', 'error');
+
+  clearResults();
+  showLoading('Looking up this fund on SEC EDGAR...');
+
+  try {
+    const data = await fetchJSON('/api/search-fund?fund=' + enc(fund));
+    hideLoading();
+
+    const matches = data.matches || [];
+    const filings = [];
+    matches.forEach(m => {
+      m.filings.forEach(f => {
+        filings.push({
+          cik: String(m.cik),
+          accession: f.accession,
+          company: m.name,
+          period: f.reportDate || f.filingDate || '',
+          fileDate: f.filingDate || '',
+        });
+      });
+    });
+    filings.sort((a, b) => dateCmp(b.period || b.fileDate, a.period || a.fileDate));
+
+    if (!filings.length) {
+      return showMsg(
+        'No NPORT-P filings found for that fund name. Try the fund’s exact registrant name as it appears on EDGAR (e.g. "SmallCap World Fund Inc", not just "SmallCap").',
+        'error'
+      );
+    }
+
+    xrayFilings = filings;
+    document.getElementById('xraySelectorPanel').style.display = 'block';
+    document.getElementById('xrayFilingSelect').innerHTML = filings
+      .map((f, i) => `<option value="${i}">${esc(f.period || f.fileDate)} — ${esc(f.company)}</option>`)
+      .join('');
+
+    if (matches.length > 1) {
+      showMsg(`"${fund}" matched ${matches.length} funds on EDGAR — pick the exact fund/period below.`, 'info');
+    }
+
+    await runFundXray();
+  } catch (err) {
+    hideLoading();
+    showMsg('Error: ' + err.message, 'error');
+  }
+}
+
+async function runFundXray() {
+  const filing = xrayFilings[+document.getElementById('xrayFilingSelect').value || 0];
+  if (!filing) return;
+
+  showLoading('Pulling this filing and classifying every holding...');
+  try {
+    const data = await fetchJSON(`/api/fund-xray?cik=${enc(filing.cik)}&accession=${enc(filing.accession)}`);
+    hideLoading();
+    if (!data.success || !data.xray) {
+      return showMsg('Error: ' + (data.error || 'Could not parse this filing.'), 'error');
+    }
+    currentXray = data.xray;
+    renderFundXray(data.xray, filing);
+  } catch (err) {
+    hideLoading();
+    showMsg('Error: ' + err.message, 'error');
+  }
+}
+
+function renderFundXray(xray, filing) {
+  const fundName = xray.fund?.seriesName || xray.fund?.registrantName || filing.company;
+  const pct = v => (v !== null && v !== undefined && !isNaN(v) ? v.toFixed(2) + '%' : '—');
+
+  let html = '<div class="results-section">';
+  html += `<div class="results-header"><h2>${esc(fundName)}</h2></div>`;
+  html += `<div class="hint">Report period: ${esc(xray.fund?.reportDate || filing.period || '—')} &bull; ${sourceLinkHTML(filing.cik, filing.accession, 'View source filing')}</div>`;
+
+  html += `
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-label">Private Equity Exposure</div>
+        <div class="stat-value highlight">${fmtCurrency(xray.privateValueUSD)}</div>
+        <div class="stat-sub">${xray.privateHoldingsCount} of ${xray.totalHoldingsCount} holdings</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">% of Fund Net Assets</div>
+        <div class="stat-value">${pct(xray.privatePctOfNetAssets)}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">% of Reported Holdings Value</div>
+        <div class="stat-value">${pct(xray.privatePctOfHoldingsValue)}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Total Holdings</div>
+        <div class="stat-value">${xray.totalHoldingsCount}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Fund Net Assets</div>
+        <div class="stat-value sm">${xray.fund?.netAssets ? fmtCurrency(xray.fund.netAssets) : '—'}</div>
+      </div>
+    </div>`;
+
+  html +=
+    '<div class="alert alert-info">Private equity = an equity-type interest (common/preferred stock, a warrant, or an indirect/SPV vehicle) that this filing marks at SEC fair-value hierarchy Level 3 — valued with unobservable inputs, meaning there\'s no real market for it — not an external judgment call. Bonds/loans are excluded even at Level 3, since they\'re creditor claims, not equity. A "restricted" flag alone does NOT qualify a holding here: a foreign-ownership-restricted but still publicly-traded stock (Level 2) is excluded, since it trades in an observable market and simply isn\'t privately held. A publicly-traded wrapper around a private company (e.g. a listed vehicle tracking it) will also show as public here, since the fund itself marks it at a quoted price.</div>';
+
+  const typeEntries = Object.entries(xray.byInstrumentType).sort((a, b) => b[1] - a[1]);
+  const countryEntries = Object.entries(xray.byCountry).sort((a, b) => b[1] - a[1]);
+
+  if (typeEntries.length) {
+    html += '<div class="results-header"><h2>Private Equity Exposure by Instrument Type</h2></div>';
+    html +=
+      '<table><thead><tr><th>Type</th><th class="right">$ Value</th><th class="right">% of Private Equity Book</th></tr></thead><tbody>';
+    typeEntries.forEach(([type, value]) => {
+      html += `<tr><td>${esc(type)}</td><td class="right">${fmtCurrency(value)}</td><td class="right">${pct((value / xray.privateValueUSD) * 100)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+  }
+
+  if (countryEntries.length) {
+    html += '<div class="results-header"><h2>Private Equity Exposure by Country</h2></div>';
+    html +=
+      '<table><thead><tr><th>Country</th><th class="right">$ Value</th><th class="right">% of Private Equity Book</th></tr></thead><tbody>';
+    countryEntries.forEach(([country, value]) => {
+      html += `<tr><td>${esc(country)}</td><td class="right">${fmtCurrency(value)}</td><td class="right">${pct((value / xray.privateValueUSD) * 100)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+  }
+
+  html += `<div class="results-header"><h2>Private Equity Holdings (${xray.privateHoldingsCount})</h2></div>`;
+  if (xray.privateHoldings.length) {
+    html += `<table><thead><tr>
+      <th>Company</th><th>Instrument</th><th>Country</th><th class="right">Fair Value Level</th>
+      <th class="right">% of NAV</th><th class="right">$ Value</th>
+    </tr></thead><tbody>`;
+    xray.privateHoldings.forEach(h => {
+      html += `<tr>
+        <td class="title-cell">${esc(h.name || h.title || '—')}</td>
+        <td>${esc(h.instrumentLabel || '—')}</td>
+        <td>${esc(h.country || '—')}</td>
+        <td class="right">${esc(h.fairValLevel || '—')}</td>
+        <td class="right">${pct(h.pctOfNetAssets)}</td>
+        <td class="right">${fmtCurrency(h.marketValue)}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+  } else {
+    html +=
+      '<div class="alert alert-info">No private equity holdings (Level-3 equity, warrants, or SPV vehicles) found in this filing — this fund’s book appears to hold no private equity as of this report date. (It may still hold Level-3 bonds/loans or Level-2 restricted stock, which this view intentionally excludes.)</div>';
+  }
+
+  html += `<div class="export-row"><button class="btn btn-green" onclick="doXrayExportCSV()">Export CSV</button></div>`;
+  html += '</div>';
+
+  document.getElementById('resultsContainer').innerHTML = html;
+}
+
+function doXrayExportCSV() {
+  if (!currentXray) return;
+  const fundName = currentXray.fund?.seriesName || currentXray.fund?.registrantName || '';
+  const reportDate = currentXray.fund?.reportDate || '';
+  const rows = [
+    ['Fund', 'Report Date', 'Company', 'Instrument', 'Country', 'Fair Value Level', 'Restricted', '% of NAV', '$ Value'],
+  ];
+  currentXray.privateHoldings.forEach(h =>
+    rows.push([
+      fundName,
+      reportDate,
+      h.name || h.title || '',
+      h.instrumentLabel || '',
+      h.country || '',
+      h.fairValLevel || '',
+      h.isRestrictedSec || '',
+      h.pctOfNetAssets != null ? h.pctOfNetAssets.toFixed(4) : '',
+      h.marketValue != null ? h.marketValue.toFixed(2) : '',
+    ])
+  );
+  const csv = rows.map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
+  downloadBlob(csv, 'text/csv', `fund_xray_${cleanId(fundName || 'fund')}_${today()}.csv`);
 }

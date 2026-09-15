@@ -32,10 +32,24 @@
 // since the number on screen was the total, not price-per-unit like every
 // other type). Bumped so rows cached under v3 with the old (total-value)
 // convention get re-parsed instead of silently showing the wrong number.
+// v5: Fund X-Ray's isPrivate (extractAllHoldings) now requires an
+// equity-type instrument, not just Level 3/restricted — a user caught live
+// that restricted Rule 144A bonds (e.g. sovereign bonds) were being counted
+// as "private equity" alongside real private-company stakes. Bumped so
+// cached fund-xray results computed under the old, debt-inclusive
+// definition are re-parsed instead of silently overstating private equity
+// exposure with bond/loan holdings.
+// v6: isPrivateHolding no longer treats isRestrictedSec:Y alone as
+// sufficient — a user caught live that "PREMIER ENERGIES LTD" (a real,
+// publicly-listed Indian company, fairValLevel 2) was showing up as
+// "private equity" solely because it's restricted under Indian
+// foreign-ownership rules, unrelated to being privately held. Level 3 is
+// now the sole signal. Bumped so cached results computed under the old
+// Level-2-can-qualify definition are re-parsed.
 const path = require('path');
 const Database = require('better-sqlite3');
 
-const PARSE_VERSION = 4;
+const PARSE_VERSION = 6;
 const SEARCH_TTL_MS = parseInt(process.env.SEARCH_CACHE_TTL_MS, 10) || 60 * 60 * 1000; // 1 hour default
 
 const DB_PATH = process.env.CACHE_DB_PATH || path.join(__dirname, 'cache.db');

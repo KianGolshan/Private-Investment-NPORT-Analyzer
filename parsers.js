@@ -257,6 +257,199 @@ function extractHoldings(xml, securitySearchTerm) {
   return holdings;
 }
 
+// ── Fund-wide extraction (Fund X-Ray) ───────────────────────────────────────
+// extractHoldings() above is scoped to holdings matching one search term, by
+// design, for the Single Security / Batch / Watchlist / Private Credit flows.
+// Fund X-Ray needs the opposite: every holding in a filing, unfiltered, so a
+// fund's total private-market exposure can be measured. These are kept as
+// sibling functions rather than a refactor of extractHoldings, so that
+// function's existing, tested behavior (and the tests pinning it) is
+// untouched.
+
+// A holding is illiquid/hard-to-value using the one field NPORT-P itself
+// carries for exactly this purpose: fairValLevel 3 (valued with unobservable
+// inputs — the SEC's own fair-value hierarchy for hard-to-value assets).
+// Verified against two real fixtures: the Kandou filing (all three rows
+// fairValLevel 3) and the SpaceX/REX ETF filing (every one of its ~30 rows
+// fairValLevel 1 — a normal, fully public book), so a public-only fund
+// correctly comes back with zero private exposure rather than false
+// positives.
+//
+// isRestrictedSec Y is deliberately NOT used here, even though it sounds
+// like it should qualify — it flags resale restrictions on a SECURITY, not
+// that the ISSUER is privately held. A real case caught live: "PREMIER
+// ENERGIES LTD" (a publicly-listed Indian solar company) came back
+// isRestrictedSec:Y at fairValLevel 2 — restricted under Indian
+// foreign-ownership rules, not because it's a private startup; fairValLevel
+// 2 means it's still valued from OBSERVABLE market inputs (i.e. it trades).
+// Level 3 alone is the correct, principled signal for "genuinely illiquid,
+// no observable market" — which is what "private" actually means here.
+//
+// This alone is still NOT "private equity" — Rule 144A institutional bonds
+// are also routinely Level 3 despite being ordinary fixed-income paper, not
+// startup/VC-style equity. isPrivateEquityHolding below (which also
+// excludes debt) is what Fund X-Ray actually uses.
+function isPrivateHolding(inv) {
+  const fairValLevel = String(inv.fairvallevel ?? inv.fairValLevel ?? '').trim();
+  return fairValLevel === '3';
+}
+
+// Private EQUITY specifically — an illiquid/restricted holding (per
+// isPrivateHolding above) that is also an equity-type interest, not debt.
+// "Equity-type" includes derivative (a warrant/option is a claim on private
+// equity shares — real case: the Kandou warrant) and indirect (an SPV/
+// fund-of-fund vehicle wrapping equity — real case: Destiny Tech100's
+// Databricks SPV), since both represent ownership exposure to a private
+// company, just structured indirectly. Debt is excluded outright — a term
+// loan or bond is a creditor claim, never an equity interest, regardless of
+// how illiquid or restricted it is (the Kandou term loan is fairValLevel 3
+// AND isRestrictedSec:Y, exactly like its sibling preferred-stock row, but
+// it is a loan, not a private equity stake).
+function isPrivateEquityHolding(inv, instrumentType) {
+  return instrumentType !== 'debt' && isPrivateHolding(inv);
+}
+
+// Fund/filing-level context (registrant + series name, report date, total
+// and net assets) — not tied to any one holding, needed to express a
+// holding's dollar exposure as a % of the fund's own net assets.
+function extractFundMeta(xml) {
+  const formData =
+    xml.edgarSubmission?.formData ||
+    xml.edgarSubmission?.formdata ||
+    xml.edgarsubmission?.formData ||
+    xml.edgarsubmission?.formdata;
+  if (!formData) return {};
+
+  const genInfo = formData.genInfo || formData.geninfo || {};
+  const fundInfo = formData.fundInfo || formData.fundinfo || {};
+
+  return {
+    registrantName: String(genInfo.regName || genInfo.regname || ''),
+    seriesName: String(genInfo.seriesName || genInfo.seriesname || ''),
+    reportDate: String(genInfo.repPdDate || genInfo.reppddate || genInfo.reportDate || ''),
+    totalAssets: parseFloat(fundInfo.totAssets || fundInfo.totassets || 0) || 0,
+    netAssets: parseFloat(fundInfo.netAssets || fundInfo.netassets || 0) || 0,
+  };
+}
+
+// Every investment in the filing, unfiltered by search term — the raw
+// material for a fund-wide private-equity-vs-everything-else breakdown.
+function extractAllHoldings(xml) {
+  const holdings = [];
+  try {
+    const formData =
+      xml.edgarSubmission?.formData ||
+      xml.edgarSubmission?.formdata ||
+      xml.edgarsubmission?.formData ||
+      xml.edgarsubmission?.formdata;
+    if (!formData) return holdings;
+
+    const genInfo = formData.genInfo || formData.geninfo || {};
+    const reportDate = genInfo.repPdDate || genInfo.reppddate || genInfo.reportDate || '';
+
+    let investments =
+      formData.invstOrSecs?.invstOrSec || formData.invstorsecs?.invstorsec || formData.investments?.investment;
+    if (!investments) return holdings;
+    if (!Array.isArray(investments)) investments = [investments];
+
+    for (const inv of investments) {
+      const name = String(inv.name || inv.Name || inv.issuerName || '');
+      const issuer = String(inv.issuer?.name || inv.issuer?.Name || inv.issuerName || '');
+      const ticker =
+        extractIdString(inv.identifiers?.ticker) || extractIdString(inv.ticker) || extractIdString(inv.Ticker);
+      const title = String(inv.title || inv.Title || inv.desc || inv.description || '');
+
+      const balance = parseFloat(inv.balance || inv.Balance || inv.shares || inv.Shares || 0);
+      const valUSD = parseFloat(inv.valUSD || inv.valusd || inv.marketValue || inv.MarketValue || 0);
+      if (!balance && !valUSD) continue; // skip empty/placeholder rows only — keep shorts/negatives, unlike extractHoldings
+
+      const pricePerShare = balance ? valUSD / balance : null;
+      const cusip = extractIdString(inv.identifiers?.cusip) || extractIdString(inv.cusip) || extractIdString(inv.CUSIP);
+
+      const { instrumentType, instrumentLabel, chartValue, chartUnit } = classifyInstrument(inv, pricePerShare, valUSD);
+
+      const otherIdValue =
+        extractIdString(inv.identifiers?.other?.value) || String(inv.identifiers?.other?.value || '').trim();
+      const instrumentKey = otherIdValue || (cusip && cusip.toUpperCase() !== 'N/A' ? cusip : '') || title || name;
+
+      holdings.push({
+        name,
+        issuer,
+        title,
+        shares: balance,
+        marketValue: valUSD,
+        pricePerShare,
+        reportDate,
+        cusip,
+        ticker,
+        instrumentType,
+        instrumentLabel,
+        instrumentKey,
+        chartValue,
+        chartUnit,
+        isPrivate: isPrivateEquityHolding(inv, instrumentType),
+        fairValLevel: String(inv.fairvallevel ?? inv.fairValLevel ?? '').trim(),
+        isRestrictedSec: String(inv.isrestrictedsec ?? inv.isRestrictedSec ?? '')
+          .trim()
+          .toUpperCase(),
+        pctOfNetAssets: parseFloat(inv.pctval ?? inv.pctVal ?? 0) || 0,
+        country: String(inv.invcountry ?? inv.invCountry ?? '')
+          .trim()
+          .toUpperCase(),
+      });
+    }
+  } catch (err) {
+    console.error('Error extracting all holdings:', err.message);
+  }
+  return holdings;
+}
+
+// Aggregates a fund's full holdings list into the Fund X-Ray dashboard
+// shape: total private-EQUITY $ exposure, % of NAV, instrument-type mix
+// (equity/derivative/indirect only — debt is excluded by isPrivate itself,
+// see isPrivateEquityHolding), geography mix, and the private book itself
+// (sorted, largest first).
+function buildFundXRay(holdings, fundMeta) {
+  const meta = fundMeta || {};
+  const privateHoldings = [...holdings.filter(h => h.isPrivate)].sort(
+    (a, b) => (b.marketValue || 0) - (a.marketValue || 0)
+  );
+  const publicHoldings = holdings.filter(h => !h.isPrivate);
+
+  const sumValue = arr => arr.reduce((sum, h) => sum + (h.marketValue || 0), 0);
+  const privateValueUSD = sumValue(privateHoldings);
+  const totalValueUSD = sumValue(holdings);
+  // A fund reporting net assets <= 0 (missing <fundInfo>, or a genuine but
+  // nonsensical-to-percent-against value from a troubled/leveraged fund)
+  // falls back to the sum of its own reported holdings — never divides by
+  // a zero or negative denominator, which would otherwise render as a
+  // meaningless negative or infinite "% of NAV".
+  const netAssets = meta.netAssets > 0 ? meta.netAssets : totalValueUSD;
+
+  const byInstrumentType = {};
+  const byCountry = {};
+  for (const h of privateHoldings) {
+    byInstrumentType[h.instrumentType] = (byInstrumentType[h.instrumentType] || 0) + (h.marketValue || 0);
+    const country = h.country || 'Unknown';
+    byCountry[country] = (byCountry[country] || 0) + (h.marketValue || 0);
+  }
+
+  return {
+    fund: meta,
+    totalHoldingsCount: holdings.length,
+    publicHoldingsCount: publicHoldings.length,
+    privateHoldingsCount: privateHoldings.length,
+    privateValueUSD,
+    totalValueUSD,
+    privatePctOfNetAssets: netAssets ? (privateValueUSD / netAssets) * 100 : null,
+    privatePctOfHoldingsValue: totalValueUSD ? (privateValueUSD / totalValueUSD) * 100 : null,
+    byInstrumentType,
+    byCountry,
+    privateHoldings,
+    topPrivateHoldings: privateHoldings.slice(0, 10),
+  };
+}
+
 // ── Private Credit helpers ─────────────────────────────────────────────────
 
 function parseFinancialNumber(str) {
@@ -506,4 +699,9 @@ module.exports = {
   classifyInstrument,
   parseEquityLabel,
   parseDebtLabel,
+  isPrivateHolding,
+  isPrivateEquityHolding,
+  extractFundMeta,
+  extractAllHoldings,
+  buildFundXRay,
 };
