@@ -1,6 +1,4 @@
 require('dotenv').config();
-const fs = require('fs');
-const path = require('path');
 const express = require('express');
 const axios = require('axios');
 const xml2js = require('xml2js');
@@ -490,13 +488,28 @@ async function lookupFundCiks(fundName) {
 // but a "recent"-only read silently truncated its history to 2022+ —
 // fetchSubmissionsAllPages' pagination into "files" is what recovers the
 // missing 2019-2021 filings.
+// Cached with the same short TTL as other search-result listings (new
+// filings appear over time) — this is called on nearly every Fund X-Ray
+// interaction (manual search, the Top Funds "verify periods" lookup below,
+// and the index build script), so caching it here benefits all of them at
+// once instead of each caller re-fetching a CIK's full submissions history
+// from EDGAR on every request.
 async function fetchFundNportHistory(cik) {
-  const cikPadded = cik.padStart(10, '0');
-  const { name, entries } = await fetchSubmissionsAllPages(cikPadded);
-  const filings = entries
-    .filter(f => f.form === 'NPORT-P' && f.accessionNumber)
-    .map(f => ({ accession: f.accessionNumber, filingDate: f.filingDate || '', reportDate: f.reportDate || '' }));
-  return { cik, name: name || cik, filings };
+  const cacheKey = cache.searchKey('search:fundhistory', cik);
+  const cached = cache.getSearch(cacheKey);
+  if (cached) return cached;
+
+  return cache.withInFlight(cacheKey, async () => {
+    await delay(50);
+    const cikPadded = cik.padStart(10, '0');
+    const { name, entries } = await fetchSubmissionsAllPages(cikPadded);
+    const filings = entries
+      .filter(f => f.form === 'NPORT-P' && f.accessionNumber)
+      .map(f => ({ accession: f.accessionNumber, filingDate: f.filingDate || '', reportDate: f.reportDate || '' }));
+    const result = { cik, name: name || cik, filings };
+    cache.setSearch(cacheKey, result);
+    return result;
+  });
 }
 
 app.get('/api/search-fund', async (req, res) => {
@@ -620,27 +633,6 @@ app.get('/api/fund-xray-compare', async (req, res) => {
   }
 });
 
-// Serves the pre-built "Top Funds" convenience list for Fund X-Ray (see
-// scripts/build-fund-index.js) — a curated, quarterly-refreshed sample of
-// well-known funds with real private-equity exposure in their own NPORT-P
-// filings, so the UI can offer a one-click picker instead of requiring a
-// name typed into /api/search-fund every time. Read once and cached in
-// memory; the file only changes when the build script is rerun (a server
-// restart picks up a regenerated file).
-let fundIndexCache = null;
-app.get('/api/fund-index', (req, res) => {
-  if (!fundIndexCache) {
-    try {
-      fundIndexCache = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'fund-index.json'), 'utf8'));
-    } catch (_error) {
-      return res.status(404).json({
-        error: 'Fund index not built yet. Run `npm run build-fund-index` to generate data/fund-index.json.',
-      });
-    }
-  }
-  res.json(fundIndexCache);
-});
-
 // Only actually bind a port when this file is run directly (`node server.js`
 // / `npm start`) — not when required by a test, so integration tests can
 // drive `app` in-process via supertest without opening a real socket.
@@ -653,10 +645,3 @@ if (require.main === module) {
 }
 
 module.exports = app;
-// Exposed for scripts/build-fund-index.js, which reuses these directly
-// (name→CIK resolution, full NPORT-P history, single-filing PE breakdown)
-// rather than duplicating EDGAR-fetching logic — requiring this module
-// never binds a port (see require.main guard above).
-module.exports.lookupFundCiks = lookupFundCiks;
-module.exports.fetchFundNportHistory = fetchFundNportHistory;
-module.exports.getFundXray = getFundXray;
