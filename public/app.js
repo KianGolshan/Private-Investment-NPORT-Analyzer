@@ -377,7 +377,7 @@ async function searchNPORT() {
 
     if (!holdings.length) {
       return showMsg(
-        `No holdings found for "${security}" in these filings.` +
+        `No holdings found for "${esc(security)}" in these filings.` +
           (failures.length ? ` (${failures.length} filing(s) failed to fetch/parse and may be missing data.)` : ''),
         'error'
       );
@@ -441,7 +441,7 @@ async function runBatchPipeline(securities, limit) {
 
   for (let i = 0; i < securities.length; i++) {
     const security = securities[i];
-    showProgress(`Searching ${i + 1}/${securities.length}: ${security}`, (i / securities.length) * 100);
+    showProgress(`Searching ${i + 1}/${securities.length}: ${esc(security)}`, (i / securities.length) * 100);
 
     try {
       const data = await fetchJSON('/api/search-nport?security=' + enc(security));
@@ -1665,7 +1665,14 @@ function setBtnsDisabled(v) {
 // ── Utilities ──────────────────────────────────────────────────────────────
 async function fetchJSON(url) {
   const r = await fetch(url);
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  if (!r.ok) {
+    // The backend already retries a 429 from SEC with backoff (fetchWithRetry
+    // in server.js) before ever surfacing one here — by the time this fires,
+    // retries were exhausted, so this is worth a specific, actionable message
+    // rather than a bare status code.
+    if (r.status === 429) throw new Error('Too many requests right now — please wait a moment and try again.');
+    throw new Error(`HTTP ${r.status}`);
+  }
   return r.json();
 }
 function sleep(ms) {
@@ -1762,7 +1769,7 @@ async function searchPrivateCredit() {
 
     if (!holdings.length) {
       return showMsg(
-        `No schedule of investments data found for "${issuer}" in these 10-Q filings. The filings may mention this issuer in text, not in investment tables.` +
+        `No schedule of investments data found for "${esc(issuer)}" in these 10-Q filings. The filings may mention this issuer in text, not in investment tables.` +
           (failures.length ? ` (${failures.length} filing(s) also failed to fetch/parse.)` : ''),
         'error'
       );
@@ -2279,7 +2286,7 @@ function addWatchlistItem() {
   const list = getWatchlist();
   if (list.some(n => n.toLowerCase() === name.toLowerCase())) {
     input.value = '';
-    return showMsg(`"${name}" is already on your watchlist.`, 'info');
+    return showMsg(`"${esc(name)}" is already on your watchlist.`, 'info');
   }
   list.push(name);
   saveWatchlist(list);
@@ -2295,12 +2302,12 @@ function quickAddToWatchlist(inputId) {
   if (!name) return showMsg('Enter a security or issuer name first.', 'error');
   const list = getWatchlist();
   if (list.some(n => n.toLowerCase() === name.toLowerCase())) {
-    return showMsg(`"${name}" is already on your watchlist.`, 'info');
+    return showMsg(`"${esc(name)}" is already on your watchlist.`, 'info');
   }
   list.push(name);
   saveWatchlist(list);
   renderWatchlist();
-  showMsg(`Added "${name}" to your watchlist.`, 'success');
+  showMsg(`Added "${esc(name)}" to your watchlist.`, 'success');
 }
 function renderWatchlist() {
   const list = getWatchlist();
@@ -2380,7 +2387,7 @@ async function searchFundXray() {
     document.getElementById('xrayCompareResults')?.remove();
 
     if (matches.length > 1) {
-      showMsg(`"${fund}" matched ${matches.length} funds on EDGAR — pick the exact fund/period below.`, 'info');
+      showMsg(`"${esc(fund)}" matched ${matches.length} funds on EDGAR — pick the exact fund/period below.`, 'info');
     }
 
     await runFundXray();

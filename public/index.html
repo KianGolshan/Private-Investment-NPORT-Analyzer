@@ -607,7 +607,6 @@
         </select>
       </div>
       <button class="btn btn-primary" id="creditBtn" onclick="searchPrivateCredit()">Search BDC Filings</button>
-      <button class="btn btn-secondary" onclick="quickAddToWatchlist('creditIssuerInput')" title="Save this issuer to your watchlist for one-click re-runs later">+ Watchlist</button>
     </div>
     <div class="alert alert-info" style="margin-top:4px; margin-bottom:0;">
       Searches all registered BDC funds (identified via SEC's 814- Investment Company Act file number) for 10-Q filings mentioning this issuer. Returns confirmed filings first (guaranteed to contain the issuer), then full filing history per fund for complete time-series coverage.
@@ -681,7 +680,7 @@
   <div id="watchlistTab" class="tab-content">
     <div class="alert alert-info">
       <strong>Persistent Issuer Watchlist</strong>
-      Save the issuers you track repeatedly and re-run the full list in one click — no re-typing. Saved in this browser only (not synced or shared).
+      Save the issuers you track repeatedly and re-run the full list in one click — no re-typing. Saved in this browser only (not synced or shared). Searches NPORT-P mutual-fund holdings only (same as Single Security/Batch) — Private Credit issuers aren't tracked here yet, since BDC 10-Q filings use a separate search.
     </div>
 
     <div class="search-row">
