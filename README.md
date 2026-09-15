@@ -103,6 +103,21 @@ npm run lint       # check code style
 npm run format     # apply Prettier formatting
 ```
 
+The suite is three layers, each testing something the others structurally
+can't reach:
+
+- `test/parsers.test.js` — pure NPORT-P extraction/classification logic
+  (`extractHoldings`, `buildFundXRay`, `buildFundXRayComparison`, ...)
+  against real filing fixtures in `test/fixtures/`, with no network or
+  server involved.
+- `test/server.test.js` / `test/cache.test.js` — the Express routes and
+  SQLite cache, with SEC calls intercepted via `nock` (same fixtures).
+- `test/app-xray.test.js` — Fund X-Ray's browser-side code (the "Top Funds"
+  dropdown, search → render pipeline, QoQ/YoY comparison, CSV export) runs
+  the real `public/index.html` + `public/app.js` in a `jsdom` window via
+  `test/helpers/loadApp.js`, with `fetch` stubbed per test — this is the
+  only layer that exercises what actually ends up on screen.
+
 ---
 
 ## Usage
@@ -299,4 +314,4 @@ file (`cache.db`, gitignored, created automatically on first run):
 | [SheetJS](https://sheetjs.com/) | Excel export (CDN) |
 | [jsPDF](https://github.com/parallax/jsPDF) + [jsPDF-AutoTable](https://github.com/simonbengtsson/jsPDF-AutoTable) | PDF export (CDN) |
 
-Dev tooling: `eslint` + `prettier` for linting/formatting, `nodemon` for auto-reload, `nock` + `supertest` for testing against mocked/real HTTP.
+Dev tooling: `eslint` + `prettier` for linting/formatting, `nodemon` for auto-reload, `nock` + `supertest` for testing the server against mocked HTTP, `jsdom` for running the actual frontend (`public/app.js`) in tests.
