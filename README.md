@@ -125,7 +125,7 @@ npm run format     # apply Prettier formatting
 
 1. Switch to the **Fund X-Ray** tab and enter a fund/registrant name (e.g., `SmallCap World Fund`, `REX ETF Trust`) — this looks the fund up by name on EDGAR directly (not full-text search), so it finds the fund's own filings rather than other funds that merely mention it
 2. If the name matches more than one registrant, every match's filings appear together in the **Reporting Period** dropdown, labeled by fund name, so you can pick the exact one you meant
-3. Results show the fund's total private-equity $ exposure, % of net assets, an instrument-type breakdown (common/preferred/warrant/SPV), a country breakdown, and every private holding found — not just a preview; export CSV to save the full list
+3. Results show the fund's total private-equity $ exposure, % of net assets, an instrument-type breakdown (common/preferred/warrant/SPV), a country breakdown, and every private holding found (company, shares, price/share, $ value, % of NAV, fair value level) — not just a preview; export CSV for the same data plus higher-precision per-share pricing
 4. A holding counts as private equity only if it's flagged **Fair Value Level 3** (valued with unobservable inputs — no real market for it) **and** is an equity-type instrument. Bonds and loans are excluded even at Level 3 (they're creditor claims, not equity stakes), and a "restricted security" flag alone doesn't qualify a holding either — a foreign-ownership-restricted but still publicly-traded stock (Level 2) is a real public company, not a private one
 
 ### Filtering

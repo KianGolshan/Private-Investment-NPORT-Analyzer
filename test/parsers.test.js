@@ -300,10 +300,7 @@ test('extractAllHoldings: real Kandou filing — all 3 rows are unfiltered by se
 
   assert.equal(holdings.length, 3, 'no search-term filtering — every row in the filing comes back');
   assert.ok(holdings.every(h => h.country === 'CH'));
-  assert.deepEqual(
-    new Set(holdings.map(h => h.instrumentType)),
-    new Set(['equity', 'debt', 'derivative'])
-  );
+  assert.deepEqual(new Set(holdings.map(h => h.instrumentType)), new Set(['equity', 'debt', 'derivative']));
 
   const equity = holdings.find(h => h.instrumentType === 'equity');
   const debt = holdings.find(h => h.instrumentType === 'debt');
@@ -319,7 +316,11 @@ test('extractAllHoldings: real Kandou filing — all 3 rows are unfiltered by se
   // private equity even though isPrivateHolding(inv) alone would say yes.
   assert.equal(debt.fairValLevel, '3');
   assert.equal(debt.isRestrictedSec, 'Y');
-  assert.equal(debt.isPrivate, false, 'debt is excluded from private-equity classification regardless of Level 3 / restricted status');
+  assert.equal(
+    debt.isPrivate,
+    false,
+    'debt is excluded from private-equity classification regardless of Level 3 / restricted status'
+  );
 });
 
 test('extractAllHoldings: a Level-2 restricted equity (a real publicly-traded company restricted for foreign-ownership reasons, not because it is privately held) is NOT flagged private', () => {
@@ -365,8 +366,16 @@ test('extractAllHoldings: a Level-2 restricted equity (a real publicly-traded co
   const premierEnergies = holdings.find(h => h.name === 'PREMIER ENERGIES LTD');
   const tekion = holdings.find(h => h.name === 'TEKION CORP');
 
-  assert.equal(premierEnergies.isPrivate, false, 'Level 2 + restricted is a publicly-traded, foreign-ownership-restricted stock, not private equity');
-  assert.equal(tekion.isPrivate, true, 'Level 3 alone is sufficient — a genuine private company need not also be flagged restricted');
+  assert.equal(
+    premierEnergies.isPrivate,
+    false,
+    'Level 2 + restricted is a publicly-traded, foreign-ownership-restricted stock, not private equity'
+  );
+  assert.equal(
+    tekion.isPrivate,
+    true,
+    'Level 3 alone is sufficient — a genuine private company need not also be flagged restricted'
+  );
 
   const xray = buildFundXRay(holdings, {});
   assert.equal(xray.privateHoldingsCount, 1);
@@ -498,7 +507,11 @@ test('buildFundXRay: an empty holdings list (a fund reporting zero investments) 
   assert.equal(empty.totalHoldingsCount, 0);
   assert.equal(empty.privateHoldingsCount, 0);
   assert.equal(empty.privateValueUSD, 0);
-  assert.equal(empty.privatePctOfNetAssets, null, 'no assets at all — a % of NAV cannot be computed, so null not NaN/Infinity');
+  assert.equal(
+    empty.privatePctOfNetAssets,
+    null,
+    'no assets at all — a % of NAV cannot be computed, so null not NaN/Infinity'
+  );
   assert.equal(empty.privatePctOfHoldingsValue, null);
   assert.deepEqual(empty.topPrivateHoldings, []);
   assert.deepEqual(empty.privateHoldings, []);

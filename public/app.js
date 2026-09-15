@@ -2291,14 +2291,19 @@ function renderFundXray(xray, filing) {
   if (xray.privateHoldings.length) {
     html += `<table><thead><tr>
       <th>Company</th><th>Instrument</th><th>Country</th><th class="right">Fair Value Level</th>
+      <th class="right">Shares</th><th class="right">Price / Share</th>
       <th class="right">% of NAV</th><th class="right">$ Value</th>
     </tr></thead><tbody>`;
     xray.privateHoldings.forEach(h => {
+      const shares = h.shares != null && !isNaN(h.shares) ? fmtNum(h.shares) : '—';
+      const pps = h.pricePerShare != null && !isNaN(h.pricePerShare) ? fmtCurrency(h.pricePerShare) : '—';
       html += `<tr>
         <td class="title-cell">${esc(h.name || h.title || '—')}</td>
         <td>${esc(h.instrumentLabel || '—')}</td>
         <td>${esc(h.country || '—')}</td>
         <td class="right">${esc(h.fairValLevel || '—')}</td>
+        <td class="right">${shares}</td>
+        <td class="right">${pps}</td>
         <td class="right">${pct(h.pctOfNetAssets)}</td>
         <td class="right">${fmtCurrency(h.marketValue)}</td>
       </tr>`;
@@ -2320,7 +2325,19 @@ function doXrayExportCSV() {
   const fundName = currentXray.fund?.seriesName || currentXray.fund?.registrantName || '';
   const reportDate = currentXray.fund?.reportDate || '';
   const rows = [
-    ['Fund', 'Report Date', 'Company', 'Instrument', 'Country', 'Fair Value Level', 'Restricted', '% of NAV', '$ Value'],
+    [
+      'Fund',
+      'Report Date',
+      'Company',
+      'Instrument',
+      'Country',
+      'Fair Value Level',
+      'Restricted',
+      'Shares',
+      'Price / Share',
+      '% of NAV',
+      '$ Value',
+    ],
   ];
   currentXray.privateHoldings.forEach(h =>
     rows.push([
@@ -2331,6 +2348,8 @@ function doXrayExportCSV() {
       h.country || '',
       h.fairValLevel || '',
       h.isRestrictedSec || '',
+      h.shares != null && !isNaN(h.shares) ? h.shares : '',
+      h.pricePerShare != null && !isNaN(h.pricePerShare) ? h.pricePerShare.toFixed(6) : '',
       h.pctOfNetAssets != null ? h.pctOfNetAssets.toFixed(4) : '',
       h.marketValue != null ? h.marketValue.toFixed(2) : '',
     ])

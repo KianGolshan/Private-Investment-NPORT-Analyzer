@@ -433,11 +433,9 @@ test('GET /api/search-fund: no company match — returns an empty match list, no
   nock(SEC)
     .get('/cgi-bin/browse-edgar')
     .query(q => q.company === 'TotallyFakeFundXYZ')
-    .reply(
-      200,
-      `<?xml version="1.0" encoding="ISO-8859-1" ?><feed xmlns="http://www.w3.org/2005/Atom"></feed>`,
-      { 'Content-Type': 'application/atom+xml' }
-    );
+    .reply(200, `<?xml version="1.0" encoding="ISO-8859-1" ?><feed xmlns="http://www.w3.org/2005/Atom"></feed>`, {
+      'Content-Type': 'application/atom+xml',
+    });
 
   const res = await request(app).get('/api/search-fund?fund=TotallyFakeFundXYZ');
   assert.equal(res.status, 200);

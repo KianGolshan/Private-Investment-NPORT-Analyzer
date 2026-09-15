@@ -5,7 +5,13 @@ const xml2js = require('xml2js');
 const cheerio = require('cheerio');
 const rateLimit = require('express-rate-limit');
 const cache = require('./cache');
-const { extractHoldings, extractCreditHoldings, extractFundMeta, extractAllHoldings, buildFundXRay } = require('./parsers');
+const {
+  extractHoldings,
+  extractCreditHoldings,
+  extractFundMeta,
+  extractAllHoldings,
+  buildFundXRay,
+} = require('./parsers');
 
 const app = express();
 // The frontend is served from this same Express instance (express.static
