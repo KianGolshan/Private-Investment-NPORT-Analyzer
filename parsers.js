@@ -450,6 +450,209 @@ function buildFundXRay(holdings, fundMeta) {
   };
 }
 
+// ── Fund X-Ray period comparison (QoQ / YoY) ────────────────────────────────
+
+// Lowercase/trim/collapse-whitespace normalization for name-based matching
+// below — cheap insurance against two filings spelling the same issuer with
+// different capitalization or stray whitespace.
+function normalizeMatchText(s) {
+  return String(s || '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+// The join key used to identify "the same private investment" across TWO
+// DIFFERENT filings of the same fund (a different job from instrumentKey
+// above, which only needs to distinguish rows WITHIN one filing). Deliberately
+// does NOT reuse instrumentKey's top priority (identifiers.other.value) — that
+// value is a filer-internal symbol never verified stable across a fund's own
+// quarters, only used today to disambiguate same-filing rows sharing an
+// uninformative title. A valid CUSIP is a genuinely stable cross-period
+// identifier, so it takes priority here; otherwise fall back to normalized
+// issuer/name + title (title is kept because share-class distinctions, e.g.
+// Series A vs Series B preferred, are economically different investments).
+function positionMatchKey(h) {
+  const cusip = String(h.cusip || '').trim();
+  if (cusip && cusip.toUpperCase() !== 'N/A') return 'cusip:' + cusip.toUpperCase();
+  return 'name:' + normalizeMatchText(h.issuer || h.name) + '|' + normalizeMatchText(h.title);
+}
+
+function deltaBlock(current, prior) {
+  const c = current ?? null;
+  const p = prior ?? null;
+  const delta = c != null && p != null ? c - p : null;
+  const deltaPct = c != null && p != null && p !== 0 ? (delta / Math.abs(p)) * 100 : null;
+  return { current: c, prior: p, delta, deltaPct };
+}
+
+// Diffs two already-built buildFundXRay() results (same fund, two different
+// filings) into a QoQ/YoY comparison: which private investments are new this
+// period, which were exited, and how shares/value/price-per-share/% of NAV
+// changed for positions held in both periods. Pure function — does not
+// reclassify any holding, so it carries no PARSE_VERSION dependency of its
+// own beyond whatever the two buildFundXRay results already reflect.
+function buildFundXRayComparison(current, prior) {
+  const currentHoldings = current?.privateHoldings || [];
+  const priorHoldings = prior?.privateHoldings || [];
+
+  const currentByKey = new Map();
+  for (const h of currentHoldings) currentByKey.set(positionMatchKey(h), h);
+  const priorByKey = new Map();
+  for (const h of priorHoldings) priorByKey.set(positionMatchKey(h), h);
+
+  const allKeys = new Set([...currentByKey.keys(), ...priorByKey.keys()]);
+
+  const positions = [...allKeys].map(key => {
+    const c = currentByKey.get(key) || null;
+    const p = priorByKey.get(key) || null;
+    const status = c && p ? 'held' : c ? 'new' : 'exited';
+    const base = c || p;
+
+    const shares = deltaBlock(c?.shares, p?.shares);
+    const marketValue = deltaBlock(c?.marketValue, p?.marketValue);
+    const pricePerShare = deltaBlock(c?.pricePerShare ?? null, p?.pricePerShare ?? null);
+    const pctOfNetAssets = deltaBlock(c?.pctOfNetAssets, p?.pctOfNetAssets);
+
+    // Decompose a held position's $ value change into the portion caused by
+    // its mark (price-per-share) moving vs. the portion caused by the fund
+    // sizing the position up or down — an exact identity, no residual, when
+    // both periods report both a share count and a price-per-share:
+    //   valueDelta = sharesPrior*(ppsCurrent-ppsPrior) + ppsCurrent*(sharesCurrent-sharesPrior)
+    //                \____________ priceEffect ____________/ \_______ shareEffect ________/
+    let priceEffectUSD = null;
+    let shareEffectUSD = null;
+    if (
+      status === 'held' &&
+      shares.current != null &&
+      shares.prior != null &&
+      pricePerShare.current != null &&
+      pricePerShare.prior != null
+    ) {
+      priceEffectUSD = shares.prior * (pricePerShare.current - pricePerShare.prior);
+      shareEffectUSD = pricePerShare.current * (shares.current - shares.prior);
+    }
+
+    return {
+      key,
+      name: base.name,
+      issuer: base.issuer,
+      title: base.title,
+      instrumentType: base.instrumentType,
+      instrumentLabel: base.instrumentLabel,
+      country: base.country,
+      status,
+      shares,
+      marketValue,
+      pricePerShare,
+      pctOfNetAssets,
+      priceEffectUSD,
+      shareEffectUSD,
+    };
+  });
+
+  positions.sort((a, b) => {
+    const aMax = Math.max(a.marketValue.current || 0, a.marketValue.prior || 0);
+    const bMax = Math.max(b.marketValue.current || 0, b.marketValue.prior || 0);
+    return bMax - aMax;
+  });
+
+  const issuerSet = arr => new Set(arr.map(h => normalizeMatchText(h.issuer || h.name)));
+  const currentIssuerCount = issuerSet(currentHoldings).size;
+  const priorIssuerCount = issuerSet(priorHoldings).size;
+
+  const added = positions
+    .filter(pos => pos.status === 'new')
+    .sort((a, b) => (b.marketValue.current || 0) - (a.marketValue.current || 0));
+  const dropped = positions
+    .filter(pos => pos.status === 'exited')
+    .sort((a, b) => (b.marketValue.prior || 0) - (a.marketValue.prior || 0));
+  const held = positions.filter(pos => pos.status === 'held');
+
+  // "Additional investment" / partial-realization signal: held positions
+  // whose share count moved. Ranked by the $ effect of that share-count
+  // move (falling back to the raw share delta when a price-per-share isn't
+  // available on both sides to compute it) so the biggest capital moves
+  // surface first, not just the biggest share COUNTS.
+  const shareMoveRank = pos => (pos.shareEffectUSD != null ? pos.shareEffectUSD : pos.shares.delta || 0);
+  const increased = held.filter(pos => (pos.shares.delta || 0) > 0).sort((a, b) => shareMoveRank(b) - shareMoveRank(a));
+  const reduced = held.filter(pos => (pos.shares.delta || 0) < 0).sort((a, b) => shareMoveRank(a) - shareMoveRank(b));
+
+  // Ranked by the DOLLAR impact of the mark move (priceEffectUSD), not raw
+  // %  — a warrant re-marked from $0.0001 to $0.01/unit is technically a
+  // +9,900,000% move but a few thousand dollars of real impact, and would
+  // otherwise bury a $37M, +94.5% mark on a real position under a
+  // near-zero-base percentage artifact. $ impact is also what the
+  // "Value Δ from Price Marks" aggregate above is built from, so the two
+  // stay consistent with each other.
+  const withMarkChange = held.filter(pos => pos.priceEffectUSD != null && pos.priceEffectUSD !== 0);
+  const topMarkups = withMarkChange
+    .filter(pos => pos.priceEffectUSD > 0)
+    .sort((a, b) => b.priceEffectUSD - a.priceEffectUSD);
+  const topMarkdowns = withMarkChange
+    .filter(pos => pos.priceEffectUSD < 0)
+    .sort((a, b) => a.priceEffectUSD - b.priceEffectUSD);
+
+  // Aggregate the per-position price/share decomposition above across every
+  // held position — "of the $ change in positions we still hold, how much
+  // was the fund marking them up/down vs. buying more/selling some down."
+  // A held position lacking a price-per-share on one side (decomposition
+  // undefined) still contributes its full value delta, just unclassified,
+  // so the three buckets always reconcile exactly to the total held-position
+  // value change.
+  let valueChangeFromPriceUSD = 0;
+  let valueChangeFromSharesUSD = 0;
+  let valueChangeOtherUSD = 0;
+  let decomposedPriorBasis = 0;
+  for (const pos of held) {
+    if (pos.priceEffectUSD != null && pos.shareEffectUSD != null) {
+      valueChangeFromPriceUSD += pos.priceEffectUSD;
+      valueChangeFromSharesUSD += pos.shareEffectUSD;
+      decomposedPriorBasis += pos.marketValue.prior || 0;
+    } else {
+      valueChangeOtherUSD += pos.marketValue.delta || 0;
+    }
+  }
+  const pctOfDecomposedBasis = amount =>
+    decomposedPriorBasis ? (amount / Math.abs(decomposedPriorBasis)) * 100 : null;
+
+  const INSIGHT_LIMIT = 8;
+  const capped = (list, limit = INSIGHT_LIMIT) => ({ items: list.slice(0, limit), total: list.length });
+
+  return {
+    current: {
+      reportDate: current?.fund?.reportDate || '',
+      registrantName: current?.fund?.registrantName || '',
+      seriesName: current?.fund?.seriesName || '',
+    },
+    prior: {
+      reportDate: prior?.fund?.reportDate || '',
+      registrantName: prior?.fund?.registrantName || '',
+      seriesName: prior?.fund?.seriesName || '',
+    },
+    totals: {
+      privateValueUSD: deltaBlock(current?.privateValueUSD ?? 0, prior?.privateValueUSD ?? 0),
+      privateHoldingsCount: deltaBlock(currentHoldings.length, priorHoldings.length),
+      issuerCount: deltaBlock(currentIssuerCount, priorIssuerCount),
+      newCount: added.length,
+      exitedCount: dropped.length,
+      continuingCount: held.length,
+      valueChangeFromPrice: { amount: valueChangeFromPriceUSD, pct: pctOfDecomposedBasis(valueChangeFromPriceUSD) },
+      valueChangeFromShares: { amount: valueChangeFromSharesUSD, pct: pctOfDecomposedBasis(valueChangeFromSharesUSD) },
+      valueChangeOther: { amount: valueChangeOtherUSD },
+    },
+    positions,
+    insights: {
+      added: capped(added),
+      dropped: capped(dropped),
+      increased: capped(increased),
+      reduced: capped(reduced),
+      topMarkups: capped(topMarkups),
+      topMarkdowns: capped(topMarkdowns),
+    },
+  };
+}
+
 // ── Private Credit helpers ─────────────────────────────────────────────────
 
 function parseFinancialNumber(str) {
@@ -704,4 +907,6 @@ module.exports = {
   extractFundMeta,
   extractAllHoldings,
   buildFundXRay,
+  positionMatchKey,
+  buildFundXRayComparison,
 };

@@ -11,6 +11,7 @@ const {
   extractFundMeta,
   extractAllHoldings,
   buildFundXRay,
+  buildFundXRayComparison,
 } = require('./parsers');
 
 const app = express();
@@ -537,53 +538,83 @@ app.get('/api/search-fund', async (req, res) => {
 });
 
 // Fetch and parse one NPORT-P filing in full, returning the fund's
-// private-vs-public exposure breakdown (Fund X-Ray).
+// private-vs-public exposure breakdown (Fund X-Ray). Returns { xray, cached }
+// on success, throws on failure — shared by the single-period route below
+// and the QoQ/YoY comparison route, which needs to fetch two filings.
+async function getFundXray(cik, accession, { refresh } = {}) {
+  // Immutable historical filing content, same rationale as /api/parse-nport
+  // — cached indefinitely.
+  const cacheKey = cache.holdingsKey('fundxray', cik, accession);
+  if (!refresh) {
+    const cached = cache.getHoldings(cacheKey);
+    if (cached) return { xray: cached, cached: true };
+  }
+
+  const xray = await cache.withInFlight(cacheKey, async () => {
+    const accessionFormatted = accession.replace(/-/g, '');
+    await delay(50);
+
+    const xmlUrl = `https://www.sec.gov/Archives/edgar/data/${encodeURIComponent(cik)}/${encodeURIComponent(accessionFormatted)}/primary_doc.xml`;
+    const xmlResponse = await fetchWithRetry({
+      url: xmlUrl,
+      method: 'get',
+      headers: { 'User-Agent': EFFECTIVE_USER_AGENT },
+      timeout: 30000,
+    });
+
+    const parser = new xml2js.Parser({
+      explicitArray: false,
+      mergeAttrs: true,
+      normalizeTags: true,
+      tagNameProcessors: [xml2js.processors.stripPrefix],
+    });
+
+    const result = await parser.parseStringPromise(xmlResponse.data);
+    const fundMeta = extractFundMeta(result);
+    const holdings = extractAllHoldings(result);
+    const xrayResult = buildFundXRay(holdings, fundMeta);
+    cache.setHoldings(cacheKey, xrayResult);
+    return xrayResult;
+  });
+
+  return { xray, cached: false };
+}
+
 app.get('/api/fund-xray', async (req, res) => {
   const { cik, accession, refresh } = req.query;
   if (!cik || !accession) {
     return res.status(400).json({ error: 'cik and accession are required' });
   }
 
-  // Immutable historical filing content, same rationale as /api/parse-nport
-  // — cached indefinitely.
-  const cacheKey = cache.holdingsKey('fundxray', cik, accession);
-  if (!refresh) {
-    const cached = cache.getHoldings(cacheKey);
-    if (cached) return res.json({ success: true, xray: cached, cached: true });
-  }
-
   try {
-    const xray = await cache.withInFlight(cacheKey, async () => {
-      const accessionFormatted = accession.replace(/-/g, '');
-      await delay(50);
-
-      const xmlUrl = `https://www.sec.gov/Archives/edgar/data/${encodeURIComponent(cik)}/${encodeURIComponent(accessionFormatted)}/primary_doc.xml`;
-      const xmlResponse = await fetchWithRetry({
-        url: xmlUrl,
-        method: 'get',
-        headers: { 'User-Agent': EFFECTIVE_USER_AGENT },
-        timeout: 30000,
-      });
-
-      const parser = new xml2js.Parser({
-        explicitArray: false,
-        mergeAttrs: true,
-        normalizeTags: true,
-        tagNameProcessors: [xml2js.processors.stripPrefix],
-      });
-
-      const result = await parser.parseStringPromise(xmlResponse.data);
-      const fundMeta = extractFundMeta(result);
-      const holdings = extractAllHoldings(result);
-      const xrayResult = buildFundXRay(holdings, fundMeta);
-      cache.setHoldings(cacheKey, xrayResult);
-      return xrayResult;
-    });
-
-    res.json({ success: true, xray, cached: false });
+    const { xray, cached } = await getFundXray(cik, accession, { refresh });
+    res.json({ success: true, xray, cached });
   } catch (error) {
     console.error('Fund X-Ray error:', error.message);
     res.json({ success: false, xray: null, error: error.message });
+  }
+});
+
+// Diffs two of the same fund's filings (QoQ or YoY) into a private-equity
+// comparison: new/exited investments and share/value/price-per-share/%-of-NAV
+// deltas for positions held in both periods.
+app.get('/api/fund-xray-compare', async (req, res) => {
+  const { cik, currentAccession, priorAccession, refresh } = req.query;
+  if (!cik || !currentAccession || !priorAccession) {
+    return res.status(400).json({ error: 'cik, currentAccession and priorAccession are required' });
+  }
+  if (currentAccession === priorAccession) {
+    return res.status(400).json({ error: 'currentAccession and priorAccession must be different filings' });
+  }
+
+  try {
+    const currentResult = await getFundXray(cik, currentAccession, { refresh });
+    const priorResult = await getFundXray(cik, priorAccession, { refresh });
+    const comparison = buildFundXRayComparison(currentResult.xray, priorResult.xray);
+    res.json({ success: true, comparison, cached: currentResult.cached && priorResult.cached });
+  } catch (error) {
+    console.error('Fund X-Ray compare error:', error.message);
+    res.json({ success: false, comparison: null, error: error.message });
   }
 });
 

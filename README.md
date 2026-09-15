@@ -24,6 +24,11 @@ for a company and finding which funds hold it, you search for a *fund* and
 see its total private-equity book — every Level 3 (fair-value-hierarchy)
 equity, warrant, or SPV holding in its most recent NPORT-P filing, broken
 down by dollar exposure, % of net assets, instrument type, and geography.
+It can also compare that book across two periods (quarter-over-quarter or
+year-over-year): new investments, exits, share-count and price-mark changes
+per position, and a breakdown of how much of the fund's value change came
+from marking existing positions up/down versus buying more or selling some
+down.
 
 ---
 
@@ -34,6 +39,7 @@ down by dollar exposure, % of net assets, instrument type, and geography.
 - **Watchlist** — save issuers you track repeatedly (stored in your browser only) and re-run the full list in one click, with no per-search cap
 - **Private Credit Analysis** — search any issuer name to find every BDC fund reporting it as a loan, and chart the fair-value mark (% of par) across funds and time
 - **Fund X-Ray** — search a fund/registrant name to pull its own NPORT-P filing in full and see its total private-equity exposure: $ value and % of NAV, broken down by instrument type (common/preferred/warrant/SPV) and country, with every private holding listed
+- **Fund X-Ray period comparison** — compare a fund's private-equity book across two periods (one click for the prior quarter or prior year, or pick any two periods manually): new investments, exits, share-count changes, and a decomposition of the value change into "from price marks" vs. "from position sizing," plus notable mark-ups/mark-downs ranked by dollar impact
 - **Summary stats** — latest price, price range, number of reporting funds, total data points, and date range shown at a glance
 - **Interactive charts** — toggle individual data points on/off via checkboxes; chart updates live
 - **Reference line** — plot your own price or mark (a cost basis, ask price, or benchmark) against peer data and see the divergence from the peer median
@@ -127,6 +133,8 @@ npm run format     # apply Prettier formatting
 2. If the name matches more than one registrant, every match's filings appear together in the **Reporting Period** dropdown, labeled by fund name, so you can pick the exact one you meant
 3. Results show the fund's total private-equity $ exposure, % of net assets, an instrument-type breakdown (common/preferred/warrant/SPV), a country breakdown, and every private holding found (company, shares, price/share, $ value, % of NAV, fair value level) — not just a preview; export CSV for the same data plus higher-precision per-share pricing
 4. A holding counts as private equity only if it's flagged **Fair Value Level 3** (valued with unobservable inputs — no real market for it) **and** is an equity-type instrument. Bonds and loans are excluded even at Level 3 (they're creditor claims, not equity stakes), and a "restricted security" flag alone doesn't qualify a holding either — a foreign-ownership-restricted but still publicly-traded stock (Level 2) is a real public company, not a private one
+5. To compare periods, use the **Compare To** dropdown next to Reporting Period, or click **vs Prior Quarter** / **vs Prior Year (YoY)** to auto-pick the nearest matching filing (YoY matches within ±45 days of exactly one year back; if nothing qualifies, you're told so rather than silently comparing against the wrong quarter)
+6. The comparison view leads with the analysis — aggregate value/holdings/issuer deltas, a price-marks-vs-position-sizing breakdown of the value change, and Key Insights cards (securities added/dropped, positions increased/reduced, notable mark-ups/mark-downs ranked by $ impact) — followed by each period's own full breakdown (Most Recent Period, then Prior Period) and a full position-by-position detail table, each independently exportable to CSV
 
 ### Filtering
 
@@ -182,6 +190,7 @@ silently dropped.
 3. Fetches the selected filing's `primary_doc.xml` and parses **every** holding in it — unlike Single Security/Batch, which only extract holdings matching a search term
 4. Classifies each holding as private equity if it's Fair Value Level 3 **and** an equity-type instrument (common/preferred stock, warrant, or indirect/SPV vehicle); debt is excluded outright regardless of its fair-value level, and a restricted-security flag alone never qualifies a holding
 5. Aggregates the private book into $ exposure, % of net assets, instrument-type mix, and country mix
+6. For a period comparison, matches the same private investment across two filings by CUSIP (preferred, since it's a stable cross-period identifier) or, failing that, by normalized issuer name + security title (title is kept because share-class distinctions, e.g. Series A vs. Series B preferred, are economically different positions) — then decomposes each continuing position's value change into a price-mark effect (`shares(prior) × (price(current) − price(prior))`) and a position-sizing effect (`price(current) × (shares(current) − shares(prior))`), which sum exactly to the position's total value delta with no residual
 
 ---
 
@@ -211,6 +220,7 @@ silently dropped.
 | `/api/parse-10q?cik=&accession=&issuer=&reportDate=` | GET | Fetches a single 10-Q, parses its Schedule of Investments table for the issuer |
 | `/api/search-fund?fund=` | GET | Resolves a fund/registrant name to its EDGAR CIK(s) via company-name lookup, then returns each match's full NPORT-P filing history |
 | `/api/fund-xray?cik=&accession=` | GET | Fetches and parses one NPORT-P filing in full, returns the fund's private-equity exposure breakdown |
+| `/api/fund-xray-compare?cik=&currentAccession=&priorAccession=` | GET | Fetches two of the same fund's filings and diffs their private-equity books: new/exited positions, per-position share/value/price-per-share deltas, and a price-marks-vs-position-sizing value decomposition |
 
 ---
 
@@ -236,8 +246,11 @@ file (`cache.db`, gitignored, created automatically on first run):
 - **Search-result listings** (`/api/search-nport`, `/api/search-10q`,
   `/api/search-fund`) are cached for 1 hour by default (override with
   `SEARCH_CACHE_TTL_MS` in `.env`), since new filings get added over time.
-- Add `&refresh=1` to any of the six routes above to bypass the cache and
-  force a fresh SEC fetch for that request.
+- Add `&refresh=1` to any of the seven routes above to bypass the cache and
+  force a fresh SEC fetch for that request. `/api/fund-xray-compare` has no
+  cache entry of its own — it just calls `/api/fund-xray`'s cached logic
+  twice and diffs the results, so `&refresh=1` there forces a fresh fetch of
+  both filings.
 - If the extraction logic in `extractHoldings()` / `extractCreditHoldings()`
   / `extractAllHoldings()` ever changes, bump `PARSE_VERSION` in `cache.js`
   so old cached results (parsed with the previous logic) are treated as

@@ -8,7 +8,8 @@
    doExportExcel, doExportPDF, applyCreditDateFilter, clearCreditDateFilter,
    applyCreditReference, clearCreditReference, doCreditExportCSV, doCreditExportExcel,
    addWatchlistItem, removeWatchlistItem, quickAddToWatchlist, openAbout,
-   searchFundXray, runFundXray, doXrayExportCSV */
+   searchFundXray, runFundXray, doXrayExportCSV, selectXrayComparison,
+   onXrayCompareSelectChange, runFundXrayCompare, doXrayCompareExportCSV */
 
 // ── State ──────────────────────────────────────────────────────────────────
 let allResults = {};
@@ -19,7 +20,9 @@ let creditChart = null;
 let singleReferenceValue = null; // optional user-entered $ price to overlay/diff against peers (equity bucket only)
 let creditReferenceValue = null; // optional user-entered mark (%) to overlay/diff against peers
 let xrayFilings = []; // filings returned by the current Fund X-Ray search, sorted newest-first
-let currentXray = null; // most recently rendered Fund X-Ray result, for CSV export
+let xraySnapshots = { current: null, prior: null }; // { xray, filing } per rendered period-detail section, for CSV export/re-render
+let currentXrayCompare = null; // most recently rendered QoQ/YoY comparison, for CSV export
+let xrayCompareMode = null; // 'qoq' | 'yoy' | null — re-resolved when Current Period changes; null for a manual pick or no comparison
 
 const WATCHLIST_KEY = 'nportWatchlist';
 
@@ -1479,7 +1482,9 @@ function clearResults() {
   singleReferenceValue = null;
   creditReferenceValue = null;
   xrayFilings = [];
-  currentXray = null;
+  xraySnapshots = { current: null, prior: null };
+  currentXrayCompare = null;
+  xrayCompareMode = null;
   Object.values(singleCharts).forEach(c => c.destroy());
   singleCharts = {};
   if (creditChart) {
@@ -1548,6 +1553,19 @@ function fmtCurrency(v) {
 }
 function fmtNum(v) {
   return new Intl.NumberFormat('en-US').format(Math.round(v));
+}
+// Compact $ figures (e.g. "$120.09M", "-$1.35B") for aggregate values, where
+// full-precision cents (fmtCurrency) just add noise and cause wrapping in
+// tight spaces — used anywhere a number represents a fund-level or
+// position-level dollar TOTAL, never a per-share price (those stay exact).
+function fmtCompactCurrency(v) {
+  if (v == null || isNaN(v)) return '—';
+  const sign = v < 0 ? '-' : '';
+  const abs = Math.abs(v);
+  if (abs >= 1e9) return `${sign}$${(abs / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${sign}$${(abs / 1e6).toFixed(2)}M`;
+  if (abs >= 1e3) return `${sign}$${(abs / 1e3).toFixed(1)}K`;
+  return fmtCurrency(v);
 }
 // ── Private Credit: Search ─────────────────────────────────────────────────
 async function searchPrivateCredit() {
@@ -2193,10 +2211,16 @@ async function searchFundXray() {
     }
 
     xrayFilings = filings;
+    xrayCompareMode = null;
+    currentXrayCompare = null;
     document.getElementById('xraySelectorPanel').style.display = 'block';
-    document.getElementById('xrayFilingSelect').innerHTML = filings
+    const optionsHTML = filings
       .map((f, i) => `<option value="${i}">${esc(f.period || f.fileDate)} — ${esc(f.company)}</option>`)
       .join('');
+    document.getElementById('xrayFilingSelect').innerHTML = optionsHTML;
+    document.getElementById('xrayCompareSelect').innerHTML =
+      '<option value="">— No comparison —</option>' + optionsHTML;
+    document.getElementById('xrayCompareResults')?.remove();
 
     if (matches.length > 1) {
       showMsg(`"${fund}" matched ${matches.length} funds on EDGAR — pick the exact fund/period below.`, 'info');
@@ -2220,27 +2244,45 @@ async function runFundXray() {
     if (!data.success || !data.xray) {
       return showMsg('Error: ' + (data.error || 'Could not parse this filing.'), 'error');
     }
-    currentXray = data.xray;
     renderFundXray(data.xray, filing);
+
+    // Keep an active QoQ/YoY comparison in sync with the newly selected
+    // Current Period rather than silently going stale.
+    if (xrayCompareMode) {
+      await selectXrayComparison(xrayCompareMode);
+    } else if (document.getElementById('xrayCompareSelect').value) {
+      await runFundXrayCompare();
+    }
   } catch (err) {
     hideLoading();
     showMsg('Error: ' + err.message, 'error');
   }
 }
 
-function renderFundXray(xray, filing) {
+// Builds one period's full Fund X-Ray breakdown as an HTML string — used
+// both for the plain single-period view (opts.periodRole omitted) and,
+// when a QoQ/YoY comparison is active, for the "Most Recent Period" /
+// "Prior Period" sections that follow the analysis (so it's never ambiguous
+// which filing a given block of holdings belongs to).
+function buildXraySnapshotHTML(xray, filing, opts) {
+  opts = opts || {};
   const fundName = xray.fund?.seriesName || xray.fund?.registrantName || filing.company;
   const pct = v => (v !== null && v !== undefined && !isNaN(v) ? v.toFixed(2) + '%' : '—');
 
-  let html = '<div class="results-section">';
-  html += `<div class="results-header"><h2>${esc(fundName)}</h2></div>`;
-  html += `<div class="hint">Report period: ${esc(xray.fund?.reportDate || filing.period || '—')} &bull; ${sourceLinkHTML(filing.cik, filing.accession, 'View source filing')}</div>`;
+  let html = `<div class="results-section"${opts.sectionId ? ` id="${esc(opts.sectionId)}"` : ''}>`;
+  if (opts.periodRole) {
+    html += `<div class="results-header"><h2>${esc(opts.periodRole)} &mdash; ${esc(xray.fund?.reportDate || filing.period || '—')}</h2></div>`;
+    html += `<div class="hint">${esc(fundName)} &bull; ${sourceLinkHTML(filing.cik, filing.accession, 'View source filing')}</div>`;
+  } else {
+    html += `<div class="results-header"><h2>${esc(fundName)}</h2></div>`;
+    html += `<div class="hint">Report period: ${esc(xray.fund?.reportDate || filing.period || '—')} &bull; ${sourceLinkHTML(filing.cik, filing.accession, 'View source filing')}</div>`;
+  }
 
   html += `
     <div class="stats-grid">
       <div class="stat-box">
         <div class="stat-label">Private Equity Exposure</div>
-        <div class="stat-value highlight">${fmtCurrency(xray.privateValueUSD)}</div>
+        <div class="stat-value highlight">${fmtCompactCurrency(xray.privateValueUSD)}</div>
         <div class="stat-sub">${xray.privateHoldingsCount} of ${xray.totalHoldingsCount} holdings</div>
       </div>
       <div class="stat-box">
@@ -2257,7 +2299,7 @@ function renderFundXray(xray, filing) {
       </div>
       <div class="stat-box">
         <div class="stat-label">Fund Net Assets</div>
-        <div class="stat-value sm">${xray.fund?.netAssets ? fmtCurrency(xray.fund.netAssets) : '—'}</div>
+        <div class="stat-value sm">${xray.fund?.netAssets ? fmtCompactCurrency(xray.fund.netAssets) : '—'}</div>
       </div>
     </div>`;
 
@@ -2272,7 +2314,7 @@ function renderFundXray(xray, filing) {
     html +=
       '<table><thead><tr><th>Type</th><th class="right">$ Value</th><th class="right">% of Private Equity Book</th></tr></thead><tbody>';
     typeEntries.forEach(([type, value]) => {
-      html += `<tr><td>${esc(type)}</td><td class="right">${fmtCurrency(value)}</td><td class="right">${pct((value / xray.privateValueUSD) * 100)}</td></tr>`;
+      html += `<tr><td>${esc(type)}</td><td class="right">${fmtCompactCurrency(value)}</td><td class="right">${pct((value / xray.privateValueUSD) * 100)}</td></tr>`;
     });
     html += '</tbody></table>';
   }
@@ -2282,7 +2324,7 @@ function renderFundXray(xray, filing) {
     html +=
       '<table><thead><tr><th>Country</th><th class="right">$ Value</th><th class="right">% of Private Equity Book</th></tr></thead><tbody>';
     countryEntries.forEach(([country, value]) => {
-      html += `<tr><td>${esc(country)}</td><td class="right">${fmtCurrency(value)}</td><td class="right">${pct((value / xray.privateValueUSD) * 100)}</td></tr>`;
+      html += `<tr><td>${esc(country)}</td><td class="right">${fmtCompactCurrency(value)}</td><td class="right">${pct((value / xray.privateValueUSD) * 100)}</td></tr>`;
     });
     html += '</tbody></table>';
   }
@@ -2305,7 +2347,7 @@ function renderFundXray(xray, filing) {
         <td class="right">${shares}</td>
         <td class="right">${pps}</td>
         <td class="right">${pct(h.pctOfNetAssets)}</td>
-        <td class="right">${fmtCurrency(h.marketValue)}</td>
+        <td class="right">${fmtCompactCurrency(h.marketValue)}</td>
       </tr>`;
     });
     html += '</tbody></table>';
@@ -2314,16 +2356,32 @@ function renderFundXray(xray, filing) {
       '<div class="alert alert-info">No private equity holdings (Level-3 equity, warrants, or SPV vehicles) found in this filing — this fund’s book appears to hold no private equity as of this report date. (It may still hold Level-3 bonds/loans or Level-2 restricted stock, which this view intentionally excludes.)</div>';
   }
 
-  html += `<div class="export-row"><button class="btn btn-green" onclick="doXrayExportCSV()">Export CSV</button></div>`;
+  html += `<div class="export-row"><button class="btn btn-green" onclick="doXrayExportCSV('${esc(opts.exportKey || 'current')}')">Export CSV</button></div>`;
   html += '</div>';
+  return html;
+}
 
+function renderFundXray(xray, filing) {
+  xraySnapshots.current = { xray, filing };
+  // A comparison already in progress (e.g. the user just changed Current
+  // Period while comparing) means this snapshot is no longer the only
+  // thing on the page — label it so scrolling past the analysis section
+  // never leaves it ambiguous which filing is on screen.
+  const compareActive = !!document.getElementById('xrayCompareSelect').value;
+  const html = buildXraySnapshotHTML(xray, filing, {
+    periodRole: compareActive ? 'Most Recent Period' : null,
+    sectionId: 'xraySnapshotCurrent',
+    exportKey: 'current',
+  });
   document.getElementById('resultsContainer').innerHTML = html;
 }
 
-function doXrayExportCSV() {
-  if (!currentXray) return;
-  const fundName = currentXray.fund?.seriesName || currentXray.fund?.registrantName || '';
-  const reportDate = currentXray.fund?.reportDate || '';
+function doXrayExportCSV(key) {
+  const snap = xraySnapshots[key || 'current'];
+  if (!snap) return;
+  const { xray } = snap;
+  const fundName = xray.fund?.seriesName || xray.fund?.registrantName || '';
+  const reportDate = xray.fund?.reportDate || '';
   const rows = [
     [
       'Fund',
@@ -2339,7 +2397,7 @@ function doXrayExportCSV() {
       '$ Value',
     ],
   ];
-  currentXray.privateHoldings.forEach(h =>
+  xray.privateHoldings.forEach(h =>
     rows.push([
       fundName,
       reportDate,
@@ -2355,5 +2413,401 @@ function doXrayExportCSV() {
     ])
   );
   const csv = rows.map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
-  downloadBlob(csv, 'text/csv', `fund_xray_${cleanId(fundName || 'fund')}_${today()}.csv`);
+  const datePart = reportDate ? `_${cleanId(reportDate)}` : '';
+  downloadBlob(csv, 'text/csv', `fund_xray_${cleanId(fundName || 'fund')}${datePart}_${today()}.csv`);
+}
+
+// ── Fund X-Ray: QoQ / YoY period comparison ────────────────────────────────
+// xrayFilings is sorted newest-first (searchFundXray), so "older" always
+// means a higher index.
+function findXrayComparisonIndex(currentIndex, mode) {
+  const current = xrayFilings[currentIndex];
+  if (!current) return -1;
+  const currentDate = new Date(current.period || current.fileDate);
+  if (isNaN(currentDate)) return -1;
+
+  if (mode === 'qoq') {
+    return currentIndex + 1 < xrayFilings.length ? currentIndex + 1 : -1;
+  }
+
+  // yoy: the older filing whose report date is closest to (current - 365
+  // days), accepted only within a +/-45 day tolerance so a fund with gaps
+  // in its filing history doesn't get matched to something ~2 years back.
+  let bestIndex = -1;
+  let bestDiffDays = Infinity;
+  for (let i = currentIndex + 1; i < xrayFilings.length; i++) {
+    const d = new Date(xrayFilings[i].period || xrayFilings[i].fileDate);
+    if (isNaN(d)) continue;
+    const daysBack = (currentDate - d) / 86400000;
+    if (daysBack < 320 || daysBack > 410) continue;
+    const diffDays = Math.abs(daysBack - 365);
+    if (diffDays < bestDiffDays) {
+      bestDiffDays = diffDays;
+      bestIndex = i;
+    }
+  }
+  return bestIndex;
+}
+
+// Tears down the comparison UI (both the analysis section and the
+// "Prior Period" snapshot) and drops the "Most Recent Period" label off the
+// current snapshot, since with nothing to compare against it's just "the"
+// view again.
+function clearXrayComparisonUI() {
+  currentXrayCompare = null;
+  xraySnapshots.prior = null;
+  document.getElementById('xrayCompareResults')?.remove();
+  document.getElementById('xraySnapshotPrior')?.remove();
+  const existingCurrent = document.getElementById('xraySnapshotCurrent');
+  if (existingCurrent && xraySnapshots.current) {
+    existingCurrent.outerHTML = buildXraySnapshotHTML(xraySnapshots.current.xray, xraySnapshots.current.filing, {
+      sectionId: 'xraySnapshotCurrent',
+      exportKey: 'current',
+    });
+  }
+}
+
+async function selectXrayComparison(mode) {
+  xrayCompareMode = mode;
+  const currentIndex = +document.getElementById('xrayFilingSelect').value || 0;
+  const targetIndex = findXrayComparisonIndex(currentIndex, mode);
+
+  if (targetIndex < 0) {
+    document.getElementById('xrayCompareSelect').value = '';
+    clearXrayComparisonUI();
+    return showMsg(
+      mode === 'yoy'
+        ? 'No filing found roughly one year prior for this fund.'
+        : 'No prior filing available to compare against.',
+      'info'
+    );
+  }
+
+  document.getElementById('xrayCompareSelect').value = String(targetIndex);
+  await runFundXrayCompare();
+}
+
+// Manual pick from the "Compare To" dropdown — not tied to the qoq/yoy
+// nearest-date logic, so it should not be silently re-resolved if Current
+// Period changes later.
+async function onXrayCompareSelectChange() {
+  xrayCompareMode = null;
+  await runFundXrayCompare();
+}
+
+async function runFundXrayCompare() {
+  const compareVal = document.getElementById('xrayCompareSelect').value;
+  if (!compareVal) {
+    clearXrayComparisonUI();
+    return;
+  }
+
+  const currentIndex = +document.getElementById('xrayFilingSelect').value || 0;
+  const compareIndex = +compareVal;
+  const currentFiling = xrayFilings[currentIndex];
+  const priorFiling = xrayFilings[compareIndex];
+  if (!currentFiling || !priorFiling || currentIndex === compareIndex) {
+    document.getElementById('xrayCompareSelect').value = '';
+    clearXrayComparisonUI();
+    return showMsg('Choose two different periods to compare.', 'error');
+  }
+
+  showLoading('Comparing periods...');
+  try {
+    const data = await fetchJSON(
+      `/api/fund-xray-compare?cik=${enc(currentFiling.cik)}&currentAccession=${enc(currentFiling.accession)}&priorAccession=${enc(priorFiling.accession)}`
+    );
+    hideLoading();
+    if (!data.success || !data.comparison) {
+      return showMsg('Error: ' + (data.error || 'Could not build this comparison.'), 'error');
+    }
+    currentXrayCompare = data.comparison;
+    // Order on the page: 1) analysis (prepended, see renderFundXrayComparison)
+    // 2) the current snapshot already in #resultsContainer, now relabeled
+    // "Most Recent Period" since it's no longer the only thing shown
+    // 3) the prior period's own full breakdown, fetched below and appended
+    // last — so scrolling down goes newest -> oldest, analysis always first.
+    renderFundXrayComparison(data.comparison, currentFiling, priorFiling);
+    relabelCurrentXraySnapshot();
+    await renderPriorXraySnapshot(priorFiling);
+  } catch (err) {
+    hideLoading();
+    showMsg('Error: ' + err.message, 'error');
+  }
+}
+
+function relabelCurrentXraySnapshot() {
+  const existing = document.getElementById('xraySnapshotCurrent');
+  if (!existing || !xraySnapshots.current) return;
+  existing.outerHTML = buildXraySnapshotHTML(xraySnapshots.current.xray, xraySnapshots.current.filing, {
+    periodRole: 'Most Recent Period',
+    sectionId: 'xraySnapshotCurrent',
+    exportKey: 'current',
+  });
+}
+
+// Fetches (almost always a cache hit — the comparison call above already
+// warmed it server-side) and renders the prior period's own full
+// breakdown, appended after the current snapshot. Non-fatal on failure:
+// the comparison analysis above already has everything needed, this is a
+// supplementary "see that period's own report" convenience.
+async function renderPriorXraySnapshot(priorFiling) {
+  try {
+    const data = await fetchJSON(`/api/fund-xray?cik=${enc(priorFiling.cik)}&accession=${enc(priorFiling.accession)}`);
+    if (!data.success || !data.xray) return;
+    xraySnapshots.prior = { xray: data.xray, filing: priorFiling };
+    const html = buildXraySnapshotHTML(data.xray, priorFiling, {
+      periodRole: 'Prior Period',
+      sectionId: 'xraySnapshotPrior',
+      exportKey: 'prior',
+    });
+    const existing = document.getElementById('xraySnapshotPrior');
+    if (existing) {
+      existing.outerHTML = html;
+    } else {
+      document.getElementById('resultsContainer').insertAdjacentHTML('beforeend', html);
+    }
+  } catch (_err) {
+    // Supplementary content — swallow rather than surfacing an error over
+    // an already-successful comparison render.
+  }
+}
+
+// Renders "prior → current (+/-X.X%)" for a {current, prior, delta, deltaPct}
+// block, using fmt to format each side (fmtCurrency, fmtNum, etc.).
+function fmtXrayDeltaPair(block, fmt) {
+  if (block.current == null && block.prior == null) return '—';
+  if (block.prior == null) return `${fmt(block.current)} <span style="color:var(--green)">(new)</span>`;
+  if (block.current == null) return `${fmt(block.prior)} <span style="color:var(--red)">(exited)</span>`;
+  let pctLabel = '';
+  if (block.deltaPct != null && !isNaN(block.deltaPct)) {
+    const color = block.deltaPct > 0 ? 'var(--green)' : block.deltaPct < 0 ? 'var(--red)' : 'var(--gray-500)';
+    pctLabel = ` <span style="color:${color}">(${block.deltaPct > 0 ? '+' : ''}${block.deltaPct.toFixed(1)}%)</span>`;
+  }
+  return `${fmt(block.prior)} → ${fmt(block.current)}${pctLabel}`;
+}
+
+// Renders one "Key Insights" card: a title, up to a handful of items, and a
+// "+N more in the table below" note when the underlying list (already
+// capped server-side, see buildFundXRayComparison's `capped()`) was longer.
+function insightCardHTML(title, list, renderItem, emptyLabel) {
+  let html = `<div class="insight-card"><h4>${esc(title)}</h4>`;
+  if (!list.items.length) {
+    html += `<div class="insight-empty">${esc(emptyLabel)}</div>`;
+  } else {
+    html += '<ul class="insight-list">';
+    list.items.forEach(p => {
+      html += `<li class="insight-item"><span class="insight-name" title="${esc(p.name || p.title || '')}">${esc(p.name || p.title || '—')}</span>${renderItem(p)}</li>`;
+    });
+    html += '</ul>';
+    if (list.total > list.items.length) {
+      html += `<div class="insight-more">+${list.total - list.items.length} more in the table below</div>`;
+    }
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderFundXrayComparison(cmp, currentFiling, priorFiling) {
+  const t = cmp.totals;
+  const deltaColor = v => (v > 0 ? 'var(--green)' : v < 0 ? 'var(--red)' : 'var(--gray-900)');
+  const signed = v => (v > 0 ? '+' : '') + v;
+  const pctLabel = v => (v == null || isNaN(v) ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`);
+  const metric = (text, color) => `<span class="insight-metric" style="color:${color}">${text}</span>`;
+
+  let html = '<div class="results-section" id="xrayCompareResults">';
+  html += `<div class="results-header"><h2>Period Comparison</h2></div>`;
+  html += `<div class="hint">Current: ${esc(cmp.current.reportDate || '—')} (${sourceLinkHTML(currentFiling.cik, currentFiling.accession, 'view filing')}) &bull; Prior: ${esc(cmp.prior.reportDate || '—')} (${sourceLinkHTML(priorFiling.cik, priorFiling.accession, 'view filing')})</div>`;
+
+  html += `
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-label">Private Equity Value</div>
+        <div class="stat-value highlight">${fmtCompactCurrency(t.privateValueUSD.current)}</div>
+        <div class="stat-sub" style="color:${deltaColor(t.privateValueUSD.delta)}">${pctLabel(t.privateValueUSD.deltaPct)} vs ${fmtCompactCurrency(t.privateValueUSD.prior)}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Private Holdings</div>
+        <div class="stat-value">${t.privateHoldingsCount.current}</div>
+        <div class="stat-sub" style="color:${deltaColor(t.privateHoldingsCount.delta)}">${signed(t.privateHoldingsCount.delta)} vs ${t.privateHoldingsCount.prior}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Distinct Issuers</div>
+        <div class="stat-value">${t.issuerCount.current}</div>
+        <div class="stat-sub" style="color:${deltaColor(t.issuerCount.delta)}">${signed(t.issuerCount.delta)} vs ${t.issuerCount.prior}</div>
+      </div>
+    </div>`;
+
+  // "Of the $ change in positions still held, how much was the fund
+  // marking them up/down (a re-rate of the same shares) vs. buying more or
+  // selling some down (a change in position size)?" — the two effects sum
+  // exactly to the continuing-position value change (buildFundXRayComparison).
+  html += `
+    <div class="results-header"><h2>What Drove The Change</h2></div>
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-label">Value &Delta; from Price Marks</div>
+        <div class="stat-value" style="color:${deltaColor(t.valueChangeFromPrice.amount)}">${fmtCompactCurrency(t.valueChangeFromPrice.amount)}</div>
+        <div class="stat-sub">${pctLabel(t.valueChangeFromPrice.pct)} of continuing positions' prior value</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Value &Delta; from Position Sizing</div>
+        <div class="stat-value" style="color:${deltaColor(t.valueChangeFromShares.amount)}">${fmtCompactCurrency(t.valueChangeFromShares.amount)}</div>
+        <div class="stat-sub">${pctLabel(t.valueChangeFromShares.pct)} of continuing positions' prior value</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">New Investments</div>
+        <div class="stat-value" style="color:var(--green)">${t.newCount}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Exited Investments</div>
+        <div class="stat-value" style="color:var(--red)">${t.exitedCount}</div>
+      </div>
+    </div>`;
+
+  const ins = cmp.insights;
+  html += '<div class="results-header"><h2>Key Insights</h2></div>';
+  html += '<div class="insight-grid">';
+  html += insightCardHTML(
+    'Securities Added',
+    ins.added,
+    p => metric(fmtCompactCurrency(p.marketValue.current), 'var(--green)'),
+    'No new investments this period.'
+  );
+  html += insightCardHTML(
+    'Securities Dropped',
+    ins.dropped,
+    p => metric(fmtCompactCurrency(p.marketValue.prior), 'var(--red)'),
+    'No investments exited this period.'
+  );
+  html += insightCardHTML(
+    'Positions Increased (added shares)',
+    ins.increased,
+    p => metric(`+${fmtNum(p.shares.delta)} sh (${pctLabel(p.shares.deltaPct)})`, 'var(--green)'),
+    'No continuing position was added to.'
+  );
+  html += insightCardHTML(
+    'Positions Reduced (sold shares)',
+    ins.reduced,
+    p => metric(`${fmtNum(p.shares.delta)} sh (${pctLabel(p.shares.deltaPct)})`, 'var(--red)'),
+    'No continuing position was partially sold down.'
+  );
+  // Ranked (in buildFundXRayComparison) by the $ impact of the mark move,
+  // not raw %, so a real $37M mark-up doesn't get buried under a
+  // technically-larger but economically trivial % move on a near-zero-price
+  // position — the $ figure shown here is that same ranking metric, with
+  // the price-per-share move itself alongside for context.
+  html += insightCardHTML(
+    'Notable Mark-Ups',
+    ins.topMarkups,
+    p =>
+      metric(
+        `${fmtCompactCurrency(p.priceEffectUSD)} (${fmtCurrency(p.pricePerShare.prior)} &rarr; ${fmtCurrency(p.pricePerShare.current)})`,
+        'var(--green)'
+      ),
+    'No continuing position was marked up.'
+  );
+  html += insightCardHTML(
+    'Notable Mark-Downs',
+    ins.topMarkdowns,
+    p =>
+      metric(
+        `${fmtCompactCurrency(p.priceEffectUSD)} (${fmtCurrency(p.pricePerShare.prior)} &rarr; ${fmtCurrency(p.pricePerShare.current)})`,
+        'var(--red)'
+      ),
+    'No continuing position was marked down.'
+  );
+  html += '</div>';
+
+  html += `<div class="results-header"><h2>Full Position-Level Detail (${cmp.positions.length})</h2></div>`;
+  if (cmp.positions.length) {
+    html += `<table><thead><tr>
+      <th>Status</th><th>Company</th><th>Instrument</th>
+      <th class="right">Shares (prior &rarr; current)</th>
+      <th class="right">Price / Share (prior &rarr; current)</th>
+      <th class="right">Value (prior &rarr; current)</th>
+      <th class="right">% of NAV &Delta;</th>
+    </tr></thead><tbody>`;
+    cmp.positions.forEach(p => {
+      const rowClass = p.status === 'new' ? 'xray-new-row' : p.status === 'exited' ? 'xray-exited-row' : '';
+      const navDelta =
+        p.pctOfNetAssets.delta != null
+          ? `${p.pctOfNetAssets.delta > 0 ? '+' : ''}${p.pctOfNetAssets.delta.toFixed(2)}pp`
+          : '—';
+      html += `<tr class="${rowClass}">
+        <td><span class="status-pill ${p.status}">${p.status}</span></td>
+        <td class="title-cell">${esc(p.name || p.title || '—')}</td>
+        <td>${esc(p.instrumentLabel || '—')}</td>
+        <td class="right">${fmtXrayDeltaPair(p.shares, fmtNum)}</td>
+        <td class="right">${fmtXrayDeltaPair(p.pricePerShare, fmtCurrency)}</td>
+        <td class="right">${fmtXrayDeltaPair(p.marketValue, fmtCompactCurrency)}</td>
+        <td class="right">${navDelta}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+  } else {
+    html += '<div class="alert alert-info">No private equity holdings in either period.</div>';
+  }
+
+  html += `<div class="export-row"><button class="btn btn-green" onclick="doXrayCompareExportCSV()">Export Comparison CSV</button></div>`;
+  html += '</div>';
+
+  // Insights are the whole point of comparing two periods — they belong
+  // ABOVE the single-period breakdown (which renderFundXray already put in
+  // #resultsContainer), not buried below a long holdings table a user has
+  // to scroll past first.
+  const existing = document.getElementById('xrayCompareResults');
+  if (existing) {
+    existing.outerHTML = html;
+  } else {
+    document.getElementById('resultsContainer').insertAdjacentHTML('afterbegin', html);
+  }
+}
+
+function doXrayCompareExportCSV() {
+  if (!currentXrayCompare) return;
+  const cmp = currentXrayCompare;
+  const rows = [
+    [
+      'Status',
+      'Company',
+      'Instrument',
+      'Shares (Prior)',
+      'Shares (Current)',
+      'Shares Δ%',
+      'Price/Share (Prior)',
+      'Price/Share (Current)',
+      'Price/Share Δ%',
+      'Value (Prior)',
+      'Value (Current)',
+      'Value Δ%',
+      'Value Δ from Price Mark ($)',
+      'Value Δ from Position Sizing ($)',
+      '% of NAV (Prior)',
+      '% of NAV (Current)',
+    ],
+  ];
+  cmp.positions.forEach(p =>
+    rows.push([
+      p.status,
+      p.name || p.title || '',
+      p.instrumentLabel || '',
+      p.shares.prior ?? '',
+      p.shares.current ?? '',
+      p.shares.deltaPct != null ? p.shares.deltaPct.toFixed(2) : '',
+      p.pricePerShare.prior != null ? p.pricePerShare.prior.toFixed(6) : '',
+      p.pricePerShare.current != null ? p.pricePerShare.current.toFixed(6) : '',
+      p.pricePerShare.deltaPct != null ? p.pricePerShare.deltaPct.toFixed(2) : '',
+      p.marketValue.prior != null ? p.marketValue.prior.toFixed(2) : '',
+      p.marketValue.current != null ? p.marketValue.current.toFixed(2) : '',
+      p.marketValue.deltaPct != null ? p.marketValue.deltaPct.toFixed(2) : '',
+      p.priceEffectUSD != null ? p.priceEffectUSD.toFixed(2) : '',
+      p.shareEffectUSD != null ? p.shareEffectUSD.toFixed(2) : '',
+      p.pctOfNetAssets.prior != null ? p.pctOfNetAssets.prior.toFixed(4) : '',
+      p.pctOfNetAssets.current != null ? p.pctOfNetAssets.current.toFixed(4) : '',
+    ])
+  );
+  const csv = rows.map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
+  const fundName = cmp.current.seriesName || cmp.current.registrantName || '';
+  downloadBlob(csv, 'text/csv', `fund_xray_compare_${cleanId(fundName || 'fund')}_${today()}.csv`);
 }

@@ -363,6 +363,52 @@
     .price-cell { font-weight: 600; color: var(--navy); }
     .title-cell { color: var(--gray-700); max-width: 300px; }
 
+    /* ── Fund X-Ray period comparison ──────────────────────────────────── */
+    tr.xray-new-row { background: var(--green-pale); }
+    tr.xray-exited-row { background: var(--red-pale); text-decoration: line-through; opacity: 0.7; }
+    .status-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    .status-pill.new     { background: var(--green-pale); color: var(--green); }
+    .status-pill.exited  { background: var(--red-pale);   color: var(--red); }
+    .status-pill.held    { background: var(--gray-100);   color: var(--gray-700); }
+
+    .insight-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .insight-card {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 13px 15px;
+    }
+    .insight-card h4 { font-size: 12px; font-weight: 700; color: var(--gray-700); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+    .insight-list { list-style: none; }
+    /* Stacked (name above, metric below) rather than a single squeezed row —
+       a long company name next to a long formatted-currency string was
+       forcing single-letter ellipsis truncation ("F...", "K..."). Stacking
+       lets the full name wrap onto two lines and keeps the metric legible
+       and right-aligned like a real financial statement. */
+    .insight-item {
+      padding: 6px 0;
+      border-bottom: 1px solid var(--gray-100);
+      font-size: 12.5px;
+    }
+    .insight-item:last-of-type { border-bottom: none; }
+    .insight-item .insight-name { display: block; color: var(--gray-700); font-weight: 500; overflow-wrap: break-word; }
+    .insight-item .insight-metric { display: block; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 1px; }
+    .insight-more { font-size: 11px; color: var(--gray-500); margin-top: 6px; }
+    .insight-empty { font-size: 12.5px; color: var(--gray-500); font-style: italic; }
+
     /* ── Export row ─────────────────────────────────────────────────────── */
     .export-row {
       display: flex;
@@ -606,10 +652,19 @@
     <div class="date-filter-panel" id="xraySelectorPanel" style="display:none;">
       <div class="search-row">
         <div class="input-group">
-          <label for="xrayFilingSelect">Reporting Period</label>
+          <label for="xrayFilingSelect">Current Period</label>
           <select id="xrayFilingSelect" onchange="runFundXray()"></select>
         </div>
+        <div class="input-group">
+          <label for="xrayCompareSelect">Compare To</label>
+          <select id="xrayCompareSelect" onchange="onXrayCompareSelectChange()">
+            <option value="">— No comparison —</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary" onclick="selectXrayComparison('qoq')">vs Prior Quarter</button>
+        <button class="btn btn-secondary" onclick="selectXrayComparison('yoy')">vs Prior Year (YoY)</button>
       </div>
+      <div class="hint">Compare the fund's private equity book across two periods — new investments, exits, and share/value/price-per-share changes for continuing positions.</div>
     </div>
   </div>
 

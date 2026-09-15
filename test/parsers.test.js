@@ -59,6 +59,8 @@ const {
   extractFundMeta,
   extractAllHoldings,
   buildFundXRay,
+  positionMatchKey,
+  buildFundXRayComparison,
 } = require('../parsers');
 
 const FIXTURES = path.join(__dirname, 'fixtures');
@@ -578,6 +580,322 @@ test('extractAllHoldings: a short/written derivative position (negative balance 
 
   const xray = buildFundXRay(holdings, {});
   assert.equal(xray.privateValueUSD, -5000, 'aggregation must not throw or coerce a negative exposure to zero');
+});
+
+// ── buildFundXRayComparison (QoQ/YoY period diff) ──────────────────────────
+
+// Minimal isPrivate:true holding shaped like extractAllHoldings' output —
+// only the fields buildFundXRayComparison/positionMatchKey actually read.
+function makeHolding(overrides) {
+  return {
+    name: 'Private Co',
+    issuer: 'Private Co',
+    title: 'Series A Preferred',
+    shares: 1000,
+    marketValue: 10000,
+    pricePerShare: 10,
+    cusip: 'N/A',
+    instrumentType: 'equity',
+    instrumentLabel: 'Equity',
+    country: 'US',
+    pctOfNetAssets: 1,
+    isPrivate: true,
+    ...overrides,
+  };
+}
+
+test('buildFundXRayComparison: a position only in the current period is flagged new, with no prior-side division by zero', () => {
+  const current = buildFundXRay([makeHolding({ name: 'Newco', issuer: 'Newco', marketValue: 5000, shares: 500 })], {});
+  const prior = buildFundXRay([], {});
+
+  const cmp = buildFundXRayComparison(current, prior);
+  assert.equal(cmp.positions.length, 1);
+  assert.equal(cmp.positions[0].status, 'new');
+  assert.equal(cmp.positions[0].marketValue.current, 5000);
+  assert.equal(cmp.positions[0].marketValue.prior, null);
+  assert.equal(cmp.positions[0].marketValue.deltaPct, null, 'no prior value to divide by — null, not Infinity');
+  assert.equal(cmp.totals.newCount, 1);
+  assert.equal(cmp.totals.exitedCount, 0);
+});
+
+test('buildFundXRayComparison: a position only in the prior period is flagged exited', () => {
+  const current = buildFundXRay([], {});
+  const prior = buildFundXRay([makeHolding({ name: 'Soldco', issuer: 'Soldco' })], {});
+
+  const cmp = buildFundXRayComparison(current, prior);
+  assert.equal(cmp.positions.length, 1);
+  assert.equal(cmp.positions[0].status, 'exited');
+  assert.equal(cmp.positions[0].marketValue.current, null);
+  assert.equal(cmp.positions[0].marketValue.prior, 10000);
+  assert.equal(cmp.totals.exitedCount, 1);
+  assert.equal(cmp.totals.newCount, 0);
+});
+
+test('buildFundXRayComparison: a position held in both periods reports correct share/value/price-per-share deltas', () => {
+  const current = buildFundXRay(
+    [makeHolding({ name: 'Growco', issuer: 'Growco', shares: 1200, marketValue: 18000, pricePerShare: 15 })],
+    {}
+  );
+  const prior = buildFundXRay(
+    [makeHolding({ name: 'Growco', issuer: 'Growco', shares: 1000, marketValue: 10000, pricePerShare: 10 })],
+    {}
+  );
+
+  const cmp = buildFundXRayComparison(current, prior);
+  assert.equal(cmp.positions.length, 1);
+  const p = cmp.positions[0];
+  assert.equal(p.status, 'held');
+  assert.equal(p.shares.current, 1200);
+  assert.equal(p.shares.prior, 1000);
+  assert.equal(p.shares.delta, 200);
+  assert.equal(p.shares.deltaPct, 20);
+  assert.equal(p.marketValue.delta, 8000);
+  assert.equal(p.marketValue.deltaPct, 80);
+  assert.equal(p.pricePerShare.current, 15);
+  assert.equal(p.pricePerShare.prior, 10);
+  assert.equal(p.pricePerShare.deltaPct, 50);
+  assert.equal(cmp.totals.continuingCount, 1);
+});
+
+test('buildFundXRayComparison: issuer count dedupes across differently-cased/spaced issuer names', () => {
+  const current = buildFundXRay(
+    [
+      makeHolding({ name: 'Alphaco Common', issuer: '  AlphaCo  ', title: 'Common' }),
+      makeHolding({ name: 'Alphaco Warrant', issuer: 'alphaco', title: 'Warrant' }),
+    ],
+    {}
+  );
+  const prior = buildFundXRay([makeHolding({ name: 'Alphaco Common', issuer: 'AlphaCo', title: 'Common' })], {});
+
+  const cmp = buildFundXRayComparison(current, prior);
+  assert.equal(cmp.totals.issuerCount.current, 1, 'AlphaCo/alphaco/  AlphaCo   are the same issuer');
+  assert.equal(cmp.totals.issuerCount.prior, 1);
+  assert.equal(cmp.totals.privateHoldingsCount.current, 2, 'but they are still two distinct positions');
+});
+
+test('positionMatchKey: a valid CUSIP takes priority over a name/title match, so a slightly reworded issuer name still matches across periods', () => {
+  const current = buildFundXRay([makeHolding({ name: 'Betaco Inc.', issuer: 'Betaco Inc.', cusip: '123456789' })], {});
+  const prior = buildFundXRay(
+    [makeHolding({ name: 'Betaco Incorporated', issuer: 'Betaco Incorporated', cusip: '123456789' })],
+    {}
+  );
+
+  const cmp = buildFundXRayComparison(current, prior);
+  assert.equal(cmp.positions.length, 1, 'same CUSIP must be recognized as the same position despite the reworded name');
+  assert.equal(cmp.positions[0].status, 'held');
+  assert.equal(
+    positionMatchKey({ cusip: '123456789', issuer: 'Betaco Inc.', name: 'Betaco Inc.', title: 'x' }),
+    positionMatchKey({ cusip: '123456789', issuer: 'Betaco Incorporated', name: 'Betaco Incorporated', title: 'x' })
+  );
+});
+
+test("buildFundXRayComparison: decomposes a held position's value change into price-mark effect vs share-count effect, reconciling exactly", () => {
+  // Fund marks the position up 10/share -> 15/share AND buys more shares
+  // (1000 -> 1200) in the same period. Both effects should be separated,
+  // and their sum must equal the total value delta exactly (no residual).
+  const current = buildFundXRay(
+    [makeHolding({ name: 'Growco', issuer: 'Growco', shares: 1200, marketValue: 18000, pricePerShare: 15 })],
+    {}
+  );
+  const prior = buildFundXRay(
+    [makeHolding({ name: 'Growco', issuer: 'Growco', shares: 1000, marketValue: 10000, pricePerShare: 10 })],
+    {}
+  );
+
+  const cmp = buildFundXRayComparison(current, prior);
+  const p = cmp.positions[0];
+  // priceEffect = sharesPrior*(ppsCurrent-ppsPrior) = 1000*(15-10) = 5000
+  // shareEffect = ppsCurrent*(sharesCurrent-sharesPrior) = 15*(1200-1000) = 3000
+  assert.equal(p.priceEffectUSD, 5000);
+  assert.equal(p.shareEffectUSD, 3000);
+  assert.equal(
+    p.priceEffectUSD + p.shareEffectUSD,
+    p.marketValue.delta,
+    'the two effects must sum to the exact total delta'
+  );
+
+  assert.equal(cmp.totals.valueChangeFromPrice.amount, 5000);
+  assert.equal(cmp.totals.valueChangeFromShares.amount, 3000);
+  assert.equal(cmp.totals.valueChangeOther.amount, 0);
+});
+
+test('buildFundXRayComparison: a held position missing price-per-share on one side falls back to the "other" bucket rather than a wrong split', () => {
+  const current = buildFundXRay(
+    [makeHolding({ name: 'Oddco', issuer: 'Oddco', shares: 500, marketValue: 6000, pricePerShare: null })],
+    {}
+  );
+  const prior = buildFundXRay(
+    [makeHolding({ name: 'Oddco', issuer: 'Oddco', shares: 400, marketValue: 4000, pricePerShare: 10 })],
+    {}
+  );
+
+  const cmp = buildFundXRayComparison(current, prior);
+  const p = cmp.positions[0];
+  assert.equal(p.priceEffectUSD, null);
+  assert.equal(p.shareEffectUSD, null);
+  assert.equal(cmp.totals.valueChangeFromPrice.amount, 0);
+  assert.equal(cmp.totals.valueChangeFromShares.amount, 0);
+  assert.equal(
+    cmp.totals.valueChangeOther.amount,
+    2000,
+    'the full $2000 delta still lands somewhere, just unclassified'
+  );
+});
+
+test('buildFundXRayComparison: insights group new/exited/increased/reduced/marked-up/marked-down positions, capped with a total count', () => {
+  const current = buildFundXRay(
+    [
+      makeHolding({ name: 'Newco', issuer: 'Newco', shares: 100, marketValue: 1000, pricePerShare: 10 }),
+      makeHolding({
+        name: 'GrewShares',
+        issuer: 'GrewShares',
+        title: 'A',
+        shares: 200,
+        marketValue: 2000,
+        pricePerShare: 10,
+      }),
+      makeHolding({
+        name: 'ShrankShares',
+        issuer: 'ShrankShares',
+        title: 'B',
+        shares: 50,
+        marketValue: 500,
+        pricePerShare: 10,
+      }),
+      makeHolding({
+        name: 'MarkedUp',
+        issuer: 'MarkedUp',
+        title: 'C',
+        shares: 100,
+        marketValue: 1500,
+        pricePerShare: 15,
+      }),
+      makeHolding({
+        name: 'MarkedDown',
+        issuer: 'MarkedDown',
+        title: 'D',
+        shares: 100,
+        marketValue: 500,
+        pricePerShare: 5,
+      }),
+    ],
+    {}
+  );
+  const prior = buildFundXRay(
+    [
+      makeHolding({
+        name: 'GrewShares',
+        issuer: 'GrewShares',
+        title: 'A',
+        shares: 100,
+        marketValue: 1000,
+        pricePerShare: 10,
+      }),
+      makeHolding({
+        name: 'ShrankShares',
+        issuer: 'ShrankShares',
+        title: 'B',
+        shares: 100,
+        marketValue: 1000,
+        pricePerShare: 10,
+      }),
+      makeHolding({
+        name: 'MarkedUp',
+        issuer: 'MarkedUp',
+        title: 'C',
+        shares: 100,
+        marketValue: 1000,
+        pricePerShare: 10,
+      }),
+      makeHolding({
+        name: 'MarkedDown',
+        issuer: 'MarkedDown',
+        title: 'D',
+        shares: 100,
+        marketValue: 1000,
+        pricePerShare: 10,
+      }),
+      makeHolding({ name: 'Soldco', issuer: 'Soldco', title: 'E', shares: 300, marketValue: 3000, pricePerShare: 10 }),
+    ],
+    {}
+  );
+
+  const cmp = buildFundXRayComparison(current, prior);
+  const names = list => list.items.map(p => p.name);
+
+  assert.deepEqual(names(cmp.insights.added), ['Newco']);
+  assert.equal(cmp.insights.added.total, 1);
+  assert.deepEqual(names(cmp.insights.dropped), ['Soldco']);
+  assert.deepEqual(names(cmp.insights.increased), ['GrewShares']);
+  assert.deepEqual(names(cmp.insights.reduced), ['ShrankShares']);
+  assert.deepEqual(names(cmp.insights.topMarkups), ['MarkedUp']);
+  assert.deepEqual(names(cmp.insights.topMarkdowns), ['MarkedDown']);
+});
+
+test("buildFundXRayComparison: Notable Mark-Ups/Mark-Downs rank by $ impact of the mark, not raw %, so a near-zero-price warrant blow-up doesn't bury a real multi-million-dollar mark", () => {
+  const current = buildFundXRay(
+    [
+      // +94.5% but on a $77.8M position — a real, economically large mark.
+      makeHolding({
+        name: 'BigRealMark',
+        issuer: 'BigRealMark',
+        shares: 539868,
+        marketValue: 77800377.48,
+        pricePerShare: 144.11,
+      }),
+      // A nominal +9,900,000% move, but the position is worth a few
+      // thousand dollars either way — the exact "near-zero base" shape
+      // that caused a real warrant re-mark to swamp the insights list.
+      makeHolding({
+        name: 'TinyWarrant',
+        issuer: 'TinyWarrant',
+        shares: 2257143,
+        marketValue: 22571.43,
+        pricePerShare: 0.01,
+      }),
+    ],
+    {}
+  );
+  const prior = buildFundXRay(
+    [
+      makeHolding({
+        name: 'BigRealMark',
+        issuer: 'BigRealMark',
+        shares: 539868,
+        marketValue: 39999937.11,
+        pricePerShare: 74.09,
+      }),
+      makeHolding({
+        name: 'TinyWarrant',
+        issuer: 'TinyWarrant',
+        shares: 2257143,
+        marketValue: 225.71,
+        pricePerShare: 0.0001,
+      }),
+    ],
+    {}
+  );
+
+  const cmp = buildFundXRayComparison(current, prior);
+  const names = list => list.items.map(p => p.name);
+  assert.deepEqual(
+    names(cmp.insights.topMarkups),
+    ['BigRealMark', 'TinyWarrant'],
+    'the $77.8M mark must rank first despite the smaller raw %'
+  );
+  assert.ok(
+    cmp.positions.find(p => p.name === 'TinyWarrant').pricePerShare.deltaPct > 1000,
+    'sanity check: the raw % really is that extreme'
+  );
+});
+
+test('buildFundXRayComparison: an empty prior period (fund had no NPORT-P history yet) does not throw', () => {
+  const current = buildFundXRay([makeHolding({})], {});
+  const cmp = buildFundXRayComparison(current, buildFundXRay([], {}));
+  assert.equal(cmp.positions.length, 1);
+  assert.equal(cmp.positions[0].status, 'new');
+  assert.equal(cmp.totals.privateValueUSD.prior, 0);
+  assert.equal(cmp.totals.privateValueUSD.deltaPct, null, 'prior value of 0 — pct change is undefined, not Infinity');
 });
 
 // ── extractCreditHoldings (BDC 10-Q Schedule of Investments) ───────────────

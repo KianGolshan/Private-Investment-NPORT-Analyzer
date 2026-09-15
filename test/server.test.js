@@ -30,6 +30,7 @@ const app = require('../server');
 
 const FIXTURES = path.join(__dirname, 'fixtures');
 const spacexXml = fs.readFileSync(path.join(FIXTURES, 'nport_spacex_primary_doc.xml'), 'utf8');
+const kandouXml = fs.readFileSync(path.join(FIXTURES, 'nport_kandou_multi_instrument.xml'), 'utf8');
 const westStarHtml = fs.readFileSync(path.join(FIXTURES, 'bdc_10q_west_star_aviation.html'), 'utf8');
 
 const EFTS = 'https://efts.sec.gov';
@@ -477,6 +478,66 @@ test('GET /api/fund-xray: a fetch failure is reported as success:false, not a th
   nock(SEC).get('/Archives/edgar/data/999/000000000000000002/primary_doc.xml').reply(404);
 
   const res = await request(app).get('/api/fund-xray?cik=999&accession=0000000000-00-000002');
+  assert.equal(res.status, 200);
+  assert.equal(res.body.success, false);
+  assert.ok(res.body.error);
+});
+
+// ── /api/fund-xray-compare ──────────────────────────────────────────────────
+
+test('GET /api/fund-xray-compare: 400 when required params are missing', async () => {
+  const res = await request(app).get('/api/fund-xray-compare?cik=123&currentAccession=abc');
+  assert.equal(res.status, 400);
+});
+
+test('GET /api/fund-xray-compare: 400 when the two accessions are the same', async () => {
+  const res = await request(app).get('/api/fund-xray-compare?cik=123&currentAccession=abc&priorAccession=abc');
+  assert.equal(res.status, 400);
+});
+
+test("GET /api/fund-xray-compare: fetches both filings (using each one's own cache if already warm) and diffs them", async () => {
+  // Reuses the two real fixtures parsers.test.js already verifies in
+  // isolation: SpaceX/REX ETF (fully public, zero private holdings) as the
+  // "current" period, Kandou (2 private-equity holdings: a preferred
+  // tranche and a warrant, term loan excluded) as the "prior" period —
+  // under a shared fake CIK/accession pair purely to exercise this route's
+  // wiring; the diff math itself is covered by buildFundXRayComparison's
+  // own unit tests in parsers.test.js.
+  nock(SEC)
+    .get('/Archives/edgar/data/555/000000000000000001/primary_doc.xml')
+    .reply(200, spacexXml, { 'Content-Type': 'application/xml' });
+  nock(SEC)
+    .get('/Archives/edgar/data/555/000000000000000002/primary_doc.xml')
+    .reply(200, kandouXml, { 'Content-Type': 'application/xml' });
+
+  const res = await request(app).get(
+    '/api/fund-xray-compare?cik=555&currentAccession=0000000000-00-000001&priorAccession=0000000000-00-000002'
+  );
+  assert.equal(res.status, 200);
+  assert.equal(res.body.success, true);
+  const { comparison } = res.body;
+  assert.equal(comparison.totals.privateHoldingsCount.current, 0);
+  assert.equal(comparison.totals.privateHoldingsCount.prior, 2);
+  assert.equal(comparison.totals.newCount, 0);
+  assert.equal(comparison.totals.exitedCount, 2, 'both Kandou private holdings should show as exited');
+  assert.ok(comparison.positions.every(p => p.status === 'exited'));
+
+  // Fetching again should serve both filings from cache — no new
+  // interceptors registered, so nock would fail the request if either were
+  // re-fetched from SEC.
+  const second = await request(app).get(
+    '/api/fund-xray-compare?cik=555&currentAccession=0000000000-00-000001&priorAccession=0000000000-00-000002'
+  );
+  assert.equal(second.status, 200);
+  assert.equal(second.body.cached, true);
+});
+
+test('GET /api/fund-xray-compare: a fetch failure on either filing is reported as success:false, not a thrown error', async () => {
+  nock(SEC).get('/Archives/edgar/data/556/000000000000000001/primary_doc.xml').reply(404);
+
+  const res = await request(app).get(
+    '/api/fund-xray-compare?cik=556&currentAccession=0000000000-00-000001&priorAccession=0000000000-00-000003'
+  );
   assert.equal(res.status, 200);
   assert.equal(res.body.success, false);
   assert.ok(res.body.error);
