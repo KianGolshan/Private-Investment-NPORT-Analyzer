@@ -9,7 +9,8 @@
    applyCreditReference, clearCreditReference, doCreditExportCSV, doCreditExportExcel,
    addWatchlistItem, removeWatchlistItem, quickAddToWatchlist, openAbout,
    searchFundXray, runFundXray, doXrayExportCSV, selectXrayComparison,
-   onXrayCompareSelectChange, runFundXrayCompare, doXrayCompareExportCSV, selectIndexedFund */
+   onXrayCompareSelectChange, runFundXrayCompare, doXrayCompareExportCSV, selectIndexedFund,
+   sortBasketLeaderboard */
 
 // ── State ──────────────────────────────────────────────────────────────────
 let allResults = {};
@@ -23,6 +24,7 @@ let xrayFilings = []; // filings returned by the current Fund X-Ray search, sort
 let xraySnapshots = { current: null, prior: null }; // { xray, filing } per rendered period-detail section, for CSV export/re-render
 let currentXrayCompare = null; // most recently rendered QoQ/YoY comparison, for CSV export
 let xrayCompareMode = null; // 'qoq' | 'yoy' | null — re-resolved when Current Period changes; null for a manual pick or no comparison
+let leaderboardSort = { field: 'dispersion', dir: 'desc' }; // current Basket Leaderboard sort (Batch Search / Watchlist)
 
 const WATCHLIST_KEY = 'nportWatchlist';
 
@@ -788,9 +790,152 @@ function renderSingleResults(buckets) {
   types.forEach(type => buildChart(bucketCanvasId('singleChart', type), buckets[type], type, true));
 }
 
+// ── Basket Leaderboard: cross-security rollup for Batch Search & Watchlist ─
+// Single Security and Private Credit each already answer "how does this ONE
+// name's mark compare to its peers" (see referenceStatBoxHTML/computeStats
+// above). Batch Search and Watchlist never had an equivalent for a whole
+// BASKET of names — 10 searches just rendered as 10 unrelated sections. The
+// actually useful cross-basket question for a valuation professional isn't
+// "show me each name separately," it's "which names do reporting funds
+// disagree on most (dispersion), and whose most recent mark is oldest
+// (age)?" — both answerable from data already fetched for every
+// batch/watchlist run, no new SEC calls.
+//
+// Deliberately NOT built on computeStats() above: that function pools every
+// holding across EVERY report date for a fund (by design, for the
+// time-series chart), so its min/max mixes one fund's price drift over
+// several quarters with genuine cross-fund disagreement — the wrong signal
+// for "dispersion." This uses each fund's single latest-dated holding only.
+function computeLeaderboardRows(batchResults) {
+  return Object.keys(batchResults)
+    .map(security => {
+      const buckets = batchResults[security];
+      const types = nonEmptyBuckets(buckets);
+      if (!types.length) return null;
+      const type = types[0]; // primary bucket, same ordering as nonEmptyBuckets/INSTRUMENT_ORDER
+      const companiesMap = buckets[type];
+
+      const latestPerFund = Object.values(companiesMap)
+        .map(holdings => [...holdings].sort((a, b) => dateCmp(b.reportDate, a.reportDate))[0])
+        .filter(h => h && h.chartValue != null && h.chartValue > 0);
+      if (!latestPerFund.length) return null;
+
+      const values = latestPerFund.map(h => h.chartValue);
+      const minValue = Math.min(...values);
+      const maxValue = Math.max(...values);
+      const medianValue = median(values);
+      const mostRecent = [...latestPerFund].sort((a, b) => dateCmp(b.reportDate, a.reportDate))[0];
+      const dispersionPct = medianValue ? ((maxValue - minValue) / medianValue) * 100 : null;
+      const ageDays = mostRecent.reportDate
+        ? Math.round((Date.now() - new Date(mostRecent.reportDate)) / 86400000)
+        : null;
+
+      return {
+        security,
+        type,
+        meta: INSTRUMENT_META[type],
+        latestValue: mostRecent.chartValue,
+        latestDate: mostRecent.reportDate,
+        minValue,
+        maxValue,
+        medianValue,
+        fundCount: latestPerFund.length,
+        dispersionPct,
+        ageDays,
+      };
+    })
+    .filter(Boolean);
+}
+
+function sortLeaderboardRows(rows, field, dir) {
+  const sign = dir === 'asc' ? 1 : -1;
+  const key = row => {
+    if (field === 'security') return row.security.toLowerCase();
+    if (field === 'latest') return row.latestValue;
+    if (field === 'funds') return row.fundCount;
+    if (field === 'age') return row.ageDays ?? -Infinity;
+    return row.dispersionPct ?? -Infinity; // 'dispersion' (default)
+  };
+  return [...rows].sort((a, b) => {
+    const av = key(a);
+    const bv = key(b);
+    return typeof av === 'string' ? sign * av.localeCompare(bv) : sign * (av - bv);
+  });
+}
+
+// Age color-coding threshold rationale: NPORT-P is filed up to 60 days
+// after quarter-end, so anything under ~90 days old is a filing running on
+// a normal schedule; 90-180 days is one missed/slow filing cycle; beyond
+// 180 days the mark is stale enough to flag before relying on it.
+function leaderboardAgeColor(ageDays) {
+  if (ageDays == null) return 'var(--gray-500)';
+  if (ageDays > 180) return 'var(--red)';
+  if (ageDays > 90) return 'var(--gold)';
+  return 'var(--gray-700)';
+}
+function leaderboardDispersionColor(pct) {
+  if (pct == null) return 'var(--gray-500)';
+  if (pct >= 50) return 'var(--red)';
+  if (pct >= 20) return 'var(--gold)';
+  return 'var(--green)';
+}
+
+function renderBasketLeaderboardSectionHTML(rows) {
+  if (!rows.length) return '';
+  const sorted = sortLeaderboardRows(rows, leaderboardSort.field, leaderboardSort.dir);
+  const arrow = field => (leaderboardSort.field !== field ? '' : leaderboardSort.dir === 'desc' ? ' ▼' : ' ▲');
+  const sortableTh = (field, label, cls) =>
+    `<th class="sortable${cls ? ' ' + cls : ''}" onclick="sortBasketLeaderboard('${field}')" title="Sort by ${esc(label)}">${esc(label)}${arrow(field)}</th>`;
+
+  let html = `<div class="results-section" id="basketLeaderboard">
+    <div class="results-header"><h2>Basket Leaderboard</h2></div>
+    <div class="hint">Ranks this basket by how much reporting funds disagree on each name's most recent mark (dispersion) and how old that mark is (age) — click a column to sort. Click a name to jump to its detail below.</div>
+    <table><thead><tr>
+      ${sortableTh('security', 'Security')}
+      ${sortableTh('latest', 'Latest Mark', 'right')}
+      <th class="right">Peer Range</th>
+      ${sortableTh('dispersion', 'Dispersion', 'right')}
+      ${sortableTh('funds', 'Funds', 'right')}
+      <th class="right">Latest Filing</th>
+      ${sortableTh('age', 'Age', 'right')}
+    </tr></thead><tbody>`;
+
+  sorted.forEach(row => {
+    const { security, meta, latestValue, minValue, maxValue, fundCount, dispersionPct, ageDays, latestDate } = row;
+    const secId = cleanId(security);
+    html += `<tr>
+      <td class="title-cell"><a href="#secsection_${secId}" onclick="document.getElementById('secsection_${secId}')?.scrollIntoView({behavior:'smooth', block:'start'}); return false;">${esc(security)}</a></td>
+      <td class="right price-cell">${meta.fmt(latestValue)}</td>
+      <td class="right">${meta.fmt(minValue)} – ${meta.fmt(maxValue)}</td>
+      <td class="right" style="color:${leaderboardDispersionColor(dispersionPct)}; font-weight:600;">${dispersionPct == null ? '—' : dispersionPct.toFixed(1) + '%'}</td>
+      <td class="right">${fundCount}</td>
+      <td class="right">${esc(latestDate || '—')}</td>
+      <td class="right" style="color:${leaderboardAgeColor(ageDays)};">${ageDays == null ? '—' : ageDays + 'd'}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  return html;
+}
+
+// Re-sorts in place and re-renders just the leaderboard section — the
+// per-security detail sections below it (and their charts) are untouched.
+function sortBasketLeaderboard(field) {
+  leaderboardSort =
+    leaderboardSort.field === field
+      ? { field, dir: leaderboardSort.dir === 'desc' ? 'asc' : 'desc' }
+      : { field, dir: field === 'security' ? 'asc' : 'desc' };
+
+  const batchResults = allResults.mode === 'batch' ? allResults.batch : null;
+  if (!batchResults) return;
+  const el = document.getElementById('basketLeaderboard');
+  if (el) el.outerHTML = renderBasketLeaderboardSectionHTML(computeLeaderboardRows(batchResults));
+}
+
 // ── Render: batch results ──────────────────────────────────────────────────
 function renderBatchResults(batchResults) {
-  let html = '';
+  leaderboardSort = { field: 'dispersion', dir: 'desc' };
+  let html = renderBasketLeaderboardSectionHTML(computeLeaderboardRows(batchResults));
 
   Object.keys(batchResults).forEach(security => {
     const buckets = batchResults[security];

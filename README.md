@@ -37,6 +37,7 @@ down.
 - **Single security search** — search by company name or ticker, set a filing limit, and get all matching holdings plotted on a price-per-share timeline
 - **Batch search** — search up to 10 securities at once, each displayed as a separate section with its own chart
 - **Watchlist** — save issuers you track repeatedly (stored in your browser only) and re-run the full list in one click, with no per-search cap
+- **Basket Leaderboard** — a sortable rollup above Batch Search/Watchlist results ranking every name by peer-mark dispersion and filing age, so a multi-name review surfaces its most contested and stalest marks first instead of reading N separate sections in order
 - **Private Credit Analysis** — search any issuer name to find every BDC fund reporting it as a loan, and chart the fair-value mark (% of par) across funds and time
 - **Fund X-Ray** — search a fund/registrant name to pull its own NPORT-P filing in full and see its total private-equity exposure: $ value and % of NAV, broken down by instrument type (common/preferred/warrant/SPV) and country, with every private holding listed
 - **Fund X-Ray period comparison** — compare a fund's private-equity book across two periods (one click for the prior quarter or prior year, or pick any two periods manually): new investments, exits, share-count changes, and a decomposition of the value change into "from price marks" vs. "from position sizing," plus notable mark-ups/mark-downs ranked by dollar impact
@@ -117,6 +118,9 @@ can't reach:
   the real `public/index.html` + `public/app.js` in a `jsdom` window via
   `test/helpers/loadApp.js`, with `fetch` stubbed per test — this is the
   only layer that exercises what actually ends up on screen.
+- `test/app-security.test.js` / `test/app-leaderboard.test.js` — the same
+  `jsdom` approach applied to input-escaping regressions and the Basket
+  Leaderboard (below), respectively.
 
 ---
 
@@ -134,13 +138,32 @@ can't reach:
 1. Switch to the **Batch Search** tab
 2. Enter up to 10 securities, one per line
 3. Click **Search All Securities**
-4. Each security gets its own chart and fund breakdown
+4. A **Basket Leaderboard** appears above the per-security results (see below), followed by each security's own chart and fund breakdown
 
 ### Watchlist
 
 1. Switch to the **Watchlist** tab and add issuer names you track repeatedly
-2. Click **Run Watchlist Search** to run the same peer-comparison search as Batch Search against your full saved list (no 10-issuer cap)
-3. The list is stored in your browser's local storage only — it isn't synced or shared
+2. Click **Run Watchlist Search** to run the same peer-comparison search as Batch Search — leaderboard included — against your full saved list (no 10-issuer cap)
+3. The list is stored in your browser's local storage only — it isn't synced or shared. Searches NPORT-P (mutual fund) holdings only; Private Credit/BDC issuers aren't tracked here, since 10-Q filings use a separate search
+
+### Basket Leaderboard
+
+Batch Search and Watchlist both roll their results up into one sortable
+table before the per-security detail: for each name, its most recent mark,
+the range and **dispersion** across every reporting fund's own latest mark
+(`(max − min) / median`, as a %), fund count, and **age** (days since that
+most recent filing). Click any column to sort, or click a name to jump to
+its section below.
+
+Dispersion answers the actual cross-basket question a valuation review
+needs — which names do institutional holders disagree on most right now —
+and deliberately uses only each fund's single most recent mark, not every
+mark it's ever filed: pooling across time would conflate one fund's price
+*drift* over several quarters with genuine cross-fund *disagreement*, which
+is a different (and less useful) signal. Age flags marks that are old enough
+to be worth a second look before relying on them — NPORT-P is filed up to
+60 days after quarter-end, so a mark past ~90-180 days is running behind a
+normal filing cadence.
 
 ### Fund X-Ray
 
