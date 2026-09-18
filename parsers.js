@@ -472,10 +472,51 @@ function normalizeMatchText(s) {
 // identifier, so it takes priority here; otherwise fall back to normalized
 // issuer/name + title (title is kept because share-class distinctions, e.g.
 // Series A vs Series B preferred, are economically different investments).
-function positionMatchKey(h) {
+function cusipKeyOf(h) {
   const cusip = String(h.cusip || '').trim();
-  if (cusip && cusip.toUpperCase() !== 'N/A') return 'cusip:' + cusip.toUpperCase();
+  return cusip && cusip.toUpperCase() !== 'N/A' ? cusip.toUpperCase() : null;
+}
+function nameKeyOf(h) {
   return 'name:' + normalizeMatchText(h.issuer || h.name) + '|' + normalizeMatchText(h.title);
+}
+function positionMatchKey(h) {
+  const cusip = cusipKeyOf(h);
+  return cusip ? 'cusip:' + cusip : nameKeyOf(h);
+}
+
+// Pairs current- and prior-period holdings across two filings. A valid
+// CUSIP is preferred (a genuinely stable cross-period identifier), but a
+// holding whose CUSIP is populated on only one side (newly assigned or
+// corrected this quarter, blank/"N/A" last quarter — common for
+// illiquid/private names) falls back to a name+title match instead of
+// being wrongly reported as BOTH "exited" (under its old keyless identity)
+// and "new" (under its new CUSIP) for what is really one continuing
+// position.
+function matchFundXRayPositions(currentHoldings, priorHoldings) {
+  const priorByCusip = new Map();
+  const priorByName = new Map();
+  for (const p of priorHoldings) {
+    const cusip = cusipKeyOf(p);
+    if (cusip && !priorByCusip.has(cusip)) priorByCusip.set(cusip, p);
+    const nk = nameKeyOf(p);
+    if (!priorByName.has(nk)) priorByName.set(nk, p);
+  }
+
+  const matchedPrior = new Set();
+  const pairs = [];
+  for (const c of currentHoldings) {
+    const cusip = cusipKeyOf(c);
+    let p = cusip ? priorByCusip.get(cusip) : null;
+    if (!p) p = priorByName.get(nameKeyOf(c));
+    if (p && matchedPrior.has(p)) p = null; // already claimed by an earlier current holding
+    pairs.push({ key: positionMatchKey(c), current: c, prior: p || null });
+    if (p) matchedPrior.add(p);
+  }
+  for (const p of priorHoldings) {
+    if (matchedPrior.has(p)) continue;
+    pairs.push({ key: positionMatchKey(p), current: null, prior: p });
+  }
+  return pairs;
 }
 
 function deltaBlock(current, prior) {
@@ -496,16 +537,7 @@ function buildFundXRayComparison(current, prior) {
   const currentHoldings = current?.privateHoldings || [];
   const priorHoldings = prior?.privateHoldings || [];
 
-  const currentByKey = new Map();
-  for (const h of currentHoldings) currentByKey.set(positionMatchKey(h), h);
-  const priorByKey = new Map();
-  for (const h of priorHoldings) priorByKey.set(positionMatchKey(h), h);
-
-  const allKeys = new Set([...currentByKey.keys(), ...priorByKey.keys()]);
-
-  const positions = [...allKeys].map(key => {
-    const c = currentByKey.get(key) || null;
-    const p = priorByKey.get(key) || null;
+  const positions = matchFundXRayPositions(currentHoldings, priorHoldings).map(({ key, current: c, prior: p }) => {
     const status = c && p ? 'held' : c ? 'new' : 'exited';
     const base = c || p;
 
@@ -776,24 +808,32 @@ function extractRateFieldsFromCells(rawCells) {
     }
   }
 
-  if (result.index) {
-    // Floating rate: first pct = spread, second = PIK or floor
-    if (cleanPcts.length >= 1) result.spread = cleanPcts[0];
-    if (cleanPcts.length >= 2) result.pik = cleanPcts[1];
-  } else {
-    // Fixed / no-index: first pct = cash interest rate
-    if (cleanPcts.length >= 1) result.cashInterestRate = cleanPcts[0];
-    // PIK embedded in cell text like "(3.0% PIK)"
+  // A bare second percentage on a floating-rate row is genuinely ambiguous
+  // without column headers to disambiguate — it's just as likely to be a
+  // floor rate or an all-in rate as a PIK component. Require the same
+  // explicit "PIK" text marker the fixed-rate branch below already needs,
+  // rather than guessing from position alone: an omitted field is safer
+  // than a fabricated one.
+  const explicitPikPct = () => {
     for (const cell of rawCells) {
       const cl = cell.toLowerCase();
       if (cl.includes('pik') && /\d+\.?\d*%/.test(cl)) {
         const m = cl.match(/(\d+\.?\d*)%/);
-        if (m) {
-          result.pik = m[1] + '%';
-          break;
-        }
+        if (m) return m[1] + '%';
       }
     }
+    return '';
+  };
+
+  if (result.index) {
+    // Floating rate: first bare pct = spread; PIK only if explicitly marked.
+    if (cleanPcts.length >= 1) result.spread = cleanPcts[0];
+    result.pik = explicitPikPct();
+  } else {
+    // Fixed / no-index: first pct = cash interest rate
+    if (cleanPcts.length >= 1) result.cashInterestRate = cleanPcts[0];
+    // PIK embedded in cell text like "(3.0% PIK)"
+    result.pik = explicitPikPct();
   }
 
   return result;
@@ -842,13 +882,17 @@ function extractCreditHoldings($, issuerSearchTerm, reportDate) {
       const rawCells = getRowCells($, allRows[i], false);
       if (cells.length < 5) continue;
 
-      // Carry forward company and industry (BDC tables blank repeated cells)
+      // Carry forward company and industry (BDC tables blank repeated cells).
+      // Require an actual letter (not just length > 2) so a real short name
+      // like "AI" or "3M" isn't mistaken for a blank/footnote-marker cell
+      // (e.g. a bare "1", "(1)", "*") and silently dropped into whatever the
+      // previous row's company was.
       const rawCompany = getCreditCell(cells, colMap.portfolioCompany);
       const rawIndustry = getCreditCell(cells, colMap.industry);
-      if (rawCompany.length > 2 && rawCompany !== '—' && rawCompany !== '-') {
+      if (/[A-Za-z]/.test(rawCompany) && rawCompany !== '—' && rawCompany !== '-') {
         currentCompany = rawCompany;
       }
-      if (rawIndustry.length > 2 && rawIndustry !== '—' && rawIndustry !== '-') {
+      if (/[A-Za-z]/.test(rawIndustry) && rawIndustry !== '—' && rawIndustry !== '-') {
         currentIndustry = rawIndustry;
       }
 

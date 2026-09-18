@@ -511,16 +511,16 @@
   </div>
 
   <!-- Tabs -->
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('single')">Single Security</button>
-    <button class="tab"        onclick="switchTab('batch')">Batch Search</button>
-    <button class="tab"        onclick="switchTab('credit')">Private Credit Analysis</button>
-    <button class="tab"        onclick="switchTab('watchlist')">Watchlist</button>
-    <button class="tab"        onclick="switchTab('xray')">Fund X-Ray</button>
+  <div class="tabs" role="tablist">
+    <button class="tab active" role="tab" aria-selected="true"  aria-controls="singleTab"    onclick="switchTab('single')">Single Security</button>
+    <button class="tab"        role="tab" aria-selected="false" aria-controls="batchTab"      onclick="switchTab('batch')">Batch Search</button>
+    <button class="tab"        role="tab" aria-selected="false" aria-controls="creditTab"     onclick="switchTab('credit')">Private Credit Analysis</button>
+    <button class="tab"        role="tab" aria-selected="false" aria-controls="watchlistTab"  onclick="switchTab('watchlist')">Watchlist</button>
+    <button class="tab"        role="tab" aria-selected="false" aria-controls="xrayTab"       onclick="switchTab('xray')">Fund X-Ray</button>
   </div>
 
   <!-- Single tab -->
-  <div id="singleTab" class="tab-content active">
+  <div id="singleTab" class="tab-content active" role="tabpanel">
     <div class="search-row">
       <div class="input-group">
         <label for="securityInput">Security Ticker or Name</label>
@@ -562,7 +562,7 @@
   </div>
 
   <!-- Batch tab -->
-  <div id="batchTab" class="tab-content">
+  <div id="batchTab" class="tab-content" role="tabpanel">
     <div class="search-row" style="align-items: flex-start;">
       <div class="input-group">
         <label for="batchInput">Securities (one per line, max 10)</label>
@@ -593,7 +593,7 @@
   </div>
 
   <!-- Private Credit tab -->
-  <div id="creditTab" class="tab-content">
+  <div id="creditTab" class="tab-content" role="tabpanel">
     <div class="search-row">
       <div class="input-group">
         <label for="creditIssuerInput">Issuer Name</label>
@@ -637,7 +637,7 @@
   </div>
 
   <!-- Fund X-Ray tab -->
-  <div id="xrayTab" class="tab-content">
+  <div id="xrayTab" class="tab-content" role="tabpanel">
     <div class="search-row">
       <div class="input-group">
         <label for="xrayTopFundsSelect">Top Funds</label>
@@ -679,7 +679,7 @@
   </div>
 
   <!-- Watchlist tab -->
-  <div id="watchlistTab" class="tab-content">
+  <div id="watchlistTab" class="tab-content" role="tabpanel">
     <div class="alert alert-info">
       <strong>Persistent Issuer Watchlist</strong>
       Save the issuers you track repeatedly and re-run the full list in one click — no re-typing. Saved in this browser only (not synced or shared). Searches NPORT-P mutual-fund holdings only (same as Single Security/Batch) — Private Credit issuers aren't tracked here yet, since BDC 10-Q filings use a separate search.
@@ -710,6 +710,15 @@
       </button>
     </div>
     <div class="hint">Runs the same NPORT-P peer-comparison search as Batch Search, but against your full saved list (no 10-issuer cap).</div>
+
+    <div class="date-filter-panel" id="watchlistDateFilterPanel">
+      <div class="search-row">
+        <div class="input-group"><label for="watchlistStartDate">Start Date</label><input type="date" id="watchlistStartDate"></div>
+        <div class="input-group"><label for="watchlistEndDate">End Date</label><input type="date" id="watchlistEndDate"></div>
+        <button class="btn btn-primary"   onclick="applyWatchlistDateFilter()">Apply</button>
+        <button class="btn btn-secondary" onclick="clearWatchlistDateFilter()">Clear</button>
+      </div>
+    </div>
   </div>
 
   <div id="msgBox"></div>

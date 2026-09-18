@@ -94,6 +94,26 @@ test('computeLeaderboardRows: skips a security whose only holdings have no usabl
   assert.deepEqual(window.computeLeaderboardRows(batchResults), []);
 });
 
+test('computeLeaderboardRows: a security held as both equity AND debt gets one row per bucket, not just the primary one', async () => {
+  const { window } = await loadApp();
+  const batchResults = {
+    Kandou: {
+      equity: { 'Fund A': [holding({ chartValue: 100, reportDate: '2024-06-30', instrumentType: 'equity' })] },
+      debt: { 'Fund A': [holding({ chartValue: 98, reportDate: '2024-06-30', instrumentType: 'debt' })] },
+      derivative: {},
+      indirect: {},
+    },
+  };
+  const rows = window.computeLeaderboardRows(batchResults);
+  assert.equal(rows.length, 2, 'both the equity and debt holdings must produce their own row');
+  const types = rows.map(r => r.type).sort();
+  assert.deepEqual(types, ['debt', 'equity']);
+  // Both rows share the same underlying security (for the "jump to detail"
+  // link), but the on-screen label is disambiguated since there are 2+ buckets.
+  assert.ok(rows.every(r => r.security === 'Kandou'));
+  assert.deepEqual(rows.map(r => r.label).sort(), ['Kandou (Debt / Loans)', 'Kandou (Equity)']);
+});
+
 test('sortLeaderboardRows: sorts by each field correctly, including descending default for numeric fields and ascending default for security name', async () => {
   const { window } = await loadApp();
   // sortLeaderboardRows executes in the jsdom window's own realm, so its

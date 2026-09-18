@@ -689,6 +689,37 @@ test('positionMatchKey: a valid CUSIP takes priority over a name/title match, so
   );
 });
 
+test('buildFundXRayComparison: a CUSIP populated on only one side still matches by name+title, instead of showing as both exited and new', () => {
+  // Prior period: CUSIP blank/not yet assigned (common for illiquid private
+  // names). Current period: a CUSIP has since been assigned. A naive
+  // CUSIP-first match would key these two rows differently and misreport
+  // one continuing position as an exit plus an unrelated new investment.
+  const current = buildFundXRay(
+    [
+      makeHolding({
+        name: 'Gammaco Inc.',
+        issuer: 'Gammaco Inc.',
+        cusip: '999999999',
+        marketValue: 12000,
+        shares: 1000,
+      }),
+    ],
+    {}
+  );
+  const prior = buildFundXRay(
+    [makeHolding({ name: 'Gammaco Inc.', issuer: 'Gammaco Inc.', cusip: 'N/A', marketValue: 10000, shares: 1000 })],
+    {}
+  );
+
+  const cmp = buildFundXRayComparison(current, prior);
+  assert.equal(cmp.positions.length, 1, 'must be recognized as one continuing position, not exited+new');
+  assert.equal(cmp.positions[0].status, 'held');
+  assert.equal(cmp.positions[0].marketValue.current, 12000);
+  assert.equal(cmp.positions[0].marketValue.prior, 10000);
+  assert.equal(cmp.totals.newCount, 0);
+  assert.equal(cmp.totals.exitedCount, 0);
+});
+
 test("buildFundXRayComparison: decomposes a held position's value change into price-mark effect vs share-count effect, reconciling exactly", () => {
   // Fund marks the position up 10/share -> 15/share AND buys more shares
   // (1000 -> 1200) in the same period. Both effects should be separated,
@@ -924,6 +955,33 @@ test('extractCreditHoldings: a non-matching issuer returns no holdings (real fil
   const $ = loadCreditFixture('bdc_10q_west_star_aviation.html');
   const holdings = extractCreditHoldings($, 'ThisIssuerDoesNotExistXYZ123', '2025-12-31');
   assert.equal(holdings.length, 0);
+});
+
+test('extractCreditHoldings: a floating-rate row with 3 bare percentages and no "PIK" text does not fabricate a PIK rate from the floor/all-in rate', () => {
+  // Synthetic — a real header that collapses Index/Spread/Floor/All-in into
+  // one wide "Rate" colspan cell (so the per-column header info that would
+  // normally disambiguate these is genuinely gone, forcing the
+  // extractRateFieldsFromCells pattern-based fallback), with a data row
+  // whose second bare percentage is a FLOOR rate, not PIK — nothing in the
+  // row says "PIK" anywhere. Before the fix, cleanPcts[1] (the floor rate)
+  // was blindly assigned to `pik`.
+  const html = `<table>
+    <tr>
+      <th>Portfolio Company</th><th>Industry</th><th colspan="4">Rate</th>
+      <th>Maturity</th><th>Principal</th><th>Fair Value</th>
+    </tr>
+    <tr>
+      <td>Test Portfolio Co</td><td>Technology</td>
+      <td>SOFR</td><td>4.00%</td><td>1.00%</td><td>9.00%</td>
+      <td>6/2027</td><td>$1,000</td><td>$950</td>
+    </tr>
+  </table>`;
+  const $ = cheerio.load(html);
+  const holdings = extractCreditHoldings($, 'Test Portfolio Co', '2026-03-31');
+
+  assert.equal(holdings.length, 1);
+  assert.equal(holdings[0].spread, '4.00%', 'the first bare percentage is still read as spread');
+  assert.equal(holdings[0].pik, '', 'no PIK text anywhere in the row — must stay unset, not "1.00%" (the floor rate)');
 });
 
 // ── parseFinancialNumber ─────────────────────────────────────────────────────

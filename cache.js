@@ -50,7 +50,12 @@ const path = require('path');
 const Database = require('better-sqlite3');
 
 const PARSE_VERSION = 6;
-const SEARCH_TTL_MS = parseInt(process.env.SEARCH_CACHE_TTL_MS, 10) || 60 * 60 * 1000; // 1 hour default
+// `|| 60 * 60 * 1000` would silently discard an operator's explicit
+// SEARCH_CACHE_TTL_MS=0 (disable search caching entirely) and fall back to
+// the 1-hour default, since 0 is falsy — Number.isFinite tells "0" apart
+// from "unset"/"not a number".
+const parsedSearchTtlMs = Number(process.env.SEARCH_CACHE_TTL_MS);
+const SEARCH_TTL_MS = Number.isFinite(parsedSearchTtlMs) ? parsedSearchTtlMs : 60 * 60 * 1000; // 1 hour default
 
 const DB_PATH = process.env.CACHE_DB_PATH || path.join(__dirname, 'cache.db');
 
@@ -87,6 +92,7 @@ const stmts = db
     INSERT INTO search_cache (key, value, created_at) VALUES (?, ?, ?)
     ON CONFLICT(key) DO UPDATE SET value = excluded.value, created_at = excluded.created_at
   `),
+      delExpiredSearch: db.prepare('DELETE FROM search_cache WHERE created_at < ?'),
       delSearch: db.prepare('DELETE FROM search_cache WHERE key = ?'),
     }
   : null;
@@ -163,6 +169,27 @@ function setSearch(key, value) {
   }
 }
 
+// getSearch only deletes an expired row when that exact key happens to be
+// read again after expiring — an entry nobody re-queries (a one-off issuer
+// search, a stale fund-name typo) stays in search_cache forever. This sweep
+// deletes anything past SEARCH_TTL_MS regardless of whether it's ever read
+// again, on startup and hourly thereafter, keeping the file from only ever
+// growing. holdings_cache is untouched — that one's indefinite by design.
+function pruneExpiredSearchCache() {
+  if (!stmts) return;
+  try {
+    stmts.delExpiredSearch.run(Date.now() - SEARCH_TTL_MS);
+  } catch (err) {
+    console.error('Cache prune error:', err.message);
+  }
+}
+if (db) {
+  pruneExpiredSearchCache();
+  // unref() so this timer never keeps the process (or a test run) alive on
+  // its own.
+  setInterval(pruneExpiredSearchCache, 60 * 60 * 1000).unref();
+}
+
 // Coalesce concurrent requests for the same key (e.g. two Watchlist "run
 // all" passes, or a batch search that repeats an issuer) into a single
 // in-flight fetch, so a cache miss doesn't fan out into N redundant SEC
@@ -190,5 +217,6 @@ module.exports = {
   setHoldings,
   getSearch,
   setSearch,
+  pruneExpiredSearchCache,
   withInFlight,
 };

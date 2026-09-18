@@ -168,18 +168,18 @@ normal filing cadence.
 ### Fund X-Ray
 
 1. Switch to the **Fund X-Ray** tab. Either pick a fund from the **Top Funds** dropdown — a curated shortlist of well-known funds, grouped by manager (see [Top Funds dropdown](#fund-x-rays-top-funds-dropdown) below) — to autofill and search with no typing, or enter a fund/registrant name yourself (e.g., `SmallCap World Fund`, `REX ETF Trust`) in the search box — this looks the fund up by name on EDGAR directly (not full-text search), so it finds the fund's own filings rather than other funds that merely mention it
-2. If the name matches more than one registrant, every match's filings appear together in the **Reporting Period** dropdown, labeled by fund name, so you can pick the exact one you meant
-3. Results show the fund's total private-equity $ exposure, % of net assets, an instrument-type breakdown (common/preferred/warrant/SPV), a country breakdown, and every private holding found (company, shares, price/share, $ value, % of NAV, fair value level) — not just a preview; export CSV for the same data plus higher-precision per-share pricing
+2. If the name matches more than one registrant, every match's filings appear together in the **Reporting Period** dropdown, labeled by fund name, so you can pick the exact one you meant (capped at the first 5 candidate registrants — a message tells you how many more weren't shown if your search was that ambiguous, e.g. a bare "Fidelity")
+3. Results show the fund's total private-equity $ exposure, % of net assets, an instrument-type breakdown (common/preferred/warrant/SPV), a country breakdown, and every private holding found (company, shares, price/share, $ value, % of NAV, fair value level) — not just a preview; export to CSV, Excel, or PDF for the same data plus higher-precision per-share pricing
 4. A holding counts as private equity only if it's flagged **Fair Value Level 3** (valued with unobservable inputs — no real market for it) **and** is an equity-type instrument. Bonds and loans are excluded even at Level 3 (they're creditor claims, not equity stakes), and a "restricted security" flag alone doesn't qualify a holding either — a foreign-ownership-restricted but still publicly-traded stock (Level 2) is a real public company, not a private one
 5. To compare periods, use the **Compare To** dropdown next to Reporting Period, or click **vs Prior Quarter** / **vs Prior Year (YoY)** to auto-pick the nearest matching filing (YoY matches within ±45 days of exactly one year back; if nothing qualifies, you're told so rather than silently comparing against the wrong quarter)
-6. The comparison view leads with the analysis — aggregate value/holdings/issuer deltas, a price-marks-vs-position-sizing breakdown of the value change, and Key Insights cards (securities added/dropped, positions increased/reduced, notable mark-ups/mark-downs ranked by $ impact) — followed by each period's own full breakdown (Most Recent Period, then Prior Period) and a full position-by-position detail table, each independently exportable to CSV
+6. The comparison view leads with the analysis — aggregate value/holdings/issuer deltas, a price-marks-vs-position-sizing breakdown of the value change, and Key Insights cards (securities added/dropped, positions increased/reduced, notable mark-ups/mark-downs ranked by $ impact) — followed by each period's own full breakdown (Most Recent Period, then Prior Period) and a full position-by-position detail table, each independently exportable to CSV, Excel, or PDF
 
 ### Filtering
 
 - **Date filter** — appears after a search completes; set a start/end date to narrow the visible data points and chart
 - **Class filter** — click a chip to toggle one share class/tranche everywhere in a section, or type into the filter box to fuzzy-match across naming conventions
-- **Reference line** — enter a price (Single Security) or mark (Private Credit) to plot it as a dashed benchmark line and see its percentage divergence from the peer median
-- **Checkboxes** — uncheck individual rows to remove specific data points from the chart
+- **Reference line** — enter a price (Single Security, or per-security on Batch/Watchlist) or mark (Private Credit) to plot it as a dashed benchmark line and see its percentage divergence from the peer median. On Batch/Watchlist each security gets its own reference input, since one shared $ figure wouldn't mean anything across different companies
+- **Checkboxes** — uncheck individual rows to remove specific data points from the chart (and from CSV/Excel/PDF exports) — available on Single Security, Batch, Watchlist, and Private Credit
 - **All / None buttons** — select or deselect all rows for a given fund at once
 
 ### Fund X-Ray's "Top Funds" dropdown
@@ -209,13 +209,13 @@ no server change needed.
 
 ### Exporting
 
-After a search, use the export buttons at the bottom of the results:
+After a search, use the export buttons at the bottom of the results — every tab (Single Security, Batch, Watchlist, Private Credit, Fund X-Ray, and Fund X-Ray's period comparison) offers CSV, Excel, and PDF. All three formats reflect exactly what's checked/filtered on screen, not the raw unfiltered result set.
 
 | Format | Contents |
 |--------|----------|
 | CSV | Flat file of all holdings |
-| Excel | Single security: one sheet. Batch: one sheet per security + combined sheet |
-| PDF | Landscape; chart image + full data table per security |
+| Excel | Single security: one sheet. Batch: one sheet per security + combined sheet. Private Credit / Fund X-Ray: one sheet |
+| PDF | Landscape; chart image (where applicable) + full data table |
 
 ---
 

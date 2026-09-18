@@ -430,6 +430,51 @@ test('GET /api/search-fund: ambiguous name — recovers CIKs from the buggy mult
   assert.equal(res.body.matches[0].name, 'Ambiguous Fund Series A');
 });
 
+test('GET /api/search-fund: more than 5 ambiguous candidates — caps fetched matches at 5 but reports the true totalMatches', async () => {
+  // 7 candidates for a common family name (e.g. "Fidelity") — lookupFundCiks
+  // caps at 5 before ever fetching filing histories, but the frontend needs
+  // the true count to say "N more matches not shown" instead of silently
+  // implying only 5 registrants matched at all.
+  const cikNums = ['200001', '200002', '200003', '200004', '200005', '200006', '200007'];
+  const atomFeed = `<?xml version="1.0" encoding="ISO-8859-1" ?>
+    <feed xmlns="http://www.w3.org/2005/Atom">
+      ${cikNums
+        .map(
+          n => `<entry title="ARRAY(0xdeadbeef)"><content type="text/xml">
+        <company-info name="ARRAY(0xdeadbeef)"><cik>00${n}</cik></company-info>
+      </content></entry>`
+        )
+        .join('')}
+    </feed>`;
+  nock(SEC)
+    .get('/cgi-bin/browse-edgar')
+    .query(q => q.company === 'Common Family Fund')
+    .reply(200, atomFeed, { 'Content-Type': 'application/atom+xml' });
+
+  // Only the first 5 (the cap) are ever fetched.
+  cikNums.slice(0, 5).forEach(n => {
+    nock(DATA_SEC)
+      .get(`/submissions/CIK${n.padStart(10, '0')}.json`)
+      .reply(200, {
+        name: `Common Family Fund ${n}`,
+        filings: {
+          recent: {
+            form: ['NPORT-P'],
+            accessionNumber: [`000${n}-26-000001`],
+            filingDate: ['2026-05-01'],
+            reportDate: ['2026-03-31'],
+          },
+          files: [],
+        },
+      });
+  });
+
+  const res = await request(app).get('/api/search-fund?fund=Common Family Fund');
+  assert.equal(res.status, 200);
+  assert.equal(res.body.totalMatches, 7, 'the true candidate count, before the 5-cap');
+  assert.equal(res.body.matches.length, 5, 'only the capped 5 are ever fetched/returned');
+});
+
 test('GET /api/search-fund: no company match — returns an empty match list, not an error', async () => {
   nock(SEC)
     .get('/cgi-bin/browse-edgar')

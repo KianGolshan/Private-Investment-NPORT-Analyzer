@@ -3,22 +3,41 @@
 // (render*/toggle*/apply*/clear*/do*Export* below) — ESLint can't see those
 // string-embedded call sites, so this tells no-unused-vars they're used.
 /* exported searchBatch, runWatchlist, toggleFund, selectAllRows, onCheckboxChange,
-   applyClassFilter, toggleClassChip, applyReference, clearReference, applyDateFilter,
-   clearDateFilter, applyBatchDateFilter, clearBatchDateFilter, doExportCSV,
+   applyClassFilter, toggleClassChip, applyReference, clearReference, applyBatchReference,
+   clearBatchReference, applyDateFilter,
+   clearDateFilter, applyBatchDateFilter, clearBatchDateFilter, applyWatchlistDateFilter,
+   clearWatchlistDateFilter, doExportCSV,
    doExportExcel, doExportPDF, applyCreditDateFilter, clearCreditDateFilter,
-   applyCreditReference, clearCreditReference, doCreditExportCSV, doCreditExportExcel,
+   applyCreditReference, clearCreditReference, doCreditExportCSV, doCreditExportExcel, doCreditExportPDF,
    addWatchlistItem, removeWatchlistItem, quickAddToWatchlist, openAbout,
-   searchFundXray, runFundXray, doXrayExportCSV, selectXrayComparison,
-   onXrayCompareSelectChange, runFundXrayCompare, doXrayCompareExportCSV, selectIndexedFund,
-   sortBasketLeaderboard */
+   searchFundXray, runFundXray, doXrayExportCSV, doXrayExportExcel, doXrayExportPDF, selectXrayComparison,
+   onXrayCompareSelectChange, runFundXrayCompare, doXrayCompareExportCSV, doXrayCompareExportExcel,
+   doXrayCompareExportPDF, selectIndexedFund, sortBasketLeaderboard */
 
 // ── State ──────────────────────────────────────────────────────────────────
+// Bumped at the start of searchNPORT/searchPrivateCredit/searchFundXray (the
+// three clearResults()-calling top-level searches, which share result state
+// and DOM containers) and of runFundXray (triggered independently by the
+// period <select>, not just via searchFundXray). Each function snapshots the
+// counter on entry and re-checks it after every await before touching the
+// DOM/state — if a newer search started in the meantime, the stale one bails
+// silently instead of overwriting the newer search's still-in-flight or
+// already-rendered results (e.g. searching "Anthropic" then "OpenAI" before
+// the first resolves must never let "Anthropic" win just because its
+// response happened to arrive second).
+let searchGeneration = 0;
+let xrayRunGeneration = 0;
 let allResults = {};
 let singleCharts = {}; // { instrumentType: Chart } — one per bucket shown on Single Security
 let batchCharts = {}; // { canvasId: Chart }
 let allCreditResults = {};
 let creditChart = null;
 let singleReferenceValue = null; // optional user-entered $ price to overlay/diff against peers (equity bucket only)
+// Per-security reference prices for Batch Search/Watchlist, keyed by
+// security name — unlike Single Security's single global value, one shared
+// $ figure across every batch security would be meaningless (different
+// companies, different price scales), so each security gets its own.
+let batchReferenceValues = {};
 let creditReferenceValue = null; // optional user-entered mark (%) to overlay/diff against peers
 let xrayFilings = []; // filings returned by the current Fund X-Ray search, sorted newest-first
 let xraySnapshots = { current: null, prior: null }; // { xray, filing } per rendered period-detail section, for CSV export/re-render
@@ -315,6 +334,11 @@ function applyURLParams() {
     document.getElementById('securityInput').value = security;
     if (['25', '50', '100'].includes(limit)) document.getElementById('filingLimit').value = limit;
     searchNPORT();
+  } else if (['batch', 'credit', 'watchlist', 'xray'].includes(tab)) {
+    // No search term to auto-run (e.g. ?tab=credit with no issuer) — still
+    // switch to the tab the link named, rather than silently staying on
+    // Single Security with no indication the link was incomplete.
+    switchTab(tab, { skipUrlReset: true });
   }
 }
 function updateURLParams(params) {
@@ -327,22 +351,51 @@ function updateURLParams(params) {
 }
 
 // ── About modal ─────────────────────────────────────────────────────────────
+let aboutTriggerEl = null; // focus is restored here on close
 function openAbout() {
-  document.getElementById('aboutModal').style.display = 'flex';
+  aboutTriggerEl = document.activeElement;
+  const modal = document.getElementById('aboutModal');
+  modal.style.display = 'flex';
   document.addEventListener('keydown', handleAboutEscape);
+  document.addEventListener('keydown', handleAboutTabTrap);
+  modal.querySelector('.modal-close')?.focus();
 }
 function closeAbout() {
   document.getElementById('aboutModal').style.display = 'none';
   document.removeEventListener('keydown', handleAboutEscape);
+  document.removeEventListener('keydown', handleAboutTabTrap);
+  aboutTriggerEl?.focus();
+  aboutTriggerEl = null;
 }
 function handleAboutEscape(e) {
   if (e.key === 'Escape') closeAbout();
+}
+// Keeps keyboard focus inside the modal while it's open — without this, Tab
+// cycles out into the rest of the (visually backdrop-covered) page behind it.
+function handleAboutTabTrap(e) {
+  if (e.key !== 'Tab') return;
+  const modal = document.getElementById('aboutModal');
+  const focusable = [...modal.querySelectorAll('button, a[href], [tabindex]')].filter(el => el.offsetParent !== null);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault();
+    first.focus();
+  }
 }
 
 // ── Tab management ─────────────────────────────────────────────────────────
 function switchTab(tab, { skipUrlReset } = {}) {
   const tabNames = ['single', 'batch', 'credit', 'watchlist', 'xray'];
-  document.querySelectorAll('.tab').forEach((el, i) => el.classList.toggle('active', tabNames[i] === tab));
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    const active = tabNames[i] === tab;
+    el.classList.toggle('active', active);
+    el.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
   document.getElementById('singleTab').classList.toggle('active', tab === 'single');
   document.getElementById('batchTab').classList.toggle('active', tab === 'batch');
   document.getElementById('creditTab').classList.toggle('active', tab === 'credit');
@@ -360,11 +413,13 @@ async function searchNPORT() {
   const security = document.getElementById('securityInput').value.trim();
   if (!security) return showMsg('Please enter a security name or ticker.', 'error');
 
+  const mySearchGen = ++searchGeneration;
   clearResults();
   showLoading('Searching SEC EDGAR...');
 
   try {
     const data = await fetchJSON('/api/search-nport?security=' + enc(security));
+    if (mySearchGen !== searchGeneration) return;
     if (!data.hits?.hits?.length) {
       hideLoading();
       return showMsg('No NPORT-P filings found. Try a different name or ticker.', 'error');
@@ -373,6 +428,7 @@ async function searchNPORT() {
     const limit = +document.getElementById('filingLimit').value;
     const filings = sortFilings(data.hits.hits.slice(0, limit));
     const { holdings, failures } = await parseFilings(filings, security);
+    if (mySearchGen !== searchGeneration) return;
 
     hideLoading();
     hideProgress();
@@ -479,7 +535,13 @@ async function runBatchPipeline(securities, limit) {
         : ''),
     totalFailures ? 'warning' : 'success'
   );
-  document.getElementById('batchDateFilterPanel').style.display = 'block';
+  // Watchlist shares this pipeline/render path with Batch Search but has its
+  // own date-filter panel living inside watchlistTab — showing batchDateFilterPanel
+  // unconditionally left it invisible (and un-usable) while on the Watchlist tab,
+  // since that panel's parent .tab-content is display:none whenever a different
+  // tab is active. Show whichever panel actually belongs to the active tab.
+  const isWatchlistTab = document.getElementById('watchlistTab').classList.contains('active');
+  document.getElementById(isWatchlistTab ? 'watchlistDateFilterPanel' : 'batchDateFilterPanel').style.display = 'block';
   allResults = { mode: 'batch', batch: batchResults };
   renderBatchResults(batchResults);
 }
@@ -698,7 +760,18 @@ function renderInstrumentSectionHTML(companiesMap, type, canvasBaseId, tablePref
   const meta = INSTRUMENT_META[type];
   const stats = computeStats(companiesMap);
   const canvasId = bucketCanvasId(canvasBaseId, type);
-  const referenceValue = type === 'equity' && opts.allowReference ? singleReferenceValue : null;
+  // Single Security keeps its one global value + static page-level panel
+  // (#referencePanel in index.html); Batch/Watchlist instead get a
+  // per-security value (opts.referenceKey = that security's name) with the
+  // input rendered inline below, since a single shared reference price
+  // wouldn't mean anything across different companies.
+  const isBatchReference = opts.allowReference && opts.referenceKey != null;
+  const referenceValue =
+    type === 'equity' && opts.allowReference
+      ? isBatchReference
+        ? (batchReferenceValues[opts.referenceKey] ?? null)
+        : singleReferenceValue
+      : null;
   const statsGridId = opts.statsGridId || '';
 
   let html = `<div class="instrument-section" data-bucket="${type}">`;
@@ -706,6 +779,19 @@ function renderInstrumentSectionHTML(companiesMap, type, canvasBaseId, tablePref
     html += `<h3 class="instrument-section-title">${esc(meta.sectionTitle)}</h3>`;
   }
   html += `<div${statsGridId ? ` id="${statsGridId}"` : ''}>${statsHTML(stats, referenceValue, meta)}</div>`;
+
+  if (isBatchReference) {
+    const refInputId = `ref_${tablePrefix}`;
+    html += `
+      <div class="search-row" style="margin-bottom:14px;">
+        <div class="input-group narrow">
+          <label for="${refInputId}">Reference Price ($)</label>
+          <input type="number" id="${refInputId}" placeholder="e.g., 150.00" step="0.01" min="0" value="${referenceValue ?? ''}">
+        </div>
+        <button class="btn btn-sm btn-primary"   onclick="applyBatchReference('${esc(opts.referenceKey)}', '${refInputId}')">Plot Reference</button>
+        <button class="btn btn-sm btn-secondary" onclick="clearBatchReference('${esc(opts.referenceKey)}', '${refInputId}')">Clear</button>
+      </div>`;
+  }
 
   // Wide-range safety valve: if this bucket's values span a huge ratio,
   // say so rather than silently rendering a chart where most lines
@@ -728,7 +814,10 @@ function renderInstrumentSectionHTML(companiesMap, type, canvasBaseId, tablePref
     html +=
       `<div class="class-chips" data-prefix="${tablePrefix}">` +
       distinctLabels
-        .map(l => `<button type="button" class="chip active" onclick="toggleClassChip(this)">${esc(l)}</button>`)
+        .map(
+          l =>
+            `<button type="button" class="chip active" aria-pressed="true" onclick="toggleClassChip(this)">${esc(l)}</button>`
+        )
         .join('') +
       `</div>`;
     html += `
@@ -807,50 +896,59 @@ function renderSingleResults(buckets) {
 // several quarters with genuine cross-fund disagreement — the wrong signal
 // for "dispersion." This uses each fund's single latest-dated holding only.
 function computeLeaderboardRows(batchResults) {
-  return Object.keys(batchResults)
-    .map(security => {
-      const buckets = batchResults[security];
-      const types = nonEmptyBuckets(buckets);
-      if (!types.length) return null;
-      const type = types[0]; // primary bucket, same ordering as nonEmptyBuckets/INSTRUMENT_ORDER
-      const companiesMap = buckets[type];
+  return Object.keys(batchResults).flatMap(security => {
+    const buckets = batchResults[security];
+    const types = nonEmptyBuckets(buckets);
+    // One row per bucket a security actually has (not just the primary
+    // one) — a security held as both equity and debt across the basket
+    // must not have its debt holdings silently dropped from the ranking.
+    // The security label only gets a "(Debt / Loans)"-style suffix when
+    // there's more than one bucket, so the common single-bucket case is
+    // visually unchanged.
+    const multi = types.length > 1;
 
-      const latestPerFund = Object.values(companiesMap)
-        .map(holdings => [...holdings].sort((a, b) => dateCmp(b.reportDate, a.reportDate))[0])
-        .filter(h => h && h.chartValue != null && h.chartValue > 0);
-      if (!latestPerFund.length) return null;
+    return types
+      .map(type => {
+        const companiesMap = buckets[type];
 
-      const values = latestPerFund.map(h => h.chartValue);
-      const minValue = Math.min(...values);
-      const maxValue = Math.max(...values);
-      const medianValue = median(values);
-      const mostRecent = [...latestPerFund].sort((a, b) => dateCmp(b.reportDate, a.reportDate))[0];
-      const dispersionPct = medianValue ? ((maxValue - minValue) / medianValue) * 100 : null;
-      const ageDays = mostRecent.reportDate
-        ? Math.round((Date.now() - new Date(mostRecent.reportDate)) / 86400000)
-        : null;
+        const latestPerFund = Object.values(companiesMap)
+          .map(holdings => [...holdings].sort((a, b) => dateCmp(b.reportDate, a.reportDate))[0])
+          .filter(h => h && h.chartValue != null && h.chartValue > 0);
+        if (!latestPerFund.length) return null;
 
-      return {
-        security,
-        type,
-        meta: INSTRUMENT_META[type],
-        latestValue: mostRecent.chartValue,
-        latestDate: mostRecent.reportDate,
-        minValue,
-        maxValue,
-        medianValue,
-        fundCount: latestPerFund.length,
-        dispersionPct,
-        ageDays,
-      };
-    })
-    .filter(Boolean);
+        const values = latestPerFund.map(h => h.chartValue);
+        const minValue = Math.min(...values);
+        const maxValue = Math.max(...values);
+        const medianValue = median(values);
+        const mostRecent = [...latestPerFund].sort((a, b) => dateCmp(b.reportDate, a.reportDate))[0];
+        const dispersionPct = medianValue ? ((maxValue - minValue) / medianValue) * 100 : null;
+        const ageDays = mostRecent.reportDate
+          ? Math.round((Date.now() - new Date(mostRecent.reportDate)) / 86400000)
+          : null;
+
+        return {
+          security,
+          label: multi ? `${security} (${INSTRUMENT_META[type].sectionTitle})` : security,
+          type,
+          meta: INSTRUMENT_META[type],
+          latestValue: mostRecent.chartValue,
+          latestDate: mostRecent.reportDate,
+          minValue,
+          maxValue,
+          medianValue,
+          fundCount: latestPerFund.length,
+          dispersionPct,
+          ageDays,
+        };
+      })
+      .filter(Boolean);
+  });
 }
 
 function sortLeaderboardRows(rows, field, dir) {
   const sign = dir === 'asc' ? 1 : -1;
   const key = row => {
-    if (field === 'security') return row.security.toLowerCase();
+    if (field === 'security') return (row.label || row.security).toLowerCase();
     if (field === 'latest') return row.latestValue;
     if (field === 'funds') return row.fundCount;
     if (field === 'age') return row.ageDays ?? -Infinity;
@@ -901,10 +999,11 @@ function renderBasketLeaderboardSectionHTML(rows) {
     </tr></thead><tbody>`;
 
   sorted.forEach(row => {
-    const { security, meta, latestValue, minValue, maxValue, fundCount, dispersionPct, ageDays, latestDate } = row;
+    const { security, label, meta, latestValue, minValue, maxValue, fundCount, dispersionPct, ageDays, latestDate } =
+      row;
     const secId = cleanId(security);
     html += `<tr>
-      <td class="title-cell"><a href="#secsection_${secId}" onclick="document.getElementById('secsection_${secId}')?.scrollIntoView({behavior:'smooth', block:'start'}); return false;">${esc(security)}</a></td>
+      <td class="title-cell"><a href="#secsection_${secId}" onclick="document.getElementById('secsection_${secId}')?.scrollIntoView({behavior:'smooth', block:'start'}); return false;">${esc(label)}</a></td>
       <td class="right price-cell">${meta.fmt(latestValue)}</td>
       <td class="right">${meta.fmt(minValue)} – ${meta.fmt(maxValue)}</td>
       <td class="right" style="color:${leaderboardDispersionColor(dispersionPct)}; font-weight:600;">${dispersionPct == null ? '—' : dispersionPct.toFixed(1) + '%'}</td>
@@ -950,7 +1049,11 @@ function renderBatchResults(batchResults) {
       html += `<div class="alert alert-info">Holdings span ${esc(names)} — shown in separate sections below since they aren't directly comparable on one chart.</div>`;
     }
     types.forEach(type => {
-      html += renderInstrumentSectionHTML(buckets[type], type, 'chart_' + secId, secId + '_' + type, multi, {});
+      html += renderInstrumentSectionHTML(buckets[type], type, 'chart_' + secId, secId + '_' + type, multi, {
+        allowReference: type === 'equity',
+        statsGridId: type === 'equity' ? 'statsGrid_' + secId : '',
+        referenceKey: security,
+      });
     });
     html += `</div>`;
   });
@@ -980,9 +1083,9 @@ function edgarFilingUrl(cik, accession) {
 }
 function sourceLinkHTML(cik, accession, dateLabel) {
   const url = edgarFilingUrl(cik, accession);
-  const label = dateLabel || '—';
+  const label = esc(dateLabel || '—');
   return url
-    ? `<a class="source-link" href="${url}" target="_blank" rel="noopener noreferrer" title="View source filing on EDGAR">${label} ↗</a>`
+    ? `<a class="source-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="View source filing on EDGAR">${label} ↗</a>`
     : label;
 }
 
@@ -1036,7 +1139,7 @@ function renderFundCards(companiesMap, prefix, type) {
         const rowId = `row_${prefix}_${rowIndex}`;
         const cbId = `cb_${prefix}_${rowIndex}`;
         html += `
-          <tr id="${rowId}" data-company="${esc(company)}" data-idx="${hIdx}" data-key="${esc(g.key)}" data-label="${esc(g.baseLabel)}" data-bucket="${type}" data-date="${h.reportDate}" data-value="${h.chartValue}">
+          <tr id="${rowId}" data-company="${esc(company)}" data-idx="${hIdx}" data-key="${esc(g.key)}" data-label="${esc(g.baseLabel)}" data-bucket="${type}" data-date="${esc(h.reportDate)}" data-value="${h.chartValue}">
             <td class="center">
               <input type="checkbox" id="${cbId}" class="chart-checkbox" data-prefix="${prefix}" checked
                      onchange="onCheckboxChange(this)">
@@ -1141,7 +1244,7 @@ function rebuildAllCharts() {
     Object.entries(allResults.single || {}).forEach(([type, map]) => {
       if (!Object.keys(map).length) return;
       const id = bucketCanvasId('singleChart', type);
-      rebuildChart(id, singleCharts[type], map, type);
+      rebuildChart(id, singleCharts[type], map, type, type === 'equity' ? singleReferenceValue : null);
     });
   } else if (allResults.mode === 'batch') {
     Object.entries(allResults.batch || {}).forEach(([security, buckets]) => {
@@ -1149,13 +1252,22 @@ function rebuildAllCharts() {
       Object.entries(buckets).forEach(([type, map]) => {
         if (!Object.keys(map).length) return;
         const id = bucketCanvasId(baseId, type);
-        rebuildChart(id, batchCharts[id], map, type);
+        const referenceValue = type === 'equity' ? (batchReferenceValues[security] ?? null) : null;
+        rebuildChart(id, batchCharts[id], map, type, referenceValue);
       });
     });
+  } else if (allCreditResults.mode === 'credit') {
+    // Independent of allResults — clearResults() resets both on every
+    // search/tab switch, so at most one of these three branches is ever
+    // live at once.
+    rebuildCreditChart();
   }
 }
 
-function rebuildChart(canvasId, chart, companiesMap, type) {
+// referenceValue is passed explicitly (not read off a global) so this one
+// function serves both Single Security's single global reference value and
+// Batch/Watchlist's per-security ones without knowing which mode it's in.
+function rebuildChart(canvasId, chart, companiesMap, type, referenceValue) {
   if (!chart) return;
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
@@ -1188,8 +1300,8 @@ function rebuildChart(canvasId, chart, companiesMap, type) {
     })
     .filter(d => d.data.length > 0);
 
-  if (type === 'equity' && singleReferenceValue != null) {
-    const refDs = buildReferenceLineDataset(datasets, singleReferenceValue, 'Reference Price');
+  if (type === 'equity' && referenceValue != null) {
+    const refDs = buildReferenceLineDataset(datasets, referenceValue, 'Reference Price');
     if (refDs) datasets.push(refDs);
   }
 
@@ -1209,7 +1321,7 @@ function applyClassFilter(inputEl) {
   const section = inputEl.closest('.instrument-section');
   if (!section) return;
   const q = inputEl.value.trim();
-  const re = q ? new RegExp('\\b' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') : null;
+  const re = q ? new RegExp('\\b' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i') : null;
   section.querySelectorAll('tr[data-company]').forEach(row => {
     const label = row.dataset.label || '';
     const match = !re || re.test(label);
@@ -1220,7 +1332,9 @@ function applyClassFilter(inputEl) {
   // Typing a query overrides whatever the chips show — keep them in sync
   // rather than leaving stale "active" chips that no longer match reality.
   section.querySelectorAll('.class-chips .chip').forEach(chip => {
-    chip.classList.toggle('active', !re || re.test(chip.textContent));
+    const active = !re || re.test(chip.textContent);
+    chip.classList.toggle('active', active);
+    chip.setAttribute('aria-pressed', active ? 'true' : 'false');
   });
   rebuildAllCharts();
 }
@@ -1229,7 +1343,8 @@ function applyClassFilter(inputEl) {
 // (every fund at once) — the "easier, more discoverable" complement to
 // typing into the filter box above. Multiple chips can be active at once.
 function toggleClassChip(btn) {
-  btn.classList.toggle('active');
+  const active = btn.classList.toggle('active');
+  btn.setAttribute('aria-pressed', active ? 'true' : 'false');
   const section = btn.closest('.instrument-section');
   if (!section) return;
   const activeLabels = new Set([...section.querySelectorAll('.class-chips .chip.active')].map(b => b.textContent));
@@ -1255,6 +1370,17 @@ function toggleChartExpand(btn) {
   if (!wrap || !canvas) return;
 
   const expanding = !wrap.classList.contains('expanded');
+  // Only one chart can be expanded at a time — the shared #chartBackdrop
+  // and the Escape handler (which closes whichever `.expanded` wrap it
+  // finds first) both assume that. Without this, expanding a second chart
+  // while a first is still expanded left both full-screen simultaneously
+  // with no reliable way to close either one.
+  if (expanding) {
+    const otherWrap = document.querySelector('.chart-canvas-wrap.expanded');
+    if (otherWrap && otherWrap !== wrap && otherWrap._expandBtn) {
+      toggleChartExpand(otherWrap._expandBtn);
+    }
+  }
   wrap.classList.toggle('expanded', expanding);
   btn.innerHTML = expanding ? 'Close' : 'Expand';
   // The button lives in .chart-panel-header, a normal-flow sibling of the
@@ -1336,7 +1462,37 @@ function refreshSingleView() {
   if (!equityMap || !Object.keys(equityMap).length) return;
   const statsEl = document.getElementById('statsGrid');
   if (statsEl) statsEl.innerHTML = statsHTML(computeStats(equityMap), singleReferenceValue, INSTRUMENT_META.equity);
-  rebuildChart('singleChart', singleCharts.equity, equityMap, 'equity');
+  rebuildChart('singleChart', singleCharts.equity, equityMap, 'equity', singleReferenceValue);
+}
+
+// ── Reference/benchmark price (Batch Search / Watchlist — per security) ───
+// Each security's equity section has its own inline reference input (see
+// renderInstrumentSectionHTML's isBatchReference block) rather than one
+// shared page-level panel, since a single $ figure wouldn't mean anything
+// compared across different companies in the same basket.
+function applyBatchReference(security, inputId) {
+  const raw = document.getElementById(inputId).value.trim();
+  const value = parseFloat(raw);
+  if (!raw || isNaN(value) || value <= 0) {
+    return showMsg('Enter a valid positive reference price.', 'error');
+  }
+  batchReferenceValues[security] = value;
+  refreshBatchSecurityView(security);
+}
+function clearBatchReference(security, inputId) {
+  delete batchReferenceValues[security];
+  setVal(inputId, '');
+  refreshBatchSecurityView(security);
+}
+function refreshBatchSecurityView(security) {
+  const equityMap = allResults.batch?.[security]?.equity;
+  if (!equityMap || !Object.keys(equityMap).length) return;
+  const secId = cleanId(security);
+  const refValue = batchReferenceValues[security] ?? null;
+  const statsEl = document.getElementById('statsGrid_' + secId);
+  if (statsEl) statsEl.innerHTML = statsHTML(computeStats(equityMap), refValue, INSTRUMENT_META.equity);
+  const canvasId = bucketCanvasId('chart_' + secId, 'equity');
+  rebuildChart(canvasId, batchCharts[canvasId], equityMap, 'equity', refValue);
 }
 
 // ── Date filters ───────────────────────────────────────────────────────────
@@ -1356,6 +1512,18 @@ function clearBatchDateFilter() {
   setVal('batchEndDate', '');
   filterByDate('', '');
 }
+// Watchlist renders through the exact same runBatchPipeline/renderBatchResults
+// path as Batch Search, but its own date-filter panel has to live inside
+// watchlistTab (not batchTab) or it's invisible while the Watchlist tab is
+// active — see the panel-selection comment in runBatchPipeline.
+function applyWatchlistDateFilter() {
+  filterByDate(val('watchlistStartDate'), val('watchlistEndDate'));
+}
+function clearWatchlistDateFilter() {
+  setVal('watchlistStartDate', '');
+  setVal('watchlistEndDate', '');
+  filterByDate('', '');
+}
 
 function filterByDate(start, end) {
   const startTs = start ? new Date(start).getTime() : 0;
@@ -1372,7 +1540,19 @@ function filterByDate(start, end) {
   });
 
   rebuildAllCharts();
+  refreshBasketLeaderboardIfPresent();
   showMsg(`Filter applied: ${count} data point(s) visible.`, 'success');
+}
+
+// The Leaderboard's Latest Mark/Peer Range/Age are computed from the same
+// checked/visible rows as the per-security tables below it — otherwise
+// narrowing the date filter updates every detail table but leaves the
+// Leaderboard showing the true latest, unfiltered marks, contradicting the
+// data right beneath it. No-op outside Batch/Watchlist (no leaderboard).
+function refreshBasketLeaderboardIfPresent() {
+  const el = document.getElementById('basketLeaderboard');
+  if (!el || allResults.mode !== 'batch') return;
+  el.outerHTML = renderBasketLeaderboardSectionHTML(computeLeaderboardRows(visibleBatchBuckets()));
 }
 
 // ── Collect only checked/visible rows (respects checkboxes + date filter) ──
@@ -1775,6 +1955,7 @@ function clearResults() {
   document.getElementById('resultsContainer').innerHTML = '';
   document.getElementById('dateFilterPanel').style.display = 'none';
   document.getElementById('batchDateFilterPanel').style.display = 'none';
+  document.getElementById('watchlistDateFilterPanel').style.display = 'none';
   document.getElementById('creditDateFilterPanel').style.display = 'none';
   document.getElementById('referencePanel').style.display = 'none';
   document.getElementById('creditReferencePanel').style.display = 'none';
@@ -1782,6 +1963,7 @@ function clearResults() {
   setVal('referencePrice', '');
   setVal('creditReferenceMark', '');
   singleReferenceValue = null;
+  batchReferenceValues = {};
   creditReferenceValue = null;
   xrayFilings = [];
   xraySnapshots = { current: null, prior: null };
@@ -1838,14 +2020,25 @@ function esc(s) {
     c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[c]
   );
 }
+// Each non-alphanumeric character is replaced with its own char code
+// (instead of a flat "_") so distinct inputs that would otherwise collide
+// once stripped (e.g. "AT&T" and "AT T" both -> "AT_T") map to distinct
+// ids/filenames — otherwise document.getElementById resolves only the
+// first match and a later same-page security's chart/table silently
+// overwrites or fails to find the first one's DOM elements. A purely
+// alphanumeric input (the common case) is untouched.
 function cleanId(s) {
-  return s.replace(/[^a-zA-Z0-9]/g, '_');
+  return String(s ?? '').replace(/[^a-zA-Z0-9]/g, c => '_' + c.charCodeAt(0) + '_');
 }
 function dateCmp(a, b) {
   return new Date(a) - new Date(b);
 }
+// Despite the name, this returns date+time (not just the date): it's used
+// only to build export filenames, and date-only made two exports run the
+// same day (e.g. two different Single Security searches) collide on name,
+// silently overwriting the earlier download in most browsers.
 function today() {
-  return new Date().toISOString().split('T')[0];
+  return new Date().toISOString().replace(/:/g, '-').replace(/\..+/, '').replace('T', '_');
 }
 function sortFilings(arr) {
   return arr.sort((a, b) =>
@@ -1853,6 +2046,7 @@ function sortFilings(arr) {
   );
 }
 function fmtCurrency(v) {
+  if (v == null || isNaN(v)) return '—';
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -1861,6 +2055,7 @@ function fmtCurrency(v) {
   }).format(v);
 }
 function fmtNum(v) {
+  if (v == null || isNaN(v)) return '—';
   return new Intl.NumberFormat('en-US').format(Math.round(v));
 }
 // Compact $ figures (e.g. "$120.09M", "-$1.35B") for aggregate values, where
@@ -1881,11 +2076,13 @@ async function searchPrivateCredit() {
   const issuer = document.getElementById('creditIssuerInput').value.trim();
   if (!issuer) return showMsg('Please enter an issuer name.', 'error');
 
+  const mySearchGen = ++searchGeneration;
   clearResults();
   showLoading('Searching SEC EDGAR for 10-Q filings...');
 
   try {
     const data = await fetchJSON('/api/search-10q?issuer=' + enc(issuer));
+    if (mySearchGen !== searchGeneration) return;
     if (!data.filings?.length) {
       hideLoading();
       return showMsg(
@@ -1908,6 +2105,7 @@ async function searchPrivateCredit() {
     }
 
     const { holdings, failures } = await parseCreditFilings(toparse, issuer);
+    if (mySearchGen !== searchGeneration) return;
 
     hideLoading();
     hideProgress();
@@ -1953,7 +2151,7 @@ async function parseCreditFilings(filings, issuer) {
   for (let i = 0; i < filings.length; i += batchSize) {
     const batch = filings.slice(i, i + batchSize);
     const pct = Math.round((i / filings.length) * 100);
-    const label = batch.map(f => f.company.split(' ').slice(0, 3).join(' ')).join(', ');
+    const label = esc(batch.map(f => f.company.split(' ').slice(0, 3).join(' ')).join(', '));
     showProgress(`Parsing ${i + 1}–${Math.min(i + batchSize, filings.length)} of ${filings.length}: ${label}…`, pct);
 
     const results = await Promise.all(
@@ -2107,6 +2305,40 @@ function buildCreditDatasets(fundsMap) {
 }
 
 // ── Render credit results ─────────────────────────────────────────────────
+// Investment-type ("First Lien Term Loan", "Revolver", ...) chips + fuzzy
+// filter — same HTML pattern renderInstrumentSectionHTML uses for NPORT
+// share classes, shown whenever this result set actually has more than one
+// distinct type to tell apart.
+function creditClassChipsHTML(fundsMap) {
+  const distinctLabels = [
+    ...new Set(
+      Object.values(fundsMap)
+        .flat()
+        .map(h => h.investmentType)
+        .filter(Boolean)
+    ),
+  ].sort();
+  if (distinctLabels.length <= 1) return '';
+
+  return (
+    `<div class="class-chips" data-prefix="credit">` +
+    distinctLabels
+      .map(
+        l =>
+          `<button type="button" class="chip active" aria-pressed="true" onclick="toggleClassChip(this)">${esc(l)}</button>`
+      )
+      .join('') +
+    `</div>` +
+    `<div class="search-row" style="margin-bottom:14px;">
+      <div class="input-group narrow">
+        <label for="creditClassFilter">Filter by Type</label>
+        <input type="text" id="creditClassFilter" placeholder="e.g., First Lien" oninput="applyClassFilter(this)">
+      </div>
+    </div>
+    <div class="hint" style="margin-top:-8px; margin-bottom:14px;">Click a chip to toggle one investment type everywhere in this section, or type to fuzzy-match across naming conventions.</div>`
+  );
+}
+
 function renderCreditResults(fundsMap, _issuer) {
   // Track whatever is actually being displayed (full set or date-filtered)
   // so exports match what's on screen instead of always dumping everything.
@@ -2116,13 +2348,21 @@ function renderCreditResults(fundsMap, _issuer) {
 
   let html = '<div class="results-section">';
   html += creditStatsHTML(stats, creditReferenceValue);
+  // Wrapped in .instrument-section[data-bucket="credit"] so the existing,
+  // generic applyClassFilter/toggleClassChip/onCheckboxChange/selectAllRows
+  // (written for NPORT but scoped only by this class/attribute, never
+  // NPORT-specific) work here unmodified.
+  html += '<div class="instrument-section" data-bucket="credit">';
+  html += creditClassChipsHTML(fundsMap);
   html +=
     '<div class="chart-panel"><h3>Fair Value Mark (% of Par) Over Time</h3><div class="chart-canvas-wrap"><canvas id="creditChartCanvas"></canvas></div></div>';
   html += '<div class="results-header"><h2>Holdings by Fund</h2></div>';
   html += renderCreditFundCards(fundsMap);
+  html += '</div>'; // .instrument-section
   html += `<div class="export-row">
     <button class="btn btn-green" onclick="doCreditExportCSV()">Export CSV</button>
     <button class="btn btn-green" onclick="doCreditExportExcel()">Export Excel</button>
+    <button class="btn btn-red"   onclick="doCreditExportPDF()">Export PDF</button>
   </div>`;
   html += '</div>';
 
@@ -2134,14 +2374,9 @@ function renderCreditResults(fundsMap, _issuer) {
       creditChart.destroy();
       creditChart = null;
     }
-    const creditDatasets = buildCreditDatasets(fundsMap);
-    if (creditReferenceValue != null) {
-      const refDs = buildReferenceLineDataset(creditDatasets, creditReferenceValue, 'Reference Mark');
-      if (refDs) creditDatasets.push(refDs);
-    }
     creditChart = new Chart(ctx, {
       type: 'line',
-      data: { datasets: creditDatasets },
+      data: { datasets: [] },
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -2164,7 +2399,36 @@ function renderCreditResults(fundsMap, _issuer) {
         },
       },
     });
+    // Rows are checked by default, so this initial build reflects the full
+    // fundsMap — but going through the same checkbox-driven path used for
+    // every subsequent re-filter keeps there being exactly one way this
+    // chart's data ever gets computed.
+    rebuildCreditChart();
   }
+}
+
+// Collects only checked/visible tranche rows, respecting both the class-chip
+// filter and the date filter (both just toggle .chart-checkbox + row-hidden,
+// same as NPORT) — reuses collectVisible() as-is, since fundsMap is already
+// the same {company: [holdings]} shape collectVisible expects.
+function visibleCreditRows() {
+  const container = document.querySelector('.instrument-section[data-bucket="credit"]');
+  return collectVisible(allCreditResults.view || allCreditResults.credit || {}, container);
+}
+
+// Rebuilds the credit chart from only the checked rows — called by the
+// shared rebuildAllCharts() (see its new allCreditResults.mode==='credit'
+// branch) whenever a checkbox, class chip, or class-filter text input
+// changes.
+function rebuildCreditChart() {
+  if (!creditChart) return;
+  const datasets = buildCreditDatasets(visibleCreditRows());
+  if (creditReferenceValue != null) {
+    const refDs = buildReferenceLineDataset(datasets, creditReferenceValue, 'Reference Mark');
+    if (refDs) datasets.push(refDs);
+  }
+  creditChart.data.datasets = datasets;
+  creditChart.update();
 }
 
 // ── Render credit fund cards ──────────────────────────────────────────────
@@ -2188,15 +2452,19 @@ function renderCreditFundCards(fundsMap) {
             <div class="fund-meta">${holdings.length} tranche(s) &bull; Latest Mark: ${latestMark}</div>
           </div>
           <div class="fund-actions">
+            <button class="btn btn-sm btn-primary"   onclick="event.stopPropagation(); selectAllRows('${wrapId}', true)">All</button>
+            <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); selectAllRows('${wrapId}', false)">None</button>
             <span class="toggle-arrow up" id="${arrowId}">&#9660;</span>
           </div>
         </div>
         <div class="fund-table-wrap" id="${wrapId}">
           <table>
             <thead><tr>
+              <th class="center" style="width:38px">Show</th>
               <th>Report Date</th>
               <th>Portfolio Company</th>
               <th>Industry</th>
+              <th>Type</th>
               <th>Index</th>
               <th class="right">Spread</th>
               <th class="right">Cash Int. Rate</th>
@@ -2210,16 +2478,22 @@ function renderCreditFundCards(fundsMap) {
             </tr></thead>
             <tbody>`;
 
-    holdings.forEach(h => {
+    holdings.forEach((h, idx) => {
       const mark = h.fairValueMark;
       const markStyle =
         mark === null ? '' : mark >= 95 ? '' : mark >= 85 ? 'style="color:var(--amber)"' : 'style="color:var(--red)"';
+      const rowId = `crow_${compIdx}_${idx}`;
+      const cbId = `ccb_${compIdx}_${idx}`;
 
       html += `
-        <tr>
+        <tr id="${rowId}" data-company="${esc(company)}" data-idx="${idx}" data-label="${esc(h.investmentType || '')}" data-bucket="credit" data-date="${esc(h.reportDate)}">
+          <td class="center">
+            <input type="checkbox" id="${cbId}" class="chart-checkbox" checked onchange="onCheckboxChange(this)">
+          </td>
           <td>${sourceLinkHTML(h.cik, h.accession, h.reportDate)}</td>
           <td class="title-cell">${esc(h.portfolioCompany || '—')}</td>
           <td>${esc(h.industry || '—')}</td>
+          <td>${esc(h.investmentType || '—')}</td>
           <td>${esc(h.index || '—')}</td>
           <td class="right">${esc(h.spread || '—')}</td>
           <td class="right">${esc(h.cashInterestRate || '—')}</td>
@@ -2309,7 +2583,7 @@ function doCreditExportCSV() {
       'Source Filing URL',
     ],
   ];
-  Object.entries(allCreditResults.view || allCreditResults.credit || {}).forEach(([co, hs]) =>
+  Object.entries(visibleCreditRows()).forEach(([co, hs]) =>
     hs.forEach(h =>
       rows.push([
         co,
@@ -2358,7 +2632,7 @@ function doCreditExportExcel() {
       'Source Filing URL',
     ],
   ];
-  Object.entries(allCreditResults.view || allCreditResults.credit || {}).forEach(([co, hs]) =>
+  Object.entries(visibleCreditRows()).forEach(([co, hs]) =>
     hs.forEach(h =>
       data.push([
         co,
@@ -2401,6 +2675,71 @@ function doCreditExportExcel() {
   ];
   XLSX.utils.book_append_sheet(wb, ws, 'Private Credit');
   XLSX.writeFile(wb, `private_credit_${today()}.xlsx`);
+}
+
+// ── Credit PDF export ──────────────────────────────────────────────────────
+// Mirrors doExportPDF's structure (jsPDF landscape, page header, chart image,
+// autoTable) but single-page — Private Credit has one chart/section, not
+// one per instrument-type bucket like NPORT.
+function doCreditExportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape' });
+  const margin = 14;
+  const pageW = doc.internal.pageSize.width;
+
+  doc.setFontSize(16);
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(37, 99, 235);
+  doc.text('Private Credit Analysis', margin, margin);
+  let y = margin + 7;
+  doc.setFontSize(8.5);
+  doc.setFont(undefined, 'normal');
+  doc.setTextColor(100);
+  doc.text('Generated: ' + new Date().toLocaleString(), margin, y);
+  y += 8;
+  doc.setTextColor(0);
+
+  const canvas = document.getElementById('creditChartCanvas');
+  if (canvas) {
+    const imgH = 68;
+    const imgW = pageW - margin * 2;
+    doc.addImage(canvas.toDataURL('image/png'), 'PNG', margin, y, imgW, imgH);
+    y += imgH + 6;
+  }
+
+  const rows = [];
+  Object.entries(visibleCreditRows()).forEach(([co, hs]) =>
+    hs.forEach(h =>
+      rows.push([
+        co.substring(0, 30),
+        h.reportDate || '',
+        (h.portfolioCompany || '').substring(0, 30),
+        h.investmentType || '',
+        h.index || '',
+        h.spread || '',
+        h.pik || '',
+        h.principal !== null ? fmtNum(h.principal) : '',
+        h.fairValue !== null ? fmtNum(h.fairValue) : '',
+        h.fairValueMark !== null ? h.fairValueMark.toFixed(2) + '%' : '',
+      ])
+    )
+  );
+
+  if (rows.length) {
+    doc.autoTable({
+      startY: y,
+      head: [
+        ['Fund', 'Date', 'Company', 'Type', 'Index', 'Spread', 'PIK', 'Principal ($K)', 'Fair Value ($K)', 'Mark'],
+      ],
+      body: rows,
+      margin: { left: margin, right: margin },
+      styles: { fontSize: 7.5, cellPadding: 2.5 },
+      headStyles: { fillColor: [37, 99, 235], fontStyle: 'bold', fontSize: 8 },
+      alternateRowStyles: { fillColor: [249, 250, 251] },
+    });
+  }
+
+  doc.save(`private_credit_${today()}.pdf`);
 }
 
 function downloadBlob(content, type, filename) {
@@ -2490,11 +2829,13 @@ async function searchFundXray() {
   const fund = document.getElementById('xrayFundInput').value.trim();
   if (!fund) return showMsg('Please enter a fund or registrant name.', 'error');
 
+  const mySearchGen = ++searchGeneration;
   clearResults();
   showLoading('Looking up this fund on SEC EDGAR...');
 
   try {
     const data = await fetchJSON('/api/search-fund?fund=' + enc(fund));
+    if (mySearchGen !== searchGeneration) return;
     hideLoading();
 
     const matches = data.matches || [];
@@ -2532,7 +2873,19 @@ async function searchFundXray() {
     document.getElementById('xrayCompareResults')?.remove();
 
     if (matches.length > 1) {
-      showMsg(`"${esc(fund)}" matched ${matches.length} funds on EDGAR — pick the exact fund/period below.`, 'info');
+      // lookupFundCiks (server.js) caps candidate registrants at 5 before
+      // ever fetching their filing histories — compare against that cap,
+      // not against matches.length, so a candidate that simply turned out
+      // to have zero NPORT-P history isn't misreported as "truncated."
+      const candidateCap = 5;
+      const hiddenCount = data.totalMatches > candidateCap ? data.totalMatches - candidateCap : 0;
+      showMsg(
+        `"${esc(fund)}" matched ${matches.length} funds on EDGAR — pick the exact fund/period below.` +
+          (hiddenCount
+            ? ` (${hiddenCount} more match(es) not shown — narrow your search for a more specific name.)`
+            : ''),
+        'info'
+      );
     }
 
     await runFundXray();
@@ -2546,9 +2899,11 @@ async function runFundXray() {
   const filing = xrayFilings[+document.getElementById('xrayFilingSelect').value || 0];
   if (!filing) return;
 
+  const myXrayGen = ++xrayRunGeneration;
   showLoading('Pulling this filing and classifying every holding...');
   try {
     const data = await fetchJSON(`/api/fund-xray?cik=${enc(filing.cik)}&accession=${enc(filing.accession)}`);
+    if (myXrayGen !== xrayRunGeneration) return;
     hideLoading();
     if (!data.success || !data.xray) {
       return showMsg('Error: ' + (data.error || 'Could not parse this filing.'), 'error');
@@ -2665,7 +3020,11 @@ function buildXraySnapshotHTML(xray, filing, opts) {
       '<div class="alert alert-info">No private equity holdings (Level-3 equity, warrants, or SPV vehicles) found in this filing — this fund’s book appears to hold no private equity as of this report date. (It may still hold Level-3 bonds/loans or Level-2 restricted stock, which this view intentionally excludes.)</div>';
   }
 
-  html += `<div class="export-row"><button class="btn btn-green" onclick="doXrayExportCSV('${esc(opts.exportKey || 'current')}')">Export CSV</button></div>`;
+  html += `<div class="export-row">
+    <button class="btn btn-green" onclick="doXrayExportCSV('${esc(opts.exportKey || 'current')}')">Export CSV</button>
+    <button class="btn btn-green" onclick="doXrayExportExcel('${esc(opts.exportKey || 'current')}')">Export Excel</button>
+    <button class="btn btn-red"   onclick="doXrayExportPDF('${esc(opts.exportKey || 'current')}')">Export PDF</button>
+  </div>`;
   html += '</div>';
   return html;
 }
@@ -2685,45 +3044,111 @@ function renderFundXray(xray, filing) {
   document.getElementById('resultsContainer').innerHTML = html;
 }
 
-function doXrayExportCSV(key) {
+// Shared row-builder for the single-period snapshot exports (CSV/Excel/PDF)
+// — one source of truth for the column shape, so the three formats can't
+// silently drift apart from each other.
+function xraySnapshotExportRows(key) {
   const snap = xraySnapshots[key || 'current'];
-  if (!snap) return;
+  if (!snap) return null;
   const { xray } = snap;
   const fundName = xray.fund?.seriesName || xray.fund?.registrantName || '';
   const reportDate = xray.fund?.reportDate || '';
-  const rows = [
-    [
-      'Fund',
-      'Report Date',
-      'Company',
-      'Instrument',
-      'Country',
-      'Fair Value Level',
-      'Restricted',
-      'Shares',
-      'Price / Share',
-      '% of NAV',
-      '$ Value',
-    ],
+  const header = [
+    'Fund',
+    'Report Date',
+    'Company',
+    'Instrument',
+    'Country',
+    'Fair Value Level',
+    'Restricted',
+    'Shares',
+    'Price / Share',
+    '% of NAV',
+    '$ Value',
   ];
-  xray.privateHoldings.forEach(h =>
-    rows.push([
-      fundName,
-      reportDate,
-      h.name || h.title || '',
-      h.instrumentLabel || '',
-      h.country || '',
-      h.fairValLevel || '',
-      h.isRestrictedSec || '',
-      h.shares != null && !isNaN(h.shares) ? h.shares : '',
-      h.pricePerShare != null && !isNaN(h.pricePerShare) ? h.pricePerShare.toFixed(6) : '',
-      h.pctOfNetAssets != null ? h.pctOfNetAssets.toFixed(4) : '',
-      h.marketValue != null ? h.marketValue.toFixed(2) : '',
-    ])
-  );
-  const csv = rows.map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
-  const datePart = reportDate ? `_${cleanId(reportDate)}` : '';
-  downloadBlob(csv, 'text/csv', `fund_xray_${cleanId(fundName || 'fund')}${datePart}_${today()}.csv`);
+  const rows = xray.privateHoldings.map(h => [
+    fundName,
+    reportDate,
+    h.name || h.title || '',
+    h.instrumentLabel || '',
+    h.country || '',
+    h.fairValLevel || '',
+    h.isRestrictedSec || '',
+    h.shares != null && !isNaN(h.shares) ? h.shares : '',
+    h.pricePerShare != null && !isNaN(h.pricePerShare) ? h.pricePerShare.toFixed(6) : '',
+    h.pctOfNetAssets != null ? h.pctOfNetAssets.toFixed(4) : '',
+    h.marketValue != null ? h.marketValue.toFixed(2) : '',
+  ]);
+  return { header, rows, fundName, reportDate };
+}
+
+function doXrayExportCSV(key) {
+  const data = xraySnapshotExportRows(key);
+  if (!data) return;
+  const csv = [data.header, ...data.rows]
+    .map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(','))
+    .join('\n');
+  const datePart = data.reportDate ? `_${cleanId(data.reportDate)}` : '';
+  downloadBlob(csv, 'text/csv', `fund_xray_${cleanId(data.fundName || 'fund')}${datePart}_${today()}.csv`);
+}
+
+// ── Fund X-Ray Excel/PDF export ────────────────────────────────────────────
+function doXrayExportExcel(key) {
+  const data = xraySnapshotExportRows(key);
+  if (!data) return;
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([data.header, ...data.rows]);
+  ws['!cols'] = [
+    { wch: 34 },
+    { wch: 12 },
+    { wch: 34 },
+    { wch: 20 },
+    { wch: 14 },
+    { wch: 10 },
+    { wch: 10 },
+    { wch: 12 },
+    { wch: 14 },
+    { wch: 10 },
+    { wch: 16 },
+  ];
+  XLSX.utils.book_append_sheet(wb, ws, 'Fund X-Ray');
+  const datePart = data.reportDate ? `_${cleanId(data.reportDate)}` : '';
+  XLSX.writeFile(wb, `fund_xray_${cleanId(data.fundName || 'fund')}${datePart}_${today()}.xlsx`);
+}
+
+function doXrayExportPDF(key) {
+  const data = xraySnapshotExportRows(key);
+  if (!data) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape' });
+  const margin = 14;
+
+  doc.setFontSize(16);
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(37, 99, 235);
+  doc.text(`Fund X-Ray — ${data.fundName || 'Fund'}`, margin, margin);
+  let y = margin + 7;
+  doc.setFontSize(8.5);
+  doc.setFont(undefined, 'normal');
+  doc.setTextColor(100);
+  doc.text('Report period: ' + (data.reportDate || '—') + ' · Generated: ' + new Date().toLocaleString(), margin, y);
+  y += 8;
+  doc.setTextColor(0);
+
+  if (data.rows.length) {
+    doc.autoTable({
+      startY: y,
+      head: [data.header],
+      body: data.rows,
+      margin: { left: margin, right: margin },
+      styles: { fontSize: 7.5, cellPadding: 2.5 },
+      headStyles: { fillColor: [37, 99, 235], fontStyle: 'bold', fontSize: 8 },
+      alternateRowStyles: { fillColor: [249, 250, 251] },
+    });
+  }
+
+  const datePart = data.reportDate ? `_${cleanId(data.reportDate)}` : '';
+  doc.save(`fund_xray_${cleanId(data.fundName || 'fund')}${datePart}_${today()}.pdf`);
 }
 
 // ── Fund X-Ray: QoQ / YoY period comparison ────────────────────────────────
@@ -3058,7 +3483,11 @@ function renderFundXrayComparison(cmp, currentFiling, priorFiling) {
     html += '<div class="alert alert-info">No private equity holdings in either period.</div>';
   }
 
-  html += `<div class="export-row"><button class="btn btn-green" onclick="doXrayCompareExportCSV()">Export Comparison CSV</button></div>`;
+  html += `<div class="export-row">
+    <button class="btn btn-green" onclick="doXrayCompareExportCSV()">Export Comparison CSV</button>
+    <button class="btn btn-green" onclick="doXrayCompareExportExcel()">Export Comparison Excel</button>
+    <button class="btn btn-red"   onclick="doXrayCompareExportPDF()">Export Comparison PDF</button>
+  </div>`;
   html += '</div>';
 
   // Insights are the whole point of comparing two periods — they belong
@@ -3073,50 +3502,99 @@ function renderFundXrayComparison(cmp, currentFiling, priorFiling) {
   }
 }
 
-function doXrayCompareExportCSV() {
-  if (!currentXrayCompare) return;
+// Shared row-builder for the QoQ/YoY comparison exports (CSV/Excel/PDF).
+function xrayCompareExportRows() {
+  if (!currentXrayCompare) return null;
   const cmp = currentXrayCompare;
-  const rows = [
-    [
-      'Status',
-      'Company',
-      'Instrument',
-      'Shares (Prior)',
-      'Shares (Current)',
-      'Shares Δ%',
-      'Price/Share (Prior)',
-      'Price/Share (Current)',
-      'Price/Share Δ%',
-      'Value (Prior)',
-      'Value (Current)',
-      'Value Δ%',
-      'Value Δ from Price Mark ($)',
-      'Value Δ from Position Sizing ($)',
-      '% of NAV (Prior)',
-      '% of NAV (Current)',
-    ],
+  const header = [
+    'Status',
+    'Company',
+    'Instrument',
+    'Shares (Prior)',
+    'Shares (Current)',
+    'Shares Δ%',
+    'Price/Share (Prior)',
+    'Price/Share (Current)',
+    'Price/Share Δ%',
+    'Value (Prior)',
+    'Value (Current)',
+    'Value Δ%',
+    'Value Δ from Price Mark ($)',
+    'Value Δ from Position Sizing ($)',
+    '% of NAV (Prior)',
+    '% of NAV (Current)',
   ];
-  cmp.positions.forEach(p =>
-    rows.push([
-      p.status,
-      p.name || p.title || '',
-      p.instrumentLabel || '',
-      p.shares.prior ?? '',
-      p.shares.current ?? '',
-      p.shares.deltaPct != null ? p.shares.deltaPct.toFixed(2) : '',
-      p.pricePerShare.prior != null ? p.pricePerShare.prior.toFixed(6) : '',
-      p.pricePerShare.current != null ? p.pricePerShare.current.toFixed(6) : '',
-      p.pricePerShare.deltaPct != null ? p.pricePerShare.deltaPct.toFixed(2) : '',
-      p.marketValue.prior != null ? p.marketValue.prior.toFixed(2) : '',
-      p.marketValue.current != null ? p.marketValue.current.toFixed(2) : '',
-      p.marketValue.deltaPct != null ? p.marketValue.deltaPct.toFixed(2) : '',
-      p.priceEffectUSD != null ? p.priceEffectUSD.toFixed(2) : '',
-      p.shareEffectUSD != null ? p.shareEffectUSD.toFixed(2) : '',
-      p.pctOfNetAssets.prior != null ? p.pctOfNetAssets.prior.toFixed(4) : '',
-      p.pctOfNetAssets.current != null ? p.pctOfNetAssets.current.toFixed(4) : '',
-    ])
-  );
-  const csv = rows.map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
+  const rows = cmp.positions.map(p => [
+    p.status,
+    p.name || p.title || '',
+    p.instrumentLabel || '',
+    p.shares.prior ?? '',
+    p.shares.current ?? '',
+    p.shares.deltaPct != null ? p.shares.deltaPct.toFixed(2) : '',
+    p.pricePerShare.prior != null ? p.pricePerShare.prior.toFixed(6) : '',
+    p.pricePerShare.current != null ? p.pricePerShare.current.toFixed(6) : '',
+    p.pricePerShare.deltaPct != null ? p.pricePerShare.deltaPct.toFixed(2) : '',
+    p.marketValue.prior != null ? p.marketValue.prior.toFixed(2) : '',
+    p.marketValue.current != null ? p.marketValue.current.toFixed(2) : '',
+    p.marketValue.deltaPct != null ? p.marketValue.deltaPct.toFixed(2) : '',
+    p.priceEffectUSD != null ? p.priceEffectUSD.toFixed(2) : '',
+    p.shareEffectUSD != null ? p.shareEffectUSD.toFixed(2) : '',
+    p.pctOfNetAssets.prior != null ? p.pctOfNetAssets.prior.toFixed(4) : '',
+    p.pctOfNetAssets.current != null ? p.pctOfNetAssets.current.toFixed(4) : '',
+  ]);
   const fundName = cmp.current.seriesName || cmp.current.registrantName || '';
-  downloadBlob(csv, 'text/csv', `fund_xray_compare_${cleanId(fundName || 'fund')}_${today()}.csv`);
+  return { header, rows, fundName };
+}
+
+function doXrayCompareExportCSV() {
+  const data = xrayCompareExportRows();
+  if (!data) return;
+  const csv = [data.header, ...data.rows]
+    .map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(','))
+    .join('\n');
+  downloadBlob(csv, 'text/csv', `fund_xray_compare_${cleanId(data.fundName || 'fund')}_${today()}.csv`);
+}
+
+function doXrayCompareExportExcel() {
+  const data = xrayCompareExportRows();
+  if (!data) return;
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([data.header, ...data.rows]);
+  ws['!cols'] = data.header.map(() => ({ wch: 16 }));
+  XLSX.utils.book_append_sheet(wb, ws, 'Fund X-Ray Compare');
+  XLSX.writeFile(wb, `fund_xray_compare_${cleanId(data.fundName || 'fund')}_${today()}.xlsx`);
+}
+
+function doXrayCompareExportPDF() {
+  const data = xrayCompareExportRows();
+  if (!data) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape' });
+  const margin = 14;
+
+  doc.setFontSize(16);
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(37, 99, 235);
+  doc.text(`Fund X-Ray Comparison — ${data.fundName || 'Fund'}`, margin, margin);
+  let y = margin + 7;
+  doc.setFontSize(8.5);
+  doc.setFont(undefined, 'normal');
+  doc.setTextColor(100);
+  doc.text('Generated: ' + new Date().toLocaleString(), margin, y);
+  y += 8;
+  doc.setTextColor(0);
+
+  if (data.rows.length) {
+    doc.autoTable({
+      startY: y,
+      head: [data.header],
+      body: data.rows,
+      margin: { left: margin, right: margin },
+      styles: { fontSize: 6.5, cellPadding: 2 },
+      headStyles: { fillColor: [37, 99, 235], fontStyle: 'bold', fontSize: 7 },
+      alternateRowStyles: { fillColor: [249, 250, 251] },
+    });
+  }
+
+  doc.save(`fund_xray_compare_${cleanId(data.fundName || 'fund')}_${today()}.pdf`);
 }

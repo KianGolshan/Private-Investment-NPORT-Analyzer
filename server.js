@@ -20,12 +20,20 @@ const app = express();
 // needed at all. Without this, cors() with no options reflects any Origin
 // header back with credentials-less wildcard access, letting any external
 // website's JS call these SEC-proxying endpoints on a visitor's behalf.
-app.use(express.json());
 app.use(express.static('public'));
 
 const USER_AGENT = process.env.SEC_USER_AGENT || '';
 const EFFECTIVE_USER_AGENT = USER_AGENT || 'Vantage internal-tool@localhost';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
+// Only trust X-Forwarded-For in production, where a public deployment is
+// expected to sit behind a reverse proxy/load balancer — otherwise
+// express-rate-limit's per-IP bucketing keys off req.ip, which resolves to
+// the proxy's own address for every visitor when trust proxy is unset,
+// collapsing the 200 req/min cap below into one shared budget for every
+// user instead of one per visitor. Left off in local/dev, where there's no
+// proxy and trusting a client-supplied header would let it spoof req.ip.
+if (IS_PRODUCTION) app.set('trust proxy', 1);
 
 if (!USER_AGENT) {
   console.warn('\n⚠️  WARNING: SEC_USER_AGENT not set.');
@@ -60,14 +68,26 @@ app.use('/api/', apiLimiter);
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+// Applied to every SEC request unless a call site sets its own (larger,
+// for the 10-Q HTML fetch) limit — without a bound, a pathological or
+// unexpectedly huge upstream response (submissions JSON, NPORT XML) is
+// buffered into memory in full before axios/xml2js ever get a chance to
+// reject it.
+const DEFAULT_MAX_CONTENT_LENGTH = 25 * 1024 * 1024;
+
 // Retry SEC requests on 429 (rate limit) with exponential backoff.
 // SEC's fair-access guidance is ~10 req/sec; transient 429s should be
 // retried rather than silently treated as "no data" by callers.
 async function fetchWithRetry(config, maxRetries = 3) {
+  const configWithLimit = {
+    maxContentLength: DEFAULT_MAX_CONTENT_LENGTH,
+    maxBodyLength: DEFAULT_MAX_CONTENT_LENGTH,
+    ...config,
+  };
   let attempt = 0;
   for (;;) {
     try {
-      return await axios(config);
+      return await axios(configWithLimit);
     } catch (err) {
       const status = err.response?.status;
       if (status === 429 && attempt < maxRetries) {
@@ -187,7 +207,12 @@ app.get('/api/search-nport', async (req, res) => {
 
 // Fetch and parse a single NPORT-P XML filing, returning matching holdings
 app.get('/api/parse-nport', async (req, res) => {
-  const { cik, accession, security, refresh } = req.query;
+  const { cik, security, refresh } = req.query;
+  // Normalized once, up front — the SEC URL below needs the dash-stripped
+  // form anyway, and building the cache key from the raw (dashed) query
+  // param instead let the same filing requested with vs. without dashes
+  // produce two different cache keys and two redundant SEC fetches.
+  const accession = req.query.accession ? String(req.query.accession).replace(/-/g, '') : req.query.accession;
   if (!cik || !accession || !security) {
     return res.status(400).json({ error: 'cik, accession, and security are required' });
   }
@@ -209,10 +234,9 @@ app.get('/api/parse-nport', async (req, res) => {
 
   try {
     const holdings = await cache.withInFlight(cacheKey, async () => {
-      const accessionFormatted = accession.replace(/-/g, '');
       await delay(50);
 
-      const xmlUrl = `https://www.sec.gov/Archives/edgar/data/${encodeURIComponent(cik)}/${encodeURIComponent(accessionFormatted)}/primary_doc.xml`;
+      const xmlUrl = `https://www.sec.gov/Archives/edgar/data/${encodeURIComponent(cik)}/${encodeURIComponent(accession)}/primary_doc.xml`;
       const xmlResponse = await fetchWithRetry({
         url: xmlUrl,
         method: 'get',
@@ -255,7 +279,14 @@ app.get('/api/parse-nport', async (req, res) => {
 app.get('/api/search-10q', async (req, res) => {
   const { issuer, maxPerFund, refresh } = req.query;
   if (!issuer) return res.status(400).json({ error: 'issuer parameter required' });
-  const maxPerFundNum = maxPerFund ? parseInt(maxPerFund, 10) : null;
+  // Number(maxPerFund) rather than `maxPerFund ? parseInt(...) : null` —
+  // that ternary treated maxPerFund=0 (a deliberate "no historical filings"
+  // request) and maxPerFund=abc (a bad param) identically to "not passed",
+  // silently making the cap unlimited instead of 0 or a 400.
+  const maxPerFundNum = maxPerFund != null && maxPerFund !== '' ? Number(maxPerFund) : null;
+  if (maxPerFundNum != null && (!Number.isFinite(maxPerFundNum) || maxPerFundNum < 0)) {
+    return res.status(400).json({ error: 'maxPerFund must be a non-negative number' });
+  }
 
   const cacheKey = cache.searchKey('search:10q', issuer, maxPerFund || '');
   if (!refresh) {
@@ -309,7 +340,7 @@ app.get('/api/search-10q', async (req, res) => {
           let count = 0;
           for (const f of allFilings) {
             if (f.form !== '10-Q') continue;
-            if (maxPerFundNum && count >= maxPerFundNum) break;
+            if (maxPerFundNum != null && count >= maxPerFundNum) break;
             const acc = f.accessionNumber || '';
             if (!acc || confirmedAccessions.has(acc)) {
               count++;
@@ -353,7 +384,9 @@ app.get('/api/search-10q', async (req, res) => {
 
 // ── Private Credit: Parse a single 10-Q filing ────────────────────────────
 app.get('/api/parse-10q', async (req, res) => {
-  const { cik, accession, issuer, reportDate, refresh } = req.query;
+  const { cik, issuer, reportDate, refresh } = req.query;
+  // Normalized once, up front — see the matching comment in /api/parse-nport.
+  const accession = req.query.accession ? String(req.query.accession).replace(/-/g, '') : req.query.accession;
   if (!cik || !accession || !issuer) {
     return res.status(400).json({ error: 'cik, accession, and issuer are required' });
   }
@@ -376,7 +409,6 @@ app.get('/api/parse-10q', async (req, res) => {
 
   try {
     const holdings = await cache.withInFlight(cacheKey, async () => {
-      const accNodash = accession.replace(/-/g, '');
       await delay(100);
 
       // Use the EDGAR submissions API to find the primary document
@@ -384,9 +416,7 @@ app.get('/api/parse-10q', async (req, res) => {
       let mainDocName = null;
       try {
         const { entries: allFilings } = await fetchSubmissionsAllPages(cikPadded);
-        const match = allFilings.find(
-          f => f.accessionNumber === accession || f.accessionNumber?.replace(/-/g, '') === accNodash
-        );
+        const match = allFilings.find(f => f.accessionNumber?.replace(/-/g, '') === accession);
         if (match?.primaryDocument) mainDocName = match.primaryDocument;
       } catch (e) {
         console.error('Submissions API error:', e.message);
@@ -396,7 +426,7 @@ app.get('/api/parse-10q', async (req, res) => {
         throw new Error('Could not locate main 10-Q document via submissions API');
       }
 
-      const docUrl = `https://www.sec.gov/Archives/edgar/data/${encodeURIComponent(cik)}/${encodeURIComponent(accNodash)}/${encodeURIComponent(mainDocName)}`;
+      const docUrl = `https://www.sec.gov/Archives/edgar/data/${encodeURIComponent(cik)}/${encodeURIComponent(accession)}/${encodeURIComponent(mainDocName)}`;
       const htmlResp = await fetchWithRetry({
         url: docUrl,
         method: 'get',
@@ -444,6 +474,12 @@ app.get('/api/parse-10q', async (req, res) => {
 // bug where each candidate's *name* is unserializable ("ARRAY(0x...)"), so
 // only the CIK can be trusted here — the real name is recovered per-CIK via
 // fetchFundNportHistory below.
+//
+// Returns { ciks, totalMatches }, not a bare array — capping at 5 candidates
+// keeps a common family name (e.g. "Fidelity") from fanning out into dozens
+// of downstream fetchFundNportHistory calls, but the caller still needs
+// totalMatches to tell a user "only 5 of N shown," rather than silently
+// implying only 5 registrants matched at all.
 async function lookupFundCiks(fundName) {
   const response = await fetchWithRetry({
     url: 'https://www.sec.gov/cgi-bin/browse-edgar',
@@ -465,16 +501,20 @@ async function lookupFundCiks(fundName) {
   const result = await parser.parseStringPromise(response.data);
 
   const singleCik = result?.feed?.['company-info']?.cik;
-  if (singleCik) return [String(singleCik).replace(/^0+/, '')];
+  if (singleCik) return { ciks: [String(singleCik).replace(/^0+/, '')], totalMatches: 1 };
 
   let entries = result?.feed?.entry;
-  if (!entries) return [];
+  if (!entries) return { ciks: [], totalMatches: 0 };
   if (!Array.isArray(entries)) entries = [entries];
-  const ciks = entries
-    .map(e => e?.content?.['company-info']?.cik)
-    .filter(Boolean)
-    .map(c => String(c).replace(/^0+/, ''));
-  return [...new Set(ciks)].slice(0, 5);
+  const allCiks = [
+    ...new Set(
+      entries
+        .map(e => e?.content?.['company-info']?.cik)
+        .filter(Boolean)
+        .map(c => String(c).replace(/^0+/, ''))
+    ),
+  ];
+  return { ciks: allCiks.slice(0, 5), totalMatches: allCiks.length };
 }
 
 // A fund's own NPORT-P filing history with a clean registrant name.
@@ -530,7 +570,7 @@ app.get('/api/search-fund', async (req, res) => {
 
   try {
     const data = await cache.withInFlight(cacheKey, async () => {
-      const ciks = await lookupFundCiks(fund);
+      const { ciks, totalMatches } = await lookupFundCiks(fund);
       const matches = [];
       for (const cik of ciks) {
         try {
@@ -541,7 +581,7 @@ app.get('/api/search-fund', async (req, res) => {
           console.error('Fund history error for CIK', cik, e.message);
         }
       }
-      const payload = { matches };
+      const payload = { matches, totalMatches };
       cache.setSearch(cacheKey, payload);
       return payload;
     });
@@ -556,7 +596,11 @@ app.get('/api/search-fund', async (req, res) => {
 // private-vs-public exposure breakdown (Fund X-Ray). Returns { xray, cached }
 // on success, throws on failure — shared by the single-period route below
 // and the QoQ/YoY comparison route, which needs to fetch two filings.
-async function getFundXray(cik, accession, { refresh } = {}) {
+async function getFundXray(cik, accessionRaw, { refresh } = {}) {
+  // Normalized once, up front — see the matching comment in /api/parse-nport
+  // (the same filing requested with vs. without dashes must hit one cache
+  // key, not fetch SEC twice for identical content).
+  const accession = accessionRaw.replace(/-/g, '');
   // Immutable historical filing content, same rationale as /api/parse-nport
   // — cached indefinitely.
   const cacheKey = cache.holdingsKey('fundxray', cik, accession);
@@ -566,10 +610,9 @@ async function getFundXray(cik, accession, { refresh } = {}) {
   }
 
   const xray = await cache.withInFlight(cacheKey, async () => {
-    const accessionFormatted = accession.replace(/-/g, '');
     await delay(50);
 
-    const xmlUrl = `https://www.sec.gov/Archives/edgar/data/${encodeURIComponent(cik)}/${encodeURIComponent(accessionFormatted)}/primary_doc.xml`;
+    const xmlUrl = `https://www.sec.gov/Archives/edgar/data/${encodeURIComponent(cik)}/${encodeURIComponent(accession)}/primary_doc.xml`;
     const xmlResponse = await fetchWithRetry({
       url: xmlUrl,
       method: 'get',
@@ -623,8 +666,10 @@ app.get('/api/fund-xray-compare', async (req, res) => {
   }
 
   try {
-    const currentResult = await getFundXray(cik, currentAccession, { refresh });
-    const priorResult = await getFundXray(cik, priorAccession, { refresh });
+    const [currentResult, priorResult] = await Promise.all([
+      getFundXray(cik, currentAccession, { refresh }),
+      getFundXray(cik, priorAccession, { refresh }),
+    ]);
     const comparison = buildFundXRayComparison(currentResult.xray, priorResult.xray);
     res.json({ success: true, comparison, cached: currentResult.cached && priorResult.cached });
   } catch (error) {
