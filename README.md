@@ -41,6 +41,9 @@ down.
 - **Private Credit Analysis** — search any issuer name to find every BDC fund reporting it as a loan, and chart the fair-value mark (% of par) across funds and time
 - **Fund X-Ray** — search a fund/registrant name to pull its own NPORT-P filing in full and see its total private-equity exposure: $ value and % of NAV, broken down by instrument type (common/preferred/warrant/SPV) and country, with every private holding listed
 - **Fund X-Ray period comparison** — compare a fund's private-equity book across two periods (one click for the prior quarter or prior year, or pick any two periods manually): new investments, exits, share-count changes, and a decomposition of the value change into "from price marks" vs. "from position sizing," plus notable mark-ups/mark-downs ranked by dollar impact
+- **Fund X-Ray capital structure** — issuers a fund holds through several instruments at once (e.g. preferred + warrant + term loan) are rolled up per issuer, senior-first, with debt share and weighted coupon
+- **Fund X-Ray mark-implied returns** — a return history per private position built from the fund's own last filings: proxy cost per lot (entry and add-ons, costed at the fund's mark), partial sales, exits, conversion chaining, MOIC and IRR. These are proxies — NPORT-P never reports what a fund paid — and the UI says so and flags positions held before the oldest filing
+- **Mark analytics** — on Single Security/Batch/Watchlist: each fund's mark change vs its own earlier filing, an outlier badge when a fund's mark sits far from same-class peers (robust MAD-based, only against peers with comparable-date marks), a collapsible "repricing episodes" ledger showing who marked first (funds have different fiscal calendars, so marks are never blended into one fitted line), and a Mark Velocity column in the Basket Leaderboard
 - **Summary stats** — latest price, price range, number of reporting funds, total data points, and date range shown at a glance
 - **Interactive charts** — toggle individual data points on/off via checkboxes; chart updates live
 - **Reference line** — plot your own price or mark (a cost basis, ask price, or benchmark) against peer data and see the divergence from the peer median
@@ -104,23 +107,31 @@ npm run lint       # check code style
 npm run format     # apply Prettier formatting
 ```
 
-The suite is three layers, each testing something the others structurally
+```bash
+npm run test:live  # opt-in: real SEC, real filings, real UI → backend → EDGAR (a few minutes)
+```
+
+The suite has several layers, each testing something the others structurally
 can't reach:
 
-- `test/parsers.test.js` — pure NPORT-P extraction/classification logic
-  (`extractHoldings`, `buildFundXRay`, `buildFundXRayComparison`, ...)
-  against real filing fixtures in `test/fixtures/`, with no network or
-  server involved.
-- `test/server.test.js` / `test/cache.test.js` — the Express routes and
-  SQLite cache, with SEC calls intercepted via `nock` (same fixtures).
-- `test/app-xray.test.js` — Fund X-Ray's browser-side code (the "Top Funds"
-  dropdown, search → render pipeline, QoQ/YoY comparison, CSV export) runs
-  the real `public/index.html` + `public/app.js` in a `jsdom` window via
-  `test/helpers/loadApp.js`, with `fetch` stubbed per test — this is the
-  only layer that exercises what actually ends up on screen.
-- `test/app-security.test.js` / `test/app-leaderboard.test.js` — the same
-  `jsdom` approach applied to input-escaping regressions and the Basket
-  Leaderboard (below), respectively.
+- `test/parsers.test.js` / `test/analytics.test.js` — pure NPORT-P
+  extraction, classification, capital-structure and mark-implied-return
+  logic against real filing fixtures in `test/fixtures/` (plus hand-computed
+  synthetic period sequences), with no network or server involved.
+- `test/server.test.js` / `test/cache.test.js` / `test/edge-cases.test.js` —
+  the Express routes and SQLite cache, with SEC calls intercepted via
+  `nock`; edge-case suite covers degenerate inputs, cache-key normalization,
+  parameter validation, static-file exposure and response hygiene.
+- `test/app-*.test.js` — the browser-side code (every tab: Single Security,
+  Batch, Watchlist, Private Credit, Fund X-Ray, mark analytics, escaping
+  regressions) runs the real `public/index.html` + `public/app.js` in a
+  `jsdom` window via `test/helpers/loadApp.js` (fake Chart.js, `fetch`
+  mocked per test via `test/helpers/fakes.js`) — this is the layer that
+  exercises what actually ends up on screen.
+- `test/live-e2e.test.js` — skipped unless `LIVE_SEC=1`. Nothing mocked:
+  asserts invariants (totals reconcile, price effect + share effect =
+  value change, lot accounting is self-consistent) on live filings, then
+  drives the real UI against the real backend.
 
 ---
 

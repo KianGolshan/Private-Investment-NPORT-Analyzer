@@ -594,3 +594,45 @@ test('GET /api/does-not-exist: 404', async () => {
   const res = await request(app).get('/api/does-not-exist');
   assert.equal(res.status, 404);
 });
+
+// ── /api/fund-xray-returns ──────────────────────────────────────────────────
+
+test('GET /api/fund-xray-returns: 400 with fewer than two accessions, or more than the cap', async () => {
+  const one = await request(app).get('/api/fund-xray-returns?cik=1&accessions=a');
+  assert.equal(one.status, 400);
+  const many = Array.from({ length: 13 }, (_, i) => `acc${i}`).join(',');
+  const tooMany = await request(app).get(`/api/fund-xray-returns?cik=1&accessions=${many}`);
+  assert.equal(tooMany.status, 400);
+});
+
+test('GET /api/fund-xray-returns: fetches each filing and builds the return history across them', async () => {
+  // Kandou (2 private-equity positions) then SpaceX/REX (fully public): the
+  // real fixtures carry different report dates, so the older one is processed
+  // first regardless of request order; both Kandou positions leave the
+  // private book in the later period.
+  nock(SEC)
+    .get('/Archives/edgar/data/557/000000000000000001/primary_doc.xml')
+    .reply(200, spacexXml, { 'Content-Type': 'application/xml' });
+  nock(SEC)
+    .get('/Archives/edgar/data/557/000000000000000002/primary_doc.xml')
+    .reply(200, kandouXml, { 'Content-Type': 'application/xml' });
+
+  const res = await request(app).get(
+    '/api/fund-xray-returns?cik=557&accessions=0000000000-00-000001,0000000000-00-000002'
+  );
+  assert.equal(res.status, 200);
+  assert.equal(res.body.success, true);
+  const { summary, positions } = res.body.returns;
+  assert.equal(summary.periodCount, 2);
+  assert.equal(positions.length, 2);
+  assert.ok(positions.every(p => p.status === 'exited' && p.entryIsWindowStart));
+});
+
+test('GET /api/fund-xray-returns: a fetch failure is reported as success:false', async () => {
+  nock(SEC).get('/Archives/edgar/data/558/000000000000000001/primary_doc.xml').reply(404);
+  const res = await request(app).get(
+    '/api/fund-xray-returns?cik=558&accessions=0000000000-00-000001,0000000000-00-000002'
+  );
+  assert.equal(res.status, 200);
+  assert.equal(res.body.success, false);
+});

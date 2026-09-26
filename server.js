@@ -12,6 +12,7 @@ const {
   extractAllHoldings,
   buildFundXRay,
   buildFundXRayComparison,
+  buildPositionReturns,
 } = require('./parsers');
 
 const app = express();
@@ -675,6 +676,37 @@ app.get('/api/fund-xray-compare', async (req, res) => {
   } catch (error) {
     console.error('Fund X-Ray compare error:', error.message);
     res.json({ success: false, comparison: null, error: error.message });
+  }
+});
+
+// Mark-implied returns: lot accounting across several of one fund's own
+// filings (cost is a proxy built from marks — NPORT-P has no cost basis).
+// Capped so one request can't fan out into dozens of SEC fetches.
+const MAX_RETURN_FILINGS = 12;
+app.get('/api/fund-xray-returns', async (req, res) => {
+  const { cik, accessions, refresh } = req.query;
+  const list = String(accessions || '')
+    .split(',')
+    .map(a => a.trim())
+    .filter(Boolean);
+  if (!cik || list.length < 2) {
+    return res.status(400).json({ error: 'cik and at least two comma-separated accessions are required' });
+  }
+  if (list.length > MAX_RETURN_FILINGS) {
+    return res.status(400).json({ error: `at most ${MAX_RETURN_FILINGS} filings per request` });
+  }
+
+  try {
+    const periods = [];
+    for (const acc of [...new Set(list)]) {
+      const { xray } = await getFundXray(cik, acc, { refresh });
+      periods.push({ reportDate: xray.fund?.reportDate || '', xray });
+    }
+    const returns = buildPositionReturns(periods);
+    res.json({ success: true, returns });
+  } catch (error) {
+    console.error('Fund X-Ray returns error:', error.message);
+    res.json({ success: false, returns: null, error: error.message });
   }
 });
 

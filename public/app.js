@@ -12,7 +12,7 @@
    addWatchlistItem, removeWatchlistItem, quickAddToWatchlist, openAbout,
    searchFundXray, runFundXray, doXrayExportCSV, doXrayExportExcel, doXrayExportPDF, selectXrayComparison,
    onXrayCompareSelectChange, runFundXrayCompare, doXrayCompareExportCSV, doXrayCompareExportExcel,
-   doXrayCompareExportPDF, selectIndexedFund, sortBasketLeaderboard */
+   doXrayCompareExportPDF, selectIndexedFund, sortBasketLeaderboard, runXrayReturns */
 
 // ── State ──────────────────────────────────────────────────────────────────
 // Bumped at the start of searchNPORT/searchPrivateCredit/searchFundXray (the
@@ -460,7 +460,7 @@ async function searchNPORT() {
   } catch (err) {
     hideLoading();
     hideProgress();
-    showMsg('Error: ' + err.message, 'error');
+    showMsg('Error: ' + esc(err.message), 'error');
   }
 }
 
@@ -703,6 +703,217 @@ function computeStats(companiesMap) {
   };
 }
 
+// ── Mark analytics: velocity, outliers, and the mark-event ledger ─────────
+// Funds report on different fiscal calendars (real Databricks holders span
+// nine different month-ends), so nothing here assumes filings line up in
+// time: velocity compares a series with its OWN earlier filing, outliers
+// compare against peers' as-of values within a staleness window, and the
+// ledger only orders each fund's own mark changes by date — no interpolated
+// "consensus" line is ever fitted across funds.
+const MARK_DAY_MS = 86400000;
+const VELOCITY_MIN_DAYS = 30;
+const ANNUALIZE_MIN_DAYS = 180;
+const OUTLIER_MIN_REL_DEV = 0.15;
+const OUTLIER_MAX_STALENESS_DAYS = 135;
+const OUTLIER_MIN_PEERS = 4;
+const MARK_EVENT_MIN_MOVE = 0.05;
+const EPISODE_WINDOW_DAYS = 150;
+const EPISODE_MIN_FUNDS = 3;
+
+function seriesObservations(series) {
+  return series.holdings
+    .filter(h => h.chartValue != null && h.chartValue > 0 && h.reportDate)
+    .map(h => ({ t: Date.parse(h.reportDate), date: h.reportDate, value: h.chartValue }))
+    .filter(o => Number.isFinite(o.t))
+    .sort((a, b) => a.t - b.t);
+}
+
+// Latest mark vs. the most recent earlier mark at least VELOCITY_MIN_DAYS
+// back. Annualized only when that gap is long enough to mean something.
+function computeMarkVelocity(series) {
+  const obs = seriesObservations(series);
+  if (obs.length < 2) return null;
+  const last = obs[obs.length - 1];
+  let prev = null;
+  for (let i = obs.length - 2; i >= 0; i--) {
+    if ((last.t - obs[i].t) / MARK_DAY_MS >= VELOCITY_MIN_DAYS) {
+      prev = obs[i];
+      break;
+    }
+  }
+  if (!prev) return null;
+  const days = (last.t - prev.t) / MARK_DAY_MS;
+  const ratio = last.value / prev.value;
+  // Annualizing a single quarter's move explodes (a 60% quarter reads as
+  // +500%/yr), so the annualized figure uses a trailing window of at least
+  // ANNUALIZE_MIN_DAYS instead; the raw latest-interval change is always shown.
+  let annualizedPct = null;
+  let annualizedDays = null;
+  for (let i = obs.length - 2; i >= 0; i--) {
+    const d = (last.t - obs[i].t) / MARK_DAY_MS;
+    if (d >= ANNUALIZE_MIN_DAYS) {
+      annualizedPct = (Math.pow(last.value / obs[i].value, 365 / d) - 1) * 100;
+      annualizedDays = Math.round(d);
+      break;
+    }
+  }
+  const first = obs[0];
+  const spanDays = (last.t - first.t) / MARK_DAY_MS;
+  return {
+    latestPct: (ratio - 1) * 100,
+    days: Math.round(days),
+    annualizedPct,
+    annualizedDays,
+    priorDate: prev.date,
+    sinceFirstPct: spanDays >= VELOCITY_MIN_DAYS ? (last.value / first.value - 1) * 100 : null,
+    spanDays: Math.round(spanDays),
+  };
+}
+
+function madStats(values) {
+  const med = median(values);
+  const mad = median(values.map(v => Math.abs(v - med)));
+  return { med, mad };
+}
+
+// Flags a series whose latest mark is far from what same-class peers were
+// carrying as of that date. Peer value = the peer's most recent observation
+// at or before this date, ignored if older than the staleness window.
+function computeOutlierFlags(seriesList) {
+  const result = {};
+  const byClass = {};
+  seriesList.forEach(sr => (byClass[sr.baseLabel] ||= []).push(sr));
+
+  Object.values(byClass).forEach(group => {
+    const withObs = group.map(sr => ({ sr, obs: seriesObservations(sr) })).filter(g => g.obs.length);
+    withObs.forEach(({ sr, obs }) => {
+      const latest = obs[obs.length - 1];
+      const peers = [];
+      withObs.forEach(other => {
+        if (other.sr === sr || other.sr.company === sr.company) return;
+        const asOf = [...other.obs].reverse().find(o => o.t <= latest.t);
+        if (asOf && (latest.t - asOf.t) / MARK_DAY_MS <= OUTLIER_MAX_STALENESS_DAYS) peers.push(asOf.value);
+      });
+      if (peers.length < OUTLIER_MIN_PEERS) return;
+      const { med, mad } = madStats(peers);
+      const relDev = med ? (latest.value - med) / med : 0;
+      let z = null;
+      let flagged;
+      if (mad > 0) {
+        z = (0.6745 * (latest.value - med)) / mad;
+        flagged = Math.abs(z) > 3.5 && Math.abs(relDev) >= OUTLIER_MIN_REL_DEV;
+      } else {
+        flagged = Math.abs(relDev) >= OUTLIER_MIN_REL_DEV; // peers agree exactly; any material gap stands out
+      }
+      if (flagged) {
+        result[`${sr.company}||${sr.key}`] = {
+          direction: latest.value > med ? 'high' : 'low',
+          z,
+          peerMedian: med,
+          relDevPct: relDev * 100,
+          peerCount: peers.length,
+        };
+      }
+    });
+  });
+  return result;
+}
+
+// Each fund's own consecutive-filing mark changes of at least 5%, grouped
+// into "repricing episodes" (same direction, within ~5 months of the first
+// mover, 3+ different funds). Lead score = how early a fund's move landed
+// within its episodes (1 = first, 0 = last), averaged across episodes.
+function buildMarkEventLedger(seriesList) {
+  const events = [];
+  seriesList.forEach(sr => {
+    const obs = seriesObservations(sr);
+    for (let i = 1; i < obs.length; i++) {
+      const change = obs[i].value / obs[i - 1].value - 1;
+      if (Math.abs(change) >= MARK_EVENT_MIN_MOVE) {
+        events.push({
+          company: sr.company,
+          label: sr.fullLabel,
+          t: obs[i].t,
+          date: obs[i].date,
+          prevDate: obs[i - 1].date,
+          pct: change * 100,
+          dir: change > 0 ? 'up' : 'down',
+        });
+      }
+    }
+  });
+  events.sort((a, b) => a.t - b.t);
+
+  const episodes = [];
+  ['up', 'down'].forEach(dir => {
+    let current = null;
+    events
+      .filter(e => e.dir === dir)
+      .forEach(e => {
+        if (
+          current &&
+          (e.t - current.startT) / MARK_DAY_MS <= EPISODE_WINDOW_DAYS &&
+          !current.events.some(x => x.company === e.company)
+        ) {
+          current.events.push(e);
+        } else {
+          if (current) episodes.push(current);
+          current = { dir, startT: e.t, events: [e] };
+        }
+      });
+    if (current) episodes.push(current);
+  });
+
+  const real = episodes.filter(ep => ep.events.length >= EPISODE_MIN_FUNDS).sort((a, b) => b.startT - a.startT);
+
+  const scores = {};
+  real.forEach(ep => {
+    const n = ep.events.length;
+    ep.events.forEach((e, idx) => {
+      const rank = ep.events.findIndex(x => x.t === e.t); // ties share the earlier rank
+      (scores[e.company] ||= []).push(1 - rank / (n - 1));
+      void idx;
+    });
+  });
+  const leaders = Object.entries(scores)
+    .filter(([, arr]) => arr.length >= 2)
+    .map(([company, arr]) => ({
+      company,
+      episodes: arr.length,
+      leadScore: arr.reduce((a, b) => a + b, 0) / arr.length,
+    }))
+    .sort((a, b) => b.leadScore - a.leadScore);
+
+  return { episodes: real, leaders };
+}
+
+function fmtSignedPct(v, digits = 1) {
+  if (v == null || !isFinite(v)) return '—';
+  return (v > 0 ? '+' : '') + v.toFixed(digits) + '%';
+}
+
+function markLedgerHTML(companiesMap) {
+  const ledger = buildMarkEventLedger(getSeriesGroups(companiesMap));
+  if (!ledger.episodes.length) return '';
+  let html = `<details class="mark-ledger" style="margin-bottom:14px;"><summary style="cursor:pointer; font-weight:600;">Repricing episodes (${ledger.episodes.length}) — who moved first</summary>
+    <div class="hint" style="margin:8px 0;">Funds report on different fiscal calendars, so marks are never blended into one line. Instead, each fund's own filing-to-filing changes of 5%+ are grouped when 3+ funds moved the same direction within about five months, and listed in the order those changes first appeared in a filing.</div>
+    <table><thead><tr><th>Direction</th><th>Window</th><th>Order of first appearance (move)</th></tr></thead><tbody>`;
+  ledger.episodes.forEach(ep => {
+    const last = ep.events[ep.events.length - 1];
+    html += `<tr><td style="color:${ep.dir === 'up' ? 'var(--green)' : 'var(--red)'}; font-weight:600;">${ep.dir === 'up' ? 'Markup' : 'Markdown'}</td><td>${esc(ep.events[0].date)} → ${esc(last.date)}</td><td>${ep.events.map(e => `${esc(e.company)} (${fmtSignedPct(e.pct, 0)}, ${esc(e.date)})`).join(' → ')}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  if (ledger.leaders.length >= 2) {
+    html += `<div class="hint" style="margin:10px 0 4px;">Lead score across episodes (1.00 = consistently first to reprice, 0.00 = consistently last; funds in 2+ episodes only):</div>
+      <table><thead><tr><th>Fund</th><th class="right">Episodes</th><th class="right">Lead Score</th></tr></thead><tbody>`;
+    ledger.leaders.forEach(l => {
+      html += `<tr><td>${esc(l.company)}</td><td class="right">${l.episodes}</td><td class="right">${l.leadScore.toFixed(2)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+  }
+  return html + '</details>';
+}
+
 // ── Reference/benchmark divergence stat box (shared shape for $ and %) ────
 function referenceStatBoxHTML(referenceValue, peerMedian, fmt, unitLabel) {
   if (referenceValue == null || !peerMedian) return '';
@@ -844,6 +1055,7 @@ function renderInstrumentSectionHTML(companiesMap, type, canvasBaseId, tablePref
     </div>
     <div class="chart-canvas-wrap" style="height:${chartHeight}px;"><canvas id="${canvasId}"></canvas></div>
   </div>`;
+  html += markLedgerHTML(companiesMap);
   html += '<div class="results-header"><h2>Holdings by Fund</h2></div>';
   html += renderFundCards(companiesMap, tablePrefix, type);
   html += '</div>';
@@ -926,7 +1138,14 @@ function computeLeaderboardRows(batchResults) {
           ? Math.round((Date.now() - new Date(mostRecent.reportDate)) / 86400000)
           : null;
 
+        const velocities = getSeriesGroups(companiesMap)
+          .map(sr => computeMarkVelocity(sr))
+          .filter(v => v && v.annualizedPct != null)
+          .map(v => v.annualizedPct);
+        const velocityPct = velocities.length ? median(velocities) : null;
+
         return {
+          velocityPct,
           security,
           label: multi ? `${security} (${INSTRUMENT_META[type].sectionTitle})` : security,
           type,
@@ -952,6 +1171,7 @@ function sortLeaderboardRows(rows, field, dir) {
     if (field === 'latest') return row.latestValue;
     if (field === 'funds') return row.fundCount;
     if (field === 'age') return row.ageDays ?? -Infinity;
+    if (field === 'velocity') return row.velocityPct ?? -Infinity;
     return row.dispersionPct ?? -Infinity; // 'dispersion' (default)
   };
   return [...rows].sort((a, b) => {
@@ -993,6 +1213,7 @@ function renderBasketLeaderboardSectionHTML(rows) {
       ${sortableTh('latest', 'Latest Mark', 'right')}
       <th class="right">Peer Range</th>
       ${sortableTh('dispersion', 'Dispersion', 'right')}
+      ${sortableTh('velocity', 'Mark Velocity', 'right')}
       ${sortableTh('funds', 'Funds', 'right')}
       <th class="right">Latest Filing</th>
       ${sortableTh('age', 'Age', 'right')}
@@ -1007,6 +1228,7 @@ function renderBasketLeaderboardSectionHTML(rows) {
       <td class="right price-cell">${meta.fmt(latestValue)}</td>
       <td class="right">${meta.fmt(minValue)} – ${meta.fmt(maxValue)}</td>
       <td class="right" style="color:${leaderboardDispersionColor(dispersionPct)}; font-weight:600;">${dispersionPct == null ? '—' : dispersionPct.toFixed(1) + '%'}</td>
+      <td class="right" title="Median annualized change between each fund's latest mark and its own earlier filing">${fmtSignedPct(row.velocityPct, 0)}</td>
       <td class="right">${fundCount}</td>
       <td class="right">${esc(latestDate || '—')}</td>
       <td class="right" style="color:${leaderboardAgeColor(ageDays)};">${ageDays == null ? '—' : ageDays + 'd'}</td>
@@ -1094,6 +1316,7 @@ function renderFundCards(companiesMap, prefix, type) {
   const meta = INSTRUMENT_META[type] || INSTRUMENT_META.equity;
   let html = '';
   let rowIndex = 0;
+  const outliers = computeOutlierFlags(getSeriesGroups(companiesMap));
 
   Object.keys(companiesMap).forEach((company, compIdx) => {
     const wrapId = `wrap_${prefix}_${compIdx}`;
@@ -1102,13 +1325,26 @@ function renderFundCards(companiesMap, prefix, type) {
     const groups = groupCompanyByInstrumentKey(company, holdings);
     const latestH = [...holdings].sort((a, b) => dateCmp(b.reportDate, a.reportDate))[0];
     const latestV = latestH ? meta.fmt(latestH.chartValue) : '—';
+    const latestSeries = groups.find(g => g.holdings.includes(latestH)) || groups[0];
+    const vel = latestSeries ? computeMarkVelocity(latestSeries) : null;
+    const velText = vel
+      ? ` &bull; ${fmtSignedPct(vel.latestPct)} vs ${esc(vel.priorDate)}${vel.annualizedPct != null ? ` (${fmtSignedPct(vel.annualizedPct, 0)}/yr over ${vel.annualizedDays}d)` : ''}`
+      : '';
+    const flagBadges = groups
+      .map(g => ({ g, o: outliers[`${company}||${g.key}`] }))
+      .filter(x => x.o)
+      .map(
+        ({ g, o }) =>
+          `<span title="Latest mark is ${fmtSignedPct(o.relDevPct)} from the median of ${o.peerCount} same-class peers' as-of marks${o.z != null ? ' (robust z ' + o.z.toFixed(1) + ')' : ''}" style="margin-left:8px; padding:1px 8px; border-radius:10px; font-size:11px; font-weight:600; color:#fff; background:${o.direction === 'high' ? 'var(--red)' : 'var(--gold)'};">Outlier ${o.direction === 'high' ? '▲' : '▼'} ${fmtSignedPct(o.relDevPct, 0)}${groups.length > 1 ? ' · ' + esc(g.shortLabel) : ''}</span>`
+      )
+      .join('');
 
     html += `
       <div class="fund-card">
         <div class="fund-header" onclick="toggleFund('${wrapId}','${arrowId}')">
           <div>
-            <div class="fund-name">${esc(company)}</div>
-            <div class="fund-meta">${holdings.length} data point(s) &bull; Latest: ${latestV}</div>
+            <div class="fund-name">${esc(company)}${flagBadges}</div>
+            <div class="fund-meta">${holdings.length} data point(s) &bull; Latest: ${latestV}${velText}</div>
           </div>
           <div class="fund-actions">
             <button class="btn btn-sm btn-primary"   onclick="event.stopPropagation(); selectAllRows('${wrapId}', true)">All</button>
@@ -2136,7 +2372,7 @@ async function searchPrivateCredit() {
   } catch (err) {
     hideLoading();
     hideProgress();
-    showMsg('Error: ' + err.message, 'error');
+    showMsg('Error: ' + esc(err.message), 'error');
   }
 }
 
@@ -2891,7 +3127,7 @@ async function searchFundXray() {
     await runFundXray();
   } catch (err) {
     hideLoading();
-    showMsg('Error: ' + err.message, 'error');
+    showMsg('Error: ' + esc(err.message), 'error');
   }
 }
 
@@ -2906,7 +3142,7 @@ async function runFundXray() {
     if (myXrayGen !== xrayRunGeneration) return;
     hideLoading();
     if (!data.success || !data.xray) {
-      return showMsg('Error: ' + (data.error || 'Could not parse this filing.'), 'error');
+      return showMsg('Error: ' + esc(data.error || 'Could not parse this filing.'), 'error');
     }
     renderFundXray(data.xray, filing);
 
@@ -2919,7 +3155,7 @@ async function runFundXray() {
     }
   } catch (err) {
     hideLoading();
-    showMsg('Error: ' + err.message, 'error');
+    showMsg('Error: ' + esc(err.message), 'error');
   }
 }
 
@@ -3020,6 +3256,9 @@ function buildXraySnapshotHTML(xray, filing, opts) {
       '<div class="alert alert-info">No private equity holdings (Level-3 equity, warrants, or SPV vehicles) found in this filing — this fund’s book appears to hold no private equity as of this report date. (It may still hold Level-3 bonds/loans or Level-2 restricted stock, which this view intentionally excludes.)</div>';
   }
 
+  html += capitalStructureHTML(xray);
+  if (opts.exportKey !== 'prior') html += xrayReturnsPanelHTML();
+
   html += `<div class="export-row">
     <button class="btn btn-green" onclick="doXrayExportCSV('${esc(opts.exportKey || 'current')}')">Export CSV</button>
     <button class="btn btn-green" onclick="doXrayExportExcel('${esc(opts.exportKey || 'current')}')">Export Excel</button>
@@ -3027,6 +3266,102 @@ function buildXraySnapshotHTML(xray, filing, opts) {
   </div>`;
   html += '</div>';
   return html;
+}
+
+// ── Fund X-Ray: per-issuer capital structure ──────────────────────────────
+// One private company can be held through several instruments at once
+// (preferred + warrant + term loan). Only issuers actually held through 2+
+// instrument types are listed — a single-tranche holding is already visible
+// in the table above and adds nothing here.
+function capitalStructureHTML(xray) {
+  const rows = (xray.capitalStructure || []).filter(c => c.multiTranche);
+  if (!rows.length) return '';
+  const pct = v => (v != null && !isNaN(v) ? v.toFixed(1) + '%' : '—');
+  let html = '<div class="results-header"><h2>Capital Structure by Private Issuer</h2></div>';
+  html +=
+    '<div class="hint">This fund holds the issuers below through more than one instrument. Listed most senior first — debt ranks ahead of preferred, which ranks ahead of common and warrants if the company is wound up.</div>';
+  rows.forEach(c => {
+    html += `<div class="fund-card" style="margin-bottom:12px;"><div class="fund-header" style="cursor:default;">
+      <div><div class="fund-name">${esc(c.issuer)}</div>
+      <div class="fund-meta">${fmtCompactCurrency(c.totalValueUSD)} total${c.pctOfNetAssets != null ? ` &bull; ${c.pctOfNetAssets.toFixed(3)}% of fund net assets` : ''} &bull; ${pct(c.debtPctOfExposure)} debt${c.weightedDebtCouponPct != null ? ` (avg coupon ${c.weightedDebtCouponPct.toFixed(2)}%)` : ''}</div></div></div>
+      <table><thead><tr><th>Rank</th><th>Instrument</th><th>Type</th><th class="right">Terms</th><th class="right">$ Value</th><th class="right">% of Issuer Exposure</th></tr></thead><tbody>`;
+    c.instruments.forEach((i, idx) => {
+      const terms =
+        i.instrumentType === 'debt' && (i.couponPct != null || i.maturity)
+          ? `${i.couponPct != null ? i.couponPct + '%' : ''}${i.maturity ? ' due ' + esc(i.maturity) : ''}`
+          : '—';
+      html += `<tr><td>${idx + 1}</td><td class="title-cell">${esc(i.title || '—')}</td><td>${esc(i.instrumentLabel || i.instrumentType)}</td><td class="right">${terms}</td><td class="right">${fmtCompactCurrency(i.marketValue)}</td><td class="right">${pct(c.totalValueUSD ? (i.marketValue / c.totalValueUSD) * 100 : null)}</td></tr>`;
+    });
+    html += '</tbody></table></div>';
+  });
+  return html;
+}
+
+// ── Fund X-Ray: mark-implied returns ──────────────────────────────────────
+const XRAY_RETURNS_MAX_FILINGS = 8;
+
+function xrayReturnsPanelHTML() {
+  return `<div class="results-header"><h2>Mark-Implied Returns</h2></div>
+    <div class="hint">Builds a return history for each private position from this fund's last ${XRAY_RETURNS_MAX_FILINGS} filings (counting back from the selected period). Fetches each filing, so it can take a moment.</div>
+    <div class="search-row" style="margin-bottom:14px;"><button class="btn btn-primary" id="xrayReturnsBtn" onclick="runXrayReturns()">Compute Mark-Implied Returns</button></div>
+    <div id="xrayReturnsResult"></div>`;
+}
+
+async function runXrayReturns() {
+  const out = document.getElementById('xrayReturnsResult');
+  const btn = document.getElementById('xrayReturnsBtn');
+  const start = +document.getElementById('xrayFilingSelect').value || 0;
+  const filings = xrayFilings.slice(start, start + XRAY_RETURNS_MAX_FILINGS);
+  if (filings.length < 2) {
+    out.innerHTML =
+      '<div class="alert alert-info">Need at least two filings for this fund to build a return history.</div>';
+    return;
+  }
+  btn.disabled = true;
+  out.innerHTML = `<div class="hint">Fetching ${filings.length} filings…</div>`;
+  const myGen = xrayRunGeneration;
+  try {
+    const data = await fetchJSON(
+      `/api/fund-xray-returns?cik=${enc(filings[0].cik)}&accessions=${enc(filings.map(f => f.accession).join(','))}`
+    );
+    if (myGen !== xrayRunGeneration) return;
+    if (!data.success) throw new Error(data.error || 'Request failed');
+    out.innerHTML = returnsResultHTML(data.returns);
+  } catch (e) {
+    if (myGen === xrayRunGeneration) out.innerHTML = `<div class="alert alert-error">${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function returnsResultHTML(r) {
+  const s = r.summary;
+  const x = v => (v != null && isFinite(v) ? v.toFixed(2) + '×' : '—');
+  const pctFmt = v => (v != null && isFinite(v) ? (v * 100).toFixed(1) + '%' : '—');
+  let html = `<div class="alert alert-warning">These are <strong>proxies built from the fund's own quarter-end marks</strong>, not real returns. NPORT-P never reports what a fund paid, so each purchase is costed at the mark on the period it first appears (or grows). A position already held in the oldest filing shown is measured from that filing, not from its true purchase (flagged below). A holding that leaves the private book is assumed realized at its last mark — the filing can't distinguish a sale from a conversion into a public listing.</div>`;
+  html += `<div class="stats-grid">
+    <div class="stat-box"><div class="stat-label">Mark-Implied MOIC</div><div class="stat-value highlight">${x(s.moic)}</div><div class="stat-sub">${s.positionCount} positions, ${s.periodCount} filings</div></div>
+    <div class="stat-box"><div class="stat-label">Mark-Implied IRR</div><div class="stat-value">${pctFmt(s.irr)}</div><div class="stat-sub">${esc(s.firstDate)} → ${esc(s.lastDate)}</div></div>
+    <div class="stat-box"><div class="stat-label">Proxy Invested</div><div class="stat-value sm">${fmtCompactCurrency(s.invested)}</div></div>
+    <div class="stat-box"><div class="stat-label">Realized</div><div class="stat-value sm">${fmtCompactCurrency(s.realized)}</div><div class="stat-sub">${fmtCompactCurrency(s.partialSales)} partial sales · ${fmtCompactCurrency(s.leftPrivateBook)} left private book</div></div>
+    <div class="stat-box"><div class="stat-label">Unrealized Value</div><div class="stat-value sm">${fmtCompactCurrency(s.currentValue)}</div></div>
+  </div>`;
+  if (s.excludedCount) {
+    html += `<div class="hint">${s.excludedCount} position(s) excluded from the totals — no usable share count / price to cost them.</div>`;
+  }
+  html += `<table><thead><tr><th>Position</th><th>Since</th><th class="right">Invested</th><th class="right">Realized</th><th class="right">Unrealized</th><th class="right">MOIC</th><th class="right">IRR</th><th>Notes</th></tr></thead><tbody>`;
+  r.positions.forEach(p => {
+    const notes = [];
+    if (p.entryIsWindowStart) notes.push('held before oldest filing');
+    if (p.lotsUnavailable) notes.push('no share/price data');
+    if (p.chainedFrom) notes.push('converted from ' + p.chainedFrom);
+    const adds = p.events.filter(e => e.type === 'addon').length;
+    if (adds) notes.push(adds + ' add-on' + (adds > 1 ? 's' : ''));
+    if (p.events.some(e => e.type === 'partial_realization')) notes.push('partial sale');
+    if (p.status === 'exited') notes.push('left private book ' + p.lastDate);
+    html += `<tr><td class="title-cell">${esc(p.title || p.name)}</td><td>${esc(p.firstDate)}</td><td class="right">${p.lotsUnavailable ? '—' : fmtCompactCurrency(p.invested)}</td><td class="right">${p.lotsUnavailable ? '—' : fmtCompactCurrency(p.realized)}</td><td class="right">${fmtCompactCurrency(p.currentValue)}</td><td class="right">${p.lotsUnavailable ? '—' : x(p.moic)}</td><td class="right">${p.lotsUnavailable ? '—' : pctFmt(p.irr)}</td><td>${esc(notes.join('; ') || '—')}</td></tr>`;
+  });
+  return html + '</tbody></table>';
 }
 
 function renderFundXray(xray, filing) {
@@ -3253,7 +3588,7 @@ async function runFundXrayCompare() {
     );
     hideLoading();
     if (!data.success || !data.comparison) {
-      return showMsg('Error: ' + (data.error || 'Could not build this comparison.'), 'error');
+      return showMsg('Error: ' + esc(data.error || 'Could not build this comparison.'), 'error');
     }
     currentXrayCompare = data.comparison;
     // Order on the page: 1) analysis (prepended, see renderFundXrayComparison)
@@ -3266,7 +3601,7 @@ async function runFundXrayCompare() {
     await renderPriorXraySnapshot(priorFiling);
   } catch (err) {
     hideLoading();
-    showMsg('Error: ' + err.message, 'error');
+    showMsg('Error: ' + esc(err.message), 'error');
   }
 }
 

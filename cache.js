@@ -46,10 +46,13 @@
 // foreign-ownership rules, unrelated to being privately held. Level 3 is
 // now the sole signal. Bumped so cached results computed under the old
 // Level-2-can-qualify definition are re-parsed.
+// v7: Fund X-Ray results gained a capitalStructure rollup (per-issuer
+// equity/derivative/debt tranches) — bumped so cached fundxray rows built
+// under v6 (which lack it) are re-parsed instead of rendering without it.
 const path = require('path');
 const Database = require('better-sqlite3');
 
-const PARSE_VERSION = 6;
+const PARSE_VERSION = 7;
 // `|| 60 * 60 * 1000` would silently discard an operator's explicit
 // SEARCH_CACHE_TTL_MS=0 (disable search caching entirely) and fall back to
 // the 1-hour default, since 0 is falsy — Number.isFinite tells "0" apart

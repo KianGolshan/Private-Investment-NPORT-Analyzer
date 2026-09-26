@@ -447,7 +447,77 @@ function buildFundXRay(holdings, fundMeta) {
     byCountry,
     privateHoldings,
     topPrivateHoldings: privateHoldings.slice(0, 10),
+    capitalStructure: buildIssuerCapitalStructure(holdings, meta.netAssets > 0 ? meta.netAssets : 0),
   };
+}
+
+// ── Per-issuer capital-structure rollup (Fund X-Ray) ────────────────────────
+// A fund can hold several instruments in ONE private company at once (real
+// case: Kandou — Series D preferred + warrants + a 7.0% term loan, all in one
+// filing). buildFundXRay buckets by instrument type across the whole book, so
+// nothing tied those back together. This groups every holding of an issuer
+// that has at least one private-equity position, ordered by seniority
+// (debt > preferred > common/indirect > derivative).
+
+function seniorityRank(h) {
+  if (h.instrumentType === 'debt') return 1;
+  if (h.instrumentType === 'equity' && /^Preferred/.test(h.instrumentLabel || '')) return 2;
+  if (h.instrumentType === 'derivative') return 4;
+  return 3;
+}
+
+function parseDebtTerms(title) {
+  const t = String(title || '');
+  const rate = t.match(/(\d+\.?\d*)\s*%/);
+  const date = t.match(/(\d{1,2}-\d{1,2}-\d{2,4})/);
+  return { couponPct: rate ? parseFloat(rate[1]) : null, maturity: date ? date[1] : null };
+}
+
+function buildIssuerCapitalStructure(holdings, netAssets) {
+  const byIssuer = new Map();
+  for (const h of holdings) {
+    const key = normalizeMatchText(h.issuer || h.name);
+    if (!key) continue;
+    if (!byIssuer.has(key)) byIssuer.set(key, []);
+    byIssuer.get(key).push(h);
+  }
+
+  const out = [];
+  for (const [, hs] of byIssuer) {
+    if (!hs.some(h => h.isPrivate)) continue;
+    const instruments = hs
+      .map(h => ({
+        title: h.title,
+        instrumentType: h.instrumentType,
+        instrumentLabel: h.instrumentLabel,
+        marketValue: h.marketValue || 0,
+        shares: h.shares,
+        pricePerShare: h.pricePerShare,
+        seniority: seniorityRank(h),
+        ...(h.instrumentType === 'debt' ? parseDebtTerms(h.title) : {}),
+      }))
+      .sort((a, b) => a.seniority - b.seniority || b.marketValue - a.marketValue);
+
+    const totalValueUSD = instruments.reduce((s, i) => s + i.marketValue, 0);
+    const byType = {};
+    for (const i of instruments) byType[i.instrumentType] = (byType[i.instrumentType] || 0) + i.marketValue;
+    const debtUSD = byType.debt || 0;
+    const weightedCoupon = instruments
+      .filter(i => i.instrumentType === 'debt' && i.couponPct != null && i.marketValue > 0)
+      .reduce((acc, i) => ({ w: acc.w + i.marketValue, c: acc.c + i.marketValue * i.couponPct }), { w: 0, c: 0 });
+
+    out.push({
+      issuer: hs[0].issuer || hs[0].name,
+      totalValueUSD,
+      pctOfNetAssets: netAssets > 0 ? (totalValueUSD / netAssets) * 100 : null,
+      byType,
+      debtPctOfExposure: totalValueUSD ? (debtUSD / totalValueUSD) * 100 : null,
+      weightedDebtCouponPct: weightedCoupon.w ? weightedCoupon.c / weightedCoupon.w : null,
+      multiTranche: Object.keys(byType).length > 1,
+      instruments,
+    });
+  }
+  return out.sort((a, b) => b.totalValueUSD - a.totalValueUSD);
 }
 
 // ── Fund X-Ray period comparison (QoQ / YoY) ────────────────────────────────
@@ -683,6 +753,241 @@ function buildFundXRayComparison(current, prior) {
       topMarkdowns: capped(topMarkdowns),
     },
   };
+}
+
+// ── Mark-implied returns (lot accounting across a fund's filings) ────────────
+// NPORT-P never discloses cost basis or purchase price — only fair value and
+// unit count per period. So cost here is a PROXY: each lot is costed at the
+// fund's own mark on the period it first shows up (entry) or grows (add-on).
+// A share-count decrease is a partial realization at the current mark (average
+// cost removed), never a loss. Positions present in the OLDEST filing supplied
+// have unknown true entry, so they're flagged entryIsWindowStart and their
+// MOIC/IRR is measured from that window start, not from the real purchase.
+
+function xirr(flows) {
+  const fl = flows.filter(f => Number.isFinite(f.t) && Number.isFinite(f.amount) && f.amount !== 0);
+  if (fl.length < 2) return null;
+  const hasNeg = fl.some(f => f.amount < 0);
+  const hasPos = fl.some(f => f.amount > 0);
+  if (!hasNeg || !hasPos) return null;
+  const t0 = Math.min(...fl.map(f => f.t));
+  const span = (Math.max(...fl.map(f => f.t)) - t0) / 86400000;
+  if (span < 30) return null;
+  const npv = r => fl.reduce((s, f) => s + f.amount / Math.pow(1 + r, (f.t - t0) / (365 * 86400000)), 0);
+  let lo = -0.99;
+  let hi = 10;
+  if (npv(lo) * npv(hi) > 0) return null;
+  for (let i = 0; i < 200; i++) {
+    const mid = (lo + hi) / 2;
+    if (npv(lo) * npv(mid) <= 0) hi = mid;
+    else lo = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+// `periods`: [{ reportDate, xray }] for ONE fund, any order (sorted here).
+function buildPositionReturns(periods) {
+  const sorted = [...periods]
+    .filter(p => p && p.xray)
+    .sort((a, b) => String(a.reportDate).localeCompare(String(b.reportDate)));
+  const dateOf = p => Date.parse(p.reportDate);
+
+  const all = []; // every position ever created (some later merged away)
+  let open = []; // positions currently held as of the last processed period
+
+  const newPos = (h, date, dateStr, windowStart) => {
+    const usable = h.shares > 0 && h.pricePerShare != null && h.pricePerShare > 0;
+    const cost = usable ? h.shares * h.pricePerShare : h.marketValue || 0;
+    const pos = {
+      name: h.name,
+      issuer: h.issuer,
+      title: h.title,
+      instrumentLabel: h.instrumentLabel,
+      shares: h.shares,
+      cost,
+      invested: cost,
+      realized: 0,
+      flows: [{ t: date, amount: -cost }],
+      lots: [{ date: dateStr, shares: h.shares, pricePerShare: h.pricePerShare, cost, kind: 'entry' }],
+      events: [],
+      status: 'open',
+      firstDate: dateStr,
+      lastDate: dateStr,
+      entryIsWindowStart: windowStart,
+      lotsUnavailable: !usable,
+      chainedFrom: null,
+      lastHolding: h,
+      currentValue: h.marketValue || 0,
+    };
+    all.push(pos);
+    return pos;
+  };
+
+  sorted.forEach((period, idx) => {
+    const holdings = period.xray.privateHoldings || [];
+    const date = dateOf(period);
+    const dateStr = period.reportDate;
+
+    if (idx === 0) {
+      open = holdings.map(h => newPos(h, date, dateStr, true));
+      return;
+    }
+
+    const priorHoldings = open.map(p => p.lastHolding);
+    const posByHolding = new Map(open.map(p => [p.lastHolding, p]));
+    const pairs = matchFundXRayPositions(holdings, priorHoldings);
+
+    const nextOpen = [];
+    const exited = [];
+    const born = [];
+
+    for (const { current: c, prior: pr } of pairs) {
+      if (c && pr) {
+        const pos = posByHolding.get(pr);
+        pos.lastDate = dateStr;
+        pos.currentValue = c.marketValue || 0;
+        const canLot = pos.shares > 0 && c.shares > 0 && c.pricePerShare != null && c.pricePerShare > 0;
+        if (canLot && !pos.lotsUnavailable) {
+          const delta = c.shares - pos.shares;
+          if (Math.abs(delta) / pos.shares > 1e-9) {
+            if (delta > 0) {
+              const cost = delta * c.pricePerShare;
+              pos.cost += cost;
+              pos.invested += cost;
+              pos.flows.push({ t: date, amount: -cost });
+              pos.lots.push({ date: dateStr, shares: delta, pricePerShare: c.pricePerShare, cost, kind: 'addon' });
+              pos.events.push({ date: dateStr, type: 'addon', shares: delta, usd: cost });
+            } else {
+              const reduced = -delta;
+              const costRemoved = pos.cost * (reduced / pos.shares);
+              const proceeds = reduced * c.pricePerShare;
+              pos.cost -= costRemoved;
+              pos.realized += proceeds;
+              pos.flows.push({ t: date, amount: proceeds });
+              pos.events.push({ date: dateStr, type: 'partial_realization', shares: reduced, usd: proceeds });
+            }
+          }
+          pos.shares = c.shares;
+        } else {
+          pos.lotsUnavailable = true;
+        }
+        pos.lastHolding = c;
+        nextOpen.push(pos);
+      } else if (c) {
+        const pos = newPos(c, date, dateStr, false);
+        born.push(pos);
+        nextOpen.push(pos);
+      } else {
+        const pos = posByHolding.get(pr);
+        const proceeds = pr.marketValue || 0;
+        pos.realized += proceeds;
+        pos.flows.push({ t: date, amount: proceeds });
+        pos.events.push({ date: dateStr, type: 'left_private_book', usd: proceeds });
+        pos.status = 'exited';
+        pos.currentValue = 0;
+        pos.lastDate = dateStr;
+        pos.costAtExit = pos.cost;
+        pos.cost = 0;
+        pos.shares = 0;
+        exited.push(pos);
+      }
+    }
+
+    // Conversion chaining: one instrument leaving the private book while a new
+    // one of the SAME issuer appears in the same step is most likely a
+    // conversion / reclassification, not a real sale + fresh purchase. Merge
+    // the lineage so the exit isn't booked as a realization.
+    const issuerKey = p => normalizeMatchText(p.issuer || p.name);
+    for (const ex of exited) {
+      const targets = born.filter(b => issuerKey(b) === issuerKey(ex) && !b.chainedFrom);
+      if (!targets.length) continue;
+      const totalValue = targets.reduce((sum, b) => sum + (b.currentValue || 0), 0) || 1;
+      // Undo the realization booked in the exit branch — it wasn't a sale.
+      const undo = ex.events.pop();
+      ex.realized -= undo.usd;
+      ex.flows.pop();
+      ex.status = 'converted';
+      ex.mergedAway = true;
+      for (const b of targets) {
+        const share = (b.currentValue || 0) / totalValue;
+        // Strip the fresh entry lot newPos booked: converted value isn't new capital.
+        const fresh = b.lots.shift();
+        b.invested -= fresh.cost;
+        b.flows.shift();
+        b.chainedFrom = ex.title;
+        b.entryIsWindowStart = ex.entryIsWindowStart;
+        b.firstDate = ex.firstDate;
+        b.invested += ex.invested * share;
+        b.realized += ex.realized * share;
+        b.cost = ex.costAtExit * share;
+        b.lotsUnavailable = b.lotsUnavailable || ex.lotsUnavailable;
+        b.lots = ex.lots.map(l => ({ ...l, cost: l.cost * share, shares: l.shares * share })).concat(b.lots);
+        b.flows = ex.flows.map(f => ({ ...f, amount: f.amount * share })).concat(b.flows);
+        b.events = ex.events
+          .map(e => ({ ...e }))
+          .concat([{ date: dateStr, type: 'conversion_chained', from: ex.title }], b.events);
+      }
+    }
+
+    open = nextOpen;
+  });
+
+  const lastDate = sorted.length ? dateOf(sorted[sorted.length - 1]) : NaN;
+  const positions = all
+    .filter(p => !p.mergedAway)
+    .map(p => {
+      const currentValue = p.status === 'open' ? p.currentValue : 0;
+      const flows = p.flows.map(f => ({ ...f }));
+      if (currentValue > 0) flows.push({ t: lastDate, amount: currentValue });
+      const moic = p.invested > 0 ? (p.realized + currentValue) / p.invested : null;
+      const irr = xirr(flows);
+      return {
+        name: p.name,
+        issuer: p.issuer,
+        title: p.title,
+        instrumentLabel: p.instrumentLabel,
+        status: p.status,
+        firstDate: p.firstDate,
+        lastDate: p.lastDate,
+        entryIsWindowStart: p.entryIsWindowStart,
+        lotsUnavailable: p.lotsUnavailable,
+        chainedFrom: p.chainedFrom,
+        invested: p.invested,
+        realized: p.realized,
+        costBasis: p.status === 'open' ? p.cost : 0,
+        currentValue,
+        moic,
+        irr,
+        lots: p.lots,
+        events: p.events,
+        _flows: flows,
+      };
+    })
+    .sort((a, b) => b.invested - a.invested);
+
+  const usable = positions.filter(p => !p.lotsUnavailable && p.invested > 0);
+  const sumEvents = (list, type) =>
+    list.reduce((sum, p) => sum + p.events.filter(e => e.type === type).reduce((s2, e) => s2 + (e.usd || 0), 0), 0);
+  const invested = usable.reduce((s, p) => s + p.invested, 0);
+  const realized = usable.reduce((s, p) => s + p.realized, 0);
+  const currentValue = usable.reduce((s, p) => s + p.currentValue, 0);
+  const summary = {
+    positionCount: usable.length,
+    invested,
+    realized,
+    currentValue,
+    moic: invested > 0 ? (realized + currentValue) / invested : null,
+    irr: xirr(usable.flatMap(p => p._flows)),
+    partialSales: sumEvents(usable, 'partial_realization'),
+    leftPrivateBook: sumEvents(usable, 'left_private_book'),
+    windowStartCount: usable.filter(p => p.entryIsWindowStart).length,
+    excludedCount: positions.length - usable.length,
+    firstDate: sorted[0]?.reportDate || '',
+    lastDate: sorted[sorted.length - 1]?.reportDate || '',
+    periodCount: sorted.length,
+  };
+  positions.forEach(p => delete p._flows);
+  return { positions, summary };
 }
 
 // ── Private Credit helpers ─────────────────────────────────────────────────
@@ -953,4 +1258,8 @@ module.exports = {
   buildFundXRay,
   positionMatchKey,
   buildFundXRayComparison,
+  buildIssuerCapitalStructure,
+  parseDebtTerms,
+  xirr,
+  buildPositionReturns,
 };

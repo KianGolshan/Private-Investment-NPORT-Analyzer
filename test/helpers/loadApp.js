@@ -28,15 +28,46 @@ const htmlWithoutScripts = rawHtml
 // installed as window.fetch before app.js runs its init IIFE (which calls
 // GET /api/config on load) — pass one even for tests that don't care about
 // the config check, so that fire-and-forget call doesn't throw.
-async function loadApp({ fetchImpl } = {}) {
-  const dom = new JSDOM(htmlWithoutScripts, { url: 'http://localhost/' });
+// Chart.js stand-in that records every chart the app builds, so UI tests can
+// assert on datasets/destroy/update without a real canvas (jsdom has none).
+function makeFakeChart() {
+  const instances = [];
+  class FakeChart {
+    constructor(ctx, cfg) {
+      this.ctx = ctx;
+      this.config = cfg;
+      this.data = cfg?.data || { datasets: [] };
+      this.options = cfg?.options || {};
+      this.updates = 0;
+      this.destroyed = false;
+      instances.push(this);
+    }
+    update() {
+      this.updates++;
+    }
+    destroy() {
+      this.destroyed = true;
+    }
+    resize() {}
+    static getChart() {
+      return null;
+    }
+  }
+  FakeChart.instances = instances;
+  return FakeChart;
+}
+
+async function loadApp({ fetchImpl, url = 'http://localhost/' } = {}) {
+  const dom = new JSDOM(htmlWithoutScripts, { url });
   const context = dom.window;
   vm.createContext(context);
 
   context.fetch = fetchImpl || (async () => ({ ok: true, json: async () => ({}) }));
   // Unused by any Fund X-Ray code path; stubbed only so app.js's top-level
   // parse doesn't reference an undeclared global if it ever does at load time.
-  context.Chart = function Chart() {};
+  // jsdom has no canvas backend; a truthy stub context lets chart-building run.
+  context.HTMLCanvasElement.prototype.getContext = () => ({});
+  context.Chart = makeFakeChart();
   context.XLSX = {};
 
   vm.runInContext(appJsSource, context, { filename: 'public/app.js' });
