@@ -19,9 +19,11 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..', '..');
 const rawHtml = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8');
 const appJsSource = fs.readFileSync(path.join(ROOT, 'public', 'app.js'), 'utf8');
+const splitsSource = fs.readFileSync(path.join(ROOT, 'public', 'splits.js'), 'utf8');
 
 const htmlWithoutScripts = rawHtml
   .replace(/<script src="https:\/\/[^"]*"><\/script>\s*/g, '')
+  .replace(/<script src="splits\.js"><\/script>\s*/g, '')
   .replace(/<script src="app\.js"><\/script>\s*/g, '');
 
 // Builds a fresh window/document + evaluates app.js into it. `fetchImpl` is
@@ -70,6 +72,7 @@ async function loadApp({ fetchImpl, url = 'http://localhost/' } = {}) {
   context.Chart = makeFakeChart();
   context.XLSX = {};
 
+  vm.runInContext(splitsSource, context, { filename: 'public/splits.js' });
   vm.runInContext(appJsSource, context, { filename: 'public/app.js' });
 
   // app.js's module-level state (TOP_FUND_GROUPS, xrayFilings, xraySnapshots,

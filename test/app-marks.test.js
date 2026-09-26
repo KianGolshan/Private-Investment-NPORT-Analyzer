@@ -297,3 +297,85 @@ test("computeOutlierFlags: a fund's own other series never count as its peers", 
   // Only 3 independent peers: not enough to call an outlier (the sibling series must not pad the count).
   assert.deepEqual(Object.keys(window.computeOutlierFlags(list)), []);
 });
+
+// ── stock splits inside the mark analytics (real Destiny Tech100 SpaceX SPVs) ──
+
+function realSeries(company, points) {
+  return {
+    company,
+    key: company + '-k',
+    baseLabel: 'Indirect',
+    shortLabel: 'Indirect',
+    fullLabel: company,
+    holdings: points.map(([reportDate, shares, pricePerShare]) => ({
+      reportDate,
+      shares,
+      pricePerShare,
+      chartValue: pricePerShare,
+      instrumentType: 'indirect',
+    })),
+  };
+}
+
+test('mark velocity restates prices across a real 5-for-1 split: DXYZ SpaceX I LLC $529.10 → $170.86 is +61.5%, not −67.7%', async () => {
+  const { window } = await loadApp();
+  const v = window.computeMarkVelocity(
+    realSeries('DXYZ SpaceX I LLC', [
+      ['2025-12-31', 135135, 403.3],
+      ['2026-03-31', 135135, 529.1],
+      ['2026-06-30', 675675, 170.86],
+    ])
+  );
+  assert.ok(close(v.latestPct, (170.86 / (529.1 / 5) - 1) * 100, 1e-9), `latest ${v.latestPct}`);
+  assert.ok(v.latestPct > 61 && v.latestPct < 62);
+  assert.equal(v.splitAdjusted, true);
+  // Trailing window (2025-12-31 → 2026-06-30, 181 days) is under 180 days? 2025-12-31→2026-06-30 = 181 days → annualized present and split-adjusted too.
+  assert.ok(close(v.sinceFirstPct, (170.86 / (403.3 / 5) - 1) * 100, 1e-9));
+});
+
+test('no split, no adjustment: the same fund’s earlier real quarters are read at face value', async () => {
+  const { window } = await loadApp();
+  const v = window.computeMarkVelocity(
+    realSeries('DXYZ SpaceX I LLC', [
+      ['2025-12-31', 135135, 403.3],
+      ['2026-03-31', 135135, 529.1],
+    ])
+  );
+  assert.ok(close(v.latestPct, (529.1 / 403.3 - 1) * 100, 1e-9));
+  assert.equal(v.splitAdjusted, false);
+});
+
+test('a real split is not an outlier or a repricing event: the ledger and outlier flags see the split-adjusted marks', async () => {
+  const { window } = await loadApp();
+  // Three real SpaceX SPVs across Destiny Tech100 / Private Shares Fund on 2026-06-30, all split 5-for-1 that quarter.
+  const list = [
+    realSeries('DXYZ SpaceX I LLC', [
+      ['2026-03-31', 135135, 529.1],
+      ['2026-06-30', 675675, 170.86],
+    ]),
+    realSeries('MWAM VC SpaceX-II', [
+      ['2026-03-31', 42857, 483.89],
+      ['2026-06-30', 214285, 155.31],
+    ]),
+    realSeries('SC JAL, LLC', [
+      ['2026-03-31', 21086, 526.59],
+      ['2026-06-30', 105430, 170.86],
+    ]),
+    realSeries('HOF Capital WH', [
+      ['2026-03-31', 38310, 526.59],
+      ['2026-06-30', 191550, 170.86],
+    ]),
+    realSeries('MVP Opportunity VI', [
+      ['2026-03-31', 6133, 526.5899],
+      ['2026-06-30', 30665, 170.86],
+    ]),
+  ];
+  const ledger = window.buildMarkEventLedger(list);
+  // Raw prices fell ~68% for all five; adjusted they rose ~62%, all in the same direction — one markup episode, never a markdown.
+  assert.equal(ledger.episodes.length, 1);
+  assert.equal(ledger.episodes[0].dir, 'up');
+  assert.ok(
+    ledger.episodes[0].events.every(e => e.pct > 55 && e.pct < 65),
+    JSON.stringify(Array.from(ledger.episodes[0].events, e => e.pct))
+  );
+});

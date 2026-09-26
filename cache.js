@@ -49,10 +49,22 @@
 // v7: Fund X-Ray results gained a capitalStructure rollup (per-issuer
 // equity/derivative/debt tranches) — bumped so cached fundxray rows built
 // under v6 (which lack it) are re-parsed instead of rendering without it.
+// v13: Private Credit rows: colspan-misaligned figures read in order; company total
+// rows, unfunded commitments and unit-denominated "par" no longer become holdings/marks.
+// v12: Private Credit header matching widened (Investments/Issuer company columns,
+// Par / Units principal, Cost/Amortized Cost, combined Reference Rate and Spread).
+// v11: holdings carry filerId (the filer's own instrument id) used to track
+// positions across periods — verified stable on 3,652 real position pairs.
+// v9: instrumentKey no longer falls back to placeholder CUSIPs ("000000000"),
+// and Fund X-Ray results gained issuer-stem grouping — bumped so cached rows
+// keyed under the old rules are re-parsed.
+// v8: extractHoldings rows gained seriesName and fund meta gained seriesId
+// (multi-series trusts file one NPORT-P per fund) — bumped so older cached
+// rows lacking them are re-parsed.
 const path = require('path');
 const Database = require('better-sqlite3');
 
-const PARSE_VERSION = 7;
+const PARSE_VERSION = 16;
 // `|| 60 * 60 * 1000` would silently discard an operator's explicit
 // SEARCH_CACHE_TTL_MS=0 (disable search caching entirely) and fall back to
 // the 1-hour default, since 0 is falsy — Number.isFinite tells "0" apart

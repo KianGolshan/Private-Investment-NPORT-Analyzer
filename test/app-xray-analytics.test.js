@@ -232,3 +232,210 @@ test('fetchJSON: a non-JSON 200 rejects rather than hanging the UI', async () =>
   assert.match(document.getElementById('msgBox').textContent, /Error: Unexpected token/);
   void jsonResponse;
 });
+
+// ── multi-series trusts (real Fidelity Advisor Series I series list) ────────
+
+const REAL_FIDELITY_SERIES = [
+  ['S000017684', 'Fidelity Advisor Capital and Income Fund', '2026-07-31'],
+  ['S000005121', 'Fidelity Advisor Equity Growth Fund', '2026-05-31'],
+  ['S000017683', 'Fidelity Advisor Floating Rate High Income Fund', '2026-07-31'],
+  ['S000005111', 'Fidelity Advisor Growth Opportunities Fund', '2026-05-31'],
+  ['S000017686', 'Fidelity Advisor Mid Cap II Fund', '2026-06-30'],
+].map(([seriesId, seriesName, reportDate], i) => ({
+  seriesId,
+  seriesName,
+  reportDate,
+  accession: `0000035402-26-00${6134 - i}`,
+}));
+
+function seriesBackend(calls = []) {
+  return mockBackend(
+    {
+      '/api/config': () => ({}),
+      '/api/search-fund': () => ({
+        matches: [{ cik: '722574', name: 'FIDELITY ADVISOR SERIES I', filings: filingList(4) }],
+        totalMatches: 1,
+      }),
+      '/api/fund-series': () => ({
+        cik: '722574',
+        registrant: 'FIDELITY ADVISOR SERIES I',
+        multiSeries: true,
+        series: REAL_FIDELITY_SERIES,
+      }),
+      '/api/fund-series-filings': p => ({
+        cik: '722574',
+        seriesId: p.seriesId,
+        filings: [
+          { accession: '0000035402-26-006134', filingDate: '2026-09-23', reportDate: '2026-07-31' },
+          { accession: '0000035402-26-004039', filingDate: '2026-06-26', reportDate: '2026-04-30' },
+        ],
+      }),
+      '/api/fund-xray': () => ({ success: true, xray: xrayPayload() }),
+    },
+    calls
+  );
+}
+
+test('multi-series trust: shows a fund picker and does not auto-run a mixed-fund filing list', async () => {
+  const calls = [];
+  const { window, document } = await loadApp({ fetchImpl: seriesBackend(calls) });
+  document.getElementById('xrayFundInput').value = 'Fidelity Advisor Series I';
+  await window.searchFundXray();
+  await tick(window);
+
+  assert.equal(document.getElementById('xraySeriesGroup').style.display, 'flex');
+  const opts = [...document.querySelectorAll('#xraySeriesSelect option')].map(o => o.textContent);
+  assert.equal(opts[0], '— choose a fund —');
+  assert.equal(opts.length, 1 + REAL_FIDELITY_SERIES.length);
+  assert.ok(opts.includes('Fidelity Advisor Capital and Income Fund'));
+  assert.deepEqual(opts.slice(1), [...opts.slice(1)].sort(), 'funds listed alphabetically');
+  assert.equal(calls.filter(u => u.includes('/api/fund-xray?')).length, 0, 'nothing runs until a fund is chosen');
+  assert.match(document.getElementById('msgBox').textContent, /files separately for 5 funds/);
+  assert.equal(window.__state.xrayFilings.length, 0);
+});
+
+test('multi-series trust: choosing a fund loads only that series’ filings and runs the X-Ray on its newest', async () => {
+  const calls = [];
+  const { window, document } = await loadApp({ fetchImpl: seriesBackend(calls) });
+  document.getElementById('xrayFundInput').value = 'Fidelity Advisor Series I';
+  await window.searchFundXray();
+  await tick(window);
+
+  const select = document.getElementById('xraySeriesSelect');
+  const idx = [...select.options].findIndex(o => o.textContent === 'Fidelity Advisor Capital and Income Fund');
+  select.value = select.options[idx].value;
+  await window.onXraySeriesChange();
+  await tick(window);
+
+  const sfCall = calls.find(u => u.includes('/api/fund-series-filings'));
+  assert.match(sfCall, /seriesId=S000017684/);
+  assert.equal(window.__state.xrayFilings.length, 2, 'only this series’ filings, not the whole trust');
+  assert.ok(window.__state.xrayFilings.every(f => f.company === 'Fidelity Advisor Capital and Income Fund'));
+  assert.match(
+    calls.find(u => u.includes('/api/fund-xray?')),
+    /accession=0000035402-26-006134/
+  );
+  assert.match(document.getElementById('resultsContainer').textContent, /Private Equity Exposure/i);
+
+  // "vs Prior Quarter" now compares within the series (the only other filing is this series' own prior quarter).
+  assert.equal(window.findXrayComparisonIndex(0, 'qoq'), 1);
+
+  select.value = '';
+  await window.onXraySeriesChange();
+  assert.equal(document.getElementById('resultsContainer').innerHTML, '');
+});
+
+test('single-series registrants (fund-series says multiSeries:false) keep the original one-step flow', async () => {
+  const fetchImpl = mockBackend({
+    '/api/config': () => ({}),
+    '/api/search-fund': () => ({
+      matches: [{ cik: '858744', name: 'SMALLCAP WORLD FUND INC', filings: filingList(3) }],
+    }),
+    '/api/fund-series': () => ({ cik: '858744', multiSeries: false, series: [] }),
+    '/api/fund-xray': () => ({ success: true, xray: xrayPayload() }),
+  });
+  const { window, document } = await loadApp({ fetchImpl });
+  document.getElementById('xrayFundInput').value = 'SMALLCAP World Fund';
+  await window.searchFundXray();
+  await tick(window);
+  assert.equal(document.getElementById('xraySeriesGroup').style.display, 'none');
+  assert.equal(window.__state.xrayFilings.length, 3);
+  assert.match(document.getElementById('resultsContainer').textContent, /Private Equity Exposure/i);
+});
+
+test('fund-series lookup failure degrades to the original flow instead of blocking the search', async () => {
+  const fetchImpl = mockBackend({
+    '/api/config': () => ({}),
+    '/api/search-fund': () => ({ matches: [{ cik: '1', name: 'X', filings: filingList(2) }] }),
+    '/api/fund-series': () => jsonResponse({}, { ok: false, status: 500 }),
+    '/api/fund-xray': () => ({ success: true, xray: xrayPayload() }),
+  });
+  const { window, document } = await loadApp({ fetchImpl });
+  document.getElementById('xrayFundInput').value = 'X';
+  await window.searchFundXray();
+  await tick(window);
+  assert.equal(window.__state.xrayFilings.length, 2);
+  assert.match(document.getElementById('resultsContainer').textContent, /Private Equity Exposure/i);
+});
+
+test('export file names are readable (real: "Fidelity_32_Advisor_32_Growth_32_..." came from encoding every symbol as its char code)', async () => {
+  const xray = xrayPayload({
+    fund: {
+      registrantName: 'Fidelity Advisor Series I',
+      seriesName: 'Fidelity Advisor Growth Opportunities Fund',
+      reportDate: '2026-05-31',
+      netAssets: 1e9,
+    },
+  });
+  const { window } = await openFund(backend({ xray }));
+  let name;
+  window.downloadBlob = (_c, _t, n) => (name = n);
+  window.doXrayExportCSV('current');
+  assert.match(name, /^fund_xray_Fidelity_Advisor_Growth_Opportunities_Fund_2026_05_31_\d{4}-\d{2}-\d{2}/);
+  assert.doesNotMatch(name, /_32_|_45_/);
+});
+
+test('a period filed twice (real: SkyBridge G II Fund 2022-03-31, original + re-filing) is listed once, so "vs Prior Quarter" never compares a filing with its own duplicate', async () => {
+  const filings = [
+    { accession: '0001520568-22-000005', filingDate: '2022-05-27', reportDate: '2022-03-31' },
+    { accession: '0001520568-22-000004', filingDate: '2022-05-26', reportDate: '2022-03-31' },
+    { accession: '0001520568-21-000009', filingDate: '2021-12-29', reportDate: '2021-12-31' },
+    { accession: '0001520568-21-000006', filingDate: '2021-09-28', reportDate: '2021-09-30' },
+  ];
+  const fetchImpl = mockBackend({
+    '/api/config': () => ({}),
+    '/api/search-fund': () => ({
+      matches: [{ cik: '1520568', name: 'Skybridge G II Fund', filings }],
+      totalMatches: 1,
+    }),
+    '/api/fund-series': () => ({ cik: '1520568', multiSeries: false, series: [] }),
+    '/api/fund-xray': () => ({ success: true, xray: xrayPayload() }),
+  });
+  const { window, document } = await loadApp({ fetchImpl });
+  document.getElementById('xrayFundInput').value = 'SkyBridge G II Fund';
+  await window.searchFundXray();
+  await tick(window);
+  const periods = Array.from(window.__state.xrayFilings, f => f.period);
+  assert.deepEqual(periods, ['2022-03-31', '2021-12-31', '2021-09-30']);
+  assert.equal(window.__state.xrayFilings[0].accession, '0001520568-22-000005', 'the most recently filed copy wins');
+  assert.equal(window.findXrayComparisonIndex(0, 'qoq'), 1);
+  assert.equal(window.__state.xrayFilings[window.findXrayComparisonIndex(0, 'qoq')].period, '2021-12-31');
+});
+
+test('same-period duplicates: when the older copy is listed first, the most recently filed copy still wins (real SkyBridge G II Fund re-filing)', async () => {
+  const filings = [
+    { accession: '0001520568-22-000004', filingDate: '2022-05-26', reportDate: '2022-03-31' },
+    { accession: '0001520568-22-000005', filingDate: '2022-05-27', reportDate: '2022-03-31' },
+    { accession: '0001520568-21-000009', filingDate: '2021-12-29', reportDate: '2021-12-31' },
+  ];
+  const fetchImpl = mockBackend({
+    '/api/config': () => ({}),
+    '/api/search-fund': () => ({
+      matches: [{ cik: '1520568', name: 'Skybridge G II Fund', filings }],
+      totalMatches: 1,
+    }),
+    '/api/fund-series': () => ({ cik: '1520568', multiSeries: false, series: [] }),
+    '/api/fund-xray': () => ({ success: true, xray: xrayPayload() }),
+  });
+  const { window, document } = await loadApp({ fetchImpl });
+  document.getElementById('xrayFundInput').value = 'SkyBridge G II Fund';
+  await window.searchFundXray();
+  await tick(window);
+  assert.equal(window.__state.xrayFilings[0].accession, '0001520568-22-000005');
+});
+
+test('export file names collapse runs of symbols (real fund: "T. Rowe Price Science & Technology Fund, Inc.")', async () => {
+  const xray = xrayPayload({
+    fund: {
+      registrantName: 'T. Rowe Price Science & Technology Fund, Inc.',
+      seriesName: 'T. Rowe Price Science & Technology Fund, Inc.',
+      reportDate: '2026-04-30',
+      netAssets: 1e9,
+    },
+  });
+  const { window } = await openFund(backend({ xray }));
+  let name;
+  window.downloadBlob = (_c, _t, n) => (name = n);
+  window.doXrayExportCSV('current');
+  assert.match(name, /^fund_xray_T_Rowe_Price_Science_Technology_Fund_Inc_2026_04_30_/);
+});

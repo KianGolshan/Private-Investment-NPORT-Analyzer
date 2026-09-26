@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- T. Rowe Price Global Stock Fund (CIK 313212, series S000001497), NPORT-P accession 0000313212-24-001211, report date 2024-10-31.
+     Trimmed to the verbatim genInfo block plus 3 real invstOrSec blocks (Databricks x2, Lightmatter) whose <name> is the literal "N/A"
+     and whose <cusip> is the dummy 000000000. https://www.sec.gov/Archives/edgar/data/313212/000031321224001211/primary_doc.xml --><edgarSubmission xmlns="http://www.sec.gov/edgar/nport" xmlns:com="http://www.sec.gov/edgar/common" xmlns:ncom="http://www.sec.gov/edgar/nportcommon" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <headerData>
+    <submissionType>NPORT-P</submissionType>
+    <isConfidential>false</isConfidential>
+    <filerInfo>
+
+      <filer>
+        <issuerCredentials>
+          <cik>0000313212</cik>
+          <ccc>XXXXXXXX</ccc>
+        </issuerCredentials>
+      </filer>
+
+
+      <seriesClassInfo>
+        <seriesId>S000001497</seriesId>
+        <classId>C000184320</classId>
+        <classId>C000004016</classId>
+        <classId>C000033095</classId>
+      </seriesClassInfo>
+
+
+    </filerInfo>
+  </headerData>
+  <formData>
+    <genInfo>
+      <regName>T. ROWE PRICE INTERNATIONAL FUNDS, INC.</regName>
+      <regFileNumber>811-02958</regFileNumber>
+      <regCik>0000313212</regCik>
+      <regLei>549300O4BT3AMY6OUC26</regLei>
+      <regStreet1>100 East Pratt Street</regStreet1>
+      <regCity>Baltimore</regCity>
+      <regStateConditional regCountry="US" regState="US-MD"/>
+      <regZipOrPostalCode>21202</regZipOrPostalCode>
+      <regPhone>410-345-2000</regPhone>
+      <seriesName>T. Rowe Price Global Stock Fund</seriesName>
+      <seriesId>S000001497</seriesId>
+      <seriesLei>7Z781KDJX21TG7WUSV78</seriesLei>
+      <repPdEnd>2024-10-31</repPdEnd>
+      <repPdDate>2024-10-31</repPdDate>
+      <isFinalFiling>N</isFinalFiling>
+    </genInfo>
+<invstOrSecs>
+<invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>DATABRICKS INC PP</title>
+        <cusip>000000000</cusip>
+        <identifiers>
+          <other otherDesc="Internal ID" value="TC1NGB2O7"/>
+        </identifiers>
+        <balance>307914.000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>26902446.180000</valUSD>
+        <pctVal>0.3945657035</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>DATABRICKS SER I CVT PFD STOCK PP</title>
+        <cusip>000000000</cusip>
+        <identifiers>
+          <other otherDesc="Internal ID" value="TC2YS62M4"/>
+        </identifiers>
+        <balance>37125.000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>3243611.250000</valUSD>
+        <pctVal>0.0475725421</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>N/A</name>
+        <lei>N/A</lei>
+        <title>LIGHTMATTER SER D CVT PFD PP</title>
+        <cusip>000000000</cusip>
+        <identifiers>
+          <other otherDesc="Internal ID" value="TC77CG730"/>
+        </identifiers>
+        <balance>131020.000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>10511800.110000</valUSD>
+        <pctVal>0.1541716979</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+</invstOrSecs></formData></edgarSubmission>

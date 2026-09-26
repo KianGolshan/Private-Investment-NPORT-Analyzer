@@ -58,9 +58,16 @@ if (!USER_AGENT) {
 // a hundred requests in a burst), but to bound a scripted flood hitting this
 // server directly and either exhausting it or getting our shared
 // SEC_USER_AGENT blocked by SEC for every user of a public deployment.
+// Outbound SEC traffic is paced separately (see pace() below), so this cap only
+// has to stop a scripted flood — but it must not trip a legitimate large run:
+// with a warm cache the client fires ~20 requests/second (5 per 250ms), so a
+// 10-issuer Watchlist run at 100 filings each is ~1,000 requests, which the old
+// 200/min cap turned into "Too many requests" errors partway through.
+const parsedApiLimit = Number(process.env.API_RATE_LIMIT_PER_MIN);
+const API_RATE_LIMIT_PER_MIN = Number.isFinite(parsedApiLimit) && parsedApiLimit > 0 ? parsedApiLimit : 1500;
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 200,
+  max: API_RATE_LIMIT_PER_MIN,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests — please slow down and try again shortly.' },
@@ -76,10 +83,30 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 // reject it.
 const DEFAULT_MAX_CONTENT_LENGTH = 25 * 1024 * 1024;
 
-// Retry SEC requests on 429 (rate limit) with exponential backoff.
-// SEC's fair-access guidance is ~10 req/sec; transient 429s should be
-// retried rather than silently treated as "no data" by callers.
-async function fetchWithRetry(config, maxRetries = 3) {
+// SEC's fair-access limit is ~10 requests/second per source. Heavy flows
+// (series discovery reads dozens of filing headers, returns fetch 8+ filings,
+// Watchlist runs fire hundreds of searches) can exceed that in a burst and get
+// throttled — first with 429, and after sustained bursts with 503/429 for
+// minutes, which was reproduced against the live SEC during testing. So
+// outbound requests are paced process-wide, and throttled responses are
+// retried patiently (honoring Retry-After) instead of surfacing as failures.
+const parsedInterval = Number(process.env.SEC_MIN_INTERVAL_MS);
+const MIN_INTERVAL_MS =
+  process.env.SEC_MIN_INTERVAL_MS !== undefined && Number.isFinite(parsedInterval) ? parsedInterval : 110;
+let nextSlotAt = 0;
+async function pace() {
+  if (!MIN_INTERVAL_MS) return;
+  const now = Date.now();
+  const at = Math.max(now, nextSlotAt);
+  nextSlotAt = at + MIN_INTERVAL_MS;
+  if (at > now) await delay(at - now);
+}
+
+const THROTTLE_STATUS = new Set([429, 503]);
+// Occasional transient server errors (seen live from EFTS under load) get a couple of retries.
+const TRANSIENT_STATUS = new Set([500, 502, 504]);
+const MAX_TRANSIENT_RETRIES = 2;
+async function fetchWithRetry(config, maxRetries = 5) {
   const configWithLimit = {
     maxContentLength: DEFAULT_MAX_CONTENT_LENGTH,
     maxBodyLength: DEFAULT_MAX_CONTENT_LENGTH,
@@ -88,11 +115,17 @@ async function fetchWithRetry(config, maxRetries = 3) {
   let attempt = 0;
   for (;;) {
     try {
+      await pace();
       return await axios(configWithLimit);
     } catch (err) {
       const status = err.response?.status;
-      if (status === 429 && attempt < maxRetries) {
-        await delay(500 * Math.pow(2, attempt));
+      const retryable =
+        (THROTTLE_STATUS.has(status) && attempt < maxRetries) ||
+        (TRANSIENT_STATUS.has(status) && attempt < MAX_TRANSIENT_RETRIES);
+      if (retryable) {
+        const retryAfter = Number(err.response?.headers?.['retry-after']);
+        const backoff = 500 * Math.pow(2, attempt);
+        await delay(Math.min(30000, Math.max(backoff, Number.isFinite(retryAfter) ? retryAfter * 1000 : 0)));
         attempt++;
         continue;
       }
@@ -432,8 +465,10 @@ app.get('/api/parse-10q', async (req, res) => {
         url: docUrl,
         method: 'get',
         headers: { 'User-Agent': EFFECTIVE_USER_AGENT, Accept: 'text/html,application/xhtml+xml' },
-        timeout: 60000,
-        maxContentLength: 25 * 1024 * 1024,
+        // Real 10-Qs from large BDCs exceed the 25MB default (one Cloudera-holding
+        // filing did), and take over a minute to arrive.
+        timeout: 180000,
+        maxContentLength: 100 * 1024 * 1024,
       });
 
       const $ = cheerio.load(htmlResp.data);
@@ -589,6 +624,195 @@ app.get('/api/search-fund', async (req, res) => {
     res.json({ ...data, cached: false });
   } catch (error) {
     console.error('Fund search error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ── Multi-series registrants ────────────────────────────────────────────────
+// A registrant (trust) files one NPORT-P per fund series under ONE CIK, so its
+// filing list interleaves many different funds (real case: Fidelity Advisor
+// Series I — 500+ filings across dozens of funds; American Funds Insurance
+// Series — 1000+). Comparing "the previous filing" or chaining "the last 8
+// filings" is only meaningful within ONE series, so series have to be told
+// apart first.
+
+// Just the <genInfo> block of a filing (series id/name, report date) — read as
+// a stream and cut off as soon as it's seen, so a 1MB filing costs a few KB.
+async function fetchFilingHeader(cik, accessionRaw) {
+  const accession = String(accessionRaw).replace(/-/g, '');
+  const cacheKey = cache.holdingsKey('nportheader', cik, accession);
+  const cached = cache.getHoldings(cacheKey);
+  if (cached) return cached;
+
+  return cache.withInFlight(cacheKey, async () => {
+    const resp = await fetchWithRetry({
+      url: `https://www.sec.gov/Archives/edgar/data/${encodeURIComponent(cik)}/${encodeURIComponent(accession)}/primary_doc.xml`,
+      method: 'get',
+      headers: { 'User-Agent': EFFECTIVE_USER_AGENT },
+      responseType: 'stream',
+      timeout: 30000,
+    });
+    const text = await new Promise((resolve, reject) => {
+      let buf = '';
+      resp.data.on('data', chunk => {
+        buf += chunk.toString('utf8');
+        if (buf.includes('</genInfo>') || buf.length > 200000) {
+          resp.data.destroy();
+          resolve(buf);
+        }
+      });
+      resp.data.on('end', () => resolve(buf));
+      resp.data.on('error', err => (buf ? resolve(buf) : reject(err)));
+    });
+    const pick = tag => (text.match(new RegExp(`<(?:\\w+:)?${tag}>([^<]*)</`)) || [])[1]?.trim() || '';
+    const header = {
+      seriesId: pick('seriesId'),
+      seriesName: pick('seriesName'),
+      registrantName: pick('regName'),
+      reportDate: pick('repPdDate'),
+    };
+    if (!header.seriesId && !header.seriesName) throw new Error('No series info in filing header');
+    cache.setHoldings(cacheKey, header);
+    return header;
+  });
+}
+
+async function mapLimit(items, limit, fn) {
+  const out = new Array(items.length);
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (next < items.length) {
+        const i = next++;
+        try {
+          out[i] = await fn(items[i], i);
+        } catch (_e) {
+          out[i] = null;
+        }
+      }
+    })
+  );
+  return out;
+}
+
+const SERIES_COHORT_DAYS = 100;
+const SERIES_COHORT_CAP = 120;
+
+// Lists the fund series a registrant currently files for. multiSeries is
+// detected for free from the submissions data (2+ filings for one report date);
+// the series NAMES need each recent filing's header.
+app.get('/api/fund-series', async (req, res) => {
+  const cik = String(req.query.cik || '').replace(/^0+/, '');
+  if (!/^\d+$/.test(cik)) return res.status(400).json({ error: 'cik is required' });
+
+  const cacheKey = cache.searchKey('search:fundseries', cik);
+  if (!req.query.refresh) {
+    const cached = cache.getSearch(cacheKey);
+    if (cached) return res.json({ ...cached, cached: true });
+  }
+
+  try {
+    const payload = await cache.withInFlight(cacheKey, async () => {
+      const hist = await fetchFundNportHistory(cik);
+      const recent = hist.filings.slice(0, 40);
+      const perDate = {};
+      recent.forEach(f => (perDate[f.reportDate] = (perDate[f.reportDate] || 0) + 1));
+      const multiSeries = Object.values(perDate).some(n => n > 1);
+      if (!multiSeries) return { cik, registrant: hist.name, multiSeries: false, series: [] };
+
+      const newest = Math.max(...hist.filings.map(f => Date.parse(f.filingDate) || 0));
+      const cohort = hist.filings
+        .filter(f => (Date.parse(f.filingDate) || 0) >= newest - SERIES_COHORT_DAYS * 86400000)
+        .slice(0, SERIES_COHORT_CAP);
+      const headers = await mapLimit(cohort, 4, f => fetchFilingHeader(cik, f.accession));
+      const seen = new Map();
+      cohort.forEach((f, i) => {
+        const h = headers[i];
+        if (!h || !h.seriesId) return;
+        if (!seen.has(h.seriesId)) {
+          seen.set(h.seriesId, {
+            seriesId: h.seriesId,
+            seriesName: h.seriesName,
+            accession: f.accession,
+            reportDate: f.reportDate,
+          });
+        }
+      });
+      const series = [...seen.values()].sort((a, b) => a.seriesName.localeCompare(b.seriesName));
+      // Two filings for one report date is also what an amendment looks like
+      // (real: SkyBridge G II Fund), and some real trusts' filings carry no
+      // series id at all (Stone Ridge Trust V) — with fewer than two
+      // identifiable funds there is nothing to choose between.
+      if (series.length < 2) return { cik, registrant: hist.name, multiSeries: false, series: [] };
+      const result = { cik, registrant: hist.name, multiSeries: true, series };
+      cache.setSearch(cacheKey, result);
+      return result;
+    });
+    res.json({ ...payload, cached: false });
+  } catch (error) {
+    console.error('Fund series error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// One series' own NPORT-P history, via EDGAR's series-level filing feed (a
+// single request), with report dates joined from the registrant's history.
+app.get('/api/fund-series-filings', async (req, res) => {
+  const cik = String(req.query.cik || '').replace(/^0+/, '');
+  const seriesId = String(req.query.seriesId || '').toUpperCase();
+  if (!/^\d+$/.test(cik) || !/^S\d{9}$/.test(seriesId)) {
+    return res.status(400).json({ error: 'cik and a seriesId like S000012345 are required' });
+  }
+
+  const cacheKey = cache.searchKey('search:seriesfilings', cik, seriesId);
+  if (!req.query.refresh) {
+    const cached = cache.getSearch(cacheKey);
+    if (cached) return res.json({ ...cached, cached: true });
+  }
+
+  try {
+    const payload = await cache.withInFlight(cacheKey, async () => {
+      const [feed, hist] = await Promise.all([
+        fetchWithRetry({
+          url: 'https://www.sec.gov/cgi-bin/browse-edgar',
+          method: 'get',
+          params: {
+            action: 'getcompany',
+            CIK: seriesId,
+            type: 'NPORT-P',
+            dateb: '',
+            owner: 'include',
+            count: 100,
+            output: 'atom',
+          },
+          headers: { 'User-Agent': EFFECTIVE_USER_AGENT, Accept: 'application/xml' },
+          timeout: 20000,
+        }),
+        fetchFundNportHistory(cik),
+      ]);
+      const parsed = await new xml2js.Parser({ explicitArray: false }).parseStringPromise(feed.data);
+      let entries = parsed?.feed?.entry || [];
+      if (!Array.isArray(entries)) entries = [entries];
+      const byAccession = new Map(hist.filings.map(f => [f.accession, f]));
+      const filings = entries
+        .map(e => e?.content)
+        .filter(c => c && c['accession-number'] && c['filing-type'] === 'NPORT-P')
+        .map(c => {
+          const known = byAccession.get(c['accession-number']);
+          return {
+            accession: c['accession-number'],
+            filingDate: c['filing-date'] || '',
+            reportDate: known?.reportDate || '',
+          };
+        })
+        .sort((a, b) => (b.reportDate || b.filingDate).localeCompare(a.reportDate || a.filingDate));
+      const result = { cik, seriesId, registrant: hist.name, filings };
+      cache.setSearch(cacheKey, result);
+      return result;
+    });
+    res.json({ ...payload, cached: false });
+  } catch (error) {
+    console.error('Series filings error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });

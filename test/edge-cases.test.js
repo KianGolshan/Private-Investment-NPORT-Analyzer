@@ -6,6 +6,7 @@
 // Run with: npm test
 
 process.env.CACHE_DB_PATH = ':memory:';
+process.env.SEC_MIN_INTERVAL_MS = '0';
 process.env.SEC_USER_AGENT = 'Test Suite test@example.com';
 
 const test = require('node:test');
@@ -152,7 +153,7 @@ test('xirr: extreme and pathological flows return a number or null, never NaN/In
 
 test('capital structure: no private holdings → empty; unnamed issuers skipped; no NAV → null pct', () => {
   assert.deepEqual(buildIssuerCapitalStructure([{ ...h(), isPrivate: false }], 1e6), []);
-  const unnamed = { ...h(), issuer: '', name: '' };
+  const unnamed = { ...h(), issuer: '', name: '', title: '' };
   assert.deepEqual(buildIssuerCapitalStructure([unnamed], 1e6), []);
   const [row] = buildIssuerCapitalStructure([h()], 0);
   assert.equal(row.pctOfNetAssets, null);
@@ -293,4 +294,19 @@ test('static frontend: no source maps, env files, or server code are exposed und
 test('API responses carry RateLimit headers (limiter is mounted on /api)', async () => {
   const res = await request(app).get('/api/config');
   assert.ok(res.headers['ratelimit'] || res.headers['ratelimit-limit'], 'standard rate limit headers present');
+});
+
+test('a transient upstream 500 (seen live from EFTS under load) is retried and the request succeeds; a persistent 500 still fails', async () => {
+  nock(EFTS).get('/LATEST/search-index').query(true).once().reply(500, 'Internal Server Error');
+  nock(EFTS)
+    .get('/LATEST/search-index')
+    .query(true)
+    .once()
+    .reply(200, { hits: { hits: [] } });
+  const ok = await request(app).get('/api/search-nport?security=transient-500');
+  assert.equal(ok.status, 200);
+
+  nock(EFTS).get('/LATEST/search-index').query(true).times(3).reply(500, 'Internal Server Error');
+  const bad = await request(app).get('/api/search-nport?security=persistent-500');
+  assert.equal(bad.status, 500);
 });

@@ -44,6 +44,8 @@ down.
 - **Fund X-Ray capital structure** — issuers a fund holds through several instruments at once (e.g. preferred + warrant + term loan) are rolled up per issuer, senior-first, with debt share and weighted coupon
 - **Fund X-Ray mark-implied returns** — a return history per private position built from the fund's own last filings: proxy cost per lot (entry and add-ons, costed at the fund's mark), partial sales, exits, conversion chaining, MOIC and IRR. These are proxies — NPORT-P never reports what a fund paid — and the UI says so and flags positions held before the oldest filing
 - **Mark analytics** — on Single Security/Batch/Watchlist: each fund's mark change vs its own earlier filing, an outlier badge when a fund's mark sits far from same-class peers (robust MAD-based, only against peers with comparable-date marks), a collapsible "repricing episodes" ledger showing who marked first (funds have different fiscal calendars, so marks are never blended into one fitted line), and a Mark Velocity column in the Basket Leaderboard
+- **Fund X-Ray for multi-series trusts** — a trust like Fidelity Advisor Series I or American Funds Insurance Series files one NPORT-P per fund series under a single CIK, so its filing list interleaves dozens of different funds. Search by the trust's name and pick the exact fund from a **Fund** list (discovered by reading each recent filing's header), and periods, comparisons and returns stay inside that one fund
+- **Stock-split handling** — NPORT-P never reports corporate actions, so a split reads as a purchase and a markdown. Units changing by a clean ratio while price moves the opposite way at roughly constant value (real: SpaceX SPVs 5-for-1, Perplexity/Discord/Runway 10-for-1, Motive 1-for-3) is recognized and excluded from the returns lots, the price/position-sizing decomposition, mark velocity, outlier flags and the repricing ledger
 - **Summary stats** — latest price, price range, number of reporting funds, total data points, and date range shown at a glance
 - **Interactive charts** — toggle individual data points on/off via checkboxes; chart updates live
 - **Reference line** — plot your own price or mark (a cost basis, ask price, or benchmark) against peer data and see the divergence from the peer median
@@ -128,10 +130,21 @@ can't reach:
   `jsdom` window via `test/helpers/loadApp.js` (fake Chart.js, `fetch`
   mocked per test via `test/helpers/fakes.js`) — this is the layer that
   exercises what actually ends up on screen.
-- `test/live-e2e.test.js` — skipped unless `LIVE_SEC=1`. Nothing mocked:
-  asserts invariants (totals reconcile, price effect + share effect =
-  value change, lot accounting is self-consistent) on live filings, then
-  drives the real UI against the real backend.
+- `test/real-data.test.js` / `test/credit-real.test.js` — offline, but every
+  input is a REAL value or filing captured from EDGAR (stock splits, dummy
+  CUSIPs, "N/A" issuer names, multi-series trusts, and six-plus real BDC
+  10-Q layouts). These are the regression tests for bugs only real data
+  exposed.
+- `test/prod-startup.test.js` — real child processes: production refuses to
+  start without a user agent, X-Forwarded-For handling, rate limits, legacy
+  cache files.
+- `test/live-e2e.test.js` / `test/live-popular.test.js` — skipped unless
+  `LIVE_SEC=1` (`npm run test:live`, several minutes). Nothing mocked: the
+  real UI → Express app → real SEC on popular names (Anthropic, OpenAI,
+  SpaceX, Databricks, Stripe-era funds, Anaplan/Kaseya/Pluralsight/Medallia/
+  Finastra borrowers), asserting invariants recomputed independently from
+  the rows on screen, real historical events (splits), every Top Funds
+  shortlist name, and multi-series trusts.
 
 ---
 
@@ -295,6 +308,9 @@ silently dropped.
 | `/api/search-fund?fund=` | GET | Resolves a fund/registrant name to its EDGAR CIK(s) via company-name lookup, then returns each match's full NPORT-P filing history |
 | `/api/fund-xray?cik=&accession=` | GET | Fetches and parses one NPORT-P filing in full, returns the fund's private-equity exposure breakdown |
 | `/api/fund-xray-compare?cik=&currentAccession=&priorAccession=` | GET | Fetches two of the same fund's filings and diffs their private-equity books: new/exited positions, per-position share/value/price-per-share deltas, and a price-marks-vs-position-sizing value decomposition |
+| `/api/fund-xray-returns?cik=&accessions=a,b,c` | GET | Mark-implied return history across 2–12 of one fund's filings: proxy-cost lots, add-ons, partial sales, split and conversion handling, MOIC/IRR per position and in total |
+| `/api/fund-series?cik=` | GET | For a trust that files per fund series, lists its funds (read from recent filing headers); `multiSeries:false` for a single fund |
+| `/api/fund-series-filings?cik=&seriesId=` | GET | One fund series' own NPORT-P history via EDGAR's series-level feed, with report dates joined from the registrant |
 
 ---
 

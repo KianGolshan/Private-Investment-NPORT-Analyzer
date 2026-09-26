@@ -465,6 +465,14 @@
     /* ── Source-filing link ────────────────────────────────────────────── */
     .source-link { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--gray-400); }
     .source-link:hover { color: var(--navy); border-bottom-color: var(--navy); }
+      .chart-checkbox { width: 20px; height: 20px; cursor: pointer; }
+      /* WCAG 2.2 target size (24px minimum) on touch-width screens — the row
+         checkboxes and the All/None buttons measured 13–17px on a 375px phone. */
+      @media (max-width: 640px) {
+        .chart-checkbox { width: 24px; height: 24px; }
+        .btn-sm { min-height: 32px; padding-top: 6px; padding-bottom: 6px; }
+        input[type='number'], input[type='text'], input[type='date'], select { min-height: 36px; }
+      }
   </style>
 </head>
 <body>
@@ -660,6 +668,12 @@
     </div>
 
     <div class="date-filter-panel" id="xraySelectorPanel" style="display:none;">
+      <div class="search-row" id="xraySeriesGroup" style="display:none;">
+        <div class="input-group">
+          <label for="xraySeriesSelect">Fund</label>
+          <select id="xraySeriesSelect" onchange="onXraySeriesChange()"></select>
+        </div>
+      </div>
       <div class="search-row">
         <div class="input-group">
           <label for="xrayFilingSelect">Current Period</label>
@@ -728,6 +742,7 @@
 
 </div>
 
-<script src="app.js"></script>
+<script src="splits.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

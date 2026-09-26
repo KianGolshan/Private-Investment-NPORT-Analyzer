@@ -1,3 +1,11 @@
+const { detectSplit } = require('./public/splits.js');
+
+// '' for empty / placeholder text ("N/A", "NONE", "-") so callers can fall back.
+function realText(v) {
+  const t = String(v ?? '').trim();
+  return /^(N\/?A|NONE|NULL|NIL|-+)$/i.test(t) ? '' : t;
+}
+
 // Pure filing-parsing logic, split out of server.js so it can be unit
 // tested (test/parsers.test.js) without booting the Express app or hitting
 // the network. No behavior change from what lived in server.js — same
@@ -163,6 +171,9 @@ function extractHoldings(xml, securitySearchTerm) {
 
     const genInfo = formData.genInfo || formData.geninfo || {};
     const reportDate = genInfo.repPdDate || genInfo.reppddate || genInfo.reportDate || '';
+    // A registrant (trust) files one NPORT-P per fund series; without the
+    // series name, two different funds of one trust look like one fund.
+    const seriesName = String(genInfo.seriesName || genInfo.seriesname || '').trim();
 
     let investments =
       formData.invstOrSecs?.invstOrSec || formData.invstorsecs?.invstorsec || formData.investments?.investment;
@@ -173,15 +184,18 @@ function extractHoldings(xml, securitySearchTerm) {
     const searchLower = securitySearchTerm.toLowerCase();
 
     for (const inv of investments) {
-      const name = String(inv.name || inv.Name || inv.issuerName || '');
-      const issuer = String(inv.issuer?.name || inv.issuer?.Name || inv.issuerName || '');
+      const title = String(inv.title || inv.Title || inv.desc || inv.description || '');
+      // Real filings (T. Rowe Price, older periods) put the literal "N/A" in
+      // <name>; the security title is then the only place the company appears.
+      const name = realText(inv.name || inv.Name || inv.issuerName) || title;
+      const issuer = realText(inv.issuer?.name || inv.issuer?.Name || inv.issuerName);
       const ticker =
         extractIdString(inv.identifiers?.ticker) || extractIdString(inv.ticker) || extractIdString(inv.Ticker);
-      const title = String(inv.title || inv.Title || inv.desc || inv.description || '');
 
       const matches =
         name.toLowerCase().includes(searchLower) ||
         issuer.toLowerCase().includes(searchLower) ||
+        title.toLowerCase().includes(searchLower) ||
         ticker.toLowerCase().includes(searchLower);
 
       if (!matches) continue;
@@ -230,12 +244,13 @@ function extractHoldings(xml, securitySearchTerm) {
       // title itself as a last resort.
       const otherIdValue =
         extractIdString(inv.identifiers?.other?.value) || String(inv.identifiers?.other?.value || '').trim();
-      const instrumentKey = otherIdValue || (cusip && cusip.toUpperCase() !== 'N/A' ? cusip : '') || title || name;
+      const instrumentKey = otherIdValue || usableCusip(cusip) || title || name;
 
       holdings.push({
         name,
         issuer,
         title,
+        seriesName,
         shares: balance,
         marketValue: valUSD,
         pricePerShare,
@@ -326,6 +341,7 @@ function extractFundMeta(xml) {
   return {
     registrantName: String(genInfo.regName || genInfo.regname || ''),
     seriesName: String(genInfo.seriesName || genInfo.seriesname || ''),
+    seriesId: String(genInfo.seriesId || genInfo.seriesid || ''),
     reportDate: String(genInfo.repPdDate || genInfo.reppddate || genInfo.reportDate || ''),
     totalAssets: parseFloat(fundInfo.totAssets || fundInfo.totassets || 0) || 0,
     netAssets: parseFloat(fundInfo.netAssets || fundInfo.netassets || 0) || 0,
@@ -353,11 +369,13 @@ function extractAllHoldings(xml) {
     if (!Array.isArray(investments)) investments = [investments];
 
     for (const inv of investments) {
-      const name = String(inv.name || inv.Name || inv.issuerName || '');
-      const issuer = String(inv.issuer?.name || inv.issuer?.Name || inv.issuerName || '');
+      const title = String(inv.title || inv.Title || inv.desc || inv.description || '');
+      // Real filings (T. Rowe Price, older periods) put the literal "N/A" in
+      // <name>; the security title is then the only place the company appears.
+      const name = realText(inv.name || inv.Name || inv.issuerName) || title;
+      const issuer = realText(inv.issuer?.name || inv.issuer?.Name || inv.issuerName);
       const ticker =
         extractIdString(inv.identifiers?.ticker) || extractIdString(inv.ticker) || extractIdString(inv.Ticker);
-      const title = String(inv.title || inv.Title || inv.desc || inv.description || '');
 
       const balance = parseFloat(inv.balance || inv.Balance || inv.shares || inv.Shares || 0);
       const valUSD = parseFloat(inv.valUSD || inv.valusd || inv.marketValue || inv.MarketValue || 0);
@@ -370,7 +388,7 @@ function extractAllHoldings(xml) {
 
       const otherIdValue =
         extractIdString(inv.identifiers?.other?.value) || String(inv.identifiers?.other?.value || '').trim();
-      const instrumentKey = otherIdValue || (cusip && cusip.toUpperCase() !== 'N/A' ? cusip : '') || title || name;
+      const instrumentKey = otherIdValue || usableCusip(cusip) || title || name;
 
       holdings.push({
         name,
@@ -385,6 +403,7 @@ function extractAllHoldings(xml) {
         instrumentType,
         instrumentLabel,
         instrumentKey,
+        filerId: otherIdValue,
         chartValue,
         chartUnit,
         isPrivate: isPrivateEquityHolding(inv, instrumentType),
@@ -451,6 +470,92 @@ function buildFundXRay(holdings, fundMeta) {
   };
 }
 
+// Issuer identity for grouping instruments of one company. Filers disagree on
+// what <name> holds: some put the bare issuer ("KANDOU HOLDING SA"), others the
+// whole security description ("WAYMO LLC SER A-2 CVT PFD UNITS PP", "DATABRICKS
+// INC-CL A PP") with <issuer> empty — real T. Rowe Price filings. So the
+// instrument descriptors and corporate suffixes are stripped to leave a stem.
+const ISSUER_CUT_TOKENS = new Set([
+  'SER',
+  'SERIES',
+  'CL',
+  'CLASS',
+  'CVT',
+  'CONV',
+  'CONVERTIBLE',
+  'PFD',
+  'PREF',
+  'PREFERRED',
+  'COM',
+  'COMMON',
+  'STOCK',
+  'STK',
+  'SHARES',
+  'SHARE',
+  'UNIT',
+  'UNITS',
+  'WT',
+  'WTS',
+  'WARRANT',
+  'WARRANTS',
+  'TL',
+  'TERM',
+  'LOAN',
+  'NOTE',
+  'NOTES',
+  'BOND',
+  'BONDS',
+  'PP',
+  'PC',
+  'EV',
+  'LLV',
+  'INT',
+  'SAFE',
+  'OPTION',
+  'OPTIONS',
+  'RT',
+  'CVR',
+]);
+const ISSUER_SUFFIX_TOKENS = new Set([
+  'INC',
+  'LLC',
+  'CORP',
+  'CORPORATION',
+  'LTD',
+  'LIMITED',
+  'PBC',
+  'CO',
+  'COMPANY',
+  'HOLDING',
+  'HOLDINGS',
+  'GROUP',
+  'LP',
+  'LLP',
+  'SA',
+  'AG',
+  'GMBH',
+  'PLC',
+  'NV',
+  'BV',
+  'SPV',
+  'THE',
+]);
+function issuerKeyOf(h) {
+  const raw = String(realText(h.issuer) || realText(h.name) || realText(h.title) || '')
+    .toUpperCase()
+    .replace(/\([^)]*\)/g, ' ');
+  const tokens = raw.split(/[^A-Z0-9]+/).filter(Boolean);
+  const kept = [];
+  for (const t of tokens) {
+    if (kept.length && ISSUER_CUT_TOKENS.has(t)) break;
+    kept.push(t);
+  }
+  const isClassToken = tok => /^[A-Z]?\d*$/.test(tok) && tok.length <= 2;
+  while (kept.length > 1 && (ISSUER_SUFFIX_TOKENS.has(kept[kept.length - 1]) || isClassToken(kept[kept.length - 1])))
+    kept.pop();
+  return kept.join(' ') || normalizeMatchText(raw);
+}
+
 // ── Per-issuer capital-structure rollup (Fund X-Ray) ────────────────────────
 // A fund can hold several instruments in ONE private company at once (real
 // case: Kandou — Series D preferred + warrants + a 7.0% term loan, all in one
@@ -476,7 +581,7 @@ function parseDebtTerms(title) {
 function buildIssuerCapitalStructure(holdings, netAssets) {
   const byIssuer = new Map();
   for (const h of holdings) {
-    const key = normalizeMatchText(h.issuer || h.name);
+    const key = issuerKeyOf(h);
     if (!key) continue;
     if (!byIssuer.has(key)) byIssuer.set(key, []);
     byIssuer.get(key).push(h);
@@ -542,9 +647,18 @@ function normalizeMatchText(s) {
 // identifier, so it takes priority here; otherwise fall back to normalized
 // issuer/name + title (title is kept because share-class distinctions, e.g.
 // Series A vs Series B preferred, are economically different investments).
+// Private placements routinely carry a dummy CUSIP (real filings: "000000000"
+// on many unrelated holdings in one fund) — matching on it pairs different
+// companies. Reject all-one-character values outright; matchFundXRayPositions
+// additionally ignores any CUSIP that repeats within a single filing.
+function usableCusip(raw) {
+  const c = String(raw || '')
+    .trim()
+    .toUpperCase();
+  return /^[0-9A-Z]{9}$/.test(c) && !/^(.)\1{8}$/.test(c) ? c : null;
+}
 function cusipKeyOf(h) {
-  const cusip = String(h.cusip || '').trim();
-  return cusip && cusip.toUpperCase() !== 'N/A' ? cusip.toUpperCase() : null;
+  return usableCusip(h.cusip);
 }
 function nameKeyOf(h) {
   return 'name:' + normalizeMatchText(h.issuer || h.name) + '|' + normalizeMatchText(h.title);
@@ -562,24 +676,56 @@ function positionMatchKey(h) {
 // being wrongly reported as BOTH "exited" (under its old keyless identity)
 // and "new" (under its new CUSIP) for what is really one continuing
 // position.
+// Pairs the same position across two filings. Identity, strongest first:
+//   1. the filer's own instrument id (identifiers.other) when unique on both
+//      sides — checked on 3,652 real position-period pairs from 20+ funds: it
+//      agreed with title matching 100% of the time when both were unique, and
+//      it alone survived 28 real title changes ("Series F1" → "Series F-1",
+//      "Canva, Inc." → "Canva Australia Holdings Pty. Ltd.");
+//   2. a CUSIP that is unique within each filing (private placements reuse
+//      dummy CUSIPs like "000000000" across unrelated holdings);
+//   3. normalized issuer + title, pairing repeated titles in order.
 function matchFundXRayPositions(currentHoldings, priorHoldings) {
-  const priorByCusip = new Map();
+  const countBy = (list, keyFn) => {
+    const counts = new Map();
+    for (const h of list) {
+      const k = keyFn(h);
+      if (k) counts.set(k, (counts.get(k) || 0) + 1);
+    }
+    return counts;
+  };
+  const idOf = h => (h.filerId ? String(h.filerId).trim() : null);
+  const tiers = [{ keyFn: idOf }, { keyFn: cusipKeyOf }];
+  const tierCounts = tiers.map(t => ({
+    prior: countBy(priorHoldings, t.keyFn),
+    current: countBy(currentHoldings, t.keyFn),
+  }));
+
+  const priorByTier = tiers.map(() => new Map());
   const priorByName = new Map();
-  for (const p of priorHoldings) {
-    const cusip = cusipKeyOf(p);
-    if (cusip && !priorByCusip.has(cusip)) priorByCusip.set(cusip, p);
+  priorHoldings.forEach(p => {
+    tiers.forEach((t, i) => {
+      const k = t.keyFn(p);
+      if (k && tierCounts[i].prior.get(k) === 1) priorByTier[i].set(k, p);
+    });
     const nk = nameKeyOf(p);
-    if (!priorByName.has(nk)) priorByName.set(nk, p);
-  }
+    if (!priorByName.has(nk)) priorByName.set(nk, []);
+    priorByName.get(nk).push(p);
+  });
 
   const matchedPrior = new Set();
   const pairs = [];
   for (const c of currentHoldings) {
-    const cusip = cusipKeyOf(c);
-    let p = cusip ? priorByCusip.get(cusip) : null;
-    if (!p) p = priorByName.get(nameKeyOf(c));
-    if (p && matchedPrior.has(p)) p = null; // already claimed by an earlier current holding
-    pairs.push({ key: positionMatchKey(c), current: c, prior: p || null });
+    let p = null;
+    for (let i = 0; i < tiers.length && !p; i++) {
+      const k = tiers[i].keyFn(c);
+      if (k && tierCounts[i].current.get(k) === 1) {
+        const cand = priorByTier[i].get(k);
+        if (cand && !matchedPrior.has(cand)) p = cand;
+      }
+    }
+    if (!p) p = (priorByName.get(nameKeyOf(c)) || []).find(x => !matchedPrior.has(x)) || null;
+    pairs.push({ key: positionMatchKey(c), current: c, prior: p });
     if (p) matchedPrior.add(p);
   }
   for (const p of priorHoldings) {
@@ -587,6 +733,14 @@ function matchFundXRayPositions(currentHoldings, priorHoldings) {
     pairs.push({ key: positionMatchKey(p), current: null, prior: p });
   }
   return pairs;
+}
+
+// Like deltaBlock, but the prior value is restated onto the current basis
+// (prior × factor) before differencing — used across a stock split.
+function splitAdjustedBlock(current, prior, factor) {
+  const adjPrior = prior * factor;
+  const delta = current - adjPrior;
+  return { current, prior, delta, deltaPct: adjPrior !== 0 ? (delta / Math.abs(adjPrior)) * 100 : null };
 }
 
 function deltaBlock(current, prior) {
@@ -611,10 +765,18 @@ function buildFundXRayComparison(current, prior) {
     const status = c && p ? 'held' : c ? 'new' : 'exited';
     const base = c || p;
 
-    const shares = deltaBlock(c?.shares, p?.shares);
+    // A stock split changes units and price by a clean opposite ratio at
+    // constant value; without adjusting for it, the "position sizing" effect
+    // balloons and the price effect reads as a markdown (real case: a 5-for-1
+    // split at a SpaceX SPV holding).
+    const splitRatio = status === 'held' ? detectSplit(p, c) : null;
+    const k = splitRatio || 1;
     const marketValue = deltaBlock(c?.marketValue, p?.marketValue);
-    const pricePerShare = deltaBlock(c?.pricePerShare ?? null, p?.pricePerShare ?? null);
     const pctOfNetAssets = deltaBlock(c?.pctOfNetAssets, p?.pctOfNetAssets);
+    const shares = splitRatio ? splitAdjustedBlock(c.shares, p.shares, splitRatio) : deltaBlock(c?.shares, p?.shares);
+    const pricePerShare = splitRatio
+      ? splitAdjustedBlock(c.pricePerShare, p.pricePerShare, 1 / splitRatio)
+      : deltaBlock(c?.pricePerShare ?? null, p?.pricePerShare ?? null);
 
     // Decompose a held position's $ value change into the portion caused by
     // its mark (price-per-share) moving vs. the portion caused by the fund
@@ -631,12 +793,13 @@ function buildFundXRayComparison(current, prior) {
       pricePerShare.current != null &&
       pricePerShare.prior != null
     ) {
-      priceEffectUSD = shares.prior * (pricePerShare.current - pricePerShare.prior);
-      shareEffectUSD = pricePerShare.current * (shares.current - shares.prior);
+      priceEffectUSD = shares.prior * (k * pricePerShare.current - pricePerShare.prior);
+      shareEffectUSD = pricePerShare.current * (shares.current - shares.prior * k);
     }
 
     return {
       key,
+      splitRatio,
       name: base.name,
       issuer: base.issuer,
       title: base.title,
@@ -659,7 +822,7 @@ function buildFundXRayComparison(current, prior) {
     return bMax - aMax;
   });
 
-  const issuerSet = arr => new Set(arr.map(h => normalizeMatchText(h.issuer || h.name)));
+  const issuerSet = arr => new Set(arr.map(h => issuerKeyOf(h)));
   const currentIssuerCount = issuerSet(currentHoldings).size;
   const priorIssuerCount = issuerSet(priorHoldings).size;
 
@@ -847,7 +1010,18 @@ function buildPositionReturns(periods) {
         pos.lastDate = dateStr;
         pos.currentValue = c.marketValue || 0;
         const canLot = pos.shares > 0 && c.shares > 0 && c.pricePerShare != null && c.pricePerShare > 0;
-        if (canLot && !pos.lotsUnavailable) {
+        const split = detectSplit(pos.lastHolding, c);
+        if (split && !pos.lotsUnavailable) {
+          // Units rescaled at ~constant value: no capital moved. Restate the
+          // lots' units so later partial sales use the right proportions.
+          pos.lots = pos.lots.map(l => ({
+            ...l,
+            shares: l.shares * split,
+            pricePerShare: l.pricePerShare == null ? null : l.pricePerShare / split,
+          }));
+          pos.events.push({ date: dateStr, type: 'split', ratio: split });
+          pos.shares = c.shares;
+        } else if (canLot && !pos.lotsUnavailable) {
           const delta = c.shares - pos.shares;
           if (Math.abs(delta) / pos.shares > 1e-9) {
             if (delta > 0) {
@@ -897,7 +1071,7 @@ function buildPositionReturns(periods) {
     // one of the SAME issuer appears in the same step is most likely a
     // conversion / reclassification, not a real sale + fresh purchase. Merge
     // the lineage so the exit isn't booked as a realization.
-    const issuerKey = p => normalizeMatchText(p.issuer || p.name);
+    const issuerKey = p => issuerKeyOf(p);
     for (const ex of exited) {
       const targets = born.filter(b => issuerKey(b) === issuerKey(ex) && !b.chainedFrom);
       if (!targets.length) continue;
@@ -1021,23 +1195,52 @@ function getRowCells($, row, expandColspan) {
 
 function tryBuildCreditColumnMap(cells) {
   const map = {};
+  // Header wording checked against ~55 real BDC 10-Qs (Blue Owl, Blackstone,
+  // Oaktree, KKR/FS, Ares, HPS, Apollo, Golub-style, OHA, Carlyle, Franklin,
+  // BlackRock TCP, Main Street, ...) — e.g. the company column is called
+  // "Portfolio Company", "Company", "Investments-non-controlled/non-affiliated",
+  // "Issuer" or "Industry/Company"; principal is "Principal", "Par / Units",
+  // "Par Amount/ Shares", "Par ($) / Shares" or "Principal Amount, Par Value or
+  // Shares"; cost is "Cost" or "Cost/Amortized Cost".
   const MATCHERS = [
-    ['portfolioCompany', c => c.includes('portfolio company') || c === 'company' || c === 'portfolio'],
-    ['industry', c => c.startsWith('industry')],
+    [
+      'portfolioCompany',
+      c =>
+        c.includes('portfolio company') ||
+        c === 'company' ||
+        c.startsWith('company ') ||
+        c.endsWith('/company') ||
+        c === 'portfolio' ||
+        c === 'issuer' ||
+        c.startsWith('issuer ') ||
+        c.startsWith('investments'),
+    ],
+    ['industry', c => c.startsWith('industry') && !c.endsWith('company')],
     [
       'investmentType',
       c =>
         c.includes('type of investment') ||
         c.includes('investment type') ||
+        c.includes('facility type') ||
+        c === 'investment' ||
+        c === 'instrument' ||
+        c === 'type' ||
+        c.startsWith('security') ||
         (c.includes('type') && c.includes('invest')),
     ],
     ['index', c => c === 'index' || c.startsWith('index ')],
     ['spread', c => c.startsWith('spread')],
+    // "Reference Rate and Spread" holds both in one cell ("SOFR + 4.50%").
+    ['refRateAndSpread', c => c.includes('reference rate and spread') || c.includes('ref rate and spread')],
     [
       'cashInterestRate',
       c =>
         c.includes('cash interest') ||
+        c.startsWith('all in rate') ||
+        c.startsWith('total coupon') ||
+        c.startsWith('total rate') ||
         (c.includes('interest rate') && !c.includes('pik')) ||
+        c === 'interest' ||
         c.startsWith('current rate') ||
         c.startsWith('rate ('),
     ],
@@ -1046,10 +1249,12 @@ function tryBuildCreditColumnMap(cells) {
     ['shares', c => c.startsWith('shares') || c.startsWith('units/shares') || c === 'units'],
     [
       'principal',
-      c => c.startsWith('principal') || c.startsWith('par value') || c.startsWith('par amount') || c === 'par',
+      c => c.includes('principal') || c.startsWith('par') || c.includes('fundedpar') || c.includes('funded par'),
     ],
-    ['cost', c => c === 'cost' || c.startsWith('amortized cost') || c.startsWith('cost (')],
+    ['cost', c => c === 'cost' || c.startsWith('cost') || c.startsWith('amortized cost')],
     ['fairValue', c => c.includes('fair value')],
+    // Cleaning strips the "%" sign, so "% of Net Assets" arrives as "of net assets".
+    ['pctNetAssets', c => c.startsWith('percent') || /^of (net assets|member|total|portfolio|capital)/.test(c)],
     ['notes', c => c.startsWith('note') || c.startsWith('footnote')],
   ];
 
@@ -1144,6 +1349,47 @@ function extractRateFieldsFromCells(rawCells) {
   return result;
 }
 
+// Reads a row's money figures in order (from the NON-expanded cells — the
+// colspan-expanded ones repeat each value once per spanned column) when header indexes don't line up with
+// the data cells (iXBRL tables put "$" and figures in separate cells, so a
+// header at index 14 can sit over a data cell at index 11). Percentages, dates
+// and footnote markers are not figures. The "% of Net Assets" column is counted
+// in the header order because many filings print it as a bare number ("0.03")
+// with the "%" in its own cell — without accounting for it, that number is read
+// as the fair value.
+function sequentialFigures(cells, colMap) {
+  if (colMap.fairValue === undefined) return null;
+  const hasPct = colMap.pctNetAssets !== undefined;
+  const fields = ['principal', 'cost', 'fairValue']
+    .filter(f => colMap[f] !== undefined)
+    .sort((a, b) => colMap[a] - colMap[b]);
+  if (fields.length < 2) return null;
+  const figure = /^\(?[$£€]?\s*\(?-?[\d,]+(?:\.\d+)?\)?$|^[—–-]$/;
+  const nums = cells
+    .map(c => String(c).replace(/\s+/g, ''))
+    .filter(t => t && !t.includes('/') && !t.endsWith('%') && !/^\(\d{1,2}\)$/.test(t) && figure.test(t))
+    .map(parseFinancialNumber);
+
+  // The "% of Net Assets" figure is the last one when printed as a bare number
+  // ("0.51", % in its own cell) and absent from the list when printed "8.6%".
+  // Try with it first, then without; take the first reading where par and cost
+  // are the same order of magnitude, as they are for any loan.
+  const candidates = [];
+  if (hasPct) candidates.push(fields.length + 1);
+  candidates.push(fields.length);
+  for (const n of candidates) {
+    if (nums.length < n) continue;
+    const picked = nums.slice(nums.length - n);
+    const out = {};
+    fields.forEach((f, i) => (out[f] = picked[i]));
+    if (n > fields.length && !(picked[n - 1] === null || (picked[n - 1] >= -1000 && picked[n - 1] <= 1000))) continue;
+    const { principal: p, cost: c } = out;
+    if (p > 0 && c > 0 && (c / p < 0.25 || c / p > 2)) continue;
+    return out;
+  }
+  return null;
+}
+
 function extractCreditHoldings($, issuerSearchTerm, reportDate) {
   const holdings = [];
   const searchLower = issuerSearchTerm.toLowerCase();
@@ -1203,18 +1449,69 @@ function extractCreditHoldings($, issuerSearchTerm, reportDate) {
 
       if (!currentCompany.toLowerCase().includes(searchLower)) continue;
 
-      const principalStr = getCreditCell(cells, colMap.principal);
-      const fairValueStr = getCreditCell(cells, colMap.fairValue);
-      const principal = parseFinancialNumber(principalStr);
-      const fairValue = parseFinancialNumber(fairValueStr);
+      let principal = parseFinancialNumber(getCreditCell(cells, colMap.principal));
+      let fairValue = parseFinancialNumber(getCreditCell(cells, colMap.fairValue));
+      let cost = parseFinancialNumber(getCreditCell(cells, colMap.cost));
+      if (fairValue === null || cost === null) {
+        // Header and data cells can carry different colspans (real cases: AGL
+        // Private Credit Income Fund, Onex, Apollo Debt Solutions, Blue Owl
+        // Technology Finance), so the header's column index lands on an empty
+        // cell. Read the row's figures in order instead.
+        const seq = sequentialFigures(rawCells, colMap);
+        if (seq && seq.fairValue !== null && seq.fairValue !== undefined) {
+          principal = seq.principal ?? principal;
+          cost = seq.cost ?? cost;
+          fairValue = seq.fairValue;
+        }
+      }
       if (principal === null && fairValue === null) continue;
 
-      const fairValueMark = principal && principal !== 0 && fairValue !== null ? (fairValue / principal) * 100 : null;
+      const investmentTypeCell = getCreditCell(cells, colMap.investmentType);
+      const maturityCell = getCreditCell(cells, colMap.maturityDate);
+      // A company's own total row (no instrument, maturity, rate or par) repeats
+      // the sum of its tranches; an unfunded commitment (no par, zero/negative
+      // cost) is not a funded position. Neither is a holding.
+      const hasTerms =
+        investmentTypeCell ||
+        maturityCell ||
+        getCreditCell(cells, colMap.cashInterestRate) ||
+        getCreditCell(cells, colMap.refRateAndSpread);
+      if (!hasTerms) continue;
+      if ((principal === null || principal === 0) && (cost === null || cost <= 0)) continue;
+      // A negative fair value with no par is the value of an unfunded commitment
+      // (real: a $12.6M delayed-draw commitment at -$253K), never a position.
+      if (fairValue !== null && fairValue < 0) continue;
 
-      // Rate fields: colMap first, fall back to pattern scan of raw cells
-      const rf = extractRateFieldsFromCells(rawCells);
-      const index = getCreditCell(cells, colMap.index) || rf.index;
-      const spread = getCreditCell(cells, colMap.spread) || rf.spread;
+      // fair value / par is only a mark when par is money. Where the "par"
+      // column actually holds units (equity, warrants), cost is nowhere near
+      // par — real cases showed "marks" of 20% and 0.0% from that mismatch.
+      const parIsMoney =
+        principal && principal > 0 && cost !== null && cost > 0
+          ? cost / principal >= 0.4 && cost / principal <= 1.6
+          : principal > 0;
+      // Nothing marked above ~150% of par or below zero is a real mark — that
+      // is a units/shares column or a misread cell, so show no mark instead.
+      const rawMark = parIsMoney && fairValue !== null ? (fairValue / principal) * 100 : null;
+      const fairValueMark = rawMark !== null && rawMark >= 0 && rawMark <= 150 ? rawMark : null;
+
+      // Rate fields: colMap first, fall back to pattern scan of raw cells. The
+      // "% of Net Assets" cell is dropped from that scan — on real filings it
+      // was read as the loan's cash interest rate (e.g. "7.1%").
+      const pctText = getCreditCell(cells, colMap.pctNetAssets).trim();
+      const rf = extractRateFieldsFromCells(pctText ? rawCells.filter(c => c.trim() !== pctText) : rawCells);
+      let index = getCreditCell(cells, colMap.index);
+      let spread = getCreditCell(cells, colMap.spread);
+      // "Reference Rate and Spread" columns hold both in one cell, e.g. "SOFR + 4.50%".
+      const combined = getCreditCell(cells, colMap.refRateAndSpread);
+      if (combined && (!index || !spread)) {
+        const m = combined.match(/^\s*([A-Za-z]+)?(?:\s*\([A-Za-z]\))?\s*\+\s*(\d+\.?\d*%)/);
+        if (m) {
+          index = index || (m[1] || '').toUpperCase();
+          spread = spread || m[2];
+        }
+      }
+      index = index || rf.index;
+      spread = spread || rf.spread;
       const pik = getCreditCell(cells, colMap.pik) || rf.pik;
       const cashInterestRate = getCreditCell(cells, colMap.cashInterestRate) || rf.cashInterestRate;
       const maturityDate = getCreditCell(cells, colMap.maturityDate) || rf.maturityDate;
@@ -1232,7 +1529,7 @@ function extractCreditHoldings($, issuerSearchTerm, reportDate) {
         maturityDate,
         shares: getCreditCell(cells, colMap.shares),
         principal,
-        cost: parseFinancialNumber(getCreditCell(cells, colMap.cost)),
+        cost,
         fairValue,
         fairValueMark,
         notes: getCreditCell(cells, colMap.notes),
@@ -1244,6 +1541,9 @@ function extractCreditHoldings($, issuerSearchTerm, reportDate) {
 }
 
 module.exports = {
+  sequentialFigures,
+  tryBuildCreditColumnMap,
+  getRowCells,
   extractIdString,
   extractHoldings,
   parseFinancialNumber,
@@ -1259,6 +1559,7 @@ module.exports = {
   positionMatchKey,
   buildFundXRayComparison,
   buildIssuerCapitalStructure,
+  issuerKeyOf,
   parseDebtTerms,
   xirr,
   buildPositionReturns,

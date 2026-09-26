@@ -517,3 +517,24 @@ test('clearResults destroys every chart it created (no leaked canvases between s
     'previous search charts destroyed'
   );
 });
+
+test('result messages count the rows actually shown: an exact duplicate filing is collapsed and not double-counted (real: "70 holdings" over 64 rows)', async () => {
+  const dup = nportHit({ cik: '1', adsh: 'A-1', name: 'Fund One', period: '2024-03-31' });
+  const backend = mockBackend({
+    '/api/config': () => ({}),
+    '/api/search-nport': () => ({
+      hits: { hits: [dup, dup, nportHit({ cik: '2', adsh: 'A-2', name: 'Fund Two', period: '2024-06-30' })] },
+    }),
+    '/api/parse-nport': p => ({
+      success: true,
+      holdings: [holding({ pps: 10, reportDate: p.accession === 'A-1' ? '2024-03-31' : '2024-06-30' })],
+    }),
+  });
+  const { window, document } = await loadApp({ fetchImpl: backend });
+  document.getElementById('securityInput').value = 'ACME';
+  await window.searchNPORT();
+  await tick(window);
+  const rows = document.querySelectorAll('tr[data-company]').length;
+  assert.equal(rows, 2, 'the duplicated filing shows once');
+  assert.match(msg(document), /Found 2 holding\(s\) across 2 fund\(s\)/);
+});

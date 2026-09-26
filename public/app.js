@@ -12,7 +12,8 @@
    addWatchlistItem, removeWatchlistItem, quickAddToWatchlist, openAbout,
    searchFundXray, runFundXray, doXrayExportCSV, doXrayExportExcel, doXrayExportPDF, selectXrayComparison,
    onXrayCompareSelectChange, runFundXrayCompare, doXrayCompareExportCSV, doXrayCompareExportExcel,
-   doXrayCompareExportPDF, selectIndexedFund, sortBasketLeaderboard, runXrayReturns */
+   doXrayCompareExportPDF, selectIndexedFund, sortBasketLeaderboard, runXrayReturns, onXraySeriesChange */
+/* global VantageSplits */
 
 // ── State ──────────────────────────────────────────────────────────────────
 // Bumped at the start of searchNPORT/searchPrivateCredit/searchFundXray (the
@@ -445,8 +446,14 @@ async function searchNPORT() {
     allResults = { mode: 'single', single: buckets };
 
     const funds = countDistinctFunds(buckets);
+    // Count what is actually shown: exact duplicate rows (the same filing listed
+    // twice, e.g. an amendment) are collapsed by groupAndDedupe, and the message
+    // used to report the raw pre-dedupe number (real: "70 holdings" over 64 rows).
+    const shownHoldings = Object.values(buckets)
+      .flatMap(map => Object.values(map))
+      .reduce((n, list) => n + list.length, 0);
     showMsg(
-      `Found ${holdings.length} holding(s) across ${funds} fund(s).` +
+      `Found ${shownHoldings} holding(s) across ${funds} fund(s).` +
         (failures.length
           ? ` ${failures.length} filing(s) failed to parse and were skipped — data may be incomplete.`
           : ''),
@@ -579,7 +586,13 @@ async function parseFilings(filings, security) {
             failures.push({ company, reason: parsed.error || 'Unknown error' });
             return [];
           }
-          return (parsed.holdings || []).map(h => ({ ...h, company, cik, accession }));
+          return (parsed.holdings || []).map(h => ({
+            ...h,
+            company: h.seriesName || company,
+            registrant: company,
+            cik,
+            accession,
+          }));
         } catch (err) {
           failures.push({ company, reason: err.message });
           return [];
@@ -720,12 +733,39 @@ const MARK_EVENT_MIN_MOVE = 0.05;
 const EPISODE_WINDOW_DAYS = 150;
 const EPISODE_MIN_FUNDS = 3;
 
+// Observations for one series, with prices restated onto the latest share
+// basis whenever a stock split is detected between consecutive filings (a
+// 5-for-1 split would otherwise read as a ~68% markdown). Marks are compared
+// only within a series, so restating earlier prices is enough.
 function seriesObservations(series) {
-  return series.holdings
+  const obs = series.holdings
     .filter(h => h.chartValue != null && h.chartValue > 0 && h.reportDate)
-    .map(h => ({ t: Date.parse(h.reportDate), date: h.reportDate, value: h.chartValue }))
+    .map(h => ({
+      t: Date.parse(h.reportDate),
+      date: h.reportDate,
+      value: h.chartValue,
+      shares: h.shares,
+      pps: h.pricePerShare,
+      isDebt: h.instrumentType === 'debt',
+    }))
     .filter(o => Number.isFinite(o.t))
     .sort((a, b) => a.t - b.t);
+
+  let cumulative = 1;
+  for (let i = obs.length - 1; i >= 0; i--) {
+    obs[i].adjValue = obs[i].value / cumulative;
+    if (i > 0 && !obs[i].isDebt) {
+      const ratio = VantageSplits.detectSplit(
+        { shares: obs[i - 1].shares, pricePerShare: obs[i - 1].pps },
+        { shares: obs[i].shares, pricePerShare: obs[i].pps }
+      );
+      if (ratio) {
+        obs[i - 1].splitAfter = ratio;
+        cumulative *= ratio;
+      }
+    }
+  }
+  return obs.map(o => ({ ...o, value: o.adjValue }));
 }
 
 // Latest mark vs. the most recent earlier mark at least VELOCITY_MIN_DAYS
@@ -761,6 +801,7 @@ function computeMarkVelocity(series) {
   const spanDays = (last.t - first.t) / MARK_DAY_MS;
   return {
     latestPct: (ratio - 1) * 100,
+    splitAdjusted: obs.some(o => o.splitAfter),
     days: Math.round(days),
     annualizedPct,
     annualizedDays,
@@ -1328,7 +1369,7 @@ function renderFundCards(companiesMap, prefix, type) {
     const latestSeries = groups.find(g => g.holdings.includes(latestH)) || groups[0];
     const vel = latestSeries ? computeMarkVelocity(latestSeries) : null;
     const velText = vel
-      ? ` &bull; ${fmtSignedPct(vel.latestPct)} vs ${esc(vel.priorDate)}${vel.annualizedPct != null ? ` (${fmtSignedPct(vel.annualizedPct, 0)}/yr over ${vel.annualizedDays}d)` : ''}`
+      ? ` &bull; ${fmtSignedPct(vel.latestPct)} vs ${esc(vel.priorDate)}${vel.splitAdjusted ? ' (split-adjusted)' : ''}${vel.annualizedPct != null ? ` (${fmtSignedPct(vel.annualizedPct, 0)}/yr over ${vel.annualizedDays}d)` : ''}`
       : '';
     const flagBadges = groups
       .map(g => ({ g, o: outliers[`${company}||${g.key}`] }))
@@ -1377,7 +1418,7 @@ function renderFundCards(companiesMap, prefix, type) {
         html += `
           <tr id="${rowId}" data-company="${esc(company)}" data-idx="${hIdx}" data-key="${esc(g.key)}" data-label="${esc(g.baseLabel)}" data-bucket="${type}" data-date="${esc(h.reportDate)}" data-value="${h.chartValue}">
             <td class="center">
-              <input type="checkbox" id="${cbId}" class="chart-checkbox" data-prefix="${prefix}" checked
+              <input type="checkbox" id="${cbId}" class="chart-checkbox" data-prefix="${prefix}" checked aria-label="Show ${esc(company)} ${esc(h.reportDate)} on chart"
                      onchange="onCheckboxChange(this)">
             </td>
             <td>${sourceLinkHTML(h.cik, h.accession, h.reportDate)}</td>
@@ -2055,6 +2096,23 @@ function doExportExcel() {
 }
 
 // ── Export: PDF ────────────────────────────────────────────────────────────
+// Draws a chart canvas into a jsPDF doc. A canvas with no rendered size (its
+// tab hidden, or a zero-width layout) yields an empty "data:," image that makes
+// addImage throw "Incomplete or corrupt PNG" and kills the whole export — so
+// report whether the chart could be embedded and let the caller keep going
+// with the table.
+function addChartImage(doc, canvas, x, y, w, h) {
+  if (!canvas || !canvas.width || !canvas.height) return false;
+  try {
+    const url = canvas.toDataURL('image/png');
+    if (url.length < 100) return false;
+    doc.addImage(url, 'PNG', x, y, w, h);
+    return true;
+  } catch (_err) {
+    return false;
+  }
+}
+
 function doExportPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'landscape' });
@@ -2087,8 +2145,7 @@ function doExportPDF() {
     if (canvas) {
       const imgH = 68;
       const imgW = pageW - margin * 2;
-      doc.addImage(canvas.toDataURL('image/png'), 'PNG', margin, y, imgW, imgH);
-      y += imgH + 6;
+      if (addChartImage(doc, canvas, margin, y, imgW, imgH)) y += imgH + 6;
     }
 
     const rows = [];
@@ -2196,6 +2253,8 @@ function clearResults() {
   document.getElementById('referencePanel').style.display = 'none';
   document.getElementById('creditReferencePanel').style.display = 'none';
   document.getElementById('xraySelectorPanel').style.display = 'none';
+  document.getElementById('xraySeriesGroup').style.display = 'none';
+  xraySeriesOptions = [];
   setVal('referencePrice', '');
   setVal('creditReferenceMark', '');
   singleReferenceValue = null;
@@ -2250,6 +2309,15 @@ function val(id) {
 function setVal(id, v) {
   document.getElementById(id).value = v;
 }
+// Filename-safe text ("Fidelity Advisor Growth Fund" → "Fidelity_Advisor_Growth_Fund").
+// cleanId (below) encodes every symbol as its char code to keep DOM ids
+// collision-free, which made real export names read "Fidelity_32_Advisor_32_...".
+function fileNamePart(s) {
+  return String(s || '')
+    .replace(/[^A-Za-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
 function esc(s) {
   return String(s || '').replace(
     /[&<>"']/g,
@@ -2358,8 +2426,9 @@ async function searchPrivateCredit() {
     allCreditResults = { mode: 'credit', credit: fundsMap };
 
     const funds = Object.keys(fundsMap).length;
+    const shownTranches = Object.values(fundsMap).reduce((n, list) => n + list.length, 0);
     showMsg(
-      `Found ${holdings.length} holding tranche(s) across ${funds} BDC fund(s).` +
+      `Found ${shownTranches} holding tranche(s) across ${funds} BDC fund(s).` +
         (failures.length
           ? ` ${failures.length} filing(s) failed to parse and were skipped — data may be incomplete.`
           : ''),
@@ -2669,7 +2738,8 @@ function rebuildCreditChart() {
 
 // ── Render credit fund cards ──────────────────────────────────────────────
 function renderCreditFundCards(fundsMap) {
-  let html = '';
+  let html =
+    '<div class="hint" style="margin-bottom:10px;">Dollar amounts are shown exactly as each BDC reports them (most in $ thousands, some in whole dollars). Marks are unaffected — they are fair value ÷ par.</div>';
 
   Object.keys(fundsMap).forEach((company, compIdx) => {
     const holdings = fundsMap[company];
@@ -2706,9 +2776,9 @@ function renderCreditFundCards(fundsMap) {
               <th class="right">Cash Int. Rate</th>
               <th class="right">PIK</th>
               <th>Maturity</th>
-              <th class="right">Principal ($K)</th>
-              <th class="right">Cost ($K)</th>
-              <th class="right">Fair Value ($K)</th>
+              <th class="right">Principal</th>
+              <th class="right">Cost</th>
+              <th class="right">Fair Value</th>
               <th class="right">Mark (%)</th>
               <th>Notes</th>
             </tr></thead>
@@ -2724,7 +2794,7 @@ function renderCreditFundCards(fundsMap) {
       html += `
         <tr id="${rowId}" data-company="${esc(company)}" data-idx="${idx}" data-label="${esc(h.investmentType || '')}" data-bucket="credit" data-date="${esc(h.reportDate)}">
           <td class="center">
-            <input type="checkbox" id="${cbId}" class="chart-checkbox" checked onchange="onCheckboxChange(this)">
+            <input type="checkbox" id="${cbId}" class="chart-checkbox" checked aria-label="Show ${esc(company)} ${esc(h.reportDate)} on chart" onchange="onCheckboxChange(this)">
           </td>
           <td>${sourceLinkHTML(h.cik, h.accession, h.reportDate)}</td>
           <td class="title-cell">${esc(h.portfolioCompany || '—')}</td>
@@ -2811,9 +2881,9 @@ function doCreditExportCSV() {
       'Cash Int. Rate',
       'PIK',
       'Maturity Date',
-      'Principal ($K)',
-      'Cost ($K)',
-      'Fair Value ($K)',
+      'Principal (as reported)',
+      'Cost (as reported)',
+      'Fair Value (as reported)',
       'Fair Value Mark (%)',
       'Notes',
       'Source Filing URL',
@@ -2860,9 +2930,9 @@ function doCreditExportExcel() {
       'Cash Int. Rate',
       'PIK',
       'Maturity Date',
-      'Principal ($K)',
-      'Cost ($K)',
-      'Fair Value ($K)',
+      'Principal (as reported)',
+      'Cost (as reported)',
+      'Fair Value (as reported)',
       'Fair Value Mark (%)',
       'Notes',
       'Source Filing URL',
@@ -2939,8 +3009,7 @@ function doCreditExportPDF() {
   if (canvas) {
     const imgH = 68;
     const imgW = pageW - margin * 2;
-    doc.addImage(canvas.toDataURL('image/png'), 'PNG', margin, y, imgW, imgH);
-    y += imgH + 6;
+    if (addChartImage(doc, canvas, margin, y, imgW, imgH)) y += imgH + 6;
   }
 
   const rows = [];
@@ -2965,7 +3034,18 @@ function doCreditExportPDF() {
     doc.autoTable({
       startY: y,
       head: [
-        ['Fund', 'Date', 'Company', 'Type', 'Index', 'Spread', 'PIK', 'Principal ($K)', 'Fair Value ($K)', 'Mark'],
+        [
+          'Fund',
+          'Date',
+          'Company',
+          'Type',
+          'Index',
+          'Spread',
+          'PIK',
+          'Principal (as reported)',
+          'Fair Value (as reported)',
+          'Mark',
+        ],
       ],
       body: rows,
       margin: { left: margin, right: margin },
@@ -3061,6 +3141,67 @@ function renderWatchlist() {
 // mentioning a security), this searches for the fund itself, then pulls its
 // own filing in full — every holding, not just ones matching a search term
 // — so the fund's total private/illiquid book can be measured directly.
+let xraySeriesOptions = []; // fund picker entries for a multi-series trust: { cik, seriesId, name, filings? }
+
+// Populates the Current Period / Compare To dropdowns from a filing list.
+function applyXrayFilings(list) {
+  // One filing per report period: an amendment or re-filing lists the same
+  // period twice (real: SkyBridge G II Fund 2022-03-31), and "vs Prior Quarter"
+  // would otherwise compare a filing with its own duplicate. Newest filing wins.
+  const byPeriod = new Map();
+  [...list]
+    .sort((a, b) => (b.fileDate || '').localeCompare(a.fileDate || ''))
+    .forEach(f => {
+      const key = f.period || f.fileDate;
+      if (!byPeriod.has(key)) byPeriod.set(key, f);
+    });
+  const filings = [...byPeriod.values()].sort((a, b) => dateCmp(b.period || b.fileDate, a.period || a.fileDate));
+  xrayFilings = filings;
+  xrayCompareMode = null;
+  currentXrayCompare = null;
+  document.getElementById('xraySelectorPanel').style.display = 'block';
+  const optionsHTML = filings
+    .map((f, i) => `<option value="${i}">${esc(f.period || f.fileDate)} — ${esc(f.company)}</option>`)
+    .join('');
+  document.getElementById('xrayFilingSelect').innerHTML = optionsHTML;
+  document.getElementById('xrayCompareSelect').innerHTML = '<option value="">— No comparison —</option>' + optionsHTML;
+  document.getElementById('xrayCompareResults')?.remove();
+}
+
+async function onXraySeriesChange() {
+  const idx = document.getElementById('xraySeriesSelect').value;
+  if (idx === '') {
+    applyXrayFilings([]);
+    document.getElementById('resultsContainer').innerHTML = '';
+    return;
+  }
+  const opt = xraySeriesOptions[+idx];
+  const myGen = ++xrayRunGeneration;
+  showLoading('Loading this fund’s filings...');
+  try {
+    let filings = opt.filings;
+    if (!filings) {
+      const data = await fetchJSON(`/api/fund-series-filings?cik=${enc(opt.cik)}&seriesId=${enc(opt.seriesId)}`);
+      if (myGen !== xrayRunGeneration) return;
+      filings = data.filings.map(f => ({
+        cik: opt.cik,
+        accession: f.accession,
+        company: opt.name,
+        period: f.reportDate || f.filingDate || '',
+        fileDate: f.filingDate || '',
+      }));
+      filings.sort((a, b) => dateCmp(b.period || b.fileDate, a.period || a.fileDate));
+    }
+    hideLoading();
+    if (!filings.length) return showMsg('No NPORT-P filings found for this fund.', 'error');
+    applyXrayFilings(filings);
+    await runFundXray();
+  } catch (err) {
+    hideLoading();
+    showMsg('Error: ' + esc(err.message), 'error');
+  }
+}
+
 async function searchFundXray() {
   const fund = document.getElementById('xrayFundInput').value.trim();
   if (!fund) return showMsg('Please enter a fund or registrant name.', 'error');
@@ -3096,17 +3237,46 @@ async function searchFundXray() {
       );
     }
 
-    xrayFilings = filings;
-    xrayCompareMode = null;
-    currentXrayCompare = null;
-    document.getElementById('xraySelectorPanel').style.display = 'block';
-    const optionsHTML = filings
-      .map((f, i) => `<option value="${i}">${esc(f.period || f.fileDate)} — ${esc(f.company)}</option>`)
-      .join('');
-    document.getElementById('xrayFilingSelect').innerHTML = optionsHTML;
-    document.getElementById('xrayCompareSelect').innerHTML =
-      '<option value="">— No comparison —</option>' + optionsHTML;
-    document.getElementById('xrayCompareResults')?.remove();
+    // A trust files one NPORT-P per fund series under one CIK; comparing or
+    // chaining "the previous filing" only makes sense inside one series, so
+    // multi-series registrants get a fund picker instead of a mixed list.
+    const seriesInfos = await Promise.all(
+      matches.map(m => fetchJSON(`/api/fund-series?cik=${enc(m.cik)}`).catch(() => null))
+    );
+    if (mySearchGen !== searchGeneration) return;
+    if (seriesInfos.some(i => i && i.multiSeries)) {
+      xraySeriesOptions = [];
+      matches.forEach((m, i) => {
+        const info = seriesInfos[i];
+        if (info && info.multiSeries) {
+          info.series.forEach(s =>
+            xraySeriesOptions.push({ cik: String(m.cik), seriesId: s.seriesId, name: s.seriesName })
+          );
+        } else {
+          xraySeriesOptions.push({
+            cik: String(m.cik),
+            seriesId: null,
+            name: m.name,
+            filings: filings.filter(f => f.cik === String(m.cik)),
+          });
+        }
+      });
+      xraySeriesOptions.sort((x, y) => x.name.localeCompare(y.name));
+      document.getElementById('xraySeriesSelect').innerHTML =
+        '<option value="">— choose a fund —</option>' +
+        xraySeriesOptions.map((o, i) => `<option value="${i}">${esc(o.name)}</option>`).join('');
+      document.getElementById('xraySeriesGroup').style.display = 'flex';
+      document.getElementById('xraySelectorPanel').style.display = 'block';
+      applyXrayFilings([]);
+      showMsg(
+        `"${esc(fund)}" is a trust that files separately for ${xraySeriesOptions.length} funds — choose one from the Fund list so periods and comparisons stay within a single fund.`,
+        'info'
+      );
+      return;
+    }
+
+    document.getElementById('xraySeriesGroup').style.display = 'none';
+    applyXrayFilings(filings);
 
     if (matches.length > 1) {
       // lookupFundCiks (server.js) caps candidate registrants at 5 before
@@ -3358,6 +3528,13 @@ function returnsResultHTML(r) {
     const adds = p.events.filter(e => e.type === 'addon').length;
     if (adds) notes.push(adds + ' add-on' + (adds > 1 ? 's' : ''));
     if (p.events.some(e => e.type === 'partial_realization')) notes.push('partial sale');
+    p.events
+      .filter(e => e.type === 'split')
+      .forEach(e =>
+        notes.push(
+          `${e.ratio >= 1 ? e.ratio + '-for-1' : '1-for-' + Math.round(1 / e.ratio)} split ${e.date} (no capital)`
+        )
+      );
     if (p.status === 'exited') notes.push('left private book ' + p.lastDate);
     html += `<tr><td class="title-cell">${esc(p.title || p.name)}</td><td>${esc(p.firstDate)}</td><td class="right">${p.lotsUnavailable ? '—' : fmtCompactCurrency(p.invested)}</td><td class="right">${p.lotsUnavailable ? '—' : fmtCompactCurrency(p.realized)}</td><td class="right">${fmtCompactCurrency(p.currentValue)}</td><td class="right">${p.lotsUnavailable ? '—' : x(p.moic)}</td><td class="right">${p.lotsUnavailable ? '—' : pctFmt(p.irr)}</td><td>${esc(notes.join('; ') || '—')}</td></tr>`;
   });
@@ -3423,8 +3600,8 @@ function doXrayExportCSV(key) {
   const csv = [data.header, ...data.rows]
     .map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(','))
     .join('\n');
-  const datePart = data.reportDate ? `_${cleanId(data.reportDate)}` : '';
-  downloadBlob(csv, 'text/csv', `fund_xray_${cleanId(data.fundName || 'fund')}${datePart}_${today()}.csv`);
+  const datePart = data.reportDate ? `_${fileNamePart(data.reportDate)}` : '';
+  downloadBlob(csv, 'text/csv', `fund_xray_${fileNamePart(data.fundName || 'fund')}${datePart}_${today()}.csv`);
 }
 
 // ── Fund X-Ray Excel/PDF export ────────────────────────────────────────────
@@ -3447,8 +3624,8 @@ function doXrayExportExcel(key) {
     { wch: 16 },
   ];
   XLSX.utils.book_append_sheet(wb, ws, 'Fund X-Ray');
-  const datePart = data.reportDate ? `_${cleanId(data.reportDate)}` : '';
-  XLSX.writeFile(wb, `fund_xray_${cleanId(data.fundName || 'fund')}${datePart}_${today()}.xlsx`);
+  const datePart = data.reportDate ? `_${fileNamePart(data.reportDate)}` : '';
+  XLSX.writeFile(wb, `fund_xray_${fileNamePart(data.fundName || 'fund')}${datePart}_${today()}.xlsx`);
 }
 
 function doXrayExportPDF(key) {
@@ -3482,8 +3659,8 @@ function doXrayExportPDF(key) {
     });
   }
 
-  const datePart = data.reportDate ? `_${cleanId(data.reportDate)}` : '';
-  doc.save(`fund_xray_${cleanId(data.fundName || 'fund')}${datePart}_${today()}.pdf`);
+  const datePart = data.reportDate ? `_${fileNamePart(data.reportDate)}` : '';
+  doc.save(`fund_xray_${fileNamePart(data.fundName || 'fund')}${datePart}_${today()}.pdf`);
 }
 
 // ── Fund X-Ray: QoQ / YoY period comparison ────────────────────────────────
@@ -3804,7 +3981,7 @@ function renderFundXrayComparison(cmp, currentFiling, priorFiling) {
           ? `${p.pctOfNetAssets.delta > 0 ? '+' : ''}${p.pctOfNetAssets.delta.toFixed(2)}pp`
           : '—';
       html += `<tr class="${rowClass}">
-        <td><span class="status-pill ${p.status}">${p.status}</span></td>
+        <td><span class="status-pill ${p.status}">${p.status}</span>${p.splitRatio ? `<div class="hint" style="margin:2px 0 0;">${p.splitRatio >= 1 ? p.splitRatio + '-for-1' : '1-for-' + Math.round(1 / p.splitRatio)} split — adjusted</div>` : ''}</td>
         <td class="title-cell">${esc(p.name || p.title || '—')}</td>
         <td>${esc(p.instrumentLabel || '—')}</td>
         <td class="right">${fmtXrayDeltaPair(p.shares, fmtNum)}</td>
@@ -3887,7 +4064,7 @@ function doXrayCompareExportCSV() {
   const csv = [data.header, ...data.rows]
     .map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(','))
     .join('\n');
-  downloadBlob(csv, 'text/csv', `fund_xray_compare_${cleanId(data.fundName || 'fund')}_${today()}.csv`);
+  downloadBlob(csv, 'text/csv', `fund_xray_compare_${fileNamePart(data.fundName || 'fund')}_${today()}.csv`);
 }
 
 function doXrayCompareExportExcel() {
@@ -3897,7 +4074,7 @@ function doXrayCompareExportExcel() {
   const ws = XLSX.utils.aoa_to_sheet([data.header, ...data.rows]);
   ws['!cols'] = data.header.map(() => ({ wch: 16 }));
   XLSX.utils.book_append_sheet(wb, ws, 'Fund X-Ray Compare');
-  XLSX.writeFile(wb, `fund_xray_compare_${cleanId(data.fundName || 'fund')}_${today()}.xlsx`);
+  XLSX.writeFile(wb, `fund_xray_compare_${fileNamePart(data.fundName || 'fund')}_${today()}.xlsx`);
 }
 
 function doXrayCompareExportPDF() {
@@ -3931,5 +4108,5 @@ function doXrayCompareExportPDF() {
     });
   }
 
-  doc.save(`fund_xray_compare_${cleanId(data.fundName || 'fund')}_${today()}.pdf`);
+  doc.save(`fund_xray_compare_${fileNamePart(data.fundName || 'fund')}_${today()}.pdf`);
 }

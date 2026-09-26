@@ -17,6 +17,7 @@
 // Run with: npm test
 
 process.env.CACHE_DB_PATH = ':memory:';
+process.env.SEC_MIN_INTERVAL_MS = '0';
 process.env.SEC_USER_AGENT = 'Test Suite test@example.com';
 
 const test = require('node:test');

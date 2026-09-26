@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><edgarSubmission xmlns="http://www.sec.gov/edgar/nport" xmlns:com="http://www.sec.gov/edgar/common" xmlns:ncom="http://www.sec.gov/edgar/nportcommon" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sec.gov/edgar/nport eis_NPORT_Filer.xsd">
+  <headerData>
+    <submissionType>NPORT-P</submissionType>
+    <isConfidential>false</isConfidential>
+    <filerInfo>
+
+      <filer>
+        <issuerCredentials>
+          <cik>0000722574</cik>
+          <ccc>XXXXXXXX</ccc>
+        </issuerCredentials>
+      </filer>
+
+
+      <seriesClassInfo>
+        <seriesId>S000017683</seriesId>
+        <classId>C000048858</classId>
+        <classId>C000048860</classId>
+        <classId>C000048861</classId>
+        <classId>C000048862</classId>
+        <classId>C000048863</classId>
+        <classId>C000205047</classId>
+      </seriesClassInfo>
+
+
+    </filerInfo>
+  </headerData>
+  <formData>
+    <genInfo>
+      <regName>Fidelity Advisor Series I</regName>
+      <regFileNumber>811-03785</regFileNumber>
+      <regCik>0000722574</regCik>
+      <regLei>C7J4FOV6ELAVE39B7M82</regLei>
+      <regStreet1>245 Summer Street</regStreet1>
+      <regCity>Boston</regCity>
+      <regStateConditional regCountry="US" regState="US-MA"/>
+      <regZipOrPostalCode>02210</regZipOrPostalCode>
+      <regPhone>1-800-FIDELITY</regPhone>
+      <seriesName>Fidelity Advisor Floating Rate High Income Fund</seriesName>
+      <seriesId>S000017683</seriesId>
+      <seriesLei>06FDJUS8WLNCESCVCG06</seriesLei>
+      <repPdEnd>2026-10-31</repPdEnd>
+      <repPdDate>2026-07-31</repPdDate>
+      <isFinalFiling>N</isFinalFiling>
+    </genInfo>
+    <fundInfo>
+      <totAssets>14792608946.34</t
