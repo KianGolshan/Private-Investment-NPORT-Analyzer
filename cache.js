@@ -232,6 +232,9 @@ if (db) {
   if (pruneStaleHoldings() > 0) {
     try {
       db.exec('VACUUM');
+      // In WAL mode VACUUM's rewrite lands in the -wal file; checkpoint it
+      // into cache.db now so the file actually shrinks while the server runs.
+      db.pragma('wal_checkpoint(TRUNCATE)');
     } catch (err) {
       console.error('Cache vacuum error:', err.message);
     }
