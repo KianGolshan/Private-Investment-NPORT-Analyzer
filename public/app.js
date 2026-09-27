@@ -427,7 +427,10 @@ async function searchNPORT() {
     }
 
     const limit = +document.getElementById('filingLimit').value;
-    const filings = sortFilings(data.hits.hits.slice(0, limit));
+    // Sort first, then cut: EDGAR full-text search returns hits in relevance
+    // order, so slicing before sorting kept the `limit` most "relevant"
+    // filings — an arbitrary mix of years — instead of the most recent ones.
+    const filings = sortFilings([...data.hits.hits]).slice(0, limit);
     const { holdings, failures } = await parseFilings(filings, security);
     if (mySearchGen !== searchGeneration) return;
 
@@ -454,6 +457,7 @@ async function searchNPORT() {
       .reduce((n, list) => n + list.length, 0);
     showMsg(
       `Found ${shownHoldings} holding(s) across ${funds} fund(s).` +
+        coverageNote(filings.length, data) +
         (failures.length
           ? ` ${failures.length} filing(s) failed to parse and were skipped — data may be incomplete.`
           : ''),
@@ -503,6 +507,9 @@ async function runBatchPipeline(securities, limit) {
 
   const batchResults = {};
   let totalFailures = 0;
+  // Securities whose EDGAR matches ran past the per-security cap — reported so
+  // a capped run is never mistaken for full coverage.
+  let cappedCount = 0;
 
   for (let i = 0; i < securities.length; i++) {
     const security = securities[i];
@@ -512,7 +519,9 @@ async function runBatchPipeline(securities, limit) {
       const data = await fetchJSON('/api/search-nport?security=' + enc(security));
       if (!data.hits?.hits?.length) continue;
 
-      const filings = sortFilings(data.hits.hits.slice(0, limit));
+      // Sort before cutting — see searchNPORT().
+      const filings = sortFilings([...data.hits.hits]).slice(0, limit);
+      if (coverageNote(filings.length, data)) cappedCount++;
       const { holdings, failures } = await parseFilings(filings, security);
       totalFailures += failures.length;
       if (holdings.length) {
@@ -537,6 +546,9 @@ async function runBatchPipeline(securities, limit) {
   const found = Object.keys(batchResults).length;
   showMsg(
     `Found holdings for ${found} of ${securities.length} securities.` +
+      (cappedCount
+        ? ` ${cappedCount} of them matched more filings than the ${limit}-per-security cap — only the most recent ${limit} were parsed.`
+        : '') +
       (totalFailures
         ? ` ${totalFailures} filing(s) failed to parse across all searches — data may be incomplete.`
         : ''),
@@ -2344,6 +2356,17 @@ function dateCmp(a, b) {
 function today() {
   return new Date().toISOString().replace(/:/g, '-').replace(/\..+/, '').replace('T', '_');
 }
+// " Parsed the 50 most recent of 837 matching filings." — only when the run
+// didn't cover everything EDGAR matched, so a capped search never reads as
+// complete. matchCount prefers EDGAR's own total (it can exceed what the server
+// paged through; see EFTS_MAX_HITS in server.js).
+function coverageNote(parsedCount, data) {
+  const fetched = data?.hits?.hits?.length || 0;
+  const total = Math.max(fetched, Number(data?.hits?.total?.value) || 0);
+  if (parsedCount >= total) return '';
+  const more = data?.hits?.total?.relation === 'gte' ? '+' : '';
+  return ` Parsed the ${parsedCount} most recent of ${total.toLocaleString('en-US')}${more} matching filings — raise Max Filings to go further back.`;
+}
 function sortFilings(arr) {
   return arr.sort((a, b) =>
     dateCmp(b._source.file_date || b._source.period_ending || 0, a._source.file_date || a._source.period_ending || 0)
@@ -2382,7 +2405,7 @@ async function searchPrivateCredit() {
 
   const mySearchGen = ++searchGeneration;
   clearResults();
-  showLoading('Searching SEC EDGAR for 10-Q filings...');
+  showLoading('Searching SEC EDGAR for 10-Q and 10-K filings...');
 
   try {
     const data = await fetchJSON('/api/search-10q?issuer=' + enc(issuer));
@@ -2390,7 +2413,7 @@ async function searchPrivateCredit() {
     if (!data.filings?.length) {
       hideLoading();
       return showMsg(
-        'No BDC 10-Q filings found for that issuer. The company may not be held by any reporting BDC, or try a more specific name.',
+        'No BDC 10-Q or 10-K filings found for that issuer. The company may not be held by any reporting BDC, or try a more specific name.',
         'error'
       );
     }
@@ -2416,7 +2439,7 @@ async function searchPrivateCredit() {
 
     if (!holdings.length) {
       return showMsg(
-        `No schedule of investments data found for "${esc(issuer)}" in these 10-Q filings. The filings may mention this issuer in text, not in investment tables.` +
+        `No schedule of investments data found for "${esc(issuer)}" in these 10-Q/10-K filings. The filings may mention this issuer in text, not in investment tables.` +
           (failures.length ? ` (${failures.length} filing(s) also failed to fetch/parse.)` : ''),
         'error'
       );

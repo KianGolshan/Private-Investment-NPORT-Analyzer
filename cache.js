@@ -49,18 +49,28 @@
 // v7: Fund X-Ray results gained a capitalStructure rollup (per-issuer
 // equity/derivative/debt tranches) — bumped so cached fundxray rows built
 // under v6 (which lack it) are re-parsed instead of rendering without it.
-// v13: Private Credit rows: colspan-misaligned figures read in order; company total
-// rows, unfunded commitments and unit-denominated "par" no longer become holdings/marks.
-// v12: Private Credit header matching widened (Investments/Issuer company columns,
-// Par / Units principal, Cost/Amortized Cost, combined Reference Rate and Spread).
-// v11: holdings carry filerId (the filer's own instrument id) used to track
-// positions across periods — verified stable on 3,652 real position pairs.
-// v9: instrumentKey no longer falls back to placeholder CUSIPs ("000000000"),
-// and Fund X-Ray results gained issuer-stem grouping — bumped so cached rows
-// keyed under the old rules are re-parsed.
 // v8: extractHoldings rows gained seriesName and fund meta gained seriesId
 // (multi-series trusts file one NPORT-P per fund) — bumped so older cached
 // rows lacking them are re-parsed.
+// v9: instrumentKey no longer falls back to placeholder CUSIPs ("000000000"),
+// and Fund X-Ray results gained issuer-stem grouping — bumped so cached rows
+// keyed under the old rules are re-parsed.
+// v11: holdings carry filerId (the filer's own instrument id) used to track
+// positions across periods — verified stable on 3,652 real position pairs.
+// v12: Private Credit header matching widened (Investments/Issuer company columns,
+// Par / Units principal, Cost/Amortized Cost, combined Reference Rate and Spread).
+// v13: Private Credit rows: colspan-misaligned figures read in order; company total
+// rows, unfunded commitments and unit-denominated "par" no longer become holdings/marks.
+// v10, v14–v16: v8 through v16 all landed in one change (commit 7c049ad:
+// multi-series trusts, stock splits, dummy CUSIPs / "N/A" issuer names,
+// Private Credit header matching across ~55 real BDC layouts); what these
+// individual bumps covered was not recorded.
+// Any future change gets its own line here.
+//
+// Rows written under an older PARSE_VERSION can never be read again (the
+// version is part of every holdings key), so they are deleted on startup —
+// see pruneStaleHoldings below. Before this, ~95% of a long-used cache.db
+// was dead rows from v2–v7.
 const path = require('path');
 const Database = require('better-sqlite3');
 
@@ -108,6 +118,10 @@ const stmts = db
     ON CONFLICT(key) DO UPDATE SET value = excluded.value, created_at = excluded.created_at
   `),
       delExpiredSearch: db.prepare('DELETE FROM search_cache WHERE created_at < ?'),
+      // Keys look like "<namespace>:v<PARSE_VERSION>:<parts…>"; the namespace
+      // itself may contain colons ("holdings:nport"), so match the version
+      // segment anywhere rather than at a fixed position.
+      delStaleHoldings: db.prepare("DELETE FROM holdings_cache WHERE key NOT GLOB ('*:v' || ? || ':*')"),
       delSearch: db.prepare('DELETE FROM search_cache WHERE key = ?'),
     }
   : null;
@@ -198,7 +212,30 @@ function pruneExpiredSearchCache() {
     console.error('Cache prune error:', err.message);
   }
 }
+// Deletes holdings rows written under an older PARSE_VERSION — unreachable
+// by construction, since the version is baked into every holdings key.
+function pruneStaleHoldings() {
+  if (!stmts) return 0;
+  try {
+    const { changes } = stmts.delStaleHoldings.run(String(PARSE_VERSION));
+    return changes;
+  } catch (err) {
+    console.error('Cache prune error (holdings):', err.message);
+    return 0;
+  }
+}
+
 if (db) {
+  // SQLite keeps deleted pages in the file, so after a version bump actually
+  // drops rows, compact once — otherwise cache.db never shrinks. Skipped on
+  // ordinary start-ups (nothing pruned), so it costs nothing day to day.
+  if (pruneStaleHoldings() > 0) {
+    try {
+      db.exec('VACUUM');
+    } catch (err) {
+      console.error('Cache vacuum error:', err.message);
+    }
+  }
   pruneExpiredSearchCache();
   // unref() so this timer never keeps the process (or a test run) alive on
   // its own.
@@ -233,5 +270,6 @@ module.exports = {
   getSearch,
   setSearch,
   pruneExpiredSearchCache,
+  pruneStaleHoldings,
   withInFlight,
 };

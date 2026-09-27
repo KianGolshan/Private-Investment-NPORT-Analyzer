@@ -155,10 +155,10 @@ test('GET /api/search-10q: 400 when issuer is missing', async () => {
   assert.equal(res.status, 400);
 });
 
-test('GET /api/search-10q: identifies BDC funds via 814- file numbers and pulls their filing history', async () => {
+test('GET /api/search-10q: identifies BDC funds via 814- file numbers and pulls their 10-Q and 10-K history', async () => {
   nock(EFTS)
     .get('/LATEST/search-index')
-    .query(q => q.forms === '10-Q')
+    .query(q => q.forms === '10-Q,10-K')
     .reply(200, {
       hits: {
         hits: [
@@ -181,11 +181,11 @@ test('GET /api/search-10q: identifies BDC funds via 814- file numbers and pulls 
     .reply(200, {
       filings: {
         recent: {
-          form: ['10-Q', '8-K'],
-          accessionNumber: ['0001974793-26-000004', '0001974793-26-000003'],
-          filingDate: ['2026-02-15', '2026-01-01'],
-          reportDate: ['2025-12-31', ''],
-          primaryDocument: ['olp-20251231.htm', 'other.htm'],
+          form: ['10-Q', '8-K', '10-K'],
+          accessionNumber: ['0001974793-26-000004', '0001974793-26-000003', '0001974793-25-000009'],
+          filingDate: ['2026-02-15', '2026-01-01', '2025-11-20'],
+          reportDate: ['2025-12-31', '', '2025-09-30'],
+          primaryDocument: ['olp-20251231.htm', 'other.htm', 'olp-20250930.htm'],
         },
         files: [],
       },
@@ -199,8 +199,13 @@ test('GET /api/search-10q: identifies BDC funds via 814- file numbers and pulls 
   // The confirmed EFTS hit and the matching submissions-history entry share
   // the same accession — must be deduplicated, not listed twice.
   assert.equal(res.body.filings.filter(f => f.accession === '0001974793-26-000004').length, 1);
-  // The 8-K in the same submissions history must be excluded (10-Q only).
+  // The 8-K in the same submissions history must be excluded...
   assert.ok(!res.body.filings.some(f => f.accession === '0001974793-26-000003'));
+  // ...but the 10-K is kept: it carries the fiscal year-end schedule of
+  // investments that no 10-Q covers.
+  const tenK = res.body.filings.find(f => f.accession === '0001974793-25-000009');
+  assert.ok(tenK, 'the 10-K must be part of the filing history');
+  assert.equal(tenK.form, '10-K');
 });
 
 // ── /api/parse-10q ────────────────────────────────────────────────────────

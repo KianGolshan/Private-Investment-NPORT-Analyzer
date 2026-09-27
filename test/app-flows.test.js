@@ -441,7 +441,7 @@ test('searchPrivateCredit: validates input; empty and error states are explicit'
   assert.match(msg(a.document), /enter an issuer/i);
   a.document.getElementById('creditIssuerInput').value = 'Nobody';
   await a.window.searchPrivateCredit();
-  assert.match(msg(a.document), /No BDC 10-Q filings found/);
+  assert.match(msg(a.document), /No BDC 10-Q or 10-K filings found/);
 
   const b = await loadApp({
     fetchImpl: creditBackend({ '/api/parse-10q': () => ({ success: true, holdings: [] }) }),
@@ -537,4 +537,59 @@ test('result messages count the rows actually shown: an exact duplicate filing i
   const rows = document.querySelectorAll('tr[data-company]').length;
   assert.equal(rows, 2, 'the duplicated filing shows once');
   assert.match(msg(document), /Found 2 holding\(s\) across 2 fund\(s\)/);
+});
+
+// ── search coverage (full-project audit fixes) ─────────────────────────────
+
+test('searchNPORT: Max Filings keeps the MOST RECENT filings, not the first N in EDGAR relevance order', async () => {
+  // 30 hits in relevance order, oldest first — the old slice-then-sort kept
+  // exactly these 25 oldest and never parsed the 5 newest.
+  const hits = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(Date.UTC(2020, 0, 1 + i * 40)).toISOString().slice(0, 10);
+    return nportHit({ cik: String(i + 1), adsh: `R-${String(i).padStart(2, '0')}`, name: `Fund ${i}`, period: d });
+  });
+  const parsed = [];
+  const backend = mockBackend({
+    '/api/config': () => ({}),
+    '/api/search-nport': () => ({ hits: { total: { value: 30, relation: 'eq' }, hits } }),
+    '/api/parse-nport': p => {
+      parsed.push(p.accession);
+      return { success: true, holdings: [holding({ title: 'ACME INC COM' })] };
+    },
+  });
+  const { window, document } = await loadApp({ fetchImpl: backend });
+  document.getElementById('securityInput').value = 'Acme';
+  document.getElementById('filingLimit').value = '25';
+  await window.searchNPORT();
+  await tick(window);
+  assert.equal(parsed.length, 25);
+  for (const newest of ['R-29', 'R-28', 'R-27', 'R-26', 'R-25']) assert.ok(parsed.includes(newest), newest);
+  for (const oldest of ['R-00', 'R-01', 'R-02', 'R-03', 'R-04']) assert.ok(!parsed.includes(oldest), oldest);
+  assert.match(msg(document), /Parsed the 25 most recent of 30 matching filings/);
+});
+
+test('searchNPORT: no coverage note when every matching filing was parsed', async () => {
+  const { window, document } = await loadApp({ fetchImpl: acmeBackend() });
+  document.getElementById('securityInput').value = 'Acme';
+  await window.searchNPORT();
+  await tick(window);
+  assert.doesNotMatch(msg(document), /most recent of/);
+});
+
+test('searchBatch: securities that matched more filings than the cap are reported', async () => {
+  const many = Array.from({ length: 30 }, (_, i) => nportHit({ cik: String(i + 1), adsh: `M-${i}`, name: `F${i}` }));
+  const backend = mockBackend({
+    '/api/config': () => ({}),
+    '/api/search-nport': p =>
+      p.security === 'BIG'
+        ? { hits: { total: { value: 30 }, hits: many } }
+        : { hits: { hits: [nportHit({ cik: '1', adsh: 'S-1', name: 'Solo' })] } },
+    '/api/parse-nport': p => ({ success: true, holdings: [holding({ title: p.security + ' COM' })] }),
+  });
+  const { window, document } = await loadApp({ fetchImpl: backend });
+  document.getElementById('batchInput').value = 'BIG\nSMALL';
+  document.getElementById('batchFilingLimit').value = '25';
+  await window.searchBatch();
+  await tick(window);
+  assert.match(msg(document), /1 of them matched more filings than the 25-per-security cap/);
 });

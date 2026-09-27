@@ -16,8 +16,9 @@ Institutional funds registered with the SEC are required to file NPORT-P reports
 
 It also includes a **Private Credit Analysis** mode that does the same thing
 for privately-held companies held as loans by Business Development Companies
-(BDCs), by parsing the Schedule of Investments tables in their 10-Q filings
-instead of NPORT-P.
+(BDCs), by parsing the Schedule of Investments tables in their 10-Q and 10-K
+filings instead of NPORT-P (the 10-K carries the fiscal year-end marks that no
+10-Q reports).
 
 A third mode, **Fund X-Ray**, flips the question around: instead of searching
 for a company and finding which funds hold it, you search for a *fund* and
@@ -38,7 +39,7 @@ down.
 - **Batch search** — search up to 10 securities at once, each displayed as a separate section with its own chart
 - **Watchlist** — save issuers you track repeatedly (stored in your browser only) and re-run the full list in one click, with no per-search cap
 - **Basket Leaderboard** — a sortable rollup above Batch Search/Watchlist results ranking every name by peer-mark dispersion and filing age, so a multi-name review surfaces its most contested and stalest marks first instead of reading N separate sections in order
-- **Private Credit Analysis** — search any issuer name to find every BDC fund reporting it as a loan, and chart the fair-value mark (% of par) across funds and time
+- **Private Credit Analysis** — search any issuer name to find every BDC fund reporting it as a loan, and chart the fair-value mark (% of par) across funds and time, from both 10-Qs and 10-Ks (so fiscal year-end marks aren't missing)
 - **Fund X-Ray** — search a fund/registrant name to pull its own NPORT-P filing in full and see its total private-equity exposure: $ value and % of NAV, broken down by instrument type (common/preferred/warrant/SPV) and country, with every private holding listed
 - **Fund X-Ray period comparison** — compare a fund's private-equity book across two periods (one click for the prior quarter or prior year, or pick any two periods manually): new investments, exits, share-count changes, and a decomposition of the value change into "from price marks" vs. "from position sizing," plus notable mark-ups/mark-downs ranked by dollar impact
 - **Fund X-Ray capital structure** — issuers a fund holds through several instruments at once (e.g. preferred + warrant + term loan) are rolled up per issuer, senior-first, with debt share and weighted coupon
@@ -153,9 +154,9 @@ can't reach:
 ### Single Security
 
 1. Enter a company name (e.g., `Anthropic`, `OpenAI`, `SpaceX`) or ticker in the search box
-2. Choose how many filings to process (25 / 50 / 100)
+2. Choose how many filings to process (25 / 50 / 100 / 250) — the **most recent** matching filings are kept
 3. Click **Search NPORT Filings**
-4. Results show a price-per-share trend chart and a table of holdings broken down by fund
+4. Results show a price-per-share trend chart and a table of holdings broken down by fund. If EDGAR matched more filings than you chose to parse, the result message says so ("Parsed the 50 most recent of 837 matching filings") — a capped run never passes for complete coverage
 
 ### Batch Search
 
@@ -168,7 +169,7 @@ can't reach:
 
 1. Switch to the **Watchlist** tab and add issuer names you track repeatedly
 2. Click **Run Watchlist Search** to run the same peer-comparison search as Batch Search — leaderboard included — against your full saved list (no 10-issuer cap)
-3. The list is stored in your browser's local storage only — it isn't synced or shared. Searches NPORT-P (mutual fund) holdings only; Private Credit/BDC issuers aren't tracked here, since 10-Q filings use a separate search
+3. The list is stored in your browser's local storage only — it isn't synced or shared. Searches NPORT-P (mutual fund) holdings only; Private Credit/BDC issuers aren't tracked here, since BDC 10-Q/10-K filings use a separate search
 
 ### Basket Leaderboard
 
@@ -245,27 +246,28 @@ After a search, use the export buttons at the bottom of the results — every ta
 
 ## How It Works
 
-1. **Search** — queries `https://efts.sec.gov/LATEST/search-index` for NPORT-P filings matching the search term
+1. **Search** — queries `https://efts.sec.gov/LATEST/search-index` for NPORT-P filings matching the search term. EDGAR returns at most 100 hits per request, so the server pages through them (up to `EFTS_MAX_HITS`, default 1,000) — reading only the first page used to silently drop most matches on popular names (Anthropic alone has 800+)
 2. **Parse** — fetches `primary_doc.xml` from each filing's EDGAR archive path and parses the XML
 3. **Extract** — walks the investment holdings in the XML, matches by name/ticker, and pulls shares, market value (USD), currency, and exchange rate
 4. **Price calculation** — `price per share = market value (USD) / shares`. For non-USD holdings with an exchange rate provided, the local-currency price is also computed as `price (USD) × exchange rate`
-5. **Display** — results are grouped by fund, deduplicated by `(reportDate, shares)`, and rendered with Chart.js
+5. **Display** — the most recent N filings (your Max Filings choice) are parsed; results are grouped by fund, deduplicated by `(reportDate, shares)`, and rendered with Chart.js
 
-Filings are fetched in parallel batches with a short delay between batches to
-stay within SEC's ~10 req/sec fair-access guidance; requests that hit a `429`
-are retried with exponential backoff server-side, and any filing that still
-fails to fetch/parse is reported to you as a failure count rather than being
-silently dropped.
+Every outbound SEC request is paced process-wide (one every
+`SEC_MIN_INTERVAL_MS`, default 110 ms) to stay within SEC's ~10 req/sec
+fair-access guidance. Throttled responses (`429`/`503`) are retried patiently
+with exponential backoff, honoring `Retry-After`; transient `500`/`502`/`504`
+get two retries. Any filing that still fails to fetch/parse is reported to you
+as a failure count rather than being silently dropped.
 
-**Private Credit mode** works the same way but against 10-Q filings:
+**Private Credit mode** works the same way but against BDC 10-Q and 10-K filings:
 
-1. Full-text search EDGAR for 10-Q filings mentioning the issuer, keeping
+1. Full-text search EDGAR for 10-Q and 10-K filings mentioning the issuer (every page of hits, as above), keeping
    only filers whose Investment Company Act file number starts with `814-`
    (the SEC's own BDC designation — no hard-coded fund list needed)
-2. Pull each identified BDC's complete 10-Q filing history from the EDGAR
+2. Pull each identified BDC's complete 10-Q and 10-K filing history from the EDGAR
    submissions API, to fill in older quarters the full-text search index may
    have missed
-3. Fetch each 10-Q's primary HTML document and heuristically locate its
+3. Fetch each filing's primary HTML document and heuristically locate its
    Schedule of Investments table (column headers vary a lot between filers)
 4. Extract principal, cost, and fair value per tranche, and compute
    `fair value mark = fair value / principal × 100`
@@ -285,12 +287,15 @@ silently dropped.
 
 ```
 ├── server.js          # Express API server and routes
-├── parsers.js          # NPORT-P / 10-Q XML and HTML extraction logic
+├── parsers.js          # NPORT-P / 10-Q / 10-K XML and HTML extraction logic
 ├── cache.js            # SQLite-backed cache for parsed filings and search results
 ├── public/
-│   ├── index.html     # Single-page frontend (HTML + CSS)
-│   └── app.js          # Frontend logic (search, rendering, charts, export)
-├── test/               # Unit and integration tests, with real-filing fixtures
+│   ├── index.html     # Single-page frontend (HTML + CSS; CDN scripts SRI-pinned)
+│   ├── app.js          # Frontend logic (search, rendering, charts, export)
+│   └── splits.js       # Stock-split detection, shared by browser and server
+├── test/               # Unit, integration, jsdom UI and opt-in live tests, with real-filing fixtures
+├── .github/workflows/  # CI: tests on Node 22/24, lint, format check
+├── eslint.config.js    # Lint config (Prettier handles formatting)
 ├── package.json
 ├── .env.example       # Environment variable template
 └── .gitignore
@@ -303,14 +308,33 @@ silently dropped.
 | `/api/config` | GET | Returns whether `SEC_USER_AGENT` is configured |
 | `/api/search-nport?security=` | GET | Searches EDGAR for NPORT-P filings matching the query |
 | `/api/parse-nport?cik=&accession=&security=` | GET | Fetches and parses a single NPORT-P filing, returns matching holdings |
-| `/api/search-10q?issuer=&maxPerFund=` | GET | Finds BDC funds (814- file number) reporting the issuer, plus each fund's full 10-Q history |
-| `/api/parse-10q?cik=&accession=&issuer=&reportDate=` | GET | Fetches a single 10-Q, parses its Schedule of Investments table for the issuer |
+| `/api/search-10q?issuer=&maxPerFund=` | GET | Finds BDC funds (814- file number) reporting the issuer, plus each fund's full 10-Q **and 10-K** history (each filing carries its `form`) |
+| `/api/parse-10q?cik=&accession=&issuer=&reportDate=` | GET | Fetches a single 10-Q or 10-K (the route name predates 10-K support), parses its Schedule of Investments table for the issuer |
 | `/api/search-fund?fund=` | GET | Resolves a fund/registrant name to its EDGAR CIK(s) via company-name lookup, then returns each match's full NPORT-P filing history |
 | `/api/fund-xray?cik=&accession=` | GET | Fetches and parses one NPORT-P filing in full, returns the fund's private-equity exposure breakdown |
 | `/api/fund-xray-compare?cik=&currentAccession=&priorAccession=` | GET | Fetches two of the same fund's filings and diffs their private-equity books: new/exited positions, per-position share/value/price-per-share deltas, and a price-marks-vs-position-sizing value decomposition |
 | `/api/fund-xray-returns?cik=&accessions=a,b,c` | GET | Mark-implied return history across 2–12 of one fund's filings: proxy-cost lots, add-ons, partial sales, split and conversion handling, MOIC/IRR per position and in total |
 | `/api/fund-series?cik=` | GET | For a trust that files per fund series, lists its funds (read from recent filing headers); `multiSeries:false` for a single fund |
 | `/api/fund-series-filings?cik=&seriesId=` | GET | One fund series' own NPORT-P history via EDGAR's series-level feed, with report dates joined from the registrant |
+
+`cik` must be up to 10 digits and accession numbers 18 digits (dashes
+allowed); anything else is a `400` before any SEC request is made. Errors from
+SEC requests come back as a short summary (`SEC request failed (HTTP 404)`),
+not raw HTTP-client detail.
+
+### Security
+
+- **Security headers** on every response: a Content-Security-Policy that only
+  allows scripts from this server and the two CDNs below and only lets page
+  code call this server's own API, plus `X-Content-Type-Options: nosniff`,
+  `X-Frame-Options: DENY` and `Referrer-Policy: no-referrer`.
+- **CDN scripts are pinned with Subresource Integrity** (`integrity=` hashes in
+  `public/index.html`), so an altered CDN file is refused by the browser. When
+  bumping a version, recompute its hash with
+  `curl -s URL | openssl dgst -sha384 -binary | openssl base64 -A`.
+- **Rate limits**: `API_RATE_LIMIT_PER_MIN` (default 1,500) per visitor on all
+  `/api/*` routes, and a separate `REFRESH_RATE_LIMIT_PER_MIN` (default 30) on
+  requests that force a cache bypass (see Caching below).
 
 ---
 
@@ -337,15 +361,19 @@ file (`cache.db`, gitignored, created automatically on first run):
   `/api/search-fund`, and a fund's own NPORT-P filing history used
   internally by Fund X-Ray) are cached for 1 hour by default (override with
   `SEARCH_CACHE_TTL_MS` in `.env`), since new filings get added over time.
-- Add `&refresh=1` to any of the seven routes above to bypass the cache and
-  force a fresh SEC fetch for that request. `/api/fund-xray-compare` has no
-  cache entry of its own — it just calls `/api/fund-xray`'s cached logic
-  twice and diffs the results, so `&refresh=1` there forces a fresh fetch of
-  both filings.
+- Add `&refresh=1` (or `&refresh=true`; no other value counts) to any
+  cached route to bypass the cache and force a fresh SEC fetch for that
+  request. Forced refreshes have their own per-visitor budget
+  (`REFRESH_RATE_LIMIT_PER_MIN`, default 30/min), since they're the one way a
+  visitor can push this server's shared SEC traffic. `/api/fund-xray-compare`
+  and `/api/fund-xray-returns` have no cache entry of their own — they reuse
+  `/api/fund-xray`'s cached logic per filing, so `&refresh=1` there refetches
+  every filing involved.
 - If the extraction logic in `extractHoldings()` / `extractCreditHoldings()`
   / `extractAllHoldings()` ever changes, bump `PARSE_VERSION` in `cache.js`
   so old cached results (parsed with the previous logic) are treated as
-  misses instead of being served forever.
+  misses instead of being served forever. Rows from older versions are
+  deleted automatically at start-up, since they can never be read again.
 
 ---
 
@@ -356,12 +384,12 @@ file (`cache.db`, gitignored, created automatically on first run):
 | `express` | HTTP server |
 | `axios` | HTTP client for SEC EDGAR requests |
 | `xml2js` | XML parsing for NPORT filing documents |
-| `cheerio` | HTML table parsing for 10-Q Schedule of Investments |
-| `better-sqlite3` | Server-side cache for parsed filings and search results (see below) |
+| `cheerio` | HTML table parsing for 10-Q/10-K Schedule of Investments |
+| `better-sqlite3` | Server-side cache for parsed filings and search results (see [Caching](#caching)) |
 | `express-rate-limit` | Rate limiting on API routes |
 | `dotenv` | Environment variable loading |
-| [Chart.js](https://www.chartjs.org/) | Time-series charts (CDN) |
-| [SheetJS](https://sheetjs.com/) | Excel export (CDN) |
-| [jsPDF](https://github.com/parallax/jsPDF) + [jsPDF-AutoTable](https://github.com/simonbengtsson/jsPDF-AutoTable) | PDF export (CDN) |
+| [Chart.js](https://www.chartjs.org/) 4.5 | Time-series charts (jsDelivr, SRI-pinned) |
+| [SheetJS](https://sheetjs.com/) 0.20.3 | Excel export (SheetJS's own CDN — it no longer publishes to npm/cdnjs, whose 0.18.5 has open advisories; SRI-pinned) |
+| [jsPDF](https://github.com/parallax/jsPDF) 4.2 + [jsPDF-AutoTable](https://github.com/simonbengtsson/jsPDF-AutoTable) 5.0 | PDF export (jsDelivr, SRI-pinned) |
 
 Dev tooling: `eslint` + `prettier` for linting/formatting, `nodemon` for auto-reload, `nock` + `supertest` for testing the server against mocked HTTP, `jsdom` for running the actual frontend (`public/app.js`) in tests.

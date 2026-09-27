@@ -5,11 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vantage</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f2440'/%3E%3Cpath d='M7 22 L14 12 L19 18 L25 8' stroke='%23b8860b' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.1/dist/jspdf.plugin.autotable.min.js"></script>
+  <!-- Pinned with Subresource Integrity: a compromised or altered CDN file is
+       refused by the browser instead of running with full page access. When
+       bumping a version, recompute its hash:
+       curl -s URL | openssl dgst -sha384 -binary | openssl base64 -A -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js" integrity="sha384-cVMg8E3QFwTvGCDuK+ET4PD341jF3W8nO1auiXfuZNQkzbUUiBGLsIQUE+b1mxws" crossorigin="anonymous"></script>
+  <!-- SheetJS stopped publishing to npm/cdnjs at 0.18.5 (which has open
+       advisories); current releases are served from its own CDN. -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js" integrity="sha384-qovJwSBbRDPP5cEjCp8S0UP66wrvnjaa60XMOGzTNanrThcrGfXfnZkvgY8N1KT3" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@5.0.8/dist/jspdf.plugin.autotable.min.js" integrity="sha384-5jk55M0XWoAw7LyhlXJe19ErOr3doBAPzxw9vahPFbvolqWa2yDk4fhHa2zuYeOa" crossorigin="anonymous"></script>
   <style>
     :root {
       --navy:       #0f2440;
@@ -497,7 +503,7 @@
       <h2>About Vantage</h2>
 
       <h3>What this is</h3>
-      <p>Vantage pulls valuation data directly from SEC EDGAR filings — NPORT-P holdings reports and BDC 10-Q schedules of investments — to show how institutional funds are exposed to a given private company and how they mark that position over time.</p>
+      <p>Vantage pulls valuation data directly from SEC EDGAR filings — NPORT-P holdings reports and BDC 10-Q and 10-K schedules of investments — to show how institutional funds are exposed to a given private company and how they mark that position over time.</p>
 
       <h3>Who it's for</h3>
       <p>Analysts and investors who need visibility into private-company valuations across multiple funds without opening each filing by hand. Useful for spot-checking a fund's mark against its peers, tracking a valuation trend across quarters, or building a data set for further analysis.</p>
@@ -541,6 +547,7 @@
           <option value="25">25 — Faster</option>
           <option value="50" selected>50 — Balanced</option>
           <option value="100">100 — Comprehensive</option>
+          <option value="250">250 — Exhaustive (slow on first run)</option>
         </select>
       </div>
       <button class="btn btn-primary" id="searchBtn" onclick="searchNPORT()">Search NPORT Filings</button>
@@ -619,7 +626,7 @@
       <button class="btn btn-primary" id="creditBtn" onclick="searchPrivateCredit()">Search BDC Filings</button>
     </div>
     <div class="alert alert-info" style="margin-top:4px; margin-bottom:0;">
-      Searches all registered BDC funds (identified via SEC's 814- Investment Company Act file number) for 10-Q filings mentioning this issuer. Returns confirmed filings first (guaranteed to contain the issuer), then full filing history per fund for complete time-series coverage.
+      Searches all registered BDC funds (identified via SEC's 814- Investment Company Act file number) for 10-Q and 10-K filings (the 10-K carries the fiscal year-end marks no 10-Q reports) mentioning this issuer. Returns confirmed filings first (guaranteed to contain the issuer), then full filing history per fund for complete time-series coverage.
     </div>
 
     <div class="date-filter-panel" id="creditDateFilterPanel">
@@ -696,7 +703,7 @@
   <div id="watchlistTab" class="tab-content" role="tabpanel">
     <div class="alert alert-info">
       <strong>Persistent Issuer Watchlist</strong>
-      Save the issuers you track repeatedly and re-run the full list in one click — no re-typing. Saved in this browser only (not synced or shared). Searches NPORT-P mutual-fund holdings only (same as Single Security/Batch) — Private Credit issuers aren't tracked here yet, since BDC 10-Q filings use a separate search.
+      Save the issuers you track repeatedly and re-run the full list in one click — no re-typing. Saved in this browser only (not synced or shared). Searches NPORT-P mutual-fund holdings only (same as Single Security/Batch) — Private Credit issuers aren't tracked here yet, since BDC 10-Q/10-K filings use a separate search.
     </div>
 
     <div class="search-row">
@@ -742,7 +749,7 @@
 
 </div>
 
-<script src="splits.js"></script>
+  <script src="splits.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

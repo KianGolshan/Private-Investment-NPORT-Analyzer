@@ -136,6 +136,9 @@ test('a cache.db written by an older parser version is not served (version is pa
       Date.now()
     );
   }
+  const { PARSE_VERSION } = require('../cache');
+  const liveKey = `holdings:nport:v${PARSE_VERSION}:555:000000000000000001:acme`;
+  db.prepare('INSERT INTO holdings_cache VALUES (?,?,?)').run(liveKey, '[]', Date.now());
   db.close();
 
   const { child, port } = await startServer({ CACHE_DB_PATH: dbPath, SEC_USER_AGENT: 'Test Suite test@example.com' });
@@ -150,6 +153,14 @@ test('a cache.db written by an older parser version is not served (version is pa
     const legacyKey = 'fundxray:v8:555:000000000000000001';
     const current = cache.holdingsKey('fundxray', '555', '000000000000000001');
     assert.notEqual(current, legacyKey, 'current keys never collide with legacy rows');
+    // Unreachable legacy rows are deleted at start-up; current-version rows stay.
+    const after = new Database(dbPath, { readonly: true });
+    const keys = after
+      .prepare('SELECT key FROM holdings_cache')
+      .all()
+      .map(r => r.key);
+    after.close();
+    assert.deepEqual(keys, [liveKey]);
   } finally {
     child.kill();
   }

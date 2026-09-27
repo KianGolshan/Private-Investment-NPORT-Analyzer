@@ -310,3 +310,96 @@ test('a transient upstream 500 (seen live from EFTS under load) is retried and t
   const bad = await request(app).get('/api/search-nport?security=persistent-500');
   assert.equal(bad.status, 500);
 });
+
+// ── Fixes from the full-project audit ─────────────────────────────────────
+
+test('search-nport: pages through every EFTS hit, not just the first 100 (real: Anthropic had 837)', async () => {
+  const page = (from, n) =>
+    Array.from({ length: n }, (_, i) => ({ _id: `hit-${from + i}`, _source: { adsh: `adsh-${from + i}` } }));
+  const seenFrom = [];
+  nock(EFTS)
+    .get('/LATEST/search-index')
+    .query(q => {
+      seenFrom.push(Number(q.from));
+      return q.size === '100';
+    })
+    .times(3)
+    .reply(uri => {
+      const from = Number(new URL(uri, EFTS).searchParams.get('from'));
+      const n = from < 200 ? 100 : 37;
+      return [200, { hits: { total: { value: 237, relation: 'eq' }, hits: page(from, n) } }];
+    });
+  const res = await request(app).get('/api/search-nport?security=paged-name');
+  assert.equal(res.status, 200);
+  assert.deepEqual(seenFrom, [0, 100, 200]);
+  assert.equal(res.body.hits.hits.length, 237);
+  assert.equal(res.body.hits.total.value, 237);
+});
+
+test('search-nport: a result set that fits one page makes exactly one EFTS call', async () => {
+  nock(EFTS)
+    .get('/LATEST/search-index')
+    .query(true)
+    .once()
+    .reply(200, { hits: { total: { value: 3 }, hits: [{ _id: 'a' }, { _id: 'b' }, { _id: 'c' }] } });
+  const res = await request(app).get('/api/search-nport?security=one-page');
+  assert.equal(res.body.hits.hits.length, 3);
+  assert.ok(nock.isDone());
+});
+
+test('refresh: only refresh=1/true bypasses the cache — refresh=0 is served from cache', async () => {
+  nock(EFTS)
+    .get('/LATEST/search-index')
+    .query(true)
+    .once()
+    .reply(200, { hits: { hits: [] } });
+  await request(app).get('/api/search-nport?security=strict-refresh');
+  const zero = await request(app).get('/api/search-nport?security=strict-refresh&refresh=0');
+  assert.equal(zero.body.cached, true);
+  const junk = await request(app).get('/api/search-nport?security=strict-refresh&refresh=please');
+  assert.equal(junk.body.cached, true);
+});
+
+test('cik/accession are validated before they reach an SEC URL', async () => {
+  const bad = [
+    '/api/parse-nport?cik=..&accession=000000000000000009&security=x',
+    '/api/parse-nport?cik=123abc&accession=000000000000000009&security=x',
+    '/api/parse-nport?cik=900&accession=..%2F..%2Fetc&security=x',
+    '/api/parse-10q?cik=900&accession=12345&issuer=x',
+    '/api/fund-xray?cik=%2F..&accession=000000000000000009',
+    '/api/fund-xray-compare?cik=900&currentAccession=abc&priorAccession=000000000000000009',
+    '/api/fund-xray-returns?cik=900&accessions=000000000000000001,nope',
+  ];
+  for (const url of bad) {
+    const res = await request(app).get(url);
+    assert.equal(res.status, 400, url);
+  }
+});
+
+test('upstream HTTP-client errors reach the client as a status summary, not internal detail', async () => {
+  nock(SEC).get('/Archives/edgar/data/902/000000000000000004/primary_doc.xml').reply(404, 'nope');
+  const res = await request(app).get('/api/fund-xray?cik=902&accession=000000000000000004');
+  assert.equal(res.body.success, false);
+  assert.equal(res.body.error, 'SEC request failed (HTTP 404)');
+});
+
+test('security headers: CSP pins script origins, framing and MIME sniffing are blocked', async () => {
+  const res = await request(app).get('/');
+  const csp = res.headers['content-security-policy'] || '';
+  assert.match(csp, /script-src 'self' 'unsafe-inline' https:\/\/cdn\.jsdelivr\.net https:\/\/cdn\.sheetjs\.com/);
+  assert.match(csp, /connect-src 'self'/);
+  assert.match(csp, /frame-ancestors 'none'/);
+  assert.equal(res.headers['x-content-type-options'], 'nosniff');
+  assert.equal(res.headers['x-powered-by'], undefined);
+});
+
+test('every CDN script in index.html is SRI-pinned and allowed by the CSP', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  const tags = html.match(/<script[^>]+src="https:[^"]+"[^>]*>/g) || [];
+  assert.ok(tags.length >= 5);
+  for (const tag of tags) {
+    assert.match(tag, /integrity="sha384-[A-Za-z0-9+/=]+"/, tag);
+    assert.match(tag, /crossorigin="anonymous"/, tag);
+    assert.match(tag, /src="https:\/\/(cdn\.jsdelivr\.net|cdn\.sheetjs\.com)\//, tag);
+  }
+});
