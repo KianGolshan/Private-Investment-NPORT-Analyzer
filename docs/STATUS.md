@@ -1,14 +1,14 @@
 # Vantage v2 Status
 
-**Current phase:** Phase 0 complete, **awaiting sign-off**. After sign-off, run the Phase 1 prompt from
+**Current phase:** Phase 1 complete, **awaiting sign-off**. After sign-off, run the Phase 2 prompt from
 [SESSION-PROMPTS.md](SESSION-PROMPTS.md).
 **Branch:** `v2-plan-and-phase0`
 **Last updated:** 2026-09-28
 
 ## Phase tracker
 
-- [x] P0: live-app correctness fixes (awaiting sign-off)
-- [ ] P1: warehouse foundation and bulk history
+- [x] P0: live-app correctness fixes (signed off 2026-09-28)
+- [x] P1: warehouse foundation and bulk history (awaiting sign-off)
 - [ ] P2: daily catch-up and refresh
 - [ ] P3: canonical views and as-of engine
 - [ ] P4: entities (companies, aliases, SPVs, managers, tracked list)
@@ -16,6 +16,39 @@
 - [ ] P6: new analysis and UI
 - [ ] P7: MCP server
 - [ ] P8: operations hardening
+
+## Phase 1 checkpoint results
+
+- **Built:**
+  - `lib/warehouse/`: `db.js` (migrations), `bulk-ingest.js`, `tsv-zip.js`, `identifiers.js`
+  - `db/migrations/0001_init.sql`
+  - `scripts/ingest-bulk.js` (`npm run ingest:bulk`)
+  - `test/warehouse-ingest.test.js` (12 tests)
+  - `test/live-warehouse.test.js` (`LIVE_SEC`)
+  - real-derived fixture `test/fixtures/bulk/` with its builder
+- **Suite:** `npm test` 310 tests, 283 pass, 0 fail. Lint and format are clean.
+- **Full backfill (real SEC data, 2026-09-28):** all 27 quarters 2019Q4–2026Q2 loaded, `ingest_log` 27/27 `ok`.
+  - 341,049 filings; 1,086,310 private-candidate holdings; 18,481 distinct funds.
+  - **13.6 min** total load time (about 27 s per quarter, including download); **364 MB**.
+- **Fidelity:**
+  - 106 of 106 fixture rows equal `extractAllHoldings` on the same XML, field by field.
+  - `CURRENCY_VALUE` equals XML `valUSD` for a CAD holding.
+- **Completeness (LIVE):** 20 random registrants, 2,905 EDGAR filings in the bulk window, **0 missing**.
+- **Golden numbers found in the warehouse:**
+  - F1: Growth Fund of America Anthropic G-1 and F-1
+  - F8/F9: Fidelity OTC Stripe present in Oct-25, absent in Jan-26
+  - F13: Databricks split, 3,712 sh @ $165.88 → 11,136 sh @ $55.29
+  - Capital Group Stripe path: $33.73 → $33.73 → $35.50 → $41.42 → $63.00
+- **Golden correction:** F14 KP Large Cap's last report is **2020-09-30**, not 2020-03-31. The earlier value
+  came from sorting `DD-MON-YYYY` text dates (DATA-QUALITY trap 14). Confirmed on EDGAR.
+- **Decisions changed by measurement:**
+  - Keep rule (ADR 0003 amended): Level 3, restricted, or no check-digit-valid ISIN/CUSIP, instead of
+    "any level". Keeping every level would add about 1.9M public rows per quarter.
+  - Size budget raised to ≤500 MB.
+- **Found during P1, carried to P2:**
+  - Public N-PORTs filed about May–Sep 2019 are in no bulk file (trap 15).
+  - Placeholder rows are skipped the same way `extractAllHoldings` skips them (trap 16).
+- The app does not read `warehouse.db` yet. That starts in P5.
 
 ## Phase 0 checkpoint results
 
@@ -50,14 +83,14 @@
 
 ## Measurements to record (fill in as phases complete)
 
-| Metric                                  | Budget  | Measured                                                    |
-| --------------------------------------- | ------- | ----------------------------------------------------------- |
-| Full bulk backfill, 27 quarters         | ≤45 min | n/a (prototype: ~11 min for 12 quarters with equity filter) |
-| Warehouse size                          | ≤300 MB | n/a (prototype estimate ~150 MB)                            |
-| First catch-up                          | ≤90 min | n/a (estimate ~56 min for 11.7k filings)                    |
-| Nightly refresh                         | ≤5 min  | n/a                                                         |
-| API p95                                 | <200 ms | n/a                                                         |
-| Single Security search (P0, live EDGAR) | n/a     | 15–32 s per name for 100 filings                            |
+| Metric                                  | Budget  | Measured                                              |
+| --------------------------------------- | ------- | ----------------------------------------------------- |
+| Full bulk backfill, 27 quarters         | ≤45 min | **13.6 min** (2026-09-28)                             |
+| Warehouse size                          | ≤500 MB | **364 MB** (budget revised from 300 MB, see ADR 0003) |
+| First catch-up                          | ≤90 min | n/a (estimate ~56 min for 11.7k filings)              |
+| Nightly refresh                         | ≤5 min  | n/a                                                   |
+| API p95                                 | <200 ms | n/a                                                   |
+| Single Security search (P0, live EDGAR) | n/a     | 15–32 s per name for 100 filings                      |
 
 ## Open decisions
 
@@ -65,6 +98,9 @@
 - Size of the tracked list: ~250 default. Confirm after the P4 review CSV.
 
 ## Log
+
+- **2026-09-28:** Phase 1 implemented; the full backfill ran in the foreground in three timed batches.
+  Results above.
 
 - **2026-09-28:** Phase 0 implemented and verified on real EDGAR data (see results above). Two extra fixes
   were found during verification and added to ROADMAP §Phase 0: newest-first windows over the hit cap,

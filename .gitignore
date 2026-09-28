@@ -5,3 +5,6 @@ cache.db
 cache.db-wal
 cache.db-shm
 .DS_Store
+warehouse.db
+warehouse.db-wal
+warehouse.db-shm

@@ -84,15 +84,28 @@ P0 live-app fixes
   - Downloads `https://www.sec.gov/files/dera/data/form-n-port-data-sets/<q>_nport.zip`.
   - Streams it with `yauzl` (new dependency). No full unzip to disk.
   - Joins `SUBMISSION` + `REGISTRANT` + `FUND_REPORTED_INFO`. Stores **all filings**.
-  - Stores holdings rows whose asset category is equity-type (EC, EP, OTHER, DE), including category and
-    description from `assetConditional`, at **any** fair-value level.
+  - Stores **private-candidate** holdings: equity-type rows (EC, EP, OTHER, and warrants) that are Level 3,
+    restricted, or have no check-digit-valid ISIN/CUSIP. Rows with neither a balance nor a value are
+    skipped, as `extractAllHoldings` does.
+    - _Changed from "any fair-value level" after measuring:_ keeping every level would store about 1.9M
+      public-stock rows per quarter.
+    - On 2026Q2 the rule keeps 70.5k of 5.35M rows, including all 1,613 rows for the 20 tracked
+      companies, among them Level-1/2 private rows with junk identifiers. See ADR 0003.
   - One transaction per quarter; re-running a quarter replaces it.
   - `ingest_log` records quarter, zip checksum, rows read and kept, and duration.
   - Deletes the zip after a successful load. Exits non-zero on any error.
 - Converts dates from `DD-MON-YYYY` to ISO `YYYY-MM-DD` at ingest.
-- Real-derived fixture `test/fixtures/bulk/mini_nport.zip`: real TSV rows for Growth Fund of America
-  (0001193125-26-182055) and Fidelity OTC (0000035402-25-002966, 0000035402-26-002031), plus their
-  `primary_doc.xml` saved under `test/fixtures/`.
+- Real-derived fixture `test/fixtures/bulk/`: 7 real 2026Q2 filings, rebuilt by
+  `test/fixtures/bulk/build-fixture.js`. It covers:
+  - Growth Fund of America (F1)
+  - Fidelity OTC
+  - KraneShares (Level 1, junk ticker)
+  - Innovation Access Fund (Level 2, ISIN "N/A")
+  - Destiny Tech100 (SPVs)
+  - a filing with warrants
+  - a CAD-denominated holding
+
+  Each filing's rows and trimmed `primary_doc.xml` are included.
 
 **Tests**
 
@@ -108,9 +121,15 @@ P0 live-app fixes
 
 **Success criteria**
 
-- All 27 quarters (2019Q4 onward) load in **≤45 min**, with the database **≤300 MB**.
-- Every `ingest_log` row matches the zip's row counts.
-- Fidelity check passes.
+- All 27 quarters (2019Q4 onward) load in **≤45 min**, with the database **≤500 MB**.
+  - _Revised from 300 MB:_ keeping Level-1/2 private rows with junk identifiers costs about 2× the
+    Level-3-only size.
+  - **Measured: 13.6 min, 364 MB.**
+- Every `ingest_log` row matches the zip's row counts. **Measured: 27 of 27 quarters `ok`.**
+- Fidelity check passes. **Measured: 106 rows equal `extractAllHoldings` field by field; live check found
+  0 of 2,905 EDGAR filings missing across 20 random registrants.**
+- Known gap, recorded for Phase 2: public N-PORTs filed about May–Sep 2019 are in no bulk file (real: KP
+  Large Cap Equity 0001752724-19-047738, filed 2019-05-29). The daily-index catch-up can backfill them.
 
 ---
 

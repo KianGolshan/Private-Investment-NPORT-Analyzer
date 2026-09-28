@@ -54,7 +54,11 @@ npm run format:check     # Prettier
 npm run test:live        # LIVE_SEC=1 end-to-end against real EDGAR (minutes)
 ```
 
-Planned (not built yet; see ROADMAP): `npm run ingest:bulk`, `npm run ingest:delta`, `npm run refresh`.
+```bash
+npm run ingest:bulk -- --missing   # load SEC bulk quarters not yet in warehouse.db (--all, --quarter 2026q2)
+```
+
+Planned (not built yet; see ROADMAP): `npm run ingest:delta`, `npm run refresh`.
 
 ## Scope
 

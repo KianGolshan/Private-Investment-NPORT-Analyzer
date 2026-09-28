@@ -4,13 +4,13 @@ const eslintConfigPrettier = require('eslint-config-prettier');
 
 module.exports = [
   {
-    ignores: ['node_modules/**', 'public/index.html', 'cache.db*'],
+    ignores: ['node_modules/**', 'public/index.html', 'cache.db*', 'warehouse.db*'],
   },
   js.configs.recommended,
   eslintConfigPrettier,
   {
-    // server.js, cache.js, parsers.js, test/*.js — Node/CommonJS
-    files: ['*.js', 'test/**/*.js'],
+    // server.js, cache.js, parsers.js, lib/, scripts/, test/ — Node/CommonJS
+    files: ['*.js', 'lib/**/*.js', 'scripts/**/*.js', 'test/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'commonjs',

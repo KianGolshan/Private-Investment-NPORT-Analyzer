@@ -125,6 +125,21 @@ For development with auto-reload:
 npm run dev
 ```
 
+### Build the data warehouse (Vantage v2, Phase 1)
+
+The v2 warehouse loads the SEC's quarterly N-PORT bulk datasets (2019Q4 onward) into a local
+`warehouse.db`. It's a separate file from `cache.db`, and git-ignored. The app does not read it yet; the
+routes switch over in Phase 5 (see [docs/ROADMAP.md](docs/ROADMAP.md)).
+
+```bash
+npm run ingest:bulk -- --all
+```
+
+That loads every quarter, which took about 14 minutes and produced about 365 MB on 2026-09-28. After that,
+`--missing` loads only quarters not yet loaded, and `--quarter 2026q2` reloads a single quarter. Each
+quarter loads in one transaction and is logged in `ingest_log`. A failed run exits non-zero and changes
+nothing for that quarter.
+
 ### Tests
 
 ```bash
@@ -317,6 +332,9 @@ as a failure count rather than being silently dropped.
 │   ├── app.js          # Frontend logic (search, rendering, charts, export)
 │   └── splits.js       # Stock-split detection, shared by browser and server
 ├── test/               # Unit, integration, jsdom UI and opt-in live tests, with real-filing fixtures
+├── lib/warehouse/      # v2 warehouse: SQLite connection + migrations, bulk-dataset ingest, id validation
+├── db/migrations/      # Numbered SQL migrations for warehouse.db
+├── scripts/            # CLI jobs (ingest-bulk.js)
 ├── docs/               # v2 roadmap, status, architecture, data-quality rules, golden numbers, ADRs
 ├── CLAUDE.md           # Standing rules for contributors and AI coding sessions
 ├── .github/workflows/  # CI: tests on Node 22/24, lint, format check
@@ -411,7 +429,8 @@ file (`cache.db`, gitignored, created automatically on first run):
 | `axios` | HTTP client for SEC EDGAR requests |
 | `xml2js` | XML parsing for NPORT filing documents |
 | `cheerio` | HTML table parsing for 10-Q/10-K Schedule of Investments |
-| `better-sqlite3` | Server-side cache for parsed filings and search results (see [Caching](#caching)) |
+| `better-sqlite3` | Server-side cache for parsed filings and search results (see [Caching](#caching)), and the v2 warehouse |
+| `yauzl` | Streams tables out of SEC bulk-dataset zips without unzipping to disk |
 | `express-rate-limit` | Rate limiting on API routes |
 | `dotenv` | Environment variable loading |
 | [Chart.js](https://www.chartjs.org/) 4.5 | Time-series charts (jsDelivr, SRI-pinned) |

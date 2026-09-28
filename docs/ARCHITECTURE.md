@@ -17,9 +17,10 @@ name, address), `FUND_REPORTED_INFO` (series ID and name, net assets), `FUND_REP
 name, title, CUSIP, LEI, balance, unit, value in USD, % of NAV, asset category, issuer type, country,
 restricted, fair-value level) and `IDENTIFIERS` (ISIN, ticker, other ID).
 
-Size note: keeping _every_ Level-3 row stores 1–2M rows per quarter, mostly loans, which bloats the database
-to 4.8 GB by 14 quarters. Keeping equity-type rows at any level stores about 7–25k rows per quarter, about
-150 MB for all history.
+Keep rule (P1, ADR 0003): equity-type rows (EC, EP, OTHER, warrants) that are Level 3, restricted, or have
+no check-digit-valid ISIN/CUSIP. Measured on the full backfill: 7–25k rows/quarter in 2019–2021 rising to
+~70k in 2026, 1,086,310 rows in total, 364 MB. (Keeping every Level-3 row instead would store 1–2M
+loan-dominated rows per quarter; keeping every equity row would add ~1.9M public-stock rows per quarter.)
 
 ## Pipeline
 
@@ -46,10 +47,10 @@ Target schema, built through migrations in P1–P4.
 ```sql
 filings(accession PK, fund_key, cik, series_id, registrant, series_name, report_date, filing_date,
         form, net_assets, total_assets, source /* 'bulk:2026q2' | 'edgar' */)
-holdings(accession, row_no, issuer_name, title, cusip, lei, other_id, other_id_desc, isin, ticker,
+holdings(accession, row_key /* bulk HOLDING_ID | doc:<n> */, issuer_name, title, cusip, lei, other_id, other_id_desc, isin, ticker,
          balance, unit, currency, value_usd, pct_nav, asset_cat, asset_desc, issuer_type, country,
          restricted, fv_level, deriv_cat, instrument_type, company_id, via_spv,
-         PRIMARY KEY (accession, row_no))
+         PRIMARY KEY (accession, row_key))
 ingest_log(id, kind, quarter, checksum, rows_read, rows_kept, filings, started_at, finished_at, status)
 refresh_runs(id, started_at, finished_at, bulk_quarters_added, delta_filings, status, error)
 companies(id, name, status /* private|public */, public_since, notes)
@@ -103,7 +104,7 @@ Fund calendars are staggered, so "as of D" mixes mark dates. The UI always shows
 | Env var                 | Default          | Purpose                                     |
 | ----------------------- | ---------------- | ------------------------------------------- |
 | `SEC_USER_AGENT`        | required         | SEC fair-access identity                    |
-| `WAREHOUSE_DB_PATH`     | `./warehouse.db` | Warehouse file (git-ignored) (planned)      |
+| `WAREHOUSE_DB_PATH`     | `./warehouse.db` | Warehouse file (git-ignored)                |
 | `CACHE_DB_PATH`         | `./cache.db`     | Existing request cache                      |
 | `SEC_MIN_INTERVAL_MS`   | 110              | Outbound pacing (≤10 req/s)                 |
 | `REFRESH_INACTIVE_DAYS` | 123              | Inactive-fund threshold for as-of (planned) |
@@ -116,7 +117,7 @@ Fund calendars are staggered, so "as of D" mixes mark dates. The UI always shows
 - First catch-up: ≤90 min.
 - Nightly: ≤5 min.
 - API and MCP p95: <200 ms.
-- Warehouse size: ≤300 MB.
+- Warehouse size: ≤500 MB (measured 364 MB for 2019Q4–2026Q2).
 
 ## Module map (target)
 

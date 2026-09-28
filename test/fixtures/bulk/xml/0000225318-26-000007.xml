@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8"?><edgarSubmission xmlns="http://www.sec.gov/edgar/nport" xmlns:com="http://www.sec.gov/edgar/common" xmlns:ncom="http://www.sec.gov/edgar/nportcommon" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <headerData>
+    <submissionType>NPORT-P</submissionType>
+    <isConfidential>false</isConfidential>
+    <filerInfo>
+
+      <filer>
+        <issuerCredentials>
+          <cik>0000225318</cik>
+          <ccc>XXXXXXXX</ccc>
+        </issuerCredentials>
+      </filer>
+
+
+      <seriesClassInfo>
+        <seriesId>S000009068</seriesId>
+        <classId>C000188093</classId>
+        <classId>C000177176</classId>
+        <classId>C000024641</classId>
+        <classId>C000024639</classId>
+        <classId>C000177177</classId>
+      </seriesClassInfo>
+
+
+    </filerInfo>
+  </headerData>
+  <formData>
+    <genInfo>
+      <regName>Federated Hermes Sustainable High Yield Bond Fund, Inc.</regName>
+      <regFileNumber>811-02782</regFileNumber>
+      <regCik>0000225318</regCik>
+      <regLei>254900IUU6IVIPRQAD32</regLei>
+      <regStreet1>Federated Hermes Funds</regStreet1>
+      <regStreet2>4000 Ericsson Drive</regStreet2>
+      <regCity>Warrendale</regCity>
+      <regStateConditional regCountry="US" regState="US-PA"/>
+      <regZipOrPostalCode>15086-7561</regZipOrPostalCode>
+      <regPhone>8003417400</regPhone>
+      <seriesName>Federated Hermes Sustainable High Yield Bond Fund, Inc.</seriesName>
+      <seriesId>S000009068</seriesId>
+      <seriesLei>254900IUU6IVIPRQAD32</seriesLei>
+      <repPdEnd>2026-03-31</repPdEnd>
+      <repPdDate>2026-03-31</repPdDate>
+      <isFinalFiling>N</isFinalFiling>
+    </genInfo>
+    <fundInfo>
+      <totAssets>490179832.480000000000</totAssets>
+      <totLiabs>2732488.770000000000</totLiabs>
+      <netAssets>487447343.710000000000</netAssets>
+      <assetsAttrMiscSec>0.000000000000</assetsAttrMiscSec>
+      <assetsInvested>0.000000000000</assetsInvested>
+      <amtPayOneYrBanksBorr>0.000000000000</amtPayOneYrBanksBorr>
+      <amtPayOneYrCtrldComp>0.000000000000</amtPayOneYrCtrldComp>
+      <amtPayOneYrOthAffil>0.000000000000</amtPayOneYrOthAffil>
+      <amtPayOneYrOther>0.000000000000</amtPayOneYrOther>
+      <amtPayAftOneYrBanksBorr>0.000000000000</amtPayAftOneYrBanksBorr>
+      <amtPayAftOneYrCtrldComp>0.000000000000</amtPayAftOneYrCtrldComp>
+      <amtPayAftOneYrOthAffil>0.000000000000</amtPayAftOneYrOthAffil>
+      <amtPayAftOneYrOther>0.000000000000</amtPayAftOneYrOther>
+      <delayDeliv>2515375.000000000000</delayDeliv>
+      <standByCommit>0.000000000000</standByCommit>
+      <liquidPref>0.000000000000</liquidPref>
+      <cshNotRptdInCorD>16875.000000000000</cshNotRptdInCorD>
+      <curMetrics>
+        <curMetric>
+          <curCd>USD</curCd>
+          <intrstRtRiskdv01 period10Yr="-13026.140672000000" period1Yr="-43096.890811000000" period30Yr="-1242.824602000000" period3Mon="-1499.002917000000" period5Yr="-85243.805567000000"/>
+          <intrstRtRiskdv100 period10Yr="-1524596.828026000000" period1Yr="-4580975.113571000000" period30Yr="-101184.323820000000" period3Mon="-169409.805986000000" period5Yr="-9564443.060304000000"/>
+        </curMetric>
+      </curMetrics>
+      <creditSprdRiskInvstGrade period10Yr="-26.628238000000" period1Yr="-1254.358347000000" period30Yr="0.000000000000" period3Mon="-83.696260000000" period5Yr="-1652.565243000000"/>
+      <creditSprdRiskNonInvstGrade period10Yr="-14524.706237000000" period1Yr="-41916.919814000000" period30Yr="-434.472995000000" period3Mon="-1415.381229000000" period5Yr="-83098.640914000000"/>
+      <isNonCashCollateral>N</isNonCashCollateral>
+      <returnInfo>
+        <monthlyTotReturns>
+          <monthlyTotReturn classId="C000024639" rtn1="0.0000000000" rtn2="0.1200000000" rtn3="-1.0600000000"/>
+          <monthlyTotReturn classId="C000024641" rtn1="-0.0700000000" rtn2="0.0500000000" rtn3="-1.1400000000"/>
+          <monthlyTotReturn classId="C000177176" rtn1="0.0300000000" rtn2="-0.0100000000" rtn3="-1.0400000000"/>
+          <monthlyTotReturn classId="C000177177" rtn1="0.1700000000" rtn2="-0.0100000000" rtn3="-1.0400000000"/>
+        </monthlyTotReturns>
+        <monthlyReturnCats>
+          <equityContracts>
+            <mon1 netRealizedGain="N/A" netUnrealizedAppr="N/A"/>
+            <mon2 netRealizedGain="N/A" netUnrealizedAppr="N/A"/>
+            <mon3 netRealizedGain="N/A" netUnrealizedAppr="N/A"/>
+            <warrantCategory>
+              <instrMon1 netRealizedGain="N/A" netUnrealizedAppr="N/A"/>
+              <instrMon2 netRealizedGain="N/A" netUnrealizedAppr="N/A"/>
+              <instrMon3 netRealizedGain="N/A" netUnrealizedAppr="N/A"/>
+            </warrantCategory>
+          </equityContracts>
+        </monthlyReturnCats>
+        <othMon1 netRealizedGain="72865.6300000000" netUnrealizedAppr="-2051675.5500000000"/>
+        <othMon2 netRealizedGain="-46621.5200000000" netUnrealizedAppr="-1972356.6100000000"/>
+        <othMon3 netRealizedGain="-61469.7100000000" netUnrealizedAppr="-7417829.7000000000"/>
+      </returnInfo>
+      <mon1Flow redemption="12093548.02" reinvestment="2101809.80" sales="6560204.58"/>
+      <mon2Flow redemption="7827315.45" reinvestment="1934879.81" sales="7361295.39"/>
+      <mon3Flow redemption="12255767.99" reinvestment="1890774.87" sales="11752912.02"/>
+
+
+    </fundInfo>
+    <invstOrSecs>
+      <invstOrSec>
+        <name>AUDACY CAPITAL</name>
+        <lei>549300S5JUSXRHNCHD80</lei>
+        <title>AUDACY CAPITAL</title>
+        <cusip>000000000</cusip>
+        <identifiers>
+          <other otherDesc="Internal Identifier" value="938MAV901"/>
+        </identifiers>
+        <balance>947.00</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>9.4700000000</valUSD>
+        <pctVal>0.0000019428</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="derivative" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="WAR">
+            <counterparties>
+              <counterpartyName>N/A</counterpartyName>
+              <counterpartyLei>N/A</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Audacy, Inc.</issuerName>
+                <issueTitle>Audacy, Inc.</issueTitle>
+                <identifiers>
+                  <cusip value="05070N301"/>
+                  <isin value="US05070N3017"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>1.00</shareNo>
+            <exercisePrice>1.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2028-09-30</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-309.0500000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>ALBERTSONS COS INC</name>
+        <lei>549300YKWOC0AOR16R51</lei>
+        <title>Albertsons Cos Inc</title>
+        <cusip>01309QAE8</cusip>
+        <identifiers>
+          <isin value="US01309QAE89"/>
+        </identifiers>
+        <balance>1050000.00</balance>
+        <units>PA</units>
+        <curCd>USD</curCd>
+        <valUSD>1034597.6600000000</valUSD>
+        <pctVal>0.2122480866</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>DBT</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+
+        <fairValLevel>2</fairValLevel>
+        <debtSec>
+          <maturityDt>2032-03-31</maturityDt>
+          <couponKind>Fixed</couponKind>
+          <annualizedRt>5.6300000000</annualizedRt>
+          <isDefault>N</isDefault>
+          <areIntrstPmntsInArrs>N</areIntrstPmntsInArrs>
+          <isPaidKind>N</isPaidKind>
+        </debtSec>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>AUDACY INC</name>
+        <lei>N/A</lei>
+        <title>AUDACY INC</title>
+        <cusip>05070N301</cusip>
+        <identifiers>
+          <isin value="US05070N3017"/>
+        </identifiers>
+        <balance>4686.00</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>80880.3600000000</valUSD>
+        <pctVal>0.0165926353</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>CLEVELAND-CLIFFS INC</name>
+        <lei>549300TM2WLI2BJMDD86</lei>
+        <title>Cleveland-Cliffs Inc</title>
+        <cusip>185899AP6</cusip>
+        <identifiers>
+          <isin value="US185899AP61"/>
+          <other otherDesc="SEDOL" value="BM8K6S5"/>
+        </identifiers>
+        <balance>450000.00</balance>
+        <units>PA</units>
+        <curCd>USD</curCd>
+        <valUSD>435961.0400000000</valUSD>
+        <pctVal>0.0894375661</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>DBT</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+
+        <fairValLevel>2</fairValLevel>
+        <debtSec>
+          <maturityDt>2032-03-15</maturityDt>
+          <couponKind>Fixed</couponKind>
+          <annualizedRt>7.0000000000</annualizedRt>
+          <isDefault>N</isDefault>
+          <areIntrstPmntsInArrs>N</areIntrstPmntsInArrs>
+          <isPaidKind>N</isPaidKind>
+        </debtSec>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>AUDACY CAPITAL</name>
+        <lei>549300S5JUSXRHNCHD80</lei>
+        <title>AUDACY CAPITAL</title>
+        <cusip>000000000</cusip>
+        <identifiers>
+          <other otherDesc="Internal Identifier" value="ACI2RL963"/>
+        </identifiers>
+        <balance>5680.00</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>56.8000000000</valUSD>
+        <pctVal>0.0000116525</pctVal>
+        <payoffProfile>N/A</payoffProfile>
+        <assetCat>DE</assetCat>
+        <issuerConditional desc="derivative" issuerCat="OTHER"/>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="WAR">
+            <counterparties>
+              <counterpartyName>N/A</counterpartyName>
+              <counterpartyLei>N/A</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>Audacy, Inc.</issuerName>
+                <issueTitle>Audacy, Inc.</issueTitle>
+                <identifiers>
+                  <cusip value="05070N301"/>
+                  <isin value="US05070N3017"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>1.00</shareNo>
+            <exercisePrice>1.000000000000</exercisePrice>
+            <exercisePriceCurCd>USD</exercisePriceCurCd>
+            <expDt>2028-09-30</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>-1536.8100000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Ardagh Holdings SA</name>
+        <lei>549300ORV6YW6ESSNQ21</lei>
+        <title>Ardagh Holdings SA</title>
+        <cusip>985923101</cusip>
+        <identifiers>
+          <isin value="US9859231014"/>
+        </identifiers>
+        <balance>31094.00</balance>
+        <units>NS</units>
+        <currencyConditional curCd="EUR" exchangeRt="0.8651640000"/>
+        <valUSD>247087.5500000000</valUSD>
+        <pctVal>0.0506901008</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>LU</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+    </invstOrSecs>
+    <signature>
+      <ncom:dateSigned>2026-05-22</ncom:dateSigned>
+      <ncom:nameOfApplicant>Federated Hermes Sustainable High Yield Bond Fund, Inc.</ncom:nameOfApplicant>
+      <ncom:signature>Stephen Van Meter</ncom:signature>
+      <ncom:signerName>Federated Hermes Sustainable High Yield Bond Fund, Inc.</ncom:signerName>
+      <ncom:title>Chief Compliance Officer</ncom:title>
+    </signature>
+  </formData>
+</edgarSubmission>
