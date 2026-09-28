@@ -2,6 +2,30 @@
 
 An internal tool for analyzing SEC NPORT-P filings to track and compare private investment valuations across institutional funds. Search by company name or ticker to see how different funds mark the same asset over time.
 
+> **Vantage v2 is planned.** Vantage v2 adds an SEC-verified local data warehouse:
+> - complete N-PORT history since 2019Q4, from the SEC's bulk datasets
+> - nightly refresh from EDGAR's daily filing index
+> - as-of exposure by company, parent firm, fund and share class
+> - mark charts at every reporting month
+> - a tracked list of about 250 major private companies
+> - an MCP server
+>
+> **None of this is built yet.** The features below describe the app as it works today.
+> - Plan and phase checkpoints: [docs/ROADMAP.md](docs/ROADMAP.md)
+> - Progress: [docs/STATUS.md](docs/STATUS.md)
+> - Design: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+> - Data rules: [docs/DATA-QUALITY.md](docs/DATA-QUALITY.md)
+> - Verified figures: [docs/GOLDEN-NUMBERS.md](docs/GOLDEN-NUMBERS.md)
+> - Decisions: [docs/decisions/](docs/decisions/)
+> - Prompts for resuming work: [docs/SESSION-PROMPTS.md](docs/SESSION-PROMPTS.md)
+> - Rules for contributors and AI sessions: [CLAUDE.md](CLAUDE.md)
+>
+> **Known limits of today's app, measured on real data** (details in [docs/DATA-QUALITY.md](docs/DATA-QUALITY.md)):
+> - Single Security parses only the 100 most recent search hits, which covered 2–14 months of history across 20 companies tested.
+> - About 21% of those hits are duplicate filings.
+> - Substring matching can pull in look-alike names (e.g. "Revolut" matches Revolution Medicines).
+> - Fund X-Ray's Level-3-only filter misses private holdings that some filers label Level 1 or 2.
+
 ---
 
 ## What It Does
@@ -294,6 +318,8 @@ as a failure count rather than being silently dropped.
 │   ├── app.js          # Frontend logic (search, rendering, charts, export)
 │   └── splits.js       # Stock-split detection, shared by browser and server
 ├── test/               # Unit, integration, jsdom UI and opt-in live tests, with real-filing fixtures
+├── docs/               # v2 roadmap, status, architecture, data-quality rules, golden numbers, ADRs
+├── CLAUDE.md           # Standing rules for contributors and AI coding sessions
 ├── .github/workflows/  # CI: tests on Node 22/24, lint, format check
 ├── eslint.config.js    # Lint config (Prettier handles formatting)
 ├── package.json
@@ -341,6 +367,7 @@ not raw HTTP-client detail.
 ## SEC Data Notes
 
 - NPORT-P filings are submitted quarterly; the most recent filing may be up to ~75 days behind the actual reporting period
+- Each fund publishes one NPORT-P per *fiscal* quarter. Month-1 and month-2 reports are filed but not made public. Fund calendars are staggered: within Capital Group, some funds report Feb/May/Aug/Nov and others Mar/Jun/Sep/Dec. Marks from different funds therefore rarely share a date, so compare them with each fund's report date in view
 - Not all funds file NPORT-P — only registered investment companies (mutual funds, ETFs, interval funds) are required to file; hedge funds and private funds generally do not
 - Market values in NPORT filings are as of the report period end date, not the filing date
 - Some filings may use non-standard XML structures; the parser handles multiple known variants but may miss edge cases

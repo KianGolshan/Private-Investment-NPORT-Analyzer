@@ -1,0 +1,51 @@
+# Data Quality Rules
+
+Every rule here comes from a real failure observed in SEC data. Each rule names the test that pins it (to
+be written in the listed phase). Accessions are in [GOLDEN-NUMBERS.md](GOLDEN-NUMBERS.md).
+
+## Reporting cadence (read first)
+
+- Each fund publishes **one NPORT-P per fiscal quarter**. Months 1 and 2 are filed confidentially and are
+  **not public**. Nothing is "missing" between quarters.
+- Fund calendars are **staggered**:
+  - Growth Fund of America, New Economy, AMCAP and Capital World G&I report Feb/May/Aug/Nov.
+  - Fundamental Investors, American Balanced and AFIS report Mar/Jun/Sep/Dec.
+  - Many Fidelity funds report Jan/Apr/Jul/Oct.
+- Filings arrive about 60 days after the report date. **Bulk data ends at filings made through the last
+  quarter-end**, so the newest marks are always in the catch-up.
+- **Rule:** never bucket by calendar quarter for exposure. Use as-of semantics and show every fund's mark
+  date.
+
+## The traps
+
+| #   | Trap                                                                                    | Real example                                                                                                                                                                                                           | Rule                                                                                                                                                                            | Test (phase)   |
+| --- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| 1   | **Amendments** double-count (5,216 of 341,049 filings are NPORT-P/A)                    | My first Anthropic 2026Q1 total was $6.41B; the correct figure is $5.93B                                                                                                                                               | One filing per (`fund_key`, `report_date`); the latest `filing_date` wins (`canonical_filings`). `IS_LAST_FILING` does **not** mean latest amendment (only 1,294 filings are Y) | A1 (P3)        |
+| 2   | **Blank series ID** (single-fund registrants)                                           | Distinct funds were collapsed under one blank key                                                                                                                                                                      | `fund_key = series_id`, else `CIK` + cik                                                                                                                                        | A1 (P3)        |
+| 3   | **Exits.** A fund that sells simply stops listing the name                              | My first as-of logic counted 23 exited Stripe funds as still holding                                                                                                                                                   | The fund's latest filing of _any_ content ≤ D decides. No row means exited (0)                                                                                                  | F8/F9, A5 (P3) |
+| 4   | **Dead funds** stop filing entirely                                                     | KP Large Cap Equity (last report 2020-03-31); Fidelity Flex Opportunistic Insight (2022)                                                                                                                               | No filing within 123 days before D means inactive, so excluded                                                                                                                  | F14 (P3)       |
+| 5   | **Equity vs. debt.** Private companies also issue debt                                  | PIMCO "Stripe 3Y Global Holdings" (ABS-MBS), T. Rowe "STRIPE INC SERIES A 5.04 2030" (DBT), Databricks term loans ($417M at Level 2)                                                                                   | Separate by `asset_cat` **and** `assetConditional` (`classifyInstrument`). Report equity and debt separately                                                                    | A5 (P3)        |
+| 6   | **`assetConditional` attribute.** The category sits in an XML attribute, not an element | "ANTHROPIC" $1,090M and "SERIES H 1 PREFERRED" $400M carry `<assetConditional assetCat="OTHER" desc="private fund"/>`. A scratch parser dropped them                                                                   | Always parse with `classifyInstrument` (`parsers.js:74`)                                                                                                                        | A2 (P2)        |
+| 7   | **Fair-value level is unreliable**                                                      | KraneShares reports Anthropic Series E-1 at **Level 1**; Innovation Access Fund at Level 1/2                                                                                                                           | "Private" = `companies.status`, not Level 3. Keep equity rows at any level                                                                                                      | F10 (P1/P4)    |
+| 8   | **SPVs**                                                                                | Named: "Magnitude ANC III, LLC (economic exposure to Anthropic…)", "Tiger Global PIP 12-1 (invested in Databricks)". Opaque: Fundrise's "SaxeCap Advisors VIII", "AI Access 12" (Anthropic >20% of NAV per attachment) | Named SPVs are matched by alias with `via_spv=1`. Opaque ones go in `spv_map`, with source accession, labeled "indirect"                                                        | F11, F12 (P4)  |
+| 9   | **Stock splits** read as crashes                                                        | Databricks Ser H 3,712 sh @ $165.88 → 11,136 sh @ $55.29 (3:1, 2022)                                                                                                                                                   | Split detection (`public/splits.js` logic) runs before any series, median or return                                                                                             | F13 (P3)       |
+| 10  | **Class labels and names are messy**                                                    | Databricks has 59 raw issuer strings, 507 rows named "N/A", and 640 of 3,726 rows name no class. "STRIPE INC" was renamed "STRIPE LLC" in 2026. CUSIPs are dummies                                                     | Resolve companies through the alias table (seeded by `issuerKeyOf`: 59 → 11 before review). Key classes on `other_id` (as `instrumentKey` does), not titles                     | P4             |
+| 11  | **Live search bugs**                                                                    | 21% duplicate accessions; "Revolut" matched Revolution Medicines, "OpenAI" matched OpenAir.com, "Anthropic" matched Anthropics Technology; "Redwood Materials" returned 10,000+ unquoted hits                          | De-dupe by `adsh`; word-boundary matching; quote phrases                                                                                                                        | P0             |
+| 12  | **Trust-wide attachments**                                                              | 56 of 182 Anthropic keyword hits matched only a trust's shared schedule of investments (sibling funds' holdings)                                                                                                       | Only structured `primary_doc` rows count. The sibling fund's own filing carries the row                                                                                         | P2             |
+| 13  | **Noise in Level 3 equity**                                                             | Sanctioned Russian stocks at $0, `CONTRA …` CVRs, defunct issuers dominate raw fund counts                                                                                                                             | Filter for rankings and the tracked-list seed                                                                                                                                   | P4             |
+
+## Display rules
+
+- Always show each fund's **mark date** next to its value. "As of D" mixes dates.
+- The quarter still being filed is labeled **partial** until the catch-up has run.
+- An exit is shown as **"no longer reported"**, never with a guessed reason (tender, sale…).
+- Values labeled **indirect** come from SPVs. Opaque-SPV exposure shows its basis (e.g. ">20% of NAV per
+  attachment").
+- Every chart point and table row links to its source accession.
+
+## Open questions (investigate with real data before adopting)
+
+- **N-CEN adviser data** for mapping registrants to parent firms. Verify on Capital Group, Fidelity and
+  T. Rowe first. Until then, use the curated `data/managers.csv`.
+- **SPV look-through coverage**: how many funds hold tracked companies only through opaque SPVs? Sample
+  interval funds and closed-end funds in P4.
