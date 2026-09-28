@@ -158,6 +158,26 @@ function parseDebtLabel(title) {
   return label;
 }
 
+// Whole-word matcher for a user's search term. Plain substring matching let
+// real look-alike issuers through: "Revolut" matched REVOLUTION MEDICINES INC,
+// "OpenAI" matched OpenAir.com, "Anthropic" matched Anthropics Technology Ltd.
+// The term must start and end on a word boundary (letters/digits); inner
+// whitespace matches any run of whitespace, and surrounding quotes (as typed
+// for an exact-phrase EDGAR search) are ignored.
+function termMatcher(term) {
+  const t = String(term ?? '')
+    .trim()
+    .replace(/^"(.*)"$/, '$1')
+    .trim();
+  if (!t) return () => false;
+  const pattern = t
+    .split(/\s+/)
+    .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('\\s+');
+  const re = new RegExp(`(?:^|[^a-z0-9])${pattern}(?=$|[^a-z0-9])`, 'i');
+  return text => re.test(String(text || ''));
+}
+
 function extractHoldings(xml, securitySearchTerm) {
   const holdings = [];
   try {
@@ -181,7 +201,10 @@ function extractHoldings(xml, securitySearchTerm) {
     if (!investments) return holdings;
     if (!Array.isArray(investments)) investments = [investments];
 
-    const searchLower = securitySearchTerm.toLowerCase();
+    const matchesTerm = termMatcher(securitySearchTerm);
+    const tickerTerm = String(securitySearchTerm ?? '')
+      .trim()
+      .toLowerCase();
 
     for (const inv of investments) {
       const title = String(inv.title || inv.Title || inv.desc || inv.description || '');
@@ -193,10 +216,10 @@ function extractHoldings(xml, securitySearchTerm) {
         extractIdString(inv.identifiers?.ticker) || extractIdString(inv.ticker) || extractIdString(inv.Ticker);
 
       const matches =
-        name.toLowerCase().includes(searchLower) ||
-        issuer.toLowerCase().includes(searchLower) ||
-        title.toLowerCase().includes(searchLower) ||
-        ticker.toLowerCase().includes(searchLower);
+        matchesTerm(name) ||
+        matchesTerm(issuer) ||
+        matchesTerm(title) ||
+        (ticker !== '' && ticker.toLowerCase() === tickerTerm);
 
       if (!matches) continue;
 

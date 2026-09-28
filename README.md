@@ -21,10 +21,9 @@ An internal tool for analyzing SEC NPORT-P filings to track and compare private 
 > - Rules for contributors and AI sessions: [CLAUDE.md](CLAUDE.md)
 >
 > **Known limits of today's app, measured on real data** (details in [docs/DATA-QUALITY.md](docs/DATA-QUALITY.md)):
-> - Single Security parses only the 100 most recent search hits, which covered 2–14 months of history across 20 companies tested.
-> - About 21% of those hits are duplicate filings.
-> - Substring matching can pull in look-alike names (e.g. "Revolut" matches Revolution Medicines).
+> - Single Security parses at most the 100 newest matching filings, which for heavily held names (e.g. Databricks) is about one month of history. The warehouse removes this limit.
 > - Fund X-Ray's Level-3-only filter misses private holdings that some filers label Level 1 or 2.
+> - Fixed in Phase 0: duplicate filings (about 21% of hits), look-alike name matches ("Revolut" matching Revolution Medicines), relevance-ranked instead of newest filings on popular names, and filings that mention a name only in a trust-wide attachment. Search now matches whole words or an exact ticker.
 
 ---
 

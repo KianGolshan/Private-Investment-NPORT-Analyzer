@@ -44,12 +44,24 @@ P0 live-app fixes
 - `server.js` `fetchEftsAllHits`: de-duplicate by `_source.adsh` (a filing yields one hit per document).
 - Quote multi-word queries sent to EFTS ("Redwood Materials": 10,000+ hits unquoted vs. 2,469 quoted).
 - `parsers.js` `extractHoldings`: match on word boundaries, not raw substrings. Keep exact ticker matches.
+  Bump `PARSE_VERSION` so cached substring matches are discarded.
+- _Added during P0 after real-data verification:_
+  - Over the 1,000-hit cap, read newest-first date windows instead of a relevance-ranked slice. Before
+    this, "the 100 most recent" skipped Epic Games filings from 2026-05-26.
+  - For NPORT-P, keep only filings that matched in `primary_doc.xml`. Trust-wide attachments have no
+    holding row: 328 of 328 real filings with a row had a `primary_doc.xml` hit, and 0 of 208
+    attachment-only filings did.
 
 **Tests**
 
 - `test/parsers.test.js`: "Revolut" does not match REVOLUTION MEDICINES INC; "OpenAI" does not match
   OpenAir.com; "Anthropic" does not match Anthropics Technology Ltd.
-- `test/server.test.js`: two EFTS hits sharing one `adsh` produce one filing.
+- `test/edge-cases.test.js`:
+  - two EFTS hits sharing one `adsh` produce one filing
+  - phrase quoting
+  - newest-first windows
+  - window splitting
+  - attachment-only filings dropped
 
 **Success criteria**
 

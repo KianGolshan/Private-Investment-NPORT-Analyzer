@@ -58,10 +58,12 @@ because member funds are on two staggered calendars.
 
 ## Coverage and fidelity
 
-| #   | Check                                                                                 | Result                                                                  |
-| --- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| C1  | Bulk vs. EDGAR submissions, 80 random registrant CIKs, filings 2019-10-01..2026-06-30 | 7,046 filings, **0 missing**                                            |
-| C2  | Bulk rows vs. the app's parser (`extractHoldings`), same accessions                   | **617 / 617 identical** (value, shares)                                 |
-| C3  | Live app top-100 for 20 companies                                                     | 412 of 2,000 slots were duplicate accessions                            |
-| C4  | Bulk publication dates                                                                | 2025Q3 11/18/2025 · 2025Q4 1/7/2026 · 2026Q1 4/6/2026 · 2026Q2 7/9/2026 |
-| C5  | NPORT-P filed 2026-07-01..09-26 (full index)                                          | 11,697 (+125 NPORT-P/A)                                                 |
+| #   | Check                                                                                                | Result                                                                                        |
+| --- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| C1  | Bulk vs. EDGAR submissions, 80 random registrant CIKs, filings 2019-10-01..2026-06-30                | 7,046 filings, **0 missing**                                                                  |
+| C2  | Bulk rows vs. the app's parser (`extractHoldings`), same accessions                                  | **617 / 617 identical** (value, shares)                                                       |
+| C3  | Live app top-100 for 20 companies                                                                    | 412 of 2,000 slots were duplicate accessions                                                  |
+| C4  | Bulk publication dates                                                                               | 2025Q3 11/18/2025 · 2025Q4 1/7/2026 · 2026Q1 4/6/2026 · 2026Q2 7/9/2026                       |
+| C6  | EFTS hit document vs. structured row, filings made 2026-07-01..09-27 (Anthropic, Databricks, Stripe) | 328 / 328 filings with a row had a `primary_doc.xml` hit; 0 / 208 attachment-only filings did |
+| C7  | Live app after P0: Growth Fund of America 0001193125-26-323081 Anthropic (5/31/2026)                 | $4,979.7M (= F2)                                                                              |
+| C5  | NPORT-P filed 2026-07-01..09-26 (full index)                                                         | 11,697 (+125 NPORT-P/A)                                                                       |

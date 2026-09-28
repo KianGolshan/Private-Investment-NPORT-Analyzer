@@ -274,35 +274,125 @@ function cleanFilerName(raw) {
 // `size` asks for — reading only the first page silently dropped most matches
 // on popular names (real counts: Anthropic 837 NPORT-P filings, Pluralsight
 // 353 10-Qs). Pages through with `from`, up to EFTS_MAX_HITS. Returns the
-// first page's body with hits.hits replaced by every hit fetched, so
-// hits.total still reports EDGAR's own full match count.
+// first page's body with hits.hits replaced by one hit per filing.
+//
+// EFTS returns one hit per matching *document*, so a single filing can come
+// back several times (real: 412 of the 100-most-recent slots across 20
+// private companies were repeats of an accession already listed). Hits are
+// therefore de-duplicated by accession (`_source.adsh`), falling back to
+// `_id`. hits.total is EDGAR's document count; when every page was read it
+// is replaced by the unique filing count, so "N matching filings" is true.
+//
+// EFTS ranks hits by relevance, not date. When a name has more than
+// EFTS_MAX_HITS matching documents, reading the first EFTS_MAX_HITS returned
+// an arbitrary slice of years, and "the N most recent" was only the most
+// recent *within that slice* (real: "Epic Games" skipped three Fidelity
+// filings from 2026-05-26 while its "100 most recent" reached back to
+// 2026-01-23). Over the cap, the search instead walks date windows
+// (startdt/enddt) newest-first, splitting any window that is itself over the
+// cap, until EFTS_MAX_HITS documents are read or every match has been seen.
 const EFTS_PAGE_SIZE = 100;
 const parsedEftsMax = Number(process.env.EFTS_MAX_HITS);
 const EFTS_MAX_HITS = Number.isFinite(parsedEftsMax) && parsedEftsMax > 0 ? parsedEftsMax : 1000;
-async function fetchEftsAllHits(params) {
-  let first = null;
+const EFTS_WINDOW_DAYS = 92;
+const EFTS_EARLIEST = new Date('2001-01-01T00:00:00Z'); // start of EDGAR full-text coverage
+const DAY_MS = 24 * 60 * 60 * 1000;
+const isoDay = d => d.toISOString().slice(0, 10);
+
+async function eftsPage(params, from) {
+  const resp = await fetchWithRetry({
+    url: 'https://efts.sec.gov/LATEST/search-index',
+    method: 'get',
+    params: { ...params, from, size: EFTS_PAGE_SIZE },
+    headers: { 'User-Agent': EFFECTIVE_USER_AGENT, Accept: 'application/json' },
+    timeout: 30000,
+  });
+  return resp.data || {};
+}
+
+function eftsOverCap(body) {
+  const total = body?.hits?.total;
+  return total?.relation === 'gte' || Number(total?.value) > EFTS_MAX_HITS;
+}
+
+// The document a hit matched is the part of its `_id` after the accession
+// ("0001193125-26-323081:primary_doc.xml"). Empty when EFTS gives no name.
+const eftsHitDocument = hit => String(hit._id || '').split(':')[1] || '';
+
+// `onlyDocument` keeps only hits that matched in that document. For NPORT-P
+// it is 'primary_doc.xml', the structured holdings list: a trust's shared
+// schedule-of-investments attachment names every sibling fund's holdings, so
+// a match only there has no holding row in this filing (real, filings made
+// 2026-07-01..09-27: 328 of 328 filings with a row had a primary_doc.xml hit,
+// 0 of 208 attachment-only filings did, across Anthropic/Databricks/Stripe).
+// Hits without a document name are kept.
+async function fetchEftsAllHits(params, { onlyDocument } = {}) {
   const hits = [];
   const seen = new Set();
-  for (let from = 0; from < EFTS_MAX_HITS; from += EFTS_PAGE_SIZE) {
-    const resp = await fetchWithRetry({
-      url: 'https://efts.sec.gov/LATEST/search-index',
-      method: 'get',
-      params: { ...params, from, size: EFTS_PAGE_SIZE },
-      headers: { 'User-Agent': EFFECTIVE_USER_AGENT, Accept: 'application/json' },
-      timeout: 30000,
-    });
-    if (!first) first = resp.data || {};
-    const page = resp.data?.hits?.hits || [];
+  let docsRead = 0;
+  const add = page => {
+    docsRead += page.length;
     for (const hit of page) {
-      const id = hit._id || hit._source?.adsh;
+      const doc = eftsHitDocument(hit);
+      if (onlyDocument && doc && !doc.endsWith(onlyDocument)) continue;
+      const id = hit._source?.adsh || hit._id;
       if (id && seen.has(id)) continue;
       if (id) seen.add(id);
       hits.push(hit);
     }
-    const total = Number(resp.data?.hits?.total?.value);
-    if (page.length < EFTS_PAGE_SIZE || (Number.isFinite(total) && from + EFTS_PAGE_SIZE >= total)) break;
+  };
+  // Reads every page of one query (at most EFTS_MAX_HITS documents),
+  // starting from an already-fetched first page. True if all were read.
+  const drain = async (queryParams, firstBody) => {
+    let body = firstBody;
+    for (let from = 0; ;) {
+      const page = body?.hits?.hits || [];
+      add(page);
+      const total = Number(body?.hits?.total?.value);
+      from += EFTS_PAGE_SIZE;
+      if (page.length < EFTS_PAGE_SIZE || (Number.isFinite(total) && from >= total)) return true;
+      if (from >= EFTS_MAX_HITS) return false;
+      body = await eftsPage(queryParams, from);
+    }
+  };
+
+  const first = await eftsPage(params, 0);
+  const firstHits = first.hits || {};
+
+  if (!eftsOverCap(first)) {
+    const complete = await drain(params, first);
+    const total =
+      complete && firstHits.total ? { ...firstHits.total, value: hits.length, relation: 'eq' } : firstHits.total;
+    return { ...first, hits: { ...firstHits, ...(total ? { total } : {}), hits } };
   }
-  return { ...first, hits: { ...(first.hits || {}), hits } };
+
+  // Over the cap: newest-first date windows.
+  const totalDocs = firstHits.total?.relation === 'eq' ? Number(firstHits.total.value) : Infinity;
+  let end = new Date(Date.now());
+  let span = EFTS_WINDOW_DAYS;
+  while (docsRead < EFTS_MAX_HITS && docsRead < totalDocs && end >= EFTS_EARLIEST) {
+    const start = new Date(Math.max(EFTS_EARLIEST.getTime(), end.getTime() - (span - 1) * DAY_MS));
+    const windowParams = { ...params, startdt: isoDay(start), enddt: isoDay(end) };
+    const body = await eftsPage(windowParams, 0);
+    if (eftsOverCap(body) && span > 1) {
+      span = Math.max(1, Math.floor(span / 2));
+      continue;
+    }
+    await drain(windowParams, body);
+    end = new Date(start.getTime() - DAY_MS);
+    span = EFTS_WINDOW_DAYS;
+  }
+  return { ...first, hits: { ...firstHits, hits }, newestFirst: true };
+}
+
+// EFTS treats an unquoted multi-word query as separate words matched anywhere
+// in a filing (real: "Redwood Materials" → 10,000+ hits unquoted vs. 2,469
+// quoted), so multi-word names are sent as an exact phrase. Single words and
+// queries the user already quoted pass through unchanged.
+function eftsPhrase(term) {
+  const t = String(term).trim();
+  if (!/\s/.test(t) || /^".*"$/.test(t)) return t;
+  return `"${t.replace(/"/g, '')}"`;
 }
 
 // Config endpoint — lets the frontend show a warning if user-agent isn't set
@@ -316,7 +406,9 @@ app.get('/api/search-nport', async (req, res) => {
   if (!security) return res.status(400).json({ error: 'security parameter required' });
 
   // v2: now every page of EFTS hits, not just the first 100.
-  const cacheKey = cache.searchKey('search:nport:v2', security);
+  // v3: one hit per filing (deduped by accession), multi-word names quoted,
+  //     newest-first date windows over the hit cap, primary_doc.xml matches only.
+  const cacheKey = cache.searchKey('search:nport:v3', security);
   if (!wantsRefresh(req)) {
     const cached = cache.getSearch(cacheKey);
     if (cached) return res.json({ ...cached, cached: true });
@@ -324,7 +416,10 @@ app.get('/api/search-nport', async (req, res) => {
 
   try {
     const data = await cache.withInFlight(cacheKey, async () => {
-      const body = await fetchEftsAllHits({ q: security, category: 'form-cat1', forms: 'NPORT-P' });
+      const body = await fetchEftsAllHits(
+        { q: eftsPhrase(security), category: 'form-cat1', forms: 'NPORT-P' },
+        { onlyDocument: 'primary_doc.xml' }
+      );
       cache.setSearch(cacheKey, body);
       return body;
     });

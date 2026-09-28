@@ -169,6 +169,72 @@ test('extractHoldings: a non-matching search term returns no holdings (real fili
   assert.equal(holdings.length, 0);
 });
 
+// Word-boundary matching. Issuer names/titles below are real rows returned by
+// the old substring match during the 2026-09-27 20-company comparison
+// (docs/DATA-QUALITY.md trap 11): REVOLUTION MEDICINES INC in Fidelity
+// Securities Fund under "Revolut", OpenAir.com, Series C in NYLIM Funds under
+// "OpenAI", Anthropics Technology Ltd., Series G in BlackRock Global
+// Allocation Fund under "Anthropic".
+function holdingsXml(rows) {
+  return {
+    edgarSubmission: {
+      formData: {
+        genInfo: { repPdDate: '2026-06-30', seriesName: 'Test Series' },
+        invstOrSecs: {
+          invstOrSec: rows.map(r => ({ balance: '100', valUSD: '1000', ...r })),
+        },
+      },
+    },
+  };
+}
+
+test('extractHoldings: look-alike issuers are not matched (real false positives from substring matching)', () => {
+  const xml = holdingsXml([
+    { name: 'REVOLUTION MEDICINES INC', title: 'REVOLUTION MEDICINES INC' },
+    { name: 'OpenAir.com', title: 'OpenAir.com, Series C' },
+    { name: 'Anthropics Technology Ltd.', title: 'Anthropics Technology Ltd., Series G' },
+  ]);
+  assert.deepEqual(extractHoldings(xml, 'Revolut'), []);
+  assert.deepEqual(extractHoldings(xml, 'OpenAI'), []);
+  assert.deepEqual(extractHoldings(xml, 'Anthropic'), []);
+});
+
+test('extractHoldings: whole-word matches still hit real issuer name forms', () => {
+  const xml = holdingsXml([
+    { name: 'Revolut Group Holdings Ltd', title: 'Revolut Group Holdings Ltd' },
+    { name: 'OPENAI GROUP PBC', title: 'OPENAI GROUP PCB CLASS A COMMON PP' },
+    { name: 'ANTHROPIC PBC', title: 'ANTHROPIC PBC CL G-1 PFD PP (PHYSICAL) (NOT LISTED OR TRADING)' },
+    { name: 'DATABRICKS, INC.', title: 'DATABRICKS, INC. SERIES H PREFERRED SHARES' },
+    { name: 'N/A', title: 'EPIC GAMES INC PP' },
+  ]);
+  assert.equal(extractHoldings(xml, 'Revolut').length, 1);
+  assert.equal(extractHoldings(xml, 'openai').length, 1, 'case-insensitive');
+  assert.equal(extractHoldings(xml, 'Anthropic').length, 1);
+  assert.equal(extractHoldings(xml, 'Databricks').length, 1, 'trailing comma is a boundary');
+  assert.equal(extractHoldings(xml, 'Epic Games').length, 1, 'multi-word term, "N/A" name falls back to title');
+  assert.equal(extractHoldings(xml, '"Epic Games"').length, 1, 'quotes typed for an exact EDGAR phrase are ignored');
+  assert.equal(extractHoldings(xml, '  epic   games ').length, 1, 'extra whitespace is tolerated');
+  assert.deepEqual(extractHoldings(xml, 'Epic Game'), [], 'a partial word no longer matches');
+});
+
+test('extractHoldings: tickers match exactly, not as substrings', () => {
+  const xml = holdingsXml([{ name: 'SPACEX', title: 'SPACEX', identifiers: { ticker: { value: 'SPCX' } } }]);
+  assert.equal(extractHoldings(xml, 'SPCX').length, 1);
+  assert.equal(extractHoldings(xml, 'spcx').length, 1);
+  assert.deepEqual(extractHoldings(xml, 'SPC'), []);
+});
+
+test('extractHoldings: special regex characters in the term are matched literally', () => {
+  const xml = holdingsXml([
+    { name: 'AT&T INC', title: 'AT&T INC' },
+    { name: 'ATXT CORP', title: 'ATXT CORP' },
+  ]);
+  const found = extractHoldings(xml, 'AT&T');
+  assert.equal(found.length, 1);
+  assert.equal(found[0].name, 'AT&T INC');
+  assert.deepEqual(extractHoldings(xml, 'A.T'), [], '"." must not act as a wildcard');
+});
+
 // ── Instrument-type classification ──────────────────────────────────────────
 // See Part 4 of the project plan for the real-filing evidence (Kandou,
 // Anthropic, and a 35-filer/132-row Databricks survey) behind this.
