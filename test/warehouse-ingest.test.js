@@ -86,7 +86,13 @@ test('migrations apply once and are recorded', () => {
     .prepare('SELECT version FROM schema_migrations')
     .all()
     .map(r => r.version);
-  assert.deepEqual(versions, [1]);
+  const files = fs
+    .readdirSync(path.join(__dirname, '..', 'db', 'migrations'))
+    .filter(f => /^\d{4}_[\w-]+\.sql$/.test(f))
+    .map(f => Number(f.slice(0, 4)))
+    .sort((a, b) => a - b);
+  assert.deepEqual(versions, files, 'every migration file applied, in order');
+  assert.deepEqual(files.slice(0, 2), [1, 2]);
   assert.deepEqual(migrate(db), [], 'nothing left to apply');
   db.close();
 });

@@ -128,8 +128,9 @@ P0 live-app fixes
 - Every `ingest_log` row matches the zip's row counts. **Measured: 27 of 27 quarters `ok`.**
 - Fidelity check passes. **Measured: 106 rows equal `extractAllHoldings` field by field; live check found
   0 of 2,905 EDGAR filings missing across 20 random registrants.**
-- Known gap, recorded for Phase 2: public N-PORTs filed about May–Sep 2019 are in no bulk file (real: KP
-  Large Cap Equity 0001752724-19-047738, filed 2019-05-29). The daily-index catch-up can backfill them.
+- _Corrected in P2:_ the "May–Sep 2019 gap" noted here was wrong. The KP Large Cap filing dated
+  2019-05-29 is an **NPORT-EX** (HTML exhibit), and EDGAR's own index lists zero NPORT-P filings before
+  2019-10-22. Bulk coverage is complete from the first public NPORT-P.
 
 ---
 
@@ -144,11 +145,20 @@ P0 live-app fixes
 - Move `fetchWithRetry` and `pace` out of `server.js` into `lib/edgar.js` (the server imports them; no
   behavior change).
 - `scripts/ingest-delta.js` (`npm run ingest:delta`):
-  - Reads EDGAR daily form indexes (`/Archives/edgar/daily-index/<yyyy>/QTR<n>/form.<yyyymmdd>.idx`) for
-    NPORT-P and NPORT-P/A filed after the newest bulk `filing_date`.
-  - Fetches each `primary_doc.xml` and parses it with `extractFundMeta` + `extractAllHoldings` +
-    `classifyInstrument`.
-  - Writes the same tables with `source='edgar'`. Resumable: skips accessions already stored.
+  - Reads EDGAR's quarterly form index (`/Archives/edgar/full-index/<yyyy>/QTR<n>/form.idx`) for
+    NPORT-P and NPORT-P/A filed on or after the newest bulk `filing_date`.
+    - _Built:_ the quarterly index (45 MB, about 2 s) instead of per-day files. It's simpler and can't
+      miss a day.
+    - One entry per accession, since the index lists a filing once per filer.
+  - Fetches each `primary_doc.xml` (4 at a time, paced) and parses it with `extractFundMeta` +
+    `extractAllHoldings` + `classifyInstrument`. The same keep rule as bulk applies (`isPrivateCandidate`).
+  - Writes the same tables with `source='edgar'`, in batches of 25 per transaction.
+    - Resumable: skips accessions already stored.
+    - Failures go to `ingest_errors` and are retried next run.
+  - _Added after real runs:_
+    - Network stalls and resets are retried (2 s, then 8 s) with a 60 s timeout.
+    - A `primary_doc.xml` that EDGAR serves truncated falls back to the full submission `.txt`
+      (DATA-QUALITY trap 17).
 - `scripts/refresh.js` (`npm run refresh`):
   1. If a new bulk quarter is posted, ingest it, then delete the `source='edgar'` rows for filings it covers.
   2. Run the daily catch-up.
@@ -159,15 +169,29 @@ P0 live-app fixes
 
 **Tests**
 
-- Offline: a delta over a fixture daily index plus fixture XMLs; replacing a quarter keeps totals equal.
+- Offline (`test/warehouse-delta.test.js`, 9 tests), using real index lines and XML:
+  - index parsing
+  - 21-field parity with bulk rows
+  - resumability
+  - failure then retry
+  - network retry
+  - truncated-XML fallback
+  - bulk replacement with totals unchanged
+  - a full refresh run
 - `LIVE_SEC`: after the delta runs, the warehouse contains Growth Fund of America 0001193125-26-323081
   (5/31/2026) with Anthropic F-1, G-1 and common rows totaling **$4,979.7M**.
 
 **Success criteria**
 
 - First catch-up (about 11.7k filings) completes in **≤90 min**.
-- Nightly run **≤5 min**.
-- Replacing catch-up rows with bulk leaves every golden total unchanged.
+  - **Measured: 11,822 filings in 26.9 min, about 9 filings/s (the SEC rate limit).**
+  - 5 failures on the first pass; all loaded on retry.
+- Nightly run **≤5 min**. **Measured: 1.1 s with nothing new**; a typical day of about 130 filings takes
+  about 20 s.
+- Replacing catch-up rows with bulk leaves every golden total unchanged. **Measured offline: row count and
+  value sum identical.**
+- **Golden F2–F7 are in the warehouse** from the catch-up, exact to $0.1M (e.g. Growth Fund of America 5/31
+  $4,979.7M).
 
 ---
 

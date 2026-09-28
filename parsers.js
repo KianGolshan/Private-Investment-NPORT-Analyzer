@@ -371,8 +371,25 @@ function extractFundMeta(xml) {
   };
 }
 
+// The filing's <invstOrSec> entries as parsed objects, in document order
+// ([] when the filing has none).
+function nportInvestments(xml) {
+  const formData =
+    xml?.edgarSubmission?.formData ||
+    xml?.edgarSubmission?.formdata ||
+    xml?.edgarsubmission?.formData ||
+    xml?.edgarsubmission?.formdata;
+  if (!formData) return [];
+  const investments =
+    formData.invstOrSecs?.invstOrSec || formData.invstorsecs?.invstorsec || formData.investments?.investment;
+  if (!investments) return [];
+  return Array.isArray(investments) ? investments : [investments];
+}
+
 // Every investment in the filing, unfiltered by search term — the raw
 // material for a fund-wide private-equity-vs-everything-else breakdown.
+// Each holding carries rowIndex, its position in nportInvestments(xml), so
+// the warehouse can read further raw fields from the same entry.
 function extractAllHoldings(xml) {
   const holdings = [];
   try {
@@ -386,12 +403,11 @@ function extractAllHoldings(xml) {
     const genInfo = formData.genInfo || formData.geninfo || {};
     const reportDate = genInfo.repPdDate || genInfo.reppddate || genInfo.reportDate || '';
 
-    let investments =
-      formData.invstOrSecs?.invstOrSec || formData.invstorsecs?.invstorsec || formData.investments?.investment;
-    if (!investments) return holdings;
-    if (!Array.isArray(investments)) investments = [investments];
+    const investments = nportInvestments(xml);
+    if (!investments.length) return holdings;
 
-    for (const inv of investments) {
+    for (let rowIndex = 0; rowIndex < investments.length; rowIndex++) {
+      const inv = investments[rowIndex];
       const title = String(inv.title || inv.Title || inv.desc || inv.description || '');
       // Real filings (T. Rowe Price, older periods) put the literal "N/A" in
       // <name>; the security title is then the only place the company appears.
@@ -438,6 +454,7 @@ function extractAllHoldings(xml) {
         country: String(inv.invcountry ?? inv.invCountry ?? '')
           .trim()
           .toUpperCase(),
+        rowIndex,
       });
     }
   } catch (err) {
@@ -1578,6 +1595,7 @@ module.exports = {
   isPrivateEquityHolding,
   extractFundMeta,
   extractAllHoldings,
+  nportInvestments,
   buildFundXRay,
   positionMatchKey,
   buildFundXRayComparison,

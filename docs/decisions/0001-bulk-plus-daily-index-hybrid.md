@@ -19,8 +19,8 @@ The live app finds filings through EDGAR full-text search and parses only the 10
   - Complete: 0 of 7,046 filings missing across 80 random funds.
   - Identical to the app's parser: 617 of 617 filings.
   - Cheap: about 25–35 min backfill, about 150 MB.
-- **Current quarter:** the EDGAR daily form index, with each `primary_doc.xml` parsed by the app's own
-  parser.
+- **Current quarter:** EDGAR's form index, with each `primary_doc.xml` parsed by the app's own parser.
+  - _As built:_ the quarterly `full-index/…/form.idx`, 45 MB, about 2 s.
   - Complete, including exits and SPVs.
   - About 1 hour once per quarter of backlog, then about 1 minute a day.
 - When the next bulk quarter posts (about 1–7 weeks after quarter end), it replaces that quarter's

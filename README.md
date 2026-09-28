@@ -125,7 +125,7 @@ For development with auto-reload:
 npm run dev
 ```
 
-### Build the data warehouse (Vantage v2, Phase 1)
+### Build and refresh the data warehouse (Vantage v2)
 
 The v2 warehouse loads the SEC's quarterly N-PORT bulk datasets (2019Q4 onward) into a local
 `warehouse.db`. It's a separate file from `cache.db`, and git-ignored. The app does not read it yet; the
@@ -139,6 +139,18 @@ That loads every quarter, which took about 14 minutes and produced about 365 MB 
 `--missing` loads only quarters not yet loaded, and `--quarter 2026q2` reloads a single quarter. Each
 quarter loads in one transaction and is logged in `ingest_log`. A failed run exits non-zero and changes
 nothing for that quarter.
+
+Bulk data ends at the last quarter-end, so recent filings come from EDGAR directly:
+
+```bash
+npm run ingest:delta   # every N-PORT filed after the newest bulk quarter
+npm run refresh        # nightly job: loads any newly published bulk quarter, then catches up
+```
+
+The first catch-up after a full backfill took 27 minutes (11,822 filings at the SEC's rate limit). A
+refresh with nothing new takes about a second. Both commands can be interrupted and resumed. Filings that
+fail are listed in `ingest_errors` and retried on the next run. To run the refresh nightly, use the launchd
+or cron entry in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#refresh-lifecycle).
 
 ### Tests
 
@@ -334,7 +346,7 @@ as a failure count rather than being silently dropped.
 ├── test/               # Unit, integration, jsdom UI and opt-in live tests, with real-filing fixtures
 ├── lib/warehouse/      # v2 warehouse: SQLite connection + migrations, bulk-dataset ingest, id validation
 ├── db/migrations/      # Numbered SQL migrations for warehouse.db
-├── scripts/            # CLI jobs (ingest-bulk.js)
+├── scripts/            # CLI jobs (ingest-bulk.js, ingest-delta.js, refresh.js)
 ├── docs/               # v2 roadmap, status, architecture, data-quality rules, golden numbers, ADRs
 ├── CLAUDE.md           # Standing rules for contributors and AI coding sessions
 ├── .github/workflows/  # CI: tests on Node 22/24, lint, format check

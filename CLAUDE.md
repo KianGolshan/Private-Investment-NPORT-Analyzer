@@ -56,9 +56,9 @@ npm run test:live        # LIVE_SEC=1 end-to-end against real EDGAR (minutes)
 
 ```bash
 npm run ingest:bulk -- --missing   # load SEC bulk quarters not yet in warehouse.db (--all, --quarter 2026q2)
+npm run ingest:delta               # catch up on filings made after the newest bulk quarter (--since/--until)
+npm run refresh                    # nightly: new bulk quarter(s) if published, then catch-up
 ```
-
-Planned (not built yet; see ROADMAP): `npm run ingest:delta`, `npm run refresh`.
 
 ## Scope
 

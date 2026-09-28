@@ -1,6 +1,6 @@
 # Vantage v2 Status
 
-**Current phase:** Phase 1 complete, **awaiting sign-off**. After sign-off, run the Phase 2 prompt from
+**Current phase:** Phase 2 complete, **awaiting sign-off**. After sign-off, run the Phase 3 prompt from
 [SESSION-PROMPTS.md](SESSION-PROMPTS.md).
 **Branch:** `v2-plan-and-phase0`
 **Last updated:** 2026-09-28
@@ -8,14 +8,51 @@
 ## Phase tracker
 
 - [x] P0: live-app correctness fixes (signed off 2026-09-28)
-- [x] P1: warehouse foundation and bulk history (awaiting sign-off)
-- [ ] P2: daily catch-up and refresh
+- [x] P1: warehouse foundation and bulk history (signed off 2026-09-28)
+- [x] P2: daily catch-up and refresh (awaiting sign-off)
 - [ ] P3: canonical views and as-of engine
 - [ ] P4: entities (companies, aliases, SPVs, managers, tracked list)
 - [ ] P5: service layer and parity migration
 - [ ] P6: new analysis and UI
 - [ ] P7: MCP server
 - [ ] P8: operations hardening
+
+## Phase 2 checkpoint results
+
+- **Built:**
+  - `lib/edgar.js`: the paced SEC client, moved from `server.js` unchanged.
+  - `lib/warehouse/`: `edgar-rows.js`, `delta.js`, `refresh.js`, `bulk-source.js`.
+  - `db/migrations/0002_refresh.sql`: `ingest_errors`, `refresh_runs`.
+  - Commands: `npm run ingest:delta`, `npm run refresh`.
+  - `parsers.js`: `extractAllHoldings` now records each row's `rowIndex` (additive), and `nportInvestments`
+    is exported.
+- **Suite:** `npm test` 320 tests, 292 pass, 0 fail (9 new catch-up tests). Lint and format are clean.
+- **Parity:** the EDGAR-XML path yields rows identical to bulk in all 21 fields and all filing fields
+  (106 rows, 7 real filings). Bulk replacing catch-up rows keeps row count and value sum identical.
+- **Real catch-up (filed 2026-06-30..09-28):**
+  - 11,824 listed; 11,822 loaded (2 were already in bulk).
+  - **26.9 min** across 6 foreground windows, about 9 filings/s.
+  - 5 first-pass failures, all loaded on retry; `ingest_errors` is empty.
+- **Golden numbers now in the warehouse (catch-up rows):**
+  - F2 Growth Fund of America 5/31 Anthropic **$4,979.7M**
+  - F3 Fundamental Investors $1,016.7M
+  - F4 American Balanced $520.7M
+  - F5 AMCAP $469.9M
+  - F6 New Economy $486.1M
+  - F7 Capital World G&I $46.8M
+  - F10 KraneShares Level-1 $12.9M
+  - F11 Magnitude SPV $235.7M (indirect)
+- **Nightly refresh (real):** run #1 `ok` in 1.1 s. No new bulk quarter yet; the SEC should post 2026q3
+  after 2026-09-30.
+- **Found on real data and handled** (DATA-QUALITY traps 17–19):
+  - EDGAR served a truncated `primary_doc.xml` (First Trust S&P REIT Index Fund); fixed by the `.txt`
+    fallback.
+  - Transient stalls and `EPIPE`; fixed with retries and a 60 s timeout.
+  - The index repeats co-registrant filings; fixed by de-duplication.
+- **Correction:** the "May–Sep 2019 gap" from P1 does not exist. That filing is an NPORT-EX, and EDGAR's
+  index lists zero NPORT-P filings in 2019 Q2–Q3 (trap 15).
+- **Open decision for you:** install the nightly launchd job (ARCHITECTURE §Refresh lifecycle)? It is
+  not installed.
 
 ## Phase 1 checkpoint results
 
@@ -46,7 +83,8 @@
     "any level". Keeping every level would add about 1.9M public rows per quarter.
   - Size budget raised to ≤500 MB.
 - **Found during P1, carried to P2:**
-  - Public N-PORTs filed about May–Sep 2019 are in no bulk file (trap 15).
+  - ~~Public N-PORTs filed about May–Sep 2019 are in no bulk file~~. Corrected in P2: that filing was an
+    NPORT-EX. No gap exists (trap 15).
   - Placeholder rows are skipped the same way `extractAllHoldings` skips them (trap 16).
 - The app does not read `warehouse.db` yet. That starts in P5.
 
@@ -87,8 +125,8 @@
 | --------------------------------------- | ------- | ----------------------------------------------------- |
 | Full bulk backfill, 27 quarters         | ≤45 min | **13.6 min** (2026-09-28)                             |
 | Warehouse size                          | ≤500 MB | **364 MB** (budget revised from 300 MB, see ADR 0003) |
-| First catch-up                          | ≤90 min | n/a (estimate ~56 min for 11.7k filings)              |
-| Nightly refresh                         | ≤5 min  | n/a                                                   |
+| First catch-up                          | ≤90 min | **26.9 min** for 11,822 filings (about 9/s)           |
+| Nightly refresh                         | ≤5 min  | **1.1 s** with nothing new (run #1, 2026-09-28)       |
 | API p95                                 | <200 ms | n/a                                                   |
 | Single Security search (P0, live EDGAR) | n/a     | 15–32 s per name for 100 filings                      |
 
@@ -98,6 +136,8 @@
 - Size of the tracked list: ~250 default. Confirm after the P4 review CSV.
 
 ## Log
+
+- **2026-09-28:** Phase 2 implemented; catch-up ran in the foreground in 6 date windows; nightly refresh verified.
 
 - **2026-09-28:** Phase 1 implemented; the full backfill ran in the foreground in three timed batches.
   Results above.

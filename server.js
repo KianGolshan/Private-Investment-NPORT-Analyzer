@@ -1,10 +1,10 @@
 require('dotenv').config();
 const express = require('express');
-const axios = require('axios');
 const xml2js = require('xml2js');
 const cheerio = require('cheerio');
 const rateLimit = require('express-rate-limit');
 const cache = require('./cache');
+const { fetchWithRetry } = require('./lib/edgar');
 const {
   extractHoldings,
   extractCreditHoldings,
@@ -152,63 +152,8 @@ function publicError(err) {
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-// Applied to every SEC request unless a call site sets its own (larger,
-// for the 10-Q HTML fetch) limit — without a bound, a pathological or
-// unexpectedly huge upstream response (submissions JSON, NPORT XML) is
-// buffered into memory in full before axios/xml2js ever get a chance to
-// reject it.
-const DEFAULT_MAX_CONTENT_LENGTH = 25 * 1024 * 1024;
-
-// SEC's fair-access limit is ~10 requests/second per source. Heavy flows
-// (series discovery reads dozens of filing headers, returns fetch 8+ filings,
-// Watchlist runs fire hundreds of searches) can exceed that in a burst and get
-// throttled — first with 429, and after sustained bursts with 503/429 for
-// minutes, which was reproduced against the live SEC during testing. So
-// outbound requests are paced process-wide, and throttled responses are
-// retried patiently (honoring Retry-After) instead of surfacing as failures.
-const parsedInterval = Number(process.env.SEC_MIN_INTERVAL_MS);
-const MIN_INTERVAL_MS =
-  process.env.SEC_MIN_INTERVAL_MS !== undefined && Number.isFinite(parsedInterval) ? parsedInterval : 110;
-let nextSlotAt = 0;
-async function pace() {
-  if (!MIN_INTERVAL_MS) return;
-  const now = Date.now();
-  const at = Math.max(now, nextSlotAt);
-  nextSlotAt = at + MIN_INTERVAL_MS;
-  if (at > now) await delay(at - now);
-}
-
-const THROTTLE_STATUS = new Set([429, 503]);
-// Occasional transient server errors (seen live from EFTS under load) get a couple of retries.
-const TRANSIENT_STATUS = new Set([500, 502, 504]);
-const MAX_TRANSIENT_RETRIES = 2;
-async function fetchWithRetry(config, maxRetries = 5) {
-  const configWithLimit = {
-    maxContentLength: DEFAULT_MAX_CONTENT_LENGTH,
-    maxBodyLength: DEFAULT_MAX_CONTENT_LENGTH,
-    ...config,
-  };
-  let attempt = 0;
-  for (;;) {
-    try {
-      await pace();
-      return await axios(configWithLimit);
-    } catch (err) {
-      const status = err.response?.status;
-      const retryable =
-        (THROTTLE_STATUS.has(status) && attempt < maxRetries) ||
-        (TRANSIENT_STATUS.has(status) && attempt < MAX_TRANSIENT_RETRIES);
-      if (retryable) {
-        const retryAfter = Number(err.response?.headers?.['retry-after']);
-        const backoff = 500 * Math.pow(2, attempt);
-        await delay(Math.min(30000, Math.max(backoff, Number.isFinite(retryAfter) ? retryAfter * 1000 : 0)));
-        attempt++;
-        continue;
-      }
-      throw err;
-    }
-  }
-}
+// Outbound SEC requests are paced process-wide and retried on throttling;
+// see lib/edgar.js (shared with the warehouse jobs).
 
 // Fetch a filer's complete filing history from the EDGAR submissions API,
 // flattening the paginated "files" (older filings) alongside "recent".

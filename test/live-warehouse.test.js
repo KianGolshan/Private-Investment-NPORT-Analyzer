@@ -13,9 +13,10 @@ const { openWarehouse, defaultWarehousePath } = require('../lib/warehouse/db');
 const LIVE = process.env.LIVE_SEC === '1';
 const DB_PATH = defaultWarehousePath();
 const SAMPLE = Number(process.env.LIVE_WAREHOUSE_SAMPLE) || 20;
-// Bulk data starts with filings made in 2019Q4; earlier public N-PORTs
-// (filed ~May–Sep 2019) are not in any bulk file (real: KP Large Cap Equity
-// Fund 0001752724-19-047738, filed 2019-05-29).
+// Bulk data starts with filings made in 2019Q4, which is also when public
+// NPORT-P filing began: EDGAR's full index lists none in 2019 QTR2/QTR3 and
+// the first on 2019-10-22 (earlier N-PORT-related filings are NPORT-EX
+// exhibits, e.g. KP Large Cap 0001752724-19-047738).
 const WINDOW_START = '2019-10-01';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));

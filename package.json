@@ -15,7 +15,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:live": "LIVE_SEC=1 node --test test/live-e2e.test.js test/live-popular.test.js test/live-warehouse.test.js",
-    "ingest:bulk": "node scripts/ingest-bulk.js"
+    "ingest:bulk": "node scripts/ingest-bulk.js",
+    "ingest:delta": "node scripts/ingest-delta.js",
+    "refresh": "node scripts/refresh.js"
   },
   "dependencies": {
     "axios": "^1.6.7",
