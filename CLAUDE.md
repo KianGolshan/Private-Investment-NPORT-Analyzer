@@ -8,7 +8,8 @@ history back to 2019Q4, automatic refresh, as-of exposure, and firm/fund/class m
 
 1. Read `docs/STATUS.md` to find the current phase, the last checkpoint and open decisions.
 2. Read the matching phase in `docs/ROADMAP.md`: entry gate, tasks, tests, success criteria.
-3. Skim `docs/DATA-QUALITY.md` before touching any ingest or aggregation code.
+3. Skim `docs/DATA-QUALITY.md` before touching any ingest or aggregation code, and `docs/LESSONS.md` for how
+   we work (verification, long jobs, sign-off).
 4. Before ending the session, update `docs/STATUS.md` (what changed, test results, next prompt).
 
 ## Non-negotiable data rules

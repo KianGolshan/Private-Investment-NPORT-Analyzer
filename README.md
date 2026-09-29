@@ -15,6 +15,7 @@ An internal tool for analyzing SEC NPORT-P filings to track and compare private 
 > - Progress: [docs/STATUS.md](docs/STATUS.md)
 > - Design: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 > - Data rules: [docs/DATA-QUALITY.md](docs/DATA-QUALITY.md)
+> - Lessons learned so far: [docs/LESSONS.md](docs/LESSONS.md)
 > - Verified figures: [docs/GOLDEN-NUMBERS.md](docs/GOLDEN-NUMBERS.md)
 > - Decisions: [docs/decisions/](docs/decisions/)
 > - Prompts for resuming work: [docs/SESSION-PROMPTS.md](docs/SESSION-PROMPTS.md)

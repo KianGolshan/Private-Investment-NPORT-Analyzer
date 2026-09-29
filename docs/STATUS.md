@@ -1,7 +1,8 @@
 # Vantage v2 Status
 
-**Current phase:** Phase 2 complete, **awaiting sign-off**. After sign-off, run the Phase 3 prompt from
-[SESSION-PROMPTS.md](SESSION-PROMPTS.md).
+**Current phase:** Phase 3 (canonical views and as-of engine), **not started**. P0–P2 are signed off. Start
+a new session with the Phase 3 prompt in [SESSION-PROMPTS.md](SESSION-PROMPTS.md), and read
+[LESSONS.md](LESSONS.md) first.
 **Branch:** `v2-plan-and-phase0`
 **Last updated:** 2026-09-28
 
@@ -9,7 +10,7 @@
 
 - [x] P0: live-app correctness fixes (signed off 2026-09-28)
 - [x] P1: warehouse foundation and bulk history (signed off 2026-09-28)
-- [x] P2: daily catch-up and refresh (awaiting sign-off)
+- [x] P2: daily catch-up and refresh (signed off 2026-09-28)
 - [ ] P3: canonical views and as-of engine
 - [ ] P4: entities (companies, aliases, SPVs, managers, tracked list)
 - [ ] P5: service layer and parity migration
@@ -132,10 +133,28 @@
 
 ## Open decisions
 
+- **Nightly refresh scheduling:** not installed. A ready-to-use launchd job is in ARCHITECTURE
+  §Refresh lifecycle. Install only with the user's yes. Until then, run `npm run refresh` at the start of
+  each session.
+- **Branch:** all work is on `v2-plan-and-phase0`, pushed to origin. No PR is open and it is not merged
+  to `main`. Ask before opening a PR.
 - Manager (parent firm) mapping source: curated CSV vs. N-CEN. Investigate in P4.
 - Size of the tracked list: ~250 default. Confirm after the P4 review CSV.
 
+## Warehouse state at hand-off (2026-09-28)
+
+- `warehouse.db` (git-ignored, 385 MB):
+  - 352,871 filings: 341,049 from bulk 2019Q4–2026Q2, 11,822 from the EDGAR catch-up through filings made
+    2026-09-25.
+  - 1,160,725 private-candidate holdings.
+- `ingest_errors` is empty. `refresh_runs` #1 is `ok`.
+- The SEC should post the 2026Q3 bulk file shortly after 2026-09-30. `npm run refresh` loads it and
+  replaces the matching catch-up rows.
+
 ## Log
+
+- **2026-09-28:** P2 signed off. Wrote the hand-off (LESSONS.md, the Phase 3 "Before you start" notes
+  in ROADMAP, the Phase 3 prompt) and pushed the branch.
 
 - **2026-09-28:** Phase 2 implemented; catch-up ran in the foreground in 6 date windows; nightly refresh verified.
 

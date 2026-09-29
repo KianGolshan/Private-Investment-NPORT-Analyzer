@@ -197,11 +197,55 @@ P0 live-app fixes
 
 ## Phase 3: canonical views and as-of engine
 
-**Entry gate:** P2 checkpoint.
+**Entry gate:** P2 checkpoint (signed off 2026-09-28).
+
+**Before you start (learned in P0–P2, read this)**
+
+- **Companies don't exist yet** (that's P4). Until then, P3 identifies a company by a case-insensitive name
+  pattern over `holdings.issuer_name` and `holdings.title`. The golden aggregates were computed in research
+  with exactly these patterns:
+  - Anthropic `\banthropic\b`
+  - Databricks `\bdatabricks\b`
+  - Stripe `\bstripe,? (inc|llc)\b|^stripe\b`
+
+  Make `company` accept `{ pattern }` now and `{ companyId }` in P4.
+
+- **Research method behind A1–A7** (a Python prototype on scratch data; not yet reproduced from
+  `warehouse.db`):
+  - Rows: `asset_cat IN (EC, EP, OTHER, DE)` **and** `value_usd > 0` **and** `balance > 0`.
+  - Fund key: series ID, else CIK.
+  - One canonical filing per (fund, report date), latest filing date wins.
+  - As of D: the fund's latest canonical filing with `report_date <= D`, whatever it contains. No row
+    means exited; no filing within 123 days means inactive.
+  - The first as-of attempt missed exits and dead funds, and the first catch-up script mis-read
+    `assetConditional`. Both were fixed before these numbers were recorded.
+- **Reproduce the golden numbers from `warehouse.db` with that exact method first. Then change rules
+  deliberately.** Two known differences to decide on explicitly, not silently:
+  - (a) The warehouse keeps rows with a NULL balance but a real value. These are SPV interests reported
+    with balance "N/A", e.g. the Destiny Tech100 Brex SPV. The research method dropped them.
+  - (b) The warehouse's `instrument_type` (from `classifyInstrument`) separates equity, indirect,
+    derivative and debt more precisely than `asset_cat`.
+
+  If a golden number moves, find the rows that moved it, verify on EDGAR, and update GOLDEN-NUMBERS with
+  the reason. Never tune code to hit a number.
+
+- **"As of D" means report date ≤ D, using everything filed since.** The $17.26B Anthropic figure for 6/30
+  includes 6/30 reports filed as late as 8/27.
+  - Also support `knownAsOf` (filing date ≤ D): "what was public on D".
+  - Always return each fund's mark date and accession.
+- **Offline golden tests need a fixture warehouse.** The live `warehouse.db` is 385 MB and git-ignored.
+  - Write `test/fixtures/warehouse/build-fixture.js`. It exports, from the real `warehouse.db`, every
+    filing of every fund that ever held the golden companies, plus those companies' holding rows, into a
+    small SQLite fixture.
+  - Record the source run date in the fixture.
+- **Splits:** `public/splits.js` `detectSplit(prev, cur)` is already a shared module; `parsers.js` requires
+  it. Reuse it; don't copy it.
+- **Useful checks:** `sqlite3 warehouse.db` shows row counts by `source`, `ingest_errors` (should be
+  empty) and `refresh_runs`. Run `npm run refresh` first so the data is current.
 
 **Tasks**
 
-- Migration 0002, SQL views:
+- Migration 0003, SQL views:
   - `canonical_filings`: one row per (`fund_key`, `report_date`); the latest `filing_date` wins, so
     amendments supersede. `fund_key = COALESCE(NULLIF(series_id,''), 'CIK'||cik)`.
   - `fund_filing_timeline`: all canonical filings per fund, whatever they contain.
@@ -210,16 +254,21 @@ P0 live-app fixes
   2. If that filing has no row for the company, the fund has exited (exposure 0).
   3. If the fund has no filing within 123 days before `date`, it is inactive and excluded.
   4. Return funds, value, and per-fund mark date and accession.
-- `lib/analytics/splits.js`: the logic from `public/splits.js` as a shared module (the browser keeps
-  working).
+- Split handling via the existing `public/splits.js` `detectSplit`, applied along each (fund, instrument)
+  series keyed by `other_id`, else CUSIP, else title, as `instrumentKey` does.
+- `test/fixtures/warehouse/`: a real-derived fixture warehouse and its builder (see "Before you start").
 
 **Tests** (golden, from [GOLDEN-NUMBERS.md](GOLDEN-NUMBERS.md))
 
 - Anthropic equity as of 2026-03-31 = **72 funds / $5.93B**.
 - Anthropic equity as of 2026-06-30 = **117 / $17.26B** (Capital Group **$8.46B**).
-- Stripe equity as of 2026-03-31 = **34 funds**.
-- KP Large Cap Equity Fund is excluded as inactive.
-- Databricks Series H 2022Q3 move ~$166 → ~$55 is flagged as a 3:1 split.
+- Stripe equity as of 2025-06-30 / 2025-12-31 / 2026-03-31 / 2026-06-30 = **49 / 35 / 34 / 37 funds** (A5).
+- Databricks equity as of 2026-06-30 = **120 funds / $6.22B** (A6).
+- KP Large Cap Equity Fund is excluded as inactive after 2020-09-30 (F14).
+- Databricks Series H 2022Q3 move is flagged as a 3:1 split (F13: T. Rowe Tax-Efficient 3,712 sh @ $165.88
+  → 11,136 sh @ $55.29).
+- `knownAsOf` changes the answer: Anthropic with filing date ≤ 2026-06-30 must exclude F2–F7, since those
+  were filed in July and August.
 
 **Success criteria:** all golden tests pass offline, against a fixture warehouse built from the golden
 accessions, and live.
@@ -232,7 +281,7 @@ accessions, and live.
 
 **Tasks**
 
-- Migration 0003:
+- Migration 0004:
   - `companies(id, name, status, public_since, notes)`
   - `company_aliases(company_id, pattern, kind: exact|issuer_key|regex)`
   - `spv_map(fund_key, holding_match, company_id, basis, source_accession)`

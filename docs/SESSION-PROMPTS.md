@@ -43,9 +43,24 @@ Paste one of these at the start of a session. Each prompt tells Claude what to r
 
 ### Phase 3: canonical views and as-of
 
-> Vantage v2 Phase 3. Read CLAUDE.md, docs/DATA-QUALITY.md (traps 1–5, 9) and docs/ROADMAP.md §Phase 3.
-> Add canonical_filings and fund_filing_timeline views, lib/analytics/asof.js and the shared split module.
-> Golden tests: A1, A2, A3, A5, F13, F14. All must pass before sign-off.
+> Vantage v2 Phase 3. Read CLAUDE.md, docs/STATUS.md, docs/LESSONS.md, docs/ROADMAP.md §Phase 3
+> (especially "Before you start"), docs/DATA-QUALITY.md traps 1–5, 7, 9, 16, and docs/GOLDEN-NUMBERS.md.
+> Run `npm run refresh` first and report what it loaded.
+>
+> Then:
+>
+> 1. Reproduce A1–A6 from warehouse.db with the exact research method in ROADMAP (name patterns;
+>    EC/EP/OTHER/DE; value>0 and balance>0; canonical filings; exits; 123-day inactivity). Report any
+>    difference with the rows behind it before changing anything.
+> 2. Add migration 0003 (canonical_filings, fund_filing_timeline).
+> 3. Build lib/analytics/asof.js with `{ pattern }` company selection and `knownAsOf` support, returning
+>    per-fund mark dates and accessions. Reuse public/splits.js detectSplit.
+> 4. Build test/fixtures/warehouse/ from the real warehouse, with its builder, and golden tests A1–A6,
+>    F13 and F14 offline.
+> 5. Decide explicitly, with me, how NULL-balance SPV rows and instrument_type vs asset_cat affect the
+>    numbers.
+>
+> Long jobs run in the foreground in batches. Update STATUS and stop for my sign-off.
 
 ### Phase 4: entities and tracked list
 
