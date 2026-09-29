@@ -29,6 +29,7 @@ P0 live-app fixes
             → P6 new analysis + UI
             → P7 MCP server   (P6 and P7 can run in parallel)
               → P8 operations hardening
+                → P9 public deployment (live site: LinkedIn, personal website, portfolio)
 ```
 
 ---
@@ -404,3 +405,100 @@ numbers.
 - `npm run doctor`: reports freshness, row counts, unresolved aliases and orphan processes.
 
 **Success criteria:** 30 days of unattended nightly refreshes with no gaps; the monthly regression is green.
+
+---
+
+## Phase 9: public deployment
+
+**Goal:** a public, always-current Vantage at a stable URL (e.g. `vantage.<your-domain>`), fit to share on
+LinkedIn, a personal website and a resume. It refreshes itself nightly from the SEC with no manual steps.
+
+**Entry gate:**
+
+- P5 checkpoint (hard requirement): visitors must never trigger SEC requests.
+  - Today every search calls EDGAR live under one shared `SEC_USER_AGENT` and SEC's ~10 req/s fair-access
+    limit.
+  - A traffic spike would get the server throttled or blocked, and the demo would look broken.
+- P8 checkpoint: backups, refresh alerting and `npm run doctor` exist.
+- P6 freshness banner exists.
+- A private staging deploy may start once P5 is signed off. Public launch waits for P6 and P8.
+
+**Decision to confirm with the user first (record as ADR 0006):** hosting provider.
+
+- **Recommended: one always-on container or VM with a persistent volume.** Options: Fly.io, Railway,
+  Render, or a small Hetzner/DigitalOcean VPS.
+  - The existing Node + SQLite code runs unchanged.
+  - The web app and the nightly job share one `warehouse.db`. WAL mode lets visitors read while the
+    refresh writes.
+- **Not serverless** (e.g. Vercel functions). There's no writable persistent disk for a 385 MB+ SQLite
+  file.
+- **Hosted database** (Postgres, Neon, Turso) only if multi-user scale demands it. ADR 0002 notes the
+  schema ports cleanly.
+- Sizing from measured numbers:
+  - 1–2 GB RAM: loading a bulk quarter peaked at 670 MB RSS.
+  - A volume of at least 5 GB: the warehouse is 385 MB and growing about 20 MB per quarter, plus WAL and
+    temporary zips of about 700 MB each.
+- Verify current pricing and limits at decision time; don't rely on remembered prices.
+
+**Tasks**
+
+- **Container:**
+  - A `Dockerfile` (Node ≥22, `npm ci --omit=dev`, non-root user, `WAREHOUSE_DB_PATH` on the volume).
+  - A `/healthz` route that reports app status and warehouse freshness (newest filing date, last
+    `refresh_runs` status).
+- **Scheduled refresh:** `npm run refresh` daily at about 06:15, via the platform's scheduler or a cron
+  (e.g. supercronic) inside the container.
+  - It must run on the machine that owns the volume.
+  - A lock (e.g. a `refresh_runs` row with status `running` younger than 2 h) prevents overlapping runs.
+- **Alerting:** after each refresh, ping a dead-man's-switch URL (e.g. healthchecks.io) on success, and
+  send a fail signal on non-zero exit. A missed or failed night emails the owner.
+- **Backups:** continuous SQLite replication with Litestream to object storage (Cloudflare R2 or S3).
+  - On boot, restore from the replica if the volume is empty.
+  - Document the restore drill.
+- **First data load:** restore from the Litestream replica, or upload a local `warehouse.db` snapshot.
+  Fall back to a full `ingest:bulk -- --all` plus `ingest:delta` on the server (about 14 + 27 min).
+- **Secrets and config:**
+  - `SEC_USER_AGENT` (contains the owner's email) lives only in the host's secret store, never in the
+    public repo.
+  - `NODE_ENV=production`: the app already refuses to start without a real UA, and trusts one proxy hop
+    for rate limiting.
+- **Traffic spikes:**
+  - Warehouse-backed API responses carry `Cache-Control` until the next scheduled refresh.
+  - A CDN (e.g. Cloudflare) sits in front of the site.
+  - Existing per-visitor rate limits stay on.
+  - The on-demand live EDGAR check (ADR 0005) stays behind its own low limit, or is disabled publicly.
+- **Presentation:**
+  - Custom domain and HTTPS.
+  - The freshness banner ("Data as of … · refreshed …").
+  - An "About the data" page: SEC sources, the completeness check (0 of 2,905 filings missing), golden
+    numbers, the nightly refresh and known limits.
+  - Open Graph and preview tags for LinkedIn link cards.
+- **Deploy pipeline:** GitHub Actions runs `npm test`, lint and format on the PR, then deploys `main` to
+  the host. Staging first, then production.
+
+**Tests**
+
+- The container builds and boots locally against a fixture warehouse. `/healthz` returns freshness from
+  `refresh_runs`.
+- **Refresh in the deployed environment:** a manual trigger on staging loads new filings and pings the
+  health check; a forced failure raises the alert.
+- **Restore drill:** delete the staging volume, redeploy, and confirm Litestream restores the warehouse.
+  Golden numbers A1–A6 still match.
+- **Load:** a burst of cached page and API requests (e.g. 50 concurrent) makes **zero** outbound SEC
+  requests (check the logs) and meets the P5 latency budget.
+- **Security:**
+  - No secrets in the image or repo.
+  - Production refuses to start without `SEC_USER_AGENT`.
+  - Security headers and CSP are still present.
+
+**Success criteria**
+
+- The public URL serves warehouse data with the freshness banner.
+- 14 consecutive unattended nightly refreshes on production with no gaps and no manual steps. A failed
+  night alerts within 24 h.
+- A restore from backup is proven on staging in ≤30 min.
+- No visitor request causes an SEC call. Page and API p95 <200 ms under the load test.
+- Golden numbers on the live site match GOLDEN-NUMBERS.
+
+**Rollback:** keep the previous image tag deployable. The warehouse is independent of app deploys (it
+lives on the volume and in the replica), so rolling back the app never touches data.

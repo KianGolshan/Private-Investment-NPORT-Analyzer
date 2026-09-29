@@ -17,6 +17,7 @@ a new session with the Phase 3 prompt in [SESSION-PROMPTS.md](SESSION-PROMPTS.md
 - [ ] P6: new analysis and UI
 - [ ] P7: MCP server
 - [ ] P8: operations hardening
+- [ ] P9: public deployment (live site; hosting choice to confirm with the user as ADR 0006)
 
 ## Phase 2 checkpoint results
 
@@ -152,6 +153,9 @@ a new session with the Phase 3 prompt in [SESSION-PROMPTS.md](SESSION-PROMPTS.md
   replaces the matching catch-up rows.
 
 ## Log
+
+- **2026-09-28:** Added Phase 9 (public deployment) to ROADMAP at the user's request. It is gated on P5 (no
+  visitor-triggered SEC calls) and P8.
 
 - **2026-09-28:** P2 signed off. Wrote the hand-off (LESSONS.md, the Phase 3 "Before you start" notes
   in ROADMAP, the Phase 3 prompt) and pushed the branch.

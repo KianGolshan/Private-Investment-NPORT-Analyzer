@@ -132,6 +132,19 @@ Linux/cron equivalent: `15 6 * * * cd /path/to/repo && npm run --silent refresh 
 Check health with `sqlite3 warehouse.db "select * from refresh_runs order by id desc limit 5"` and
 `select * from ingest_errors`.
 
+## Deployment (planned, Phase 9)
+
+- **Shape:** one always-on container or VM with a persistent volume.
+  - The Express app serves reads from `warehouse.db` (after P5, visitors never call the SEC).
+  - A scheduled `npm run refresh` on the same machine writes to it.
+  - WAL mode keeps reads non-blocking during refresh.
+- **Around it:**
+  - Litestream replication to object storage, for backup and restore-on-boot.
+  - A dead-man's-switch health check on the nightly refresh.
+  - Cache-Control headers valid until the next refresh, with a CDN in front for traffic spikes.
+- Details, gates and success criteria are in ROADMAP §Phase 9. The hosting provider gets its own ADR
+  (0006) once chosen.
+
 ## Configuration
 
 | Env var                 | Default          | Purpose                                     |

@@ -92,6 +92,27 @@ Paste one of these at the start of a session. Each prompt tells Claude what to r
 > Vantage v2 Phase 8. Read CLAUDE.md and docs/ROADMAP.md §Phase 8. Add backups, refresh alerting, the
 > monthly golden regression and `npm run doctor`.
 
+### Phase 9: public deployment
+
+> Vantage v2 Phase 9. Read CLAUDE.md, docs/STATUS.md, docs/LESSONS.md, docs/ROADMAP.md §Phase 9 and
+> docs/ARCHITECTURE.md (Refresh lifecycle, Configuration). Confirm P5 and P8 are signed off.
+>
+> First, present the hosting options with current pricing and limits (verified now, not remembered), with
+> a recommendation. Record my choice as ADR 0006 before building.
+>
+> Then build and deploy to **staging** only:
+>
+> - Dockerfile
+> - `/healthz`
+> - scheduled `npm run refresh` with a lock and health-check pings
+> - Litestream backups with a restore drill
+> - Cache-Control plus CDN
+> - secrets in the host's store
+> - CI deploy
+>
+> Run the Phase 9 tests (restore drill, zero SEC calls under load, golden numbers on staging). Stop for my
+> sign-off before production, the custom domain, or anything public.
+
 ### Ad-hoc research (no building)
 
 > Vantage research only. Do not build. Follow CLAUDE.md's data rules: pull real SEC data, verify against
