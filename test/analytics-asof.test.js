@@ -192,11 +192,16 @@ test('F13: Databricks 2022-08-31 at T. Rowe Tax-Efficient is a 3:1 split, not a 
   assert.equal(splitDates.length, 4);
 });
 
-test('options: NULL-balance rows and the instrument_type basis do not move the golden numbers', () => {
-  for (const opts of [{ nullBalance: true }, { classifyBy: 'instrument_type' }]) {
-    const r = exposureAsOf(db, { pattern: PATTERN.anthropic, date: '2026-06-30', ...opts });
-    assert.equal(r.funds, 117, JSON.stringify(opts));
-    assert.equal(bn(r.total), 17.26, JSON.stringify(opts));
+test('research row rule (asset_cat, balance > 0) gives the same golden numbers as the defaults', () => {
+  for (const [company, date] of [
+    ['anthropic', '2026-03-31'],
+    ['anthropic', '2026-06-30'],
+    ['stripe', '2025-12-31'],
+    ['databricks', '2026-06-30'],
+  ]) {
+    const d = exposureAsOf(db, { pattern: PATTERN[company], date });
+    const r = exposureAsOf(db, { pattern: PATTERN[company], date, classifyBy: 'asset_cat', nullBalance: false });
+    assert.deepEqual([r.funds, r.total], [d.funds, d.total], `${company} ${date}`);
   }
   const all = exposureAsOf(db, { pattern: PATTERN.anthropic, date: '2026-06-30', instrument: 'all' });
   assert.ok(all.total >= 17.26e9);
@@ -252,17 +257,19 @@ test('an amendment that drops the row turns the fund into an exit; later buyers 
   assert.deepEqual([before.funds, before.total, before.holdings[0].accession], [1, 120, 'F2']);
 });
 
-test('row rules: NULL-balance SPV rows and instrument_type are opt-in; value must be positive', () => {
+test('row rules: equity-type = everything but debt (as v1); NULL-balance SPV rows count; value must be positive', () => {
   const { w, filing, row } = miniWarehouse();
   filing.run('F1', 'S1', 'S1', '2026-06-30', '2026-08-20', 'NPORT-P');
   row.run('F1', 'spv', 'ACME SPV LLC (invested in Acme)', null, null, 50, 'OTHER', 'indirect', null);
+  row.run('F1', 'war', 'ACME WARRANTS', null, 100, 7, 'DO', 'derivative', null);
   row.run('F1', 'loan', 'ACME TL 1L', null, 1000, 900, 'EP', 'debt', null);
   row.run('F1', 'zero', 'ACME COMMON', null, 5, 0, 'EC', 'equity', null);
   const at = opts => exposureAsOf(w, { pattern: 'acme', date: '2026-06-30', ...opts }).total;
-  assert.equal(at({}), 900);
-  assert.equal(at({ nullBalance: true }), 950);
-  assert.equal(at({ classifyBy: 'instrument_type' }), 0);
-  assert.equal(at({ classifyBy: 'instrument_type', nullBalance: true }), 50);
+  assert.equal(at({}), 57);
+  assert.equal(at({ nullBalance: false }), 7);
+  // The research rule counts the EP-tagged term loan and misses the DO warrant.
+  assert.equal(at({ classifyBy: 'asset_cat', nullBalance: false }), 900);
+  assert.equal(at({ instrument: 'all' }), 957);
 });
 
 test('failure paths: bad input fails loudly', () => {

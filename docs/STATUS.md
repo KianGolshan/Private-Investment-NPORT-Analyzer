@@ -1,7 +1,7 @@
 # Vantage v2 Status
 
-**Current phase:** Phase 3 (canonical views and as-of engine), **built, awaiting sign-off and three
-decisions** (below). P0–P2 are signed off. After sign-off, start Phase 4 with the prompt in
+**Current phase:** Phase 3 (canonical views and as-of engine), **built; the three decisions are made and
+implemented (below); awaiting sign-off**. P0–P2 are signed off. After sign-off, start Phase 4 with the prompt in
 [SESSION-PROMPTS.md](SESSION-PROMPTS.md); read [LESSONS.md](LESSONS.md) first.
 **Branch:** `v2-plan-and-phase0`
 **Last updated:** 2026-09-28
@@ -46,7 +46,17 @@ classifyBy, nullBalance })` returns funds, total, and per fund the value, mark d
 - **Speed:** 2–6 s per `exposureAsOf` call on the full warehouse, almost all of it the regex scan over 1.16M
   rows. P4's `company_id` replaces the scan. Views: 1 ms per fund.
 
-### Decisions for the user (evidence in DATA-QUALITY traps 5, 16, 20 and GOLDEN-NUMBERS F15–F20)
+### Decisions (user chose the recommendations, 2026-09-28; evidence in DATA-QUALITY traps 5, 16, 20 and GOLDEN-NUMBERS F15–F20)
+
+**Implemented:** `exposureAsOf` defaults are now `classifyBy: 'instrument_type'` (everything but debt, as
+v1's `isPrivateEquityHolding`) and `nullBalance: true` (as v1's `extractAllHoldings`, which keeps "N/A"
+balances). Ingest keys `S000000000` by CIK (`identifiers.fundKeyOf`), and migration 0004 re-keyed the 41
+stored filings onto 4 CIK keys; `series_id` keeps the reported value. All seven golden aggregates are
+identical to the cent under the new defaults, offline and live. The research rule remains available as
+`{ classifyBy: 'asset_cat', nullBalance: false }`. Series-LEI keying moved to Phase 4. Suite: 341 tests,
+312 pass, 0 fail, 29 skipped.
+
+The evidence as presented:
 
 1. **Count NULL-balance rows with a real value?** They change **no** golden number (the three companies
    have none). Across the warehouse: 20,939 rows, $149.6B, 28 funds, mostly fund-of-funds LP interests
@@ -64,8 +74,6 @@ classifyBy, nullBalance })` returns funds, total, and per fund the value, mark d
    funds. Small (about 90 filings, no golden company). **Recommendation:** treat `S000000000` as blank now
    (a one-line ingest fix plus a data migration) and key blank-series filings by series LEI in P4, which
    needs the LEI stored at ingest.
-
-Defaults stay on the research method until you decide. Switching is an option flag plus golden re-runs.
 
 ## Phase 2 checkpoint results
 
@@ -202,6 +210,7 @@ Defaults stay on the research method until you decide. Switching is an option fl
 
 ## Log
 
+- **2026-09-28:** Phase 3 decisions 1–3 implemented as recommended (defaults, `fundKeyOf`, migration 0004).
 - **2026-09-28:** Phase 3 built. Refresh #2 loaded 1,349 filings. Goldens reproduced from the warehouse;
   A3 and A4 corrected with EDGAR evidence; trap 20 found. Stopped for sign-off and three decisions.
 

@@ -11,7 +11,7 @@ const xml2js = require('xml2js');
 
 const { openWarehouse, migrate } = require('../lib/warehouse/db');
 const { ingestBulkZip, bulkDateToIso, isPrivateCandidate } = require('../lib/warehouse/bulk-ingest');
-const { isValidCusip, isValidIsin } = require('../lib/warehouse/identifiers');
+const { isValidCusip, isValidIsin, fundKeyOf } = require('../lib/warehouse/identifiers');
 const { extractAllHoldings } = require('../parsers');
 
 const FIXTURE = path.join(__dirname, 'fixtures', 'bulk');
@@ -47,6 +47,33 @@ test('identifiers: real check digits pass; placeholders and dummies fail', () =>
   assert.ok(isValidIsin('GB0002634946'), 'BAE Systems ISIN');
   for (const junk of ['N/A', '', null, '000000000', '999999999', '037833101']) assert.equal(isValidCusip(junk), false);
   for (const junk of ['N/A', '', null, 'US0378331006', '1892140D']) assert.equal(isValidIsin(junk), false);
+});
+
+test('fundKeyOf: series ID, else CIK; the S000000000 placeholder counts as blank (trap 20)', () => {
+  assert.equal(fundKeyOf('S000009228', '44201'), 'S000009228');
+  assert.equal(fundKeyOf('', '2044519'), 'CIK2044519');
+  assert.equal(fundKeyOf(null, '2044519'), 'CIK2044519');
+  // Real: Delaware Investments Dividend & Income Fund, 0001752724-21-085587 (F20).
+  assert.equal(fundKeyOf('S000000000', '896923'), 'CIK896923');
+});
+
+test('migration 0004 re-keys stored placeholder-series filings by CIK and keeps series_id as reported', () => {
+  const db = openWarehouse(':memory:');
+  const ins = db.prepare(
+    "INSERT INTO filings (accession, fund_key, cik, series_id, report_date, filing_date, form, source) VALUES (?, ?, ?, ?, '2021-02-26', '2021-04-27', 'NPORT-P', 'bulk:2021q2')"
+  );
+  ins.run('0001752724-21-085587', 'S000000000', '896923', 'S000000000');
+  ins.run('0001752724-21-085169', 'S000000000', '1396167', 'S000000000');
+  ins.run('0001193125-26-182055', 'S000009228', '44201', 'S000009228');
+  db.exec(fs.readFileSync(path.join(__dirname, '..', 'db', 'migrations', '0004_placeholder_series.sql'), 'utf8'));
+  const rows = db.prepare('SELECT fund_key, series_id FROM filings ORDER BY accession').all();
+  assert.deepEqual(rows, [
+    { fund_key: 'S000009228', series_id: 'S000009228' },
+    { fund_key: 'CIK1396167', series_id: 'S000000000' },
+    { fund_key: 'CIK896923', series_id: 'S000000000' },
+  ]);
+  // Two funds that shared one key are now two canonical filings.
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM canonical_filings').get().n, 3);
 });
 
 test('bulkDateToIso: DERA DD-MON-YYYY becomes ISO; junk becomes null', () => {

@@ -32,6 +32,9 @@ Funds report on staggered fiscal calendars, so no single date lines everyone up.
 - A fund counts only if a canonical filing on or before D held the company; a fund that first buys after
   D is not an "exit".
 - Inactive means more than 123 days between the fund's latest report date and D (day 123 is active).
+- Rows count when they are equity-type (`instrument_type` equity, indirect or derivative: everything but
+  debt, as v1) and have a positive value; a NULL balance (SPVs reporting "N/A") is allowed.
+- `fund_key` treats the placeholder series ID `S000000000` as blank (migration 0004).
 - `knownAsOf` limits every step, amendments included, to filings made on or before that date: "what was
   public then". Anthropic as of 2026-06-30 is 117 funds / $17.26B, but 82 / $6.23B as known on 2026-06-30.
 

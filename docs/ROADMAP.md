@@ -282,8 +282,8 @@ accessions, and live.
 - A1, A2, A5, A6 reproduced exactly from `warehouse.db`. A3 and A4 corrected with EDGAR evidence (A3 is 9
   funds, same $8.46B; A4 is 82 / $6.23B). Offline and live golden tests pass.
 - Same-day tie-break added to "latest filing wins": NPORT-P/A, then the higher accession. No golden moved.
-- Decisions for the user: (a) NULL-balance rows (`nullBalance`), (b) `classifyBy: 'instrument_type'`,
-  (c) `fund_key` collisions (DATA-QUALITY trap 20). Defaults stay on the research method until decided.
+- Decided (2026-09-28): (a) NULL-balance rows with a value count; (b) equity-type = `instrument_type` other
+  than debt, as v1; (c) `S000000000` is treated as blank (`fundKeyOf`, migration 0004). Goldens unchanged.
 - `instrument: 'debt'` throws: the warehouse stores no DBT rows.
 
 ---
@@ -291,6 +291,11 @@ accessions, and live.
 ## Phase 4: entities (companies, aliases, SPVs, managers, tracked list)
 
 **Entry gate:** P3 checkpoint.
+
+**Carried from P3:** store each filing's series LEI at ingest (bulk and EDGAR) and key blank-series
+filings by it, so multi-series registrants without series IDs (Invesco BLDRS, GOLDEN-NUMBERS F19) stop
+sharing a CIK key. Resolve the one series ID claimed by two unrelated funds (`S000097937`) the same way.
+DATA-QUALITY trap 20.
 
 **Tasks**
 

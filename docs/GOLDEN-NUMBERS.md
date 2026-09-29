@@ -53,8 +53,9 @@ because member funds are on two staggered calendars.
 ## Aggregates (computed with the as-of rules in DATA-QUALITY.md; equity-type rows only)
 
 Reproduced from `warehouse.db` on 2026-09-28 by `lib/analytics/asof.js` (`exposureAsOf`), offline on
-`test/fixtures/warehouse/` and live on the full warehouse (`test/live-warehouse.test.js`). Row rule:
-`asset_cat` EC/EP/OTHER/DE, value > 0 and balance > 0; company = the research name pattern (ROADMAP §Phase 3).
+`test/fixtures/warehouse/` and live on the full warehouse (`test/live-warehouse.test.js`). Company = the research name pattern (ROADMAP §Phase 3). The research row rule (`asset_cat` EC/EP/OTHER/DE,
+value > 0, balance > 0) and the adopted rule (`instrument_type` other than debt, value > 0, NULL balance
+allowed) give identical results, to the cent, for every aggregate below.
 
 | #   | Metric                                                                                              | Value                                                                                                                                                                                                                                      |
 | --- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
