@@ -113,9 +113,12 @@ test('ingestDelta: loads every listed filing from EDGAR XML, identical to the bu
       'filing_date',
       'form',
       'net_assets',
+      'series_lei',
+      'registrant_lei',
     ]) {
       assert.equal(f[k], b[k], `${accession} filing.${k}`);
     }
+    assert.match(f.registrant_lei, /^[0-9A-Z]{20}$/, `${accession} registrant LEI`);
     const edgarRows = db.prepare('SELECT * FROM holdings WHERE accession = ?').all(accession);
     const bulkRows = bulk.prepare('SELECT * FROM holdings WHERE accession = ?').all(accession);
     assert.equal(edgarRows.length, bulkRows.length, `${accession} row count`);

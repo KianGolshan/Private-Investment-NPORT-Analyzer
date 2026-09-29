@@ -365,6 +365,8 @@ function extractFundMeta(xml) {
     registrantName: String(genInfo.regName || genInfo.regname || ''),
     seriesName: String(genInfo.seriesName || genInfo.seriesname || ''),
     seriesId: String(genInfo.seriesId || genInfo.seriesid || ''),
+    seriesLei: String(genInfo.seriesLei || genInfo.serieslei || ''),
+    registrantLei: String(genInfo.regLei || genInfo.reglei || ''),
     reportDate: String(genInfo.repPdDate || genInfo.reppddate || genInfo.reportDate || ''),
     totalAssets: parseFloat(fundInfo.totAssets || fundInfo.totassets || 0) || 0,
     netAssets: parseFloat(fundInfo.netAssets || fundInfo.netassets || 0) || 0,
