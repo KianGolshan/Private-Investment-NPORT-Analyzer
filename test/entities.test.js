@@ -139,6 +139,18 @@ test('seed: DOUYIN merges into ByteDance because its rows are titled "BYTEDANCE 
   assert.match(douyin.evidence, /^\d{10}-\d{2}-\d{6}$/);
 });
 
+test('seed: listing evidence makes a Level-3-only cluster public, with the filing count as evidence', () => {
+  const lone = new Map([...clusters].filter(([k]) => k === 'DATABRICKS'));
+  const listing = new Map([
+    ['DATABRICKS', { filings: 5, quarter: '2026q2', sample_accession: '0000000000-26-000001', sample_cusip: null }],
+  ]);
+  const [g] = seed.suggestCompanies(lone, { listing }).groups;
+  assert.equal(g.status, 'public');
+  assert.match(g.note, /^Listed: 5 filings price it at Level 1/);
+  assert.equal(g.track, false);
+  assert.equal(seed.suggestCompanies(lone).groups[0].status, 'private');
+});
+
 test('seed: SpaceX is public, with its SEC evidence', () => {
   const g = groupOf('SPACE EXPLORATION TECHNOLOGIES');
   assert.equal(g.status, 'public');
@@ -248,6 +260,18 @@ test('review import fails loudly on bad rows and leaves the previous import inta
   assert.throws(() => importAliases(db, [good[0], { ...good[1], status: 'public' }]), /conflicting status\/track/);
   assert.throws(() => importAliases(db, [good[0], { ...good[0], company: 'Other' }]), /claimed by "Acme" too/);
   assert.equal(db.prepare('SELECT COUNT(*) n FROM company_aliases').get().n, 2, 'previous import intact');
+  // Renaming a company replaces it; the old name does not linger.
+  importAliases(
+    db,
+    good.map(r => ({ ...r, company: r.company && 'Acme Corp' }))
+  );
+  assert.deepEqual(
+    db
+      .prepare('SELECT name FROM companies')
+      .all()
+      .map(r => r.name),
+    ['Acme Corp']
+  );
   assert.throws(() => importManagers(db, [{ manager: 'X', kind: 'fund', key: '1' }]), /adviser or registrant/);
   assert.throws(() => importManagers(db, [{ manager: 'X', kind: 'registrant', key: 'abc' }]), /must be a CIK/);
 });

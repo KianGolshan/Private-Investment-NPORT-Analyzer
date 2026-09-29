@@ -69,3 +69,18 @@ this file is about **how we work**.
     change system config without an explicit yes.
 14. The user is impatient with silent waits. Give a one-line status before any wait, and report what's
     actually running.
+
+## Added in P3–P4
+
+15. **Never edit an applied migration.** 0008 was changed after the live warehouse had run it, and
+    the new table never appeared there. Add a new numbered migration; compare a fresh schema with the live
+    one (`sqlite_master`) before committing.
+16. **Edit scripts must read before they write.** `open(p,'w')` truncates first, and it emptied
+    `refresh.js`. Restore from git, re-apply, run the suite.
+17. **What the warehouse drops is evidence too.** The keep rule drops listed rows, so a listed company's
+    stored rows look 100% private (Pfizer's PIPE). Check suggestions against the dropped data before a
+    human reviews them.
+18. **A second source needs its own completeness check.** The N-CEN data sets looked complete, but 2025 Q4
+    lacked 16% of the filings EDGAR indexes. Compare every quarter with the index, as for N-PORT.
+19. **Records can say less than they seem to.** Fundrise names Anthropic as >20% of net assets but not
+    which vehicle holds it. Store what the filing says (a range) rather than a plausible mapping.

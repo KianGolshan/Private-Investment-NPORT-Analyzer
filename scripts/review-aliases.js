@@ -11,8 +11,7 @@ const path = require('path');
 const { openWarehouse } = require('../lib/warehouse/db');
 const { parseCsv } = require('../lib/entities/csv');
 const { importAliases, importManagers, importDisclosedExposure } = require('../lib/entities/review');
-const { resolveCompanies } = require('../lib/entities/resolve');
-const { refreshFundAdvisers } = require('../lib/entities/managers');
+const { entityUpkeep } = require('../lib/entities/upkeep');
 
 function main() {
   const args = process.argv.slice(2);
@@ -31,8 +30,9 @@ function main() {
     if (managers) console.log('managers:', importManagers(db, managers));
     const disclosed = read('disclosed_exposure.csv');
     if (disclosed) console.log('disclosed exposure:', importDisclosedExposure(db, disclosed));
-    console.log('fund advisers:', refreshFundAdvisers(db));
-    console.log('holdings resolved:', resolveCompanies(db));
+    const e = entityUpkeep(db);
+    console.log('fund advisers:', e.advisers);
+    console.log('holdings resolved:', e.companies);
   } finally {
     db.pragma('wal_checkpoint(TRUNCATE)');
     db.close();

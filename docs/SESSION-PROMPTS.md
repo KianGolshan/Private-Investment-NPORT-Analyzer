@@ -69,6 +69,14 @@ Paste one of these at the start of a session. Each prompt tells Claude what to r
 > review-aliases scripts. Investigate N-CEN for manager mapping with real filings and report findings before
 > adopting it. Produce the review CSV for the top ~250 and stop for my review.
 
+### Phase 4b: import the reviewed entity files (after the user edits data/review/*.csv)
+
+> Resume Vantage v2 Phase 4. Read CLAUDE.md, docs/STATUS.md, docs/LESSONS.md and ROADMAP §Phase 4
+> "Checkpoint". Run `npm run refresh`. Validate my edited data/review/aliases.csv, managers.csv and
+> disclosed_exposure.csv (report any row the importer rejects), then `npm run review:aliases` on
+> warehouse.db. Re-measure: roadmap Phase 4 tests, unresolved tracked exposure (<1%), companyId = pattern
+> for A1–A6. Update GOLDEN-NUMBERS/STATUS, commit, and stop for Phase 4 sign-off.
+
 ### Phase 5: service layer and parity
 
 > Vantage v2 Phase 5. Read CLAUDE.md and docs/ROADMAP.md §Phase 5. Create lib/services, move peer

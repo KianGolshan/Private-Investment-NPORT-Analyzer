@@ -11,6 +11,7 @@ require('dotenv').config();
 const fs = require('fs');
 const { openWarehouse, defaultWarehousePath } = require('../lib/warehouse/db');
 const { ingestDelta, defaultSince } = require('../lib/warehouse/delta');
+const { entityUpkeep } = require('../lib/entities/upkeep');
 
 function parseArgs(argv) {
   const opts = { since: null, until: null, concurrency: 3 };
@@ -34,6 +35,10 @@ async function main() {
     const since = opts.since || defaultSince(db);
     if (!since) throw new Error('no bulk data yet: run npm run ingest:bulk -- --all first, or pass --since');
     const stats = await ingestDelta(db, { since, until: opts.until, concurrency: opts.concurrency, log: console.log });
+    const e = entityUpkeep(db);
+    console.log(
+      `entities: ${e.advisers.mapped}/${e.advisers.funds} funds with an adviser, ${e.companies.resolved} rows resolved`
+    );
     console.log(
       `Done: ${stats.loaded} filings loaded, ${stats.rowsKept.toLocaleString()} holdings kept, ` +
         `${stats.failed} failed, ${((Date.now() - started) / 60000).toFixed(1)} min`

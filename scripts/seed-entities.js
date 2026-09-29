@@ -4,8 +4,8 @@
 //   node scripts/seed-entities.js            # data/review/aliases.csv and managers.csv
 //
 // Edit the CSVs (company names, merges, status, track, drop rows), then import
-// them with scripts/review-aliases.js. Re-running overwrites both files, so
-// keep reviewed copies under another name.
+// them with scripts/review-aliases.js. It refuses to overwrite existing
+// files, so a reviewed copy is never lost; pass --force to replace them.
 const fs = require('fs');
 const path = require('path');
 const { openWarehouse } = require('../lib/warehouse/db');
@@ -23,10 +23,15 @@ function main() {
       .get(new Date().toISOString().slice(0, 10)).d;
     const rows = seed.companyRows(db);
     const { clusters, since } = seed.buildClusters(rows, { asOf });
-    const { groups, candidates } = seed.suggestCompanies(clusters);
+    const { groups, candidates } = seed.suggestCompanies(clusters, { listing: seed.latestListingEvidence(db) });
     const aliases = seed.aliasRows(groups);
     const managers = seed.suggestManagers(db);
     fs.mkdirSync(OUT, { recursive: true });
+    const targets = ['aliases.csv', 'managers.csv'].map(f => path.join(OUT, f));
+    const existing = targets.filter(f => fs.existsSync(f));
+    if (existing.length && !process.argv.includes('--force')) {
+      throw new Error(`${existing.join(', ')} exist (maybe reviewed); pass --force to overwrite`);
+    }
     fs.writeFileSync(path.join(OUT, 'aliases.csv'), toCsv(seed.ALIAS_COLUMNS, aliases));
     fs.writeFileSync(path.join(OUT, 'managers.csv'), toCsv(seed.MANAGER_COLUMNS, managers));
     const count = s => groups.filter(g => g.status === s).length;

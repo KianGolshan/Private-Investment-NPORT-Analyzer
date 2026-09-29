@@ -31,7 +31,8 @@ daily index ─(ingest-delta)┘        │
                                     ▼
                     canonical views (canonical_filings, fund_filing_timeline)
                                     │
-             entities (companies, aliases, spv_map, managers, tracked)
+N-CEN (data sets + EDGAR) ─► advisers ─► fund_advisers ─► managers (reviewed CSV)
+             entities (companies, aliases, spv_map, disclosed_exposure, tracked; reviewed CSV)
                                     │
                  lib/analytics (asof, marks, splits, peer)
                                     │
@@ -55,17 +56,27 @@ ingest_log(id, kind /* bulk | edgar */, quarter, source_url, zip_sha256, zip_byt
            started_at, finished_at, status, error)
 ingest_errors(accession PK, cik, filing_date, form, error, attempts, last_attempt_at)   -- catch-up retry list
 refresh_runs(id, started_at, finished_at, bulk_quarters_added, delta_since, delta_filings, delta_failures, status, error)
-companies(id, name, status /* private|public */, public_since, notes)
-company_aliases(company_id, pattern, kind)
+-- filings also carry series_lei, registrant_lei (P4)
+fund_key_overrides(series_id, cik, fund_key, reason)          -- curated fund-identity corrections
+listing_evidence(issuer_key, quarter, rows, filings, value_usd, sample_accession, sample_cusip)
+companies(id, name UNIQUE, status /* private|public */, public_since, notes)
+company_aliases(company_id, kind /* issuer_key|exact|regex */, pattern, via_spv, source)
 spv_map(fund_key, holding_match, company_id, basis, source_accession)
-managers(id, name);  manager_registrants(manager_id, cik)
+disclosed_exposure(fund_key, report_date, company_id, basis, source_accession)  -- ranges, e.g. '>20%'
+advisers(file_num PK, name, crd, lei)
+ncen_filings(accession, cik, filing_date, source);  ncen_advisers(accession, cik, series_id, series_lei, file_num, role, filing_date)
+fund_advisers(fund_key, file_num, role, source_accession, ncen_filing_date)     -- derived after each ingest
+managers(id, name);  manager_advisers(manager_id, file_num);  manager_registrants(manager_id, cik)
 tracked_companies(company_id, added_at, note)
 -- views
 canonical_filings        -- one per (fund_key, report_date); latest filing_date wins
 fund_filing_timeline     -- all canonical filings per fund
 ```
 
-`fund_key = COALESCE(NULLIF(series_id,''), 'CIK'||cik)`. Dates are stored as ISO `YYYY-MM-DD`; bulk
+`fund_key = series_id`, else `'CIK'||cik` (the placeholder `S000000000` counts as blank). After every
+ingest `lib/warehouse/fund-keys.js` applies curated overrides, joins a blank-series filing to the series
+with its LEI, and keys registrants that file several series without IDs by `'CIK'||cik||':'||series_lei`
+(DATA-QUALITY trap 20). Dates are stored as ISO `YYYY-MM-DD`; bulk
 `DD-MON-YYYY` is converted at ingest.
 
 ## As-of semantics
@@ -167,28 +178,36 @@ Check health with `sqlite3 warehouse.db "select * from refresh_runs order by id 
 
 ## Module map
 
-Built so far (P1–P2):
+Built so far (P1–P4):
 
 ```
-lib/edgar.js                  fetchWithRetry, pace (moved from server.js; shared by server and jobs)
-lib/warehouse/db.js           connection, migrations
-lib/warehouse/bulk-source.js  published-quarter list, verified zip download
-lib/warehouse/bulk-ingest.js  one bulk quarter -> filings + private-candidate holdings (keep rule)
-lib/warehouse/tsv-zip.js      streaming TSV reader over the DERA zip
-lib/warehouse/identifiers.js  ISIN / CUSIP check digits
-lib/warehouse/edgar-rows.js   one primary_doc.xml -> the same rows, via the app's parser
-lib/warehouse/delta.js        EDGAR form-index catch-up (resumable, retries, .txt fallback)
-lib/warehouse/refresh.js      nightly: new bulk quarters, then catch-up
-scripts/ingest-bulk.js, ingest-delta.js, refresh.js
+lib/edgar.js                       fetchWithRetry, pace (moved from server.js; shared by server and jobs)
+lib/warehouse/db.js                connection, migrations
+lib/warehouse/bulk-source.js       published-quarter list, verified zip download
+lib/warehouse/bulk-ingest.js       one bulk quarter -> filings + private-candidate holdings (keep rule)
+lib/warehouse/listing-evidence.js  per issuer: filings pricing it at Level 1 with a valid ISIN/CUSIP (dropped rows)
+lib/warehouse/tsv-zip.js           streaming TSV reader over the DERA zip
+lib/warehouse/identifiers.js       ISIN / CUSIP check digits, fundKeyOf
+lib/warehouse/fund-keys.js         fund-identity rules after each ingest (overrides, series LEI)
+lib/warehouse/lei-backfill.js      one-off series/registrant LEI backfill
+lib/warehouse/edgar-rows.js        one primary_doc.xml -> the same rows, via the app's parser
+lib/warehouse/delta.js             EDGAR form-index catch-up (resumable, retries, .txt fallback)
+lib/warehouse/ncen.js              N-CEN advisers: data sets + EDGAR top-up
+lib/warehouse/refresh.js           nightly: bulk quarters, catch-up, N-CEN, entity upkeep
+lib/analytics/asof.js              exposureAsOf, instrumentHistory (splits via public/splits.js)
+lib/entities/seed.js               review-file suggestions (companies, aliases, SPVs, status, managers)
+lib/entities/review.js, csv.js     import of the reviewed CSVs (transactional, fails loudly)
+lib/entities/resolve.js            holdings.company_id / via_spv from the aliases
+lib/entities/managers.js           fund_advisers from the latest N-CEN
+lib/entities/upkeep.js             fund advisers + company resolution after any ingest
+scripts/ingest-bulk.js, ingest-delta.js, refresh.js, ingest-ncen.js
+scripts/seed-entities.js, review-aliases.js, backfill-leis.js, backfill-listing-evidence.js
 ```
 
 Planned:
 
 ```
-lib/analytics/asof.js   exposureAsOf
-lib/analytics/splits.js shared split detection (from public/splits.js)
 lib/analytics/peer.js   outliers, velocity, repricing (from public/app.js)
 lib/services/*.js       search, company, fund, manager, marks
-scripts/seed-entities.js, review-aliases.js
 mcp-server.js
 ```

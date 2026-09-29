@@ -232,6 +232,16 @@ test('ingest: CURRENCY_VALUE is the USD value for non-USD holdings (equals XML v
   db.close();
 });
 
+test('ingest: listing evidence counts the dropped Level-1 rows with a valid ISIN/CUSIP, never a kept private row', async () => {
+  const db = openWarehouse(':memory:');
+  await ingestBulkZip(db, ZIP, { quarter: '2026q2' });
+  const ev = db.prepare("SELECT * FROM listing_evidence WHERE quarter = '2026q2'").all();
+  assert.ok(ev.length > 0);
+  assert.ok(ev.every(e => e.filings >= 1 && /^\d{10}-\d{2}-\d{6}$/.test(e.sample_accession)));
+  const keys = new Set(ev.map(e => e.issuer_key));
+  for (const k of ['ANTHROPIC', 'STRIPE']) assert.ok(!keys.has(k), k);
+});
+
 test('ingest: re-running a quarter replaces it exactly and is logged', async () => {
   const { db, stats } = await freshWarehouse();
   const before = db.prepare('SELECT COUNT(*) n FROM holdings').get().n;

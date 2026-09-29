@@ -58,7 +58,10 @@ npm run test:live        # LIVE_SEC=1 end-to-end against real EDGAR (minutes)
 ```bash
 npm run ingest:bulk -- --missing   # load SEC bulk quarters not yet in warehouse.db (--all, --quarter 2026q2)
 npm run ingest:delta               # catch up on filings made after the newest bulk quarter (--since/--until)
-npm run refresh                    # nightly: new bulk quarter(s) if published, then catch-up
+npm run refresh                    # nightly: new bulk quarter(s), catch-up, N-CEN, entity upkeep
+npm run ingest:ncen                # N-CEN adviser data sets + EDGAR top-up (managers, ADR 0007)
+npm run seed:entities              # write data/review/{aliases,managers}.csv suggestions (--force to overwrite)
+npm run review:aliases             # import the reviewed CSVs, re-resolve holdings (human in the loop)
 ```
 
 ## Scope
@@ -66,5 +69,6 @@ npm run refresh                    # nightly: new bulk quarter(s) if published, 
 - In scope: private equity-type exposure and marks (common, preferred, warrants, SPV/fund interests) in
   N-PORT; firm/fund/class analytics; the tracked-company list; the MCP server.
 - Deferred: enhancements to private credit (BDC 10-Q/10-K path stays as is).
+- Adopted after real-data checks: Form N-CEN advisers for manager mapping (ADR 0007).
 - Rejected after real-data checks: 13F, 13D/G, N-PX, insider forms, fund flows, Form ADV, Form D and XBRL
   as primary sources. Keyword (full-text) search is on-demand only, because it cannot see exits or opaque SPVs.

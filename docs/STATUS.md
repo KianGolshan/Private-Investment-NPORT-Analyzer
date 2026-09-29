@@ -1,6 +1,6 @@
 # Vantage v2 Status
 
-**Current phase:** Phase 4 (entities: companies, aliases, SPVs, managers, tracked list), **in progress**.
+**Current phase:** Phase 4 (entities), **built and code-reviewed; waiting on the user's review of `data/review/*.csv`**.
 P0–P3 are signed off. Read [LESSONS.md](LESSONS.md) first.
 **Branch:** `v2-plan-and-phase0`
 **Last updated:** 2026-09-28
@@ -18,30 +18,37 @@ P0–P3 are signed off. Read [LESSONS.md](LESSONS.md) first.
 - [ ] P8: operations hardening
 - [ ] P9: public deployment (live site; hosting choice to confirm with the user as ADR 0006)
 
-## Phase 4 progress (2026-09-28, in progress, awaiting the alias/manager review)
+## Phase 4 checkpoint (2026-09-29): built and reviewed; waiting on the user's CSV review
 
-- **Done:**
-  - Series LEIs are stored and backfilled.
-  - Fund-key rules are in `lib/warehouse/fund-keys.js`, with migrations 0005–0007.
-  - N-CEN adviser ingest is built (`npm run ingest:ncen`): 28,590 data set filings plus 534 read from EDGAR. The SEC data sets lack 97 of 598 filings from 2025 Q4.
-  - Entity tables are created (migrations 0008–0009).
-  - The seed, review-import and resolve scripts are built (`npm run seed:entities`, `npm run review:aliases`).
-  - Nightly refresh now also runs the N-CEN step and the entity upkeep: 25 s, run #3 ok.
-- **N-CEN verified and adopted for managers:**
-  - All 7 Capital Group CIKs map to 801-8055.
-  - 99.64% of 2026 private value is mapped to an adviser.
-  - Advisers are keyed by SEC file number; mapping each adviser to its parent firm is still a curated file.
-- **Trial import of the unreviewed seed, on a copy of the warehouse:**
-  - The roadmap's Phase 4 tests pass: Databricks' 59 raw issuer strings resolve to 1 company; Stripe INC and LLC are one company; Douyin resolves to ByteDance; Magnitude resolves to Anthropic via SPV; SpaceX is public; Capital Group includes all 7 CIKs.
-  - Unresolved tracked-company exposure is 0.072%.
-  - Looking a company up by its ID reproduces every golden number.
-- **Negative finding:** Fundrise's filing discloses only a range (Anthropic ">20% of net assets") and does not say which vehicle holds it. That is stored as a disclosed range (`disclosed_exposure`), not as a per-vehicle mapping.
-- **Next steps:**
-  1. The user reviews `data/review/aliases.csv` (418 companies, 250 tracked) and `data/review/managers.csv`.
-  2. Import the reviewed files into `warehouse.db` with `npm run review:aliases`.
-  3. Re-check ADR 0003's gap: private names reported with a valid ISIN are not stored.
-  4. Update the docs: DATA-QUALITY, GOLDEN-NUMBERS, ARCHITECTURE, and an ADR for N-CEN.
-- **Suite:** 364 tests: 335 pass, 0 fail.
+- **Built:**
+  - Fund identity by series LEI: migrations 0005–0007, `fund-keys.js`, LEI backfill.
+  - N-CEN adviser ingest (ADR 0007): 28,590 data set filings plus 534 read from EDGAR.
+  - Entity tables (0008–0009) and listing evidence (0010, backfilled for 2025q3–2026q2).
+  - Seed, review-import, resolve and entity-upkeep modules.
+  - Nightly refresh runs N-CEN and entity upkeep: 0.3 min, run #4 ok.
+- **Code review (2026-09-29), fixed:**
+  - The N-CEN data set download bypassed the paced SEC client.
+  - `seed:entities` would overwrite reviewed CSVs; it now needs `--force`.
+  - `ingest:bulk` and `ingest:delta` skipped entity upkeep.
+  - `exposureAsOf` positions lacked `viaSpv`.
+  - Renamed companies lingered.
+  - **Listed companies were suggested as private and tracked** (Pfizer, Apollo, QXO…). Status now comes from
+    listing evidence first (trap 25).
+- **Review files** (`data/review/`):
+  - `aliases.csv`: 731 companies, 242 private tracked, 289 private, 442 public. Tracked rows come first;
+    every merge shows its reason.
+  - `managers.csv`: 619 rows.
+  - `disclosed_exposure.csv`: Fundrise's ranges.
+- **Measured on a trial import of the unreviewed seed (warehouse copy):**
+  - Roadmap tests: Databricks' 59 raw strings resolve to 1 company; Stripe INC/LLC are one company; Douyin
+    resolves to ByteDance; Magnitude resolves to Anthropic via SPV; SpaceX is public; Capital Group includes
+    all 7 CIKs.
+  - Unresolved tracked exposure is 0.71%.
+  - `companyId` reproduces A1–A6.
+  - Keep-rule re-check: no private company is dropped (C20).
+- **Suite:** 369 tests: 340 pass, 0 fail, 29 skipped (LIVE). Lint and format are clean. The LIVE goldens pass.
+- **Next:** the user reviews the CSVs, then Phase 4b (SESSION-PROMPTS). `warehouse.db` has no reviewed
+  entities yet, so every `company_id` is NULL until the import.
 
 ## Phase 3 checkpoint results
 
@@ -233,6 +240,8 @@ The evidence as presented:
   replaces the matching catch-up rows.
 
 ## Log
+
+- **2026-09-29:** Full P3–P4 review. Fixed six issues (listed companies seeded as private, among others); docs brought current (ADR 0007, traps 20–26, F21–F24, C16–C20).
 
 - **2026-09-28:** P3 signed off; branch pushed; Phase 4 started.
 
