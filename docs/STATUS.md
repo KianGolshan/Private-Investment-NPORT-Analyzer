@@ -1,8 +1,7 @@
 # Vantage v2 Status
 
-**Current phase:** Phase 3 (canonical views and as-of engine), **built; the three decisions are made and
-implemented (below); awaiting sign-off**. P0–P2 are signed off. After sign-off, start Phase 4 with the prompt in
-[SESSION-PROMPTS.md](SESSION-PROMPTS.md); read [LESSONS.md](LESSONS.md) first.
+**Current phase:** Phase 4 (entities: companies, aliases, SPVs, managers, tracked list), **in progress**.
+P0–P3 are signed off. Read [LESSONS.md](LESSONS.md) first.
 **Branch:** `v2-plan-and-phase0`
 **Last updated:** 2026-09-28
 
@@ -11,7 +10,7 @@ implemented (below); awaiting sign-off**. P0–P2 are signed off. After sign-off
 - [x] P0: live-app correctness fixes (signed off 2026-09-28)
 - [x] P1: warehouse foundation and bulk history (signed off 2026-09-28)
 - [x] P2: daily catch-up and refresh (signed off 2026-09-28)
-- [ ] P3: canonical views and as-of engine (built 2026-09-28, awaiting sign-off)
+- [x] P3: canonical views and as-of engine (signed off 2026-09-28)
 - [ ] P4: entities (companies, aliases, SPVs, managers, tracked list)
 - [ ] P5: service layer and parity migration
 - [ ] P6: new analysis and UI
@@ -209,6 +208,8 @@ The evidence as presented:
   replaces the matching catch-up rows.
 
 ## Log
+
+- **2026-09-28:** P3 signed off; branch pushed; Phase 4 started.
 
 - **2026-09-28:** Phase 3 decisions 1–3 implemented as recommended (defaults, `fundKeyOf`, migration 0004).
 - **2026-09-28:** Phase 3 built. Refresh #2 loaded 1,349 filings. Goldens reproduced from the warehouse;
