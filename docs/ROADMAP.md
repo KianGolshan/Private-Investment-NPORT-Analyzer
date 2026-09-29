@@ -274,6 +274,18 @@ P0 live-app fixes
 **Success criteria:** all golden tests pass offline, against a fixture warehouse built from the golden
 accessions, and live.
 
+**Checkpoint (2026-09-28, awaiting sign-off)**
+
+- Built: `db/migrations/0003_canonical_views.sql`, `lib/analytics/asof.js` (`exposureAsOf`,
+  `instrumentHistory`), `test/fixtures/warehouse/` (191 funds, 4,832 filings, 6,625 rows, 299 KB) and
+  `test/analytics-asof.test.js` (18 tests). `parsers.js` exports `instrumentKeyOf` (same rule, now shared).
+- A1, A2, A5, A6 reproduced exactly from `warehouse.db`. A3 and A4 corrected with EDGAR evidence (A3 is 9
+  funds, same $8.46B; A4 is 82 / $6.23B). Offline and live golden tests pass.
+- Same-day tie-break added to "latest filing wins": NPORT-P/A, then the higher accession. No golden moved.
+- Decisions for the user: (a) NULL-balance rows (`nullBalance`), (b) `classifyBy: 'instrument_type'`,
+  (c) `fund_key` collisions (DATA-QUALITY trap 20). Defaults stay on the research method until decided.
+- `instrument: 'debt'` throws: the warehouse stores no DBT rows.
+
 ---
 
 ## Phase 4: entities (companies, aliases, SPVs, managers, tracked list)

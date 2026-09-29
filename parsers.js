@@ -267,7 +267,7 @@ function extractHoldings(xml, securitySearchTerm) {
       // title itself as a last resort.
       const otherIdValue =
         extractIdString(inv.identifiers?.other?.value) || String(inv.identifiers?.other?.value || '').trim();
-      const instrumentKey = otherIdValue || usableCusip(cusip) || title || name;
+      const instrumentKey = instrumentKeyOf({ otherId: otherIdValue, cusip, title, name });
 
       holdings.push({
         name,
@@ -427,7 +427,7 @@ function extractAllHoldings(xml) {
 
       const otherIdValue =
         extractIdString(inv.identifiers?.other?.value) || String(inv.identifiers?.other?.value || '').trim();
-      const instrumentKey = otherIdValue || usableCusip(cusip) || title || name;
+      const instrumentKey = instrumentKeyOf({ otherId: otherIdValue, cusip, title, name });
 
       holdings.push({
         name,
@@ -696,6 +696,13 @@ function usableCusip(raw) {
     .trim()
     .toUpperCase();
   return /^[0-9A-Z]{9}$/.test(c) && !/^(.)\1{8}$/.test(c) ? c : null;
+}
+// Within-filing instrument key (instrumentKey above): the filer's own id,
+// else a real CUSIP, else the title, else the name. The warehouse keys a
+// (fund, instrument) series the same way (lib/analytics/asof.js), which
+// follows renames such as "STRIPE INC" -> "STRIPE LLC" (DATA-QUALITY trap 10).
+function instrumentKeyOf({ otherId, cusip, title, name }) {
+  return otherId || usableCusip(cusip) || title || name;
 }
 function cusipKeyOf(h) {
   return usableCusip(h.cusip);
@@ -1598,6 +1605,7 @@ module.exports = {
   nportInvestments,
   buildFundXRay,
   positionMatchKey,
+  instrumentKeyOf,
   buildFundXRayComparison,
   buildIssuerCapitalStructure,
   issuerKeyOf,

@@ -1,8 +1,8 @@
 # Vantage v2 Status
 
-**Current phase:** Phase 3 (canonical views and as-of engine), **not started**. P0–P2 are signed off. Start
-a new session with the Phase 3 prompt in [SESSION-PROMPTS.md](SESSION-PROMPTS.md), and read
-[LESSONS.md](LESSONS.md) first.
+**Current phase:** Phase 3 (canonical views and as-of engine), **built, awaiting sign-off and three
+decisions** (below). P0–P2 are signed off. After sign-off, start Phase 4 with the prompt in
+[SESSION-PROMPTS.md](SESSION-PROMPTS.md); read [LESSONS.md](LESSONS.md) first.
 **Branch:** `v2-plan-and-phase0`
 **Last updated:** 2026-09-28
 
@@ -11,13 +11,61 @@ a new session with the Phase 3 prompt in [SESSION-PROMPTS.md](SESSION-PROMPTS.md
 - [x] P0: live-app correctness fixes (signed off 2026-09-28)
 - [x] P1: warehouse foundation and bulk history (signed off 2026-09-28)
 - [x] P2: daily catch-up and refresh (signed off 2026-09-28)
-- [ ] P3: canonical views and as-of engine
+- [ ] P3: canonical views and as-of engine (built 2026-09-28, awaiting sign-off)
 - [ ] P4: entities (companies, aliases, SPVs, managers, tracked list)
 - [ ] P5: service layer and parity migration
 - [ ] P6: new analysis and UI
 - [ ] P7: MCP server
 - [ ] P8: operations hardening
 - [ ] P9: public deployment (live site; hosting choice to confirm with the user as ADR 0006)
+
+## Phase 3 checkpoint results
+
+- **Refresh at session start:** no 2026Q3 bulk file yet. Catch-up loaded 1,349 filings (filed 2026-09-28)
+  in 2.7 min, 0 failed; `ingest_errors` empty. Warehouse: 354,220 filings, 1,163,910 holdings.
+- **Built:**
+  - `db/migrations/0003_canonical_views.sql`: `canonical_filings`, `fund_filing_timeline`.
+  - `lib/analytics/asof.js`: `exposureAsOf(db, { pattern | companyId, date, knownAsOf, instrument,
+classifyBy, nullBalance })` returns funds, total, and per fund the value, mark date, accession and
+    rows, plus `exited` and `inactive` lists. `instrumentHistory` flags splits with `public/splits.js`.
+  - `parsers.js` exports `instrumentKeyOf` (the existing inline rule, now shared).
+  - `test/fixtures/warehouse/` (builder + 299 KB real export: 191 funds, 4,832 filings, 6,625 rows) and
+    `test/helpers/warehouseFixture.js`.
+  - `test/analytics-asof.test.js` (18 tests) and a LIVE golden test in `test/live-warehouse.test.js`.
+- **Suite:** `npm test` 339 tests, 310 pass, 0 fail, 29 skipped (LIVE). Lint and format clean. The LIVE
+  golden test passes on the full warehouse (11 s).
+- **Golden reproduction from `warehouse.db` (research method):** A1 72 / $5.93B, A2 117 / $17.26B, A5
+  49 / 35 / 34 / 37 ($1.02B / $1.31B / $1.91B / $2.44B), A6 120 / $6.22B: all exact. F13 (all four T. Rowe
+  Databricks classes 3:1 at 2022-08-31), F14 (active on day 123, inactive on day 124) and F8/F9 pass.
+- **Golden corrections (verified on EDGAR):**
+  - A3: Capital Group is **9 funds**, same $8.46B. Research missed AFIS Capital World G&I, $0.66M (F17).
+  - A4: bulk-only is **82 / $6.23B**. Research's 83 / $6.29B skipped the 123-day rule and counted Fidelity
+    Advisor Technology Fund, whose last NPORT-P reports 2025-10-31 (F18). It equals `knownAsOf` 6/30.
+- **knownAsOf:** Anthropic as known on 2026-06-30 is 82 / $6.23B; F2–F7 drop out, and Growth Fund of
+  America shows its public 2026-02-28 mark (F1).
+- **Speed:** 2–6 s per `exposureAsOf` call on the full warehouse, almost all of it the regex scan over 1.16M
+  rows. P4's `company_id` replaces the scan. Views: 1 ms per fund.
+
+### Decisions for the user (evidence in DATA-QUALITY traps 5, 16, 20 and GOLDEN-NUMBERS F15–F20)
+
+1. **Count NULL-balance rows with a real value?** They change **no** golden number (the three companies
+   have none). Across the warehouse: 20,939 rows, $149.6B, 28 funds, mostly fund-of-funds LP interests
+   (CPG Carlyle, Ares Private Markets) plus SPVs such as Destiny's Brex SPV ($1.33M, F15, verified on
+   EDGAR). **Recommendation: count them** (`nullBalance: true`): the value is real and the rule drops it
+   silently. They have no per-share price, so they stay out of mark and split series (already true).
+2. **Classify by `instrument_type` instead of `asset_cat`?** Also changes **no** golden number. Where they
+   differ: 3,017 EP/EC rows are term loans or PIK preferreds with PA units ("Clarience Technologies TL 1L",
+   "ALLIANT HOLDINGS 10%/10.5% PIK PREF PERP") that `asset_cat` counts as equity; 1,594 warrants tagged
+   DO are excluded while the same warrants tagged DE are included. **Recommendation: switch** to
+   `instrument_type IN (equity, indirect, derivative)`, and keep "indirect" in: it holds Coatue's direct
+   Anthropic shares ($1.49B at 6/30, tagged "private fund"), so `equity` alone drops Anthropic to $15.51B.
+3. **(New) `fund_key` collisions (trap 20).** Invesco BLDRS files 4 series with no series ID (F19), four
+   closed-end funds share the placeholder `S000000000` (F20), and one series ID is claimed by two unrelated
+   funds. Small (about 90 filings, no golden company). **Recommendation:** treat `S000000000` as blank now
+   (a one-line ingest fix plus a data migration) and key blank-series filings by series LEI in P4, which
+   needs the LEI stored at ingest.
+
+Defaults stay on the research method until you decide. Switching is an option flag plus golden re-runs.
 
 ## Phase 2 checkpoint results
 
@@ -142,17 +190,20 @@ a new session with the Phase 3 prompt in [SESSION-PROMPTS.md](SESSION-PROMPTS.md
 - Manager (parent firm) mapping source: curated CSV vs. N-CEN. Investigate in P4.
 - Size of the tracked list: ~250 default. Confirm after the P4 review CSV.
 
-## Warehouse state at hand-off (2026-09-28)
+## Warehouse state at hand-off (2026-09-28, after Phase 3)
 
-- `warehouse.db` (git-ignored, 385 MB):
-  - 352,871 filings: 341,049 from bulk 2019Q4–2026Q2, 11,822 from the EDGAR catch-up through filings made
-    2026-09-25.
-  - 1,160,725 private-candidate holdings.
-- `ingest_errors` is empty. `refresh_runs` #1 is `ok`.
+- `warehouse.db` (git-ignored, 384 MB), schema at migration 0003:
+  - 354,220 filings: 341,049 from bulk 2019Q4–2026Q2, 13,171 from the EDGAR catch-up through filings made
+    2026-09-28.
+  - 1,163,910 private-candidate holdings.
+- `ingest_errors` is empty. `refresh_runs` #2 is `ok`.
 - The SEC should post the 2026Q3 bulk file shortly after 2026-09-30. `npm run refresh` loads it and
   replaces the matching catch-up rows.
 
 ## Log
+
+- **2026-09-28:** Phase 3 built. Refresh #2 loaded 1,349 filings. Goldens reproduced from the warehouse;
+  A3 and A4 corrected with EDGAR evidence; trap 20 found. Stopped for sign-off and three decisions.
 
 - **2026-09-28:** Added Phase 9 (public deployment) to ROADMAP at the user's request. It is gated on P5 (no
   visitor-triggered SEC calls) and P8.

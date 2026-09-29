@@ -69,3 +69,32 @@ test(
     assert.deepEqual(missing, [], 'every EDGAR NPORT-P in the bulk window is in the warehouse');
   }
 );
+
+// Phase 3 goldens on the full warehouse (the offline suite runs them on the
+// fixture exported from it). A newer amendment can legitimately move these;
+// re-verify on EDGAR and update GOLDEN-NUMBERS.md, never the code.
+test('LIVE: as-of golden aggregates A1-A6 on the full warehouse', { skip: !LIVE || !fs.existsSync(DB_PATH) }, () => {
+  const { exposureAsOf } = require('../lib/analytics/asof');
+  const db = openWarehouse(DB_PATH);
+  const P = {
+    anthropic: '\\banthropic\\b',
+    databricks: '\\bdatabricks\\b',
+    stripe: '\\bstripe,? (inc|llc)\\b|^stripe\\b',
+  };
+  const got = (company, date, extra) => {
+    const r = exposureAsOf(db, { pattern: P[company], date, ...extra });
+    return [r.funds, Math.round(r.total / 1e7) / 100];
+  };
+  try {
+    assert.deepEqual(got('anthropic', '2026-03-31'), [72, 5.93]);
+    assert.deepEqual(got('anthropic', '2026-06-30'), [117, 17.26]);
+    assert.deepEqual(got('anthropic', '2026-06-30', { knownAsOf: true }), [82, 6.23]);
+    assert.deepEqual(got('stripe', '2025-06-30'), [49, 1.02]);
+    assert.deepEqual(got('stripe', '2025-12-31'), [35, 1.31]);
+    assert.deepEqual(got('stripe', '2026-03-31'), [34, 1.91]);
+    assert.deepEqual(got('stripe', '2026-06-30'), [37, 2.44]);
+    assert.deepEqual(got('databricks', '2026-06-30'), [120, 6.22]);
+  } finally {
+    db.close();
+  }
+});

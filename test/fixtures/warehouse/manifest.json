@@ -1,0 +1,17 @@
+{
+  "builtAt": "2026-09-29T03:09:51.179Z",
+  "source": "warehouse.db",
+  "sourceNewestFilingDate": "2026-09-28",
+  "sourceRefreshRun": {
+    "id": 2,
+    "finished_at": "2026-09-29T02:57:05.175Z"
+  },
+  "companies": {
+    "anthropic": "\\banthropic\\b",
+    "databricks": "\\bdatabricks\\b",
+    "stripe": "\\bstripe,? (inc|llc)\\b|^stripe\\b"
+  },
+  "funds": 191,
+  "filings": 4832,
+  "holdings": 6625
+}
