@@ -245,7 +245,7 @@ test('refresh: loads a newly published bulk quarter, then catches up from its ne
     .reply(200, zipBytes, { 'Content-Length': String(zipBytes.length) });
   mockIndex(2);
 
-  const first = await refresh(db, { until: '2026-06-30' });
+  const first = await refresh(db, { until: '2026-06-30', ncen: false });
   assert.equal(first.status, 'ok');
   assert.deepEqual(first.bulkQuartersAdded, ['2026q2']);
   assert.equal(first.since, defaultSince(db));
@@ -253,7 +253,7 @@ test('refresh: loads a newly published bulk quarter, then catches up from its ne
   assert.equal(first.loaded, 0, 'the one filing listed on/after 2026-06-26 is already in bulk');
   assert.equal(first.uncovered, 0);
 
-  const second = await refresh(db, { until: '2026-06-30' });
+  const second = await refresh(db, { until: '2026-06-30', ncen: false });
   assert.deepEqual(second.bulkQuartersAdded, [], 'nothing new published');
   const runs = db.prepare('SELECT status, bulk_quarters_added, delta_since FROM refresh_runs ORDER BY id').all();
   assert.deepEqual(runs, [

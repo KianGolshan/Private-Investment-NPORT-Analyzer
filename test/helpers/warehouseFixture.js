@@ -18,6 +18,7 @@ function openFixtureWarehouse() {
   const db = openWarehouse(':memory:');
   insertTable(db, 'filings', data.filings);
   insertTable(db, 'holdings', data.holdings);
+  for (const t of ['ncen_filings', 'ncen_advisers', 'advisers']) if (data[t]) insertTable(db, t, data[t]);
   return { db, manifest: data.manifest };
 }
 

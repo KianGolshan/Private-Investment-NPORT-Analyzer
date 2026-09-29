@@ -18,6 +18,31 @@ P0–P3 are signed off. Read [LESSONS.md](LESSONS.md) first.
 - [ ] P8: operations hardening
 - [ ] P9: public deployment (live site; hosting choice to confirm with the user as ADR 0006)
 
+## Phase 4 progress (2026-09-28, in progress, awaiting the alias/manager review)
+
+- **Done:**
+  - Series LEIs are stored and backfilled.
+  - Fund-key rules are in `lib/warehouse/fund-keys.js`, with migrations 0005–0007.
+  - N-CEN adviser ingest is built (`npm run ingest:ncen`): 28,590 data set filings plus 534 read from EDGAR. The SEC data sets lack 97 of 598 filings from 2025 Q4.
+  - Entity tables are created (migrations 0008–0009).
+  - The seed, review-import and resolve scripts are built (`npm run seed:entities`, `npm run review:aliases`).
+  - Nightly refresh now also runs the N-CEN step and the entity upkeep: 25 s, run #3 ok.
+- **N-CEN verified and adopted for managers:**
+  - All 7 Capital Group CIKs map to 801-8055.
+  - 99.64% of 2026 private value is mapped to an adviser.
+  - Advisers are keyed by SEC file number; mapping each adviser to its parent firm is still a curated file.
+- **Trial import of the unreviewed seed, on a copy of the warehouse:**
+  - The roadmap's Phase 4 tests pass: Databricks' 59 raw issuer strings resolve to 1 company; Stripe INC and LLC are one company; Douyin resolves to ByteDance; Magnitude resolves to Anthropic via SPV; SpaceX is public; Capital Group includes all 7 CIKs.
+  - Unresolved tracked-company exposure is 0.072%.
+  - Looking a company up by its ID reproduces every golden number.
+- **Negative finding:** Fundrise's filing discloses only a range (Anthropic ">20% of net assets") and does not say which vehicle holds it. That is stored as a disclosed range (`disclosed_exposure`), not as a per-vehicle mapping.
+- **Next steps:**
+  1. The user reviews `data/review/aliases.csv` (418 companies, 250 tracked) and `data/review/managers.csv`.
+  2. Import the reviewed files into `warehouse.db` with `npm run review:aliases`.
+  3. Re-check ADR 0003's gap: private names reported with a valid ISIN are not stored.
+  4. Update the docs: DATA-QUALITY, GOLDEN-NUMBERS, ARCHITECTURE, and an ADR for N-CEN.
+- **Suite:** 364 tests: 335 pass, 0 fail.
+
 ## Phase 3 checkpoint results
 
 - **Refresh at session start:** no 2026Q3 bulk file yet. Catch-up loaded 1,349 filings (filed 2026-09-28)

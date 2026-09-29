@@ -15,11 +15,14 @@ const Database = require('better-sqlite3');
 const { defaultWarehousePath } = require('../../../lib/warehouse/db');
 
 const OUT = __dirname;
-// The research patterns behind GOLDEN-NUMBERS A1-A6 (ROADMAP Phase 3).
+// The research patterns behind GOLDEN-NUMBERS A1-A6 (ROADMAP Phase 3), plus
+// the Phase 4 entity cases: ByteDance/Douyin and SpaceX (public).
 const COMPANIES = {
   anthropic: '\\banthropic\\b',
   databricks: '\\bdatabricks\\b',
   stripe: '\\bstripe,? (inc|llc)\\b|^stripe\\b',
+  bytedance: '\\bbytedance\\b|\\bdouyin\\b',
+  spacex: '\\bspace exploration\\b|\\bspacex\\b',
 };
 
 function main() {
@@ -38,6 +41,16 @@ function main() {
   const filingsOf = db.prepare('SELECT * FROM filings WHERE fund_key = ? ORDER BY report_date, filing_date, accession');
   const filings = [...fundKeys].sort().flatMap(k => filingsOf.all(k));
 
+  // N-CEN adviser rows for these funds' registrants (Phase 4 manager tests).
+  const ciks = [...new Set(filings.map(f => f.cik).filter(Boolean))];
+  const inList = `(${ciks.map(() => '?').join(',')})`;
+  const ncenAdvisers = db.prepare(`SELECT * FROM ncen_advisers WHERE cik IN ${inList} ORDER BY accession`).all(...ciks);
+  const ncenFilings = db.prepare(`SELECT * FROM ncen_filings WHERE cik IN ${inList} ORDER BY accession`).all(...ciks);
+  const fileNums = [...new Set(ncenAdvisers.map(a => a.file_num))];
+  const advisers = db
+    .prepare(`SELECT * FROM advisers WHERE file_num IN (${fileNums.map(() => '?').join(',')}) ORDER BY file_num`)
+    .all(...fileNums);
+
   const table = rows => ({ columns: Object.keys(rows[0]), rows: rows.map(r => Object.values(r)) });
   const lastRefresh = db.prepare("SELECT id, finished_at FROM refresh_runs WHERE status = 'ok' ORDER BY id DESC LIMIT 1");
   const manifest = {
@@ -49,10 +62,19 @@ function main() {
     funds: fundKeys.size,
     filings: filings.length,
     holdings: holdings.length,
+    ncenFilings: ncenFilings.length,
+    ncenAdviserRows: ncenAdvisers.length,
   };
   db.close();
 
-  const payload = JSON.stringify({ manifest, filings: table(filings), holdings: table(holdings) });
+  const payload = JSON.stringify({
+    manifest,
+    filings: table(filings),
+    holdings: table(holdings),
+    ncen_filings: table(ncenFilings),
+    ncen_advisers: table(ncenAdvisers),
+    advisers: table(advisers),
+  });
   fs.writeFileSync(path.join(OUT, 'warehouse.json.gz'), zlib.gzipSync(payload, { level: 9 }));
   fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
   console.log(`fixture: ${manifest.funds} funds, ${manifest.filings} filings, ${manifest.holdings} rows`);

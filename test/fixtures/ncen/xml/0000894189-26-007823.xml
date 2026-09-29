@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edgarSubmission xmlns:com="http://www.sec.gov/edgar/common" xmlns="http://www.sec.gov/edgar/ncen">
+  <schemaVersion>X0505</schemaVersion>
+  <headerData>
+    <submissionType>N-CEN</submissionType>
+    <filerInfo>
+      <liveTestFlag>LIVE</liveTestFlag>
+      <filer>
+        <issuerCredentials>
+          <cik>0001843974</cik>
+          <ccc>XXXXXXXX</ccc>
+        </issuerCredentials>
+      </filer>
+      <flags>
+        <overrideInternetFlag>false</overrideInternetFlag>
+        <confirmingCopyFlag>false</confirmingCopyFlag>
+      </flags>
+      <investmentCompanyType>N-2</investmentCompanyType>
+    </filerInfo>
+  </headerData>
+  <formData>
+    <generalInfo reportEndingPeriod="2025-12-31" isReportPeriodLt12="N"/>
+    <registrantInfo>
+      <registrantFullName>Destiny Tech100 Inc.</registrantFullName>
+      <investmentCompFileNo>811-23802</investmentCompFileNo>
+      <registrantCik>0001843974</registrantCik>
+      <registrantLei>549300RWPCPQ8X46PR42</registrantLei>
+      <registrantstreet1>1401 Lavaca Street, #144</registrantstreet1>
+      <registrantcity>Austin</registrantcity>
+      <registrantzipCode>78701</registrantzipCode>
+      <registrantstate>US-TX</registrantstate>
+      <registrantcountry>US</registrantcountry>
+      <registrantphoneNumber>4156399966</registrantphoneNumber>
+      <websites>
+        <website webpage="www.Destiny.xyz"/>
+      </websites>
+      <locationBooksRecords>
+        <locationBooksRecord>
+          <officeName>U.S Bancorp Fund Services LLC</officeName>
+          <officeAddress1>615 East Michigan Street</officeAddress1>
+          <officeCity>Milwaukee</officeCity>
+          <officeStateCountry officeState="US-WI" officeCountry="US"/>
+          <officeRecordsZipCode>53202</officeRecordsZipCode>
+          <officePhone>1833612912</officePhone>
+          <booksRecordsDesc>Custody and Accounting Records</booksRecordsDesc>
+        </locationBooksRecord>
+      </locationBooksRecords>
+      <isRegistrantFirstFiling>N</isRegistrantFirstFiling>
+      <isRegistrantLastFiling>N</isRegistrantLastFiling>
+      <isRegistrantFamilyInvComp>N</isRegistrantFamilyInvComp>
+      <registrantClassificationType>N-2</registrantClassificationType>
+      <isSecuritiesActRegistration>Y</isSecuritiesActRegistration>
+      <directors>
+        <director>
+          <directorName>Sohail Prasad</directorName>
+          <crdNumber>006629337</crdNumber>
+          <isDirectorInterestedPerson>Y</isDirectorInterestedPerson>
+          <fileNumbers>
+            <fileNumberInfo fileNumber="N/A"/>
+          </fileNumbers>
+        </director>
+        <director>
+          <directorName>Travis Mason</directorName>
+          <crdNumber>N/A</crdNumber>
+          <isDirectorInterestedPerson>N</isDirectorInterestedPerson>
+          <fileNumbers>
+            <fileNumberInfo fileNumber="N/A"/>
+          </fileNumbers>
+        </director>
+        <director>
+          <directorName>Lisa Nelson</directorName>
+          <crdNumber>N/A</crdNumber>
+          <isDirectorInterestedPerson>N</isDirectorInterestedPerson>
+          <fileNumbers>
+            <fileNumberInfo fileNumber="N/A"/>
+          </fileNumbers>
+        </director>
+        <director>
+          <directorName>Lee Daley</directorName>
+          <crdNumber>N/A</crdNumber>
+          <isDirectorInterestedPerson>N</isDirectorInterestedPerson>
+          <fileNumbers>
+            <fileNumberInfo fileNumber="N/A"/>
+          </fileNumbers>
+        </director>
+        <director>
+          <directorName>Marissa Chacko</directorName>
+          <crdNumber>N/A</crdNumber>
+          <isDirectorInterestedPerson>N</isDirectorInterestedPerson>
+          <fileNumbers>
+            <fileNumberInfo fileNumber="N/A"/>
+          </fileNumbers>
+        </director>
+        <director>
+          <directorName>Charles Jacobson</directorName>
+          <crdNumber>N/A</crdNumber>
+          <isDirectorInterestedPerson>N</isDirectorInterestedPerson>
+          <fileNumbers>
+            <fileNumberInfo fileNumber="N/A"/>
+          </fileNumbers>
+        </director>
+        <director>
+          <directorName>Nathan Rodland</directorName>
+          <crdNumber>N/A</crdNumber>
+          <isDirectorInterestedPerson>N</isDirectorInterestedPerson>
+          <fileNumbers>
+            <fileNumberInfo fileNumber="N/A"/>
+          </fileNumbers>
+        </director>
+      </directors>
+      <chiefComplianceOfficers>
+        <chiefComplianceOfficer>
+          <ccoName>Cory Gossard</ccoName>
+          <crdNumber>002717444</crdNumber>
+          <ccoStreet1>1401 Lavaca Street, #144</ccoStreet1>
+          <ccoCity>Austin</ccoCity>
+          <ccoStateCountry ccoState="US-TX" ccoCountry="US"/>
+          <ccoZipCode>78701</ccoZipCode>
+          <ccoPhone>XXXXXX</ccoPhone>
+          <isCcoChangedSinceLastFiling>N</isCcoChangedSinceLastFiling>
+          <ccoEmployers>
+            <ccoEmployer ccoEmployerName="PINE Advisor Solutions LLC" ccoEmployerId="82-3455885"/>
+          </ccoEmployers>
+        </chiefComplianceOfficer>
+      </chiefComplianceOfficers>
+      <securityMatterSeriesInfo isRegistrantSubmittedMatter="Y"/>
+      <isPreviousLegalProceeding>N</isPreviousLegalProceeding>
+      <isPreviousProceedingTerminated>N</isPreviousProceedingTerminated>
+      <isClaimFiled>N</isClaimFiled>
+      <coveredByInsurancePolicy isCoveredByInsurancePolicy="Y" isClaimFiledDuringPeriod="N"/>
+      <isFinancialSupportDuringPeriod>N</isFinancialSupportDuringPeriod>
+      <isExemptionFromAct>N</isExemptionFromAct>
+      <isUnderwriterHiredOrTerminated>N</isUnderwriterHiredOrTerminated>
+      <publicAccountants>
+        <publicAccountant>
+          <publicAccountantName>KPMG LLP</publicAccountantName>
+          <pcaobNumber>00185</pcaobNumber>
+          <publicAccountantLei>N/A</publicAccountantLei>
+          <publicAccountantRssdId>N/A</publicAccountantRssdId>
+          <publicAccountantStateCountry publicAccountantState="US-PA" publicAccountantCountry="US"/>
+        </publicAccountant>
+      </publicAccountants>
+      <isPublicAccountantChanged>Y</isPublicAccountantChanged>
+      <isMaterialWeakness>N</isMaterialWeakness>
+      <isOpinionOffered>N</isOpinionOffered>
+      <isMaterialChange>N</isMaterialChange>
+      <isAccountingPrincipleChange>N</isAccountingPrincipleChange>
+      <isPaymentDividend>N</isPaymentDividend>
+    </registrantInfo>
+    <managementInvestmentQuestionSeriesInfo>
+      <managementInvestmentQuestion>
+        <mgmtInvFundName>Destiny Tech100 Inc.</mgmtInvFundName>
+        <mgmtInvLei>549300RWPCPQ8X46PR42</mgmtInvLei>
+        <isFirstFilingByFund>N</isFirstFilingByFund>
+        <fundType>N/A</fundType>
+        <isNonDiversifiedCompany>Y</isNonDiversifiedCompany>
+        <isForeignSubsidiary>N</isForeignSubsidiary>
+        <isFundSecuritiesLending>N</isFundSecuritiesLending>
+        <didFundLendSecurities>N</didFundLendSecurities>
+        <paymentToAgentManagerType>N/A</paymentToAgentManagerType>
+        <avgPortfolioSecuritiesValue>N/A</avgPortfolioSecuritiesValue>
+        <netIncomeSecuritiesLending>N/A</netIncomeSecuritiesLending>
+        <relyOnRuleTypes>
+          <relyOnRuleType>Rule 12d1-1 (17 CFR 270.12d1-1)</relyOnRuleType>
+          <relyOnRuleType>Rule 18f-4 (17 CFR 270.18f-4)</relyOnRuleType>
+        </relyOnRuleTypes>
+        <isExpenseLimitationInPlace>N</isExpenseLimitationInPlace>
+        <isExpenseReducedOrWaived>N</isExpenseReducedOrWaived>
+        <isFeesWaivedRecoupable>N</isFeesWaivedRecoupable>
+        <isExpenseWaivedRecoupable>N</isExpenseWaivedRecoupable>
+        <investmentAdvisers>
+          <investmentAdviser>
+            <investmentAdviserName>Destiny Advisors LLC</investmentAdviserName>
+            <investmentAdviserFileNo>801-123048</investmentAdviserFileNo>
+            <investmentAdviserCrdNo>000312099</investmentAdviserCrdNo>
+            <investmentAdviserLei>N/A</investmentAdviserLei>
+            <investmentAdviserRssdId>N/A</investmentAdviserRssdId>
+            <investmentAdviserStateCountry investmentAdviserState="US-TX" investmentAdviserCountry="US"/>
+            <isInvestmentAdviserHired>N</isInvestmentAdviserHired>
+          </investmentAdviser>
+        </investmentAdvisers>
+        <transferAgents>
+          <transferAgent>
+            <transferAgentName>U.S. Bancorp Fund Services, LLC</transferAgentName>
+            <transferAgentFileNo>85-11357</transferAgentFileNo>
+            <transferAgentLei>N1GZ7BBF3NP8GI976H15</transferAgentLei>
+            <transferAgentRssdId>N/A</transferAgentRssdId>
+            <transferAgentStateCountry transferAgentState="US-WI" transferAgentCountry="US"/>
+            <isTransferAgentAffiliated>N</isTransferAgentAffiliated>
+            <isTransferAgentSubAgent>N</isTransferAgentSubAgent>
+          </transferAgent>
+        </transferAgents>
+        <isTransferAgentHiredOrTerminated>N</isTransferAgentHiredOrTerminated>
+        <pricingServices>
+          <pricingService>
+            <pricingServiceName>Andersen Tax LLC</pricingServiceName>
+            <pricingServiceLei>N/A</pricingServiceLei>
+            <pricingServiceRssdId>N/A</pricingServiceRssdId>
+            <pricingServiceStateCountry pricingServiceState="US-PA" pricingServiceCountry="US"/>
+            <isPricingServiceAffiliated>N</isPricingServiceAffiliated>
+          </pricingService>
+        </pricingServices>
+        <isPricingServiceHiredOrTerminated>N</isPricingServiceHiredOrTerminated>
+        <custodians>
+          <custodian>
+            <custodianName>U.S. Bank N.A.</custodianName>
+            <custodianLei>6BYL5QZYBDK9S7L73M02</custodianLei>
+            <custodianRssdId>N/A</custodianRssdId>
+            <custodianStateCountry custodianState="US-WI" custodianCountry="US"/>
+            <isCustodianAffiliated>N</isCustodianAffiliated>
+            <isSubCustodian>N</isSubCustodian>
+            <custodyType>Bank - section 17(f)(1) (15 U.S.C. 80a-17(f)(1))</custodyType>
+          </custodian>
+        </custodians>
+        <isCustodianHiredOrTerminated>N</isCustodianHiredOrTerminated>
+        <shareholderServicingAgents>
+          <shareholderServicingAgent>
+            <shareholderServiceAgentName>U.S. Bancorp Fund Services, LLC</shareholderServiceAgentName>
+            <shareholderServiceAgentLei>N1GZ7BBF3NP8GI976H15</shareholderServiceAgentLei>
+            <shareholderServiceAgentRssdId>N/A</shareholderServiceAgentRssdId>
+            <shareholderServiceAgentStateCountry shareholderServiceAgentState="US-WI" shareholderServiceAgentCountry="US"/>
+            <isShareholderServiceAgentAffiliated>N</isShareholderServiceAgentAffiliated>
+            <isShareholderServiceAgentSubshare>N</isShareholderServiceAgentSubshare>
+          </shareholderServicingAgent>
+        </shareholderServicingAgents>
+        <isShareholderServiceHiredTerminated>N</isShareholderServiceHiredTerminated>
+        <admins>
+          <admin>
+            <adminName>U.S. Bancorp Fund Services, LLC</adminName>
+            <adminLei>N1GZ7BBF3NP8GI976H15</adminLei>
+            <adminRssdId>N/A</adminRssdId>
+            <adminStateCountry adminState="US-WI" adminCountry="US"/>
+            <isAdminAffiliated>N</isAdminAffiliated>
+            <isAdminSubAdmin>N</isAdminSubAdmin>
+          </admin>
+        </admins>
+        <isAdminHiredOrTerminated>N</isAdminHiredOrTerminated>
+        <brokers>
+          <broker>
+            <brokerName>JEFFERIES LLC</brokerName>
+            <brokerFileNo>8-15074</brokerFileNo>
+            <brokerCrdNo>000002347</brokerCrdNo>
+            <brokerLei>N/A</brokerLei>
+            <brokerRssdId>0002046020</brokerRssdId>
+            <brokerStateCountry brokerState="US-NY" brokerCountry="US"/>
+            <grossCommission>2212.550000000000</grossCommission>
+          </broker>
+        </brokers>
+        <aggregateCommission>2212.550000000000</aggregateCommission>
+        <principalAggregatePurchase>0.000000000000</principalAggregatePurchase>
+        <isBrokerageResearchPayment>N</isBrokerageResearchPayment>
+        <mnthlyAvgNetAssets>161927483.000000000000</mnthlyAvgNetAssets>
+      </managementInvestmentQuestion>
+    </managementInvestmentQuestionSeriesInfo>
+    <closedEndManagementInvestment>
+      <securityRelatedItems>
+        <securityRelatedItem>
+          <description>Common stock</description>
+          <securityClassTitle>Common Stock</securityClassTitle>
+          <commonStocks>
+            <commonStock commonStockExchange="XNYS" commonStockTickerSymbol="DXYZ"/>
+          </commonStocks>
+        </securityRelatedItem>
+      </securityRelatedItems>
+      <isRightsOffering>N</isRightsOffering>
+      <secondaryOfferings isSecondaryOffering="Y">
+        <secondaryOfferingType>Common stock</secondaryOfferingType>
+      </secondaryOfferings>
+      <isRepurchaseSecurity>N</isRepurchaseSecurity>
+      <isDefaultLongTermDebt>N</isDefaultLongTermDebt>
+      <isDividendsInArrears>N</isDividendsInArrears>
+      <isSecuritiesModified>N</isSecuritiesModified>
+      <managementFee>2.180000000000</managementFee>
+      <netOperatingExpenses>4.530000000000</netOperatingExpenses>
+      <marketPricePerShare>30.630000000000</marketPricePerShare>
+      <netAssetValuePerShare>19.930000000000</netAssetValuePerShare>
+    </closedEndManagementInvestment>
+    <exchangeSeriesInfo/>
+    <attachmentsTab>
+      <isIPAReportInternalControl>true</isIPAReportInternalControl>
+    </attachmentsTab>
+    <signature registrantSignedName="Destiny Tech100 Inc." signedDate="2026-03-13" signature="Peter Sattelmair" title="Principal Financial Officer and Treasurer"/>
+  </formData>
+</edgarSubmission>
