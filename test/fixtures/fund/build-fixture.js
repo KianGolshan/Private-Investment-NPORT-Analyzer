@@ -20,6 +20,7 @@ const FUNDS = {
   S000007191: 'Fidelity OTC Portfolio: holds Stripe 2025-10-31, no Stripe row 2026-01-31 (F8/F9)',
   S000008787: 'American High Income (AFIS High-Income Bond Fund): Mesquite reported at $0 (F34)',
   S000011440: 'Northeast Investors Trust: Westmoreland Mining equity and term loan (capital structure)',
+  S000001497: 'T. Rowe Price Global Stock Fund: OpenAI filed as "OpenAI Group PCB" beside "OPENAI GROUP PBC" (F36)',
 };
 
 function main() {

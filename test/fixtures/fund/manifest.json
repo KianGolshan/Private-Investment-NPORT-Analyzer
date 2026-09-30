@@ -1,20 +1,21 @@
 {
-  "builtAt": "2026-09-30T19:44:53.492Z",
+  "builtAt": "2026-09-30T20:35:15.031Z",
   "source": "warehouse.db",
   "sourceRefreshRun": {
-    "id": 12,
-    "finished_at": "2026-09-30T19:43:29.379Z"
+    "id": 13,
+    "finished_at": "2026-09-30T20:26:43.122Z"
   },
   "funds": {
     "S000009228": "Growth Fund of America: Anthropic F1/F2, Stripe, Databricks, OpenAI",
     "CIK2044519": "Coatue Innovative Strategies: an NPORT-P/A replaces its NPORT-P (F16)",
     "S000007191": "Fidelity OTC Portfolio: holds Stripe 2025-10-31, no Stripe row 2026-01-31 (F8/F9)",
     "S000008787": "American High Income (AFIS High-Income Bond Fund): Mesquite reported at $0 (F34)",
-    "S000011440": "Northeast Investors Trust: Westmoreland Mining equity and term loan (capital structure)"
+    "S000011440": "Northeast Investors Trust: Westmoreland Mining equity and term loan (capital structure)",
+    "S000001497": "T. Rowe Price Global Stock Fund: OpenAI filed as \"OpenAI Group PCB\" beside \"OPENAI GROUP PBC\" (F36)"
   },
-  "filings": 117,
-  "holdings": 1900,
+  "filings": 145,
+  "holdings": 2496,
   "capitalRows": 213,
-  "companies": 45,
-  "unreviewedEntities": 76
+  "companies": 53,
+  "unreviewedEntities": 86
 }

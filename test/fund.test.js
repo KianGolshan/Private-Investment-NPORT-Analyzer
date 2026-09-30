@@ -177,3 +177,19 @@ test('fund lists are cut to the largest rows for the wire; totals and math keep 
   });
   assert.equal(fund.forDisplay(x).truncated, null);
 });
+
+test('capital structure groups by company: T. Rowe files OpenAI as "OpenAI Group PCB" beside "OpenAI Group PBC" (F36)', () => {
+  const { issuerKeyOf } = require('../parsers');
+  const x = fund.xray(db, 'S000001497', '0001099263-26-010105');
+  const openai = x.capitalStructure.filter(c => c.instruments.some(i => /OPENAI/i.test(i.title)));
+  assert.equal(openai.length, 1, 'one OpenAI row');
+  assert.equal(openai[0].issuer, 'OpenAI');
+  assert.ok(
+    openai[0].instruments.some(i => i.title === 'OPENAI LLV CVT INT Series A-3 CVT' && i.marketValue === 3867551.13)
+  );
+  // v1 grouped by the filed name, which the typo splits.
+  assert.notEqual(
+    issuerKeyOf({ name: 'OpenAI Group PCB PP Series A-3 CVT PP' }),
+    issuerKeyOf({ name: 'OpenAI Group PBC SER C CVT PFD PP' })
+  );
+});

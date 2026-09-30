@@ -60,10 +60,10 @@ test('make this a company: Verily Life Sciences becomes a company with the next 
   const dir = reviewCopy();
   const before = fs.readFileSync(path.join(dir, 'aliases.csv'), 'utf8');
   const next = ledgerMax(dir) + 1;
-  const entity = company.findUnreviewed(db, 'VERILY LIFE SCIENCES');
+  const entity = company.findUnreviewed(db, 'VERILY HEALTH');
   const rows = db.prepare('SELECT COUNT(*) n FROM holdings WHERE entity_id = ?').get(entity.id).n;
 
-  const r = makeCompany(db, { dir, key: 'VERILY LIFE SCIENCES', name: 'Verily Life Sciences' });
+  const r = makeCompany(db, { dir, key: 'VERILY HEALTH', name: 'Verily Life Sciences' });
   assert.equal(r.company.id, next);
   assert.equal(r.company.name, 'Verily Life Sciences');
   assert.equal(r.company.status, 'private');
@@ -72,14 +72,25 @@ test('make this a company: Verily Life Sciences becomes a company with the next 
   // The decision is in the reviewed files: existing rows untouched, the new row appended, the id in the ledger.
   const after = fs.readFileSync(path.join(dir, 'aliases.csv'), 'utf8');
   assert.ok(after.startsWith(before));
-  assert.match(after.slice(before.length), /^Verily Life Sciences,private,N,issuer_key,VERILY LIFE SCIENCES,0,/);
+  // Every key of the name's identity component: the filers renamed Verily Health to Verily Life Sciences.
+  assert.deepEqual(
+    after
+      .slice(before.length)
+      .trim()
+      .split('\n')
+      .map(l => l.split(',').slice(0, 6).join(',')),
+    [
+      'Verily Life Sciences,private,N,issuer_key,VERILY HEALTH,0',
+      'Verily Life Sciences,private,N,issuer_key,VERILY LIFE SCIENCES,0',
+    ]
+  );
   assert.match(
     fs.readFileSync(path.join(dir, 'company_ids.csv'), 'utf8'),
     new RegExp(`\\n${next},Verily Life Sciences,,`)
   );
   // The name is a company now: search finds it as one, and it is no longer unreviewed.
   assert.equal(search(db, 'Verily Life Sciences')[0].type, 'company');
-  assert.equal(company.findUnreviewed(db, 'VERILY LIFE SCIENCES').active, false);
+  assert.equal(company.findUnreviewed(db, 'VERILY HEALTH').active, false);
   // The run is recorded under the lock as a curation, finished ok.
   assert.deepEqual(db.prepare('SELECT kind, status FROM refresh_runs WHERE id = ?').get(r.runId), {
     kind: 'curation',
@@ -99,12 +110,12 @@ test('make this a company: refused while a refresh runs; refused for a name alre
   const dir = reviewCopy();
   const running = claimRun(db);
   assert.throws(
-    () => makeCompany(db, { dir, key: 'VERILY LIFE SCIENCES', name: 'Verily Life Sciences' }),
+    () => makeCompany(db, { dir, key: 'VERILY HEALTH', name: 'Verily Life Sciences' }),
     e => e.status === 409 && /already running/.test(e.message)
   );
   db.prepare("UPDATE refresh_runs SET status = 'ok', finished_at = 'x' WHERE id = ?").run(running);
   assert.throws(
-    () => makeCompany(db, { dir, key: 'VERILY LIFE SCIENCES', name: 'Anthropic' }),
+    () => makeCompany(db, { dir, key: 'VERILY HEALTH', name: 'Anthropic' }),
     e => e.status === 409
   );
   assert.throws(
@@ -112,7 +123,7 @@ test('make this a company: refused while a refresh runs; refused for a name alre
     e => e.status === 404
   );
   assert.throws(
-    () => makeCompany(db, { dir, key: 'VERILY LIFE SCIENCES', name: '  ' }),
+    () => makeCompany(db, { dir, key: 'VERILY HEALTH', name: '  ' }),
     e => e.status === 400
   );
 });
@@ -122,7 +133,7 @@ test('make this a company: a failing import restores the review files and fails 
   const dir = reviewCopy();
   const files = ['aliases.csv', 'company_ids.csv'].map(f => fs.readFileSync(path.join(dir, f), 'utf8'));
   fs.writeFileSync(path.join(dir, 'managers.csv'), 'manager,kind,key\nX,nonsense,1\n'); // invalid: aborts the import
-  assert.throws(() => makeCompany(db, { dir, key: 'VERILY LIFE SCIENCES', name: 'Verily Life Sciences' }));
+  assert.throws(() => makeCompany(db, { dir, key: 'VERILY HEALTH', name: 'Verily Life Sciences' }));
   assert.deepEqual(
     ['aliases.csv', 'company_ids.csv'].map(f => fs.readFileSync(path.join(dir, f), 'utf8')),
     files
@@ -140,7 +151,7 @@ test('admin route: refused without the flag, from a non-local or proxied address
     app.use('/api/admin', adminRouter({ enabled: () => enabled, runJob }));
     return app;
   };
-  const body = { key: 'VERILY LIFE SCIENCES', name: 'Verily Life Sciences' };
+  const body = { key: 'VERILY HEALTH', name: 'Verily Life Sciences' };
   await request(mount(false)).post('/api/admin/companies').set('X-Vantage-Admin', '1').send(body).expect(403);
   await request(mount(true)).post('/api/admin/companies').send(body).expect(403);
   await request(mount(true))
@@ -167,7 +178,7 @@ test('admin job: the child process runs to its end on a warehouse file and repor
   process.env.WAREHOUSE_DB_PATH = file;
   try {
     const r = await runMakeCompanyJob({
-      key: 'VERILY LIFE SCIENCES',
+      key: 'VERILY HEALTH',
       name: 'Verily Life Sciences',
       status: 'private',
       track: 'N',
@@ -176,7 +187,7 @@ test('admin job: the child process runs to its end on a warehouse file and repor
     assert.equal(r.company.name, 'Verily Life Sciences');
     assert.equal(r.company.id, ledgerMax(REVIEW) + 1);
     const again = await runMakeCompanyJob({
-      key: 'VERILY LIFE SCIENCES',
+      key: 'VERILY HEALTH',
       name: 'Verily',
       status: 'private',
       track: 'N',
@@ -213,16 +224,14 @@ test('the page: a local admin sees "Make this a company" on an unreviewed name, 
     const r = await req;
     return jsonResponse(r.body, { ok: r.status < 400, status: r.status });
   };
-  const { window, document } = await loadApp({ fetchImpl, url: 'http://localhost/name/VERILY%20LIFE%20SCIENCES' });
+  const { window, document } = await loadApp({ fetchImpl, url: 'http://localhost/name/VERILY%20HEALTH' });
   await new Promise(r => window.setTimeout(r, 150));
   assert.ok(document.getElementById('makeCompanyBtn'), 'the admin form is on the page');
   assert.equal(document.getElementById('makeCompanyName').value, 'VERILY LIFE SCIENCES LLC');
   document.getElementById('makeCompanyName').value = 'Verily Life Sciences';
   await window.makeThisACompany();
   await new Promise(r => window.setTimeout(r, 150));
-  assert.deepEqual(posts, [
-    { key: 'VERILY LIFE SCIENCES', name: 'Verily Life Sciences', status: 'private', track: 'N' },
-  ]);
+  assert.deepEqual(posts, [{ key: 'VERILY HEALTH', name: 'Verily Life Sciences', status: 'private', track: 'N' }]);
   assert.match(window.location.pathname, /^\/company\/\d+-verily-life-sciences$/);
   assert.match(document.getElementById('companyContainer').textContent, /Verily Life Sciences\s*Private/);
 

@@ -63,3 +63,38 @@ test('peer.js is served to the browser from lib/analytics', async () => {
   assert.match(r.headers['content-type'], /javascript/);
   assert.match(r.text, /root\.VantagePeer = api/);
 });
+
+test('peer (Node): outliers compare as-filed marks; a series that stopped before a split is not "+200%" (Databricks 3:1, 2022)', () => {
+  const h = company.history(db, { companyId: idOf('Databricks') });
+  const map = {};
+  for (const f of h.funds) {
+    const fund = f.seriesName || f.registrant || f.fundKey;
+    for (const s of f.series) {
+      if (s.instrumentType !== 'equity') continue;
+      for (const p of s.points)
+        (map[fund] ||= []).push({
+          reportDate: p.markDate,
+          chartValue: p.chartValue,
+          shares: p.balance,
+          pricePerShare: p.pricePerShare,
+          instrumentType: s.instrumentType,
+          instrumentLabel: s.instrumentLabel,
+          instrumentKey: s.instrumentKey,
+        });
+    }
+  }
+  const series = peer.getSeriesGroups(map);
+  // T. Rowe Price Global Stock Fund's Preferred F under its old id: last filed 2022-07-29, before the split.
+  const stale = series.find(sr => sr.company === 'T. Rowe Price Global Stock Fund' && sr.key === 'TC9IB3734');
+  const latest = peer.seriesObservations(stale).at(-1);
+  assert.equal(latest.date, '2022-07-29');
+  // Peers at that date, as filed vs restated onto their later (post-split) basis.
+  const asOf = series
+    .filter(sr => sr.baseLabel === stale.baseLabel && sr.company !== stale.company)
+    .map(sr => [...peer.seriesObservations(sr)].reverse().find(o => o.t <= latest.t))
+    .filter(o => o && (latest.t - o.t) / 86400000 <= 135);
+  const dev = values => (latest.value / peer.median(values) - 1) * 100;
+  assert.ok(dev(asOf.map(o => o.value)) > 150, 'restated peers make it look ~+200%');
+  assert.ok(Math.abs(dev(asOf.map(o => o.asFiled))) < 15, 'as filed, it is in line');
+  assert.equal(peer.computeOutlierFlags(series)['T. Rowe Price Global Stock Fund||TC9IB3734'], undefined);
+});
