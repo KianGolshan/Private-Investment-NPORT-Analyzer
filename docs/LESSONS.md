@@ -93,3 +93,7 @@ this file is about **how we work**.
 22. **Keep "evidence" rules honest.** Firms are grouped by the brand in the adviser's SEC-registered name
     only; ownership links from outside knowledge (Eaton Vance → Morgan Stanley, Teachers Advisors → TIAA)
     stay out until a filing shows them.
+23. **Measure misses by dollars instead of hunting name patterns.** FHU / Chobani ($359M, 13 funds) passed
+    every P4 check because it never became a candidate. A ranked unresolved-value report over _all_
+    holdings would have shown it first. Even a hand-written search pattern missed it ("FHU ?US" never
+    matches "FHUS"), which is why identity must come from evidence and search must be forgiving (P4.5, P5).

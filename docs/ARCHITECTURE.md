@@ -208,6 +208,10 @@ data/review/{aliases,managers,disclosed_exposure}.csv, curation.json   reviewed 
 Planned:
 
 ```
+lib/entities/identity.js  P4.5 identity graph: evidence edges (LEI, instrument id, share count, same mark,
+                          title/dba, normalized names) -> components; conflicts flagged
+scripts/entities-report.js  P4.5 unresolved private value ranked by dollars (review queue after each refresh)
+lib/services/search.js    P5 search over every issuer via the graph (forgiving match, candidates with evidence)
 lib/analytics/peer.js   outliers, velocity, repricing (from public/app.js)
 lib/services/*.js       search, company, fund, manager, marks
 mcp-server.js

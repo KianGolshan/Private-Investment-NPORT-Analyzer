@@ -69,119 +69,137 @@ Paste one of these at the start of a session. Each prompt tells Claude what to r
 > review-aliases scripts. Investigate N-CEN for manager mapping with real filings and report findings before
 > adopting it. Produce the review CSV for the top ~250 and stop for my review.
 
-### Next session: Phase 5 (written 2026-09-29)
+### Next session: Phase 4.5, then Phase 5 (written 2026-09-29)
 
-> Resume Vantage v2 at Phase 5 (service layer and parity migration).
+> Resume Vantage v2 at Phase 4.5 (evidence-based company identity + unresolved-value report). Start
+> Phase 5 only after my sign-off on P4.5.
 >
 > **State.**
 >
 > - Branch `v2-plan-and-phase0`, pushed; no PR; not merged to main. P0–P4 are complete.
-> - P4's entity lists were finalized with filing evidence and imported into `warehouse.db`:
+> - The P4 entity lists are finalized (`data/review/curation.json`) and imported into `warehouse.db`:
 >   - 739 companies (257 private, 482 public), 178 tracked, 2,173 aliases, 529 firms
 >   - 305,914 holdings rows resolved; unresolved tracked exposure 0.46%
 > - `warehouse.db` (git-ignored) is 472 MB of a 500 MB budget, migrations through 0010.
-> - The app (server.js + public/app.js) still runs on live EDGAR: v1 behavior plus the P0 fixes.
->   Phase 5 moves it onto the warehouse.
+> - The app still runs on live EDGAR (v1 + P0 fixes); Phase 5 moves it onto the warehouse.
+> - **Why P4.5 exists:** FHU US Holdings (Chobani) — 13 funds, ~$359M at 2026-06-30 (GOLDEN F29) — is in no
+>   company group. Fidelity holds it through per-fund LLCs ("BCGF FHUS HOLDINGS LLC", "CONTSA FHUS…"),
+>   Capital Group writes "FHU US HOLDINGS LLC", and only T. Rowe's title says "dba Chobani" (with issuer
+>   LEI 549300ISVDMZ91KNTR38). The name cleaner saw 11 fragments, none held by 3 funds. Fidelity's per-fund
+>   LLCs hold ~$0.7B across ~12 targets, all unresolved (traps 31–33).
 >
 > **Read first, in order:**
 >
 > 1. CLAUDE.md
-> 2. docs/STATUS.md: Phase 4 results, Open decisions, Warehouse state
-> 3. docs/LESSONS.md (all 22)
-> 4. docs/ROADMAP.md §Phase 5 and §Phase 6 (so P5 doesn't build P6)
-> 5. docs/DATA-QUALITY.md, all traps (1–30)
+> 2. docs/STATUS.md (Phase 4 results, Open decisions, Warehouse state)
+> 3. docs/LESSONS.md (all 23)
+> 4. docs/ROADMAP.md §Phase 4.5, §Phase 5, and the P6/P8 additions (class mark comparison, entity editing,
+>    watch reports)
+> 5. docs/DATA-QUALITY.md, all traps (1–34)
 > 6. docs/GOLDEN-NUMBERS.md
-> 7. ADRs 0003, 0004, 0007
-> 8. docs/ARCHITECTURE.md
-> 9. Then read server.js routes, public/app.js and the test/app-*.test.js files before designing
->    lib/services.
+> 7. ADRs 0003, 0004, 0007; docs/ARCHITECTURE.md
+> 8. lib/entities/{seed,resolve,review,managers,upkeep}.js and data/review/curation.json
 >
 > **Step 0: refresh and health check.**
 >
-> - Run `npm run refresh` in the foreground and report what it loaded. After 2026-09-30 the SEC should post
->   the 2026Q3 N-PORT bulk file: refresh loads it, replaces catch-up rows, adds listing evidence for 2026q3,
->   re-keys funds, re-resolves companies and refreshes fund advisers.
+> - Run `npm run refresh` in the foreground and report what it loaded. The 2026Q3 bulk file may be posted:
+>   refresh loads it, adds 2026q3 listing evidence, re-keys funds, and re-resolves.
 > - Confirm `ingest_errors` is empty and the run is `ok`, and check `du -h warehouse.db` against the budget.
 > - Run `npm test`, `npm run lint`, `npm run format:check` and
 >   `LIVE_SEC=1 node --test --test-name-pattern="LIVE: (as-of golden|reviewed entities)" test/live-warehouse.test.js`.
 > - Expected goldens:
 >   - by pattern: A1 72/$5.93B, A2 117/$17.26B, A5 49/35/34/37, A6 120/$6.22B;
 >   - by company: Anthropic 117/$17.26B at 6/30; Stripe 35/$1.31B at 12/31/25; Databricks 120/$6.23B at
->     6/30 (includes the Project Debussy codename rows, F25).
->     If a new amendment moved one, verify on EDGAR before changing GOLDEN-NUMBERS; never tune code.
-> - A new quarter can change company status (new listing evidence or lock-ups). Before Phase 5 work, re-run
->   `npm run seed:entities -- --force` (it applies `data/review/curation.json`), diff `data/review/`, report
->   status changes to me, then `npm run review:aliases`.
+>     6/30 (F25).
+>     Verify any move on EDGAR; never tune code.
 >
-> **Phase 5 tasks (ROADMAP §Phase 5).**
+> **Phase 4.5 tasks (ROADMAP §Phase 4.5).**
 >
-> - Build `lib/services/{search,company,fund,manager,marks,peer}.js` over `exposureAsOf`,
->   `instrumentHistory`, the canonical views and the entity tables. Move peer analytics (outliers, velocity,
->   repricing) from `public/app.js` into `peer.js`, reusing, not re-implementing.
-> - Existing routes (`/api/search-nport`, `/api/parse-nport`, `/api/search-fund`, `/api/fund-xray*`,
->   `/api/fund-series*`) answer from the warehouse, with a labeled live-EDGAR fallback for names the
->   warehouse has never seen.
-> - Fund X-Ray: "private" = `companies.status`, not Level 3, keyed by `fund_key`.
-> - Existing app/server tests pass: update fixtures, never assertions.
-> - New tests: Single Security returns Anthropic history from 2023-04-28, and Stripe (2019-12-31) and
->   Databricks (2019-10-31) from 2019.
-> - Success criteria: full parity, API p95 < 200 ms, identical CSV/XLSX/PDF exports.
+> - **Identity graph** (`lib/entities/identity.js`). Nodes are raw names and issuer keys. Edges need filing
+>   evidence and carry their kind, accession and confidence:
+>   1. same issuer LEI;
+>   2. same fund keeping the same filer instrument id, or the same share count in the same class, across a
+>      name change;
+>   3. same filing, same per-unit mark on the same date (Project Debussy);
+>   4. titles naming the company, including "dba"/"formerly";
+>   5. normalized names, including stripped per-fund prefixes and spacing variants.
+>      Companies are the connected components. Guardrails: no edges from generic ids ("SEDOL", "Internal
+>      identifier") or merger chains (Windstream → Uniti); flag components that join two LEIs, a listed and a
+>      private company, or two curated companies.
+> - Apply the ≥3 funds / ≥$25M candidate rule after linking.
+> - **Vehicles** are their own type: link as indirect (`via_spv`) only with name or filing evidence;
+>   opaque ones go to the review list by dollar size.
+> - **Brand aliases:** company = the issuer invested in; brands ("Chobani") are aliases.
+> - **`npm run entities:report`:** unresolved private-candidate value across all holdings, ranked by dollars,
+>   plus conflicts and opaque vehicles. It becomes the review queue after every refresh.
+> - Re-seed with the graph (it must keep honoring `curation.json`). Finalize with filing evidence yourself —
+>   FHU US Holdings / Chobani and the Fidelity vehicles first — record decisions in `curation.json`, then
+>   run `npm run review:aliases` and re-measure. Verify new numbers on EDGAR and add them to GOLDEN-NUMBERS.
+> - Tests (real data): the ROADMAP §Phase 4.5 list — FHU as one company with alias Chobani (13 funds at
+>   6/30); the LEI edge; the Project Debussy, Oura and Anduril edges; guardrails (Windstream/Uniti,
+>   OpenAir/OpenAI, a forced conflict); every P4 test and golden still holds.
+> - Success: no unresolved component above the proposed $50M (confirm the threshold with me) that is not an
+>   opaque vehicle on the review list; tracked unresolved under 1%; every edge and decision cites an
+>   accession. Stop for my P4.5 sign-off.
+>
+> **Then Phase 5 (after sign-off), per ROADMAP §Phase 5:**
+>
+> - `lib/services/*`, with routes answering from the warehouse and a labeled EDGAR fallback.
+> - **Search over every issuer** through the graph: forgiving match, candidates with evidence, and a "make
+>   this a company" action. "Chobani", "FHU", "FHUS" and "Open AI" must work; OpenAir stays separate.
+> - Fund X-Ray: "private" = company status.
+> - Batch or cache the per-fund lookups (176–454 ms cold today) toward p95 < 200 ms.
+> - Parity: existing tests pass (fixtures only change), identical exports.
+> - New history tests: Anthropic from 2023-04-28, Stripe from 2019-12-31, Databricks from 2019-10-31.
+>
+> Keep P6 items (class mark comparison, entity editing in the app) and P8 items (nightly watch reports)
+> for their phases.
 >
 > **My requirements.**
 >
-> - v1 is the guidepost: same screens and behavior, but complete and correct answers.
-> - Any company in the warehouse stays searchable by name even if it isn't in `companies`. Fall back to
->   `exposureAsOf({ pattern })`, and offer to add it (a CSV row plus `npm run review:aliases`). The on-demand
->   EDGAR keyword search stays.
-> - Always show each fund's mark date and accession.
+> - v1 is the guidepost: same screens, complete and correct answers.
+> - Off-list companies stay fully analyzable.
+> - Always show mark dates and accessions.
 > - Label via_spv value "indirect".
-> - Show `disclosed_exposure` as the filing's words, never as dollars.
-> - Show exits as "no longer reported", never with a guessed reason.
-> - Speed risk: `exposureAsOf({ companyId })` takes 176–454 ms cold and ~9 ms warm; the pattern path takes
->   2–6 s. Measure p95 early. Batch the per-fund canonical lookups (one query per company, not per fund)
->   or cache per refresh run, before reaching for anything bigger.
+> - Show `disclosed_exposure` as the filing's words.
+> - Show exits as "no longer reported".
+> - Show per-class marks, but never label a valuation method (F30).
+> - Finalize curation yourself with evidence; don't park it for me.
 >
 > **Settled decisions (don't reopen):**
 >
-> - Row rule: equity-type means `instrument_type` other than debt, as in v1; value > 0; NULL-balance rows
->   count.
+> - Row rule: equity-type means `instrument_type` other than debt; value > 0; NULL balance counts.
 > - `instrument: 'debt'` throws.
-> - Canonical filing: the latest filing date wins; on a same-day tie NPORT-P/A, then the higher accession.
+> - Canonical filing: the latest filing date wins; same-day tie goes to NPORT-P/A, then the higher accession.
 > - Inactive after 123 days; `knownAsOf` = filings made by that date.
-> - fund_key rules: `S000000000` counts as blank; overrides; series-LEI joins; CIK+LEI for registrants with
->   several series.
-> - Managers come from N-CEN advisers by SEC file number. Firm = the brand in the adviser's name; no
->   ownership is assumed.
-> - Company status: known evidence, then lock-up/PIPE, then listing evidence (best of 4 quarters), then
->   Level-3 share.
-> - Merges only on filer evidence, recorded in curation.json. Fundrise is a disclosed range, not an SPV
->   mapping.
+> - fund_key rules as built.
+> - Managers from N-CEN by SEC file number; firm = the brand in the adviser's name, no ownership assumed.
+> - Status: curated evidence, then lock-up/PIPE, then listing evidence (best of 4 quarters), then Level-3
+>   share.
+> - Merges only on filer evidence, recorded in `curation.json`.
+> - Fundrise is a disclosed range.
 >
-> **Open decisions (ask me; don't build without a yes):**
+> **Open decisions (ask me):**
 >
-> - several named tracked lists vs. one (a schema change best made before P5 routes depend on it);
-> - alerts on new marks (P6?);
-> - installing the nightly launchd job;
-> - opening a PR or merging to main.
+> - the P4.5 $50M threshold;
+> - named tracked lists vs. one;
+> - alerts on new marks;
+> - the nightly launchd job;
+> - a PR or merge to main.
 >
 > **How we work.**
 >
-> - Real SEC data only. Check every new number on raw EDGAR and add it to GOLDEN-NUMBERS with its accession.
->   SpaceX is public.
-> - Long jobs run in the foreground in batches under 10 minutes, with a one-line status before each wait. No
->   orphan loops.
-> - Never edit an applied migration.
-> - Edit scripts read a file before writing it.
-> - zsh doesn't word-split unquoted variables.
-> - SEC dates are DD-MON-YYYY; use `bulkDateToIso`.
-> - Every SEC call goes through `fetchWithRetry`.
-> - `seed:entities` needs `--force`, and curation.json keeps reviewed decisions.
-> - Watch the 500 MB budget.
+> - Real SEC data only; verify on raw EDGAR and add to GOLDEN-NUMBERS with accessions. SpaceX is public.
+> - Foreground batches under 10 minutes with a one-line status; no orphan loops.
+> - Never edit an applied migration; edit scripts read before writing; zsh doesn't word-split unquoted
+>   variables; SEC dates DD-MON-YYYY (`bulkDateToIso`); every SEC call through `fetchWithRetry`.
+> - `seed:entities` needs `--force`. Watch the 500 MB budget.
+> - Test hand-written search patterns against the raw strings before trusting a total (lesson 23).
 > - If the auto-mode classifier fails twice in a row, stop and report the resume point.
 >
-> **Gates.** Stop for my sign-off at the Phase 5 checkpoint. Don't push, open a PR, or install launchd
-> without my explicit yes. Finish with the suite, lint and format green; docs updated (STATUS, ROADMAP,
-> GOLDEN-NUMBERS, DATA-QUALITY, LESSONS, ARCHITECTURE as needed); and a commit.
+> **Gates.** Stop for my sign-off at the P4.5 and P5 checkpoints. Don't push, open a PR, or install launchd
+> without my explicit yes. Finish each phase with the suite, lint and format green; docs updated (STATUS,
+> ROADMAP, GOLDEN-NUMBERS, DATA-QUALITY, LESSONS, ARCHITECTURE as needed); and a commit.
 
 ### Phase 5: service layer and parity
 

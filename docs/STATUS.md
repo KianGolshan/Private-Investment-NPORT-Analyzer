@@ -1,9 +1,9 @@
 # Vantage v2 Status
 
-**Current phase:** Phase 5 (service layer and parity), **not started**. P0–P4 are complete. P4's entity
-review was finalized by Claude on 2026-09-29 at the user's direction ("finalize and push it through") and
-imported into `warehouse.db`. Start with the SESSION-PROMPTS prompt "Next session: Phase 5 (written
-2026-09-29)"; read [LESSONS.md](LESSONS.md) first.
+**Current phase:** Phase 4.5 (evidence-based company identity + unresolved-value report), **not started**.
+P0–P4 are complete. P4.5 was added 2026-09-29 after FHU US Holdings (Chobani, 13 funds, ~$359M) turned out
+to be in no company group (DATA-QUALITY traps 31–33). Start with the SESSION-PROMPTS prompt "Next session:
+Phase 4.5, then Phase 5 (written 2026-09-29)"; read [LESSONS.md](LESSONS.md) first.
 **Branch:** `v2-plan-and-phase0`
 **Last updated:** 2026-09-28
 
@@ -14,7 +14,8 @@ imported into `warehouse.db`. Start with the SESSION-PROMPTS prompt "Next sessio
 - [x] P2: daily catch-up and refresh (signed off 2026-09-28)
 - [x] P3: canonical views and as-of engine (signed off 2026-09-28)
 - [x] P4: entities (companies, aliases, SPVs, managers, tracked list) (finalized 2026-09-29)
-- [ ] P5: service layer and parity migration
+- [ ] P4.5: evidence-based company identity + unresolved-value report (added 2026-09-29)
+- [ ] P5: service layer and parity migration (+ search over every issuer)
 - [ ] P6: new analysis and UI
 - [ ] P7: MCP server
 - [ ] P8: operations hardening
@@ -230,6 +231,10 @@ The evidence as presented:
   user can still edit the CSVs or curation file; re-import with `npm run review:aliases`.
 - **Tracked list (user, 2026-09-29):** size is the user's choice (100–200 likely); the 242 in the draft
   are a suggestion. The user may send their own names to resolve against the warehouse.
+- **P4.5 success threshold (proposed, confirm with the user):** no unresolved component above $50M that is
+  not an opaque vehicle on the review list.
+- **Known gap until P4.5:** FHU US Holdings (Chobani) and ~$0.7B of Fidelity per-fund holding LLCs are
+  unresolved; name search needs the exact spelling (`FHU ?U?S`, not `FHU ?US`).
 - **Open for the user:** one tracked list or several named lists (a schema change best made before P5), and
   whether alerts on new marks belong in P6. Not decided; don't build either without a yes.
 - **Search outside the list must keep working (user, 2026-09-29):** any company in the warehouse is
@@ -251,6 +256,8 @@ The evidence as presented:
   loads on the next `npm run refresh`, replacing matching catch-up rows and adding listing evidence.
 
 ## Log
+
+- **2026-09-29:** Reviewed FHU US Holdings (Chobani) and Anthropic class marks with the user. Added Phase 4.5 (identity graph, vehicles, unresolved-value report) and search/class-comparison/watch items to P5, P6 and P8; findings recorded (GOLDEN F29–F30, traps 31–34, lesson 23); handoff prompt rewritten.
 
 - **2026-09-29:** Finalized the Phase 4 entity lists with filing evidence (curation.json, new seed rules); imported into the warehouse; P4 complete; pushed.
 

@@ -2,8 +2,8 @@
 
 **Goal:** the same app, with far more capability. SEC-verified, refreshable, historically accurate
 private-investment exposure and marks, sliced by **company → parent firm → fund → share class** over any
-time horizon. Covers any private company you look up, plus a tracked list of about 250 major private
-companies. Evidence for every design choice is in [ARCHITECTURE.md](ARCHITECTURE.md),
+time horizon. Covers any private company you look up, plus a curated tracked list (178 private operating
+companies at P4; the user decides its size). Evidence for every design choice is in [ARCHITECTURE.md](ARCHITECTURE.md),
 [DATA-QUALITY.md](DATA-QUALITY.md) and [GOLDEN-NUMBERS.md](GOLDEN-NUMBERS.md).
 
 ## How phases work
@@ -25,7 +25,8 @@ P0 live-app fixes
     → P2 daily catch-up + refresh
       → P3 canonical views + as-of engine
         → P4 entities (companies, aliases, SPVs, managers, tracked list)
-          → P5 service layer, parity migration
+          → P4.5 evidence-based company identity + unresolved-value report
+            → P5 service layer, parity migration, search over all issuers
             → P6 new analysis + UI
             → P7 MCP server   (P6 and P7 can run in parallel)
               → P8 operations hardening
@@ -361,9 +362,67 @@ DATA-QUALITY trap 20.
 
 ---
 
+## Phase 4.5: evidence-based company identity
+
+**Why (found 2026-09-29, after P4):** FHU US Holdings (Chobani) — 13 funds, ~$359M at 2026-06-30 — was in
+no company group. Fidelity holds it through per-fund holding LLCs named "<fund code> FHUS HOLDINGS LLC"
+(BCGF, OTC, CONTSA…), Capital Group writes "FHU US HOLDINGS LLC", and only T. Rowe's title says "dba
+Chobani", so the name cleaner saw 11 fragments, none held by 3 funds. Fidelity's latest filings hold ~$0.7B
+in such per-fund LLCs across ~12 targets, none resolved. Patching name patterns one at a time keeps missing
+cases; resolve identity from evidence and measure what is missed by dollars (DATA-QUALITY traps 31–33).
+
+**Entry gate:** P4 complete.
+
+**Tasks**
+
+- **Identity graph.** Raw names (issuer key + exact raw strings) are nodes; an edge joins two nodes only on
+  filing evidence, each edge stored with its kind, source accession and confidence:
+  1. the same issuer LEI (`holdings.lei`; present on 15% of Level-3 rows, 35% of their value);
+  2. the same fund keeping the same filer instrument id, or the same share count in the same class, across a
+     name change (Oura, Anduril Engineering, Superhuman);
+  3. the same filing giving two names the same per-unit mark on the same date (Project Debussy = Databricks);
+  4. a title that names the company, including "dba" and "formerly" wording (Douyin → ByteDance, FHU US →
+     Chobani);
+  5. normalized-name matches, including stripped per-fund prefixes ("BCGF FHUS" → "FHUS") and spacing
+     variants ("FHUS" ≈ "FHU US", "OPEN AI" = "OPENAI").
+     Companies are the connected components. Guardrails: generic ids ("SEDOL", "Internal identifier") and
+     merger chains (Windstream → Uniti → New Windstream) never make edges; a component that would join two
+     different LEIs, a listed and a private company, or two curated companies is flagged, not merged.
+- **Thresholds after linking:** the ≥3 funds / ≥$25M candidate rule applies to components, so fragmented
+  companies (FHU) qualify.
+- **Vehicles as their own type:** SPVs, per-fund holding LLCs, blockers and fund stakes link to a company as
+  indirect (`via_spv`) only when their name or a filing says what they hold; opaque ones ("BCGF VETERINARY
+  HOLDINGS", "TB2 HLDG") go to the review list with their dollar size, never guessed.
+- **Brand aliases:** a company is the issuer that was invested in, with brands as aliases ("FHU US Holdings",
+  alias "Chobani"), so either name finds it.
+- **Unresolved-value report** (`npm run entities:report`): private-candidate value not resolved to any
+  company, across all holdings (not only tracked), grouped by component and ranked by dollars, plus
+  flagged conflicts and opaque vehicles. It is the review queue after every refresh.
+- Re-run the seed with the graph, finalize with evidence (FHU US Holdings / Chobani and the Fidelity
+  vehicles among them), record decisions in `curation.json`, import, and re-measure.
+
+**Tests**
+
+- FHU US Holdings resolves as one company with alias Chobani: Capital Group (AMCAP, Fundamental Investors),
+  T. Rowe Large-Cap Growth and the Fidelity per-fund LLCs (indirect), 13 funds at 2026-06-30 (GOLDEN F29).
+- LEI edge: the T. Rowe FHU row (LEI 549300ISVDMZ91KNTR38) joins its component.
+- Same-mark edge: Project Debussy joins Databricks (F25); instrument-id edges: Oura, Anduril (F26, F27).
+- Guardrails: Windstream/Uniti stay separate; OpenAir stays separate from OpenAI; a forced conflict is
+  flagged.
+- Every P4 test and golden number still holds (companyId goldens, Databricks 59 raw strings → 1 company).
+
+**Success criteria**
+
+- Unresolved private-candidate value, ranked, has no single unresolved component above an agreed size
+  (propose $50M) that is not an opaque vehicle on the review list.
+- Tracked-company unresolved exposure stays under 1%.
+- Every edge and every curated decision cites an accession.
+
+---
+
 ## Phase 5: service layer and parity migration
 
-**Entry gate:** P4 checkpoint.
+**Entry gate:** P4.5 checkpoint.
 
 **Tasks**
 
@@ -373,11 +432,23 @@ DATA-QUALITY trap 20.
   `/api/fund-series*`) answer from the warehouse. They fall back to live EDGAR for names the warehouse has
   never seen, and label that source.
 - Fund X-Ray: "private" = company status (not Level 3 only), keyed by `fund_key`.
+- **Search over every issuer, not only curated companies:** normalize the query like the name cleaner, match
+  names, aliases and LEIs through the identity graph, tolerate spacing, prefixes and small typos, and return
+  candidate components with their evidence (funds, value, dates, example raw names) so look-alikes stay
+  visibly apart (OpenAI vs. OpenAir). Unlisted results get the same as-of answers; a **"make this a
+  company"** action writes the decision to the review files and re-resolves. On-demand EDGAR keyword search
+  stays for filings newer than the warehouse.
+- **Speed:** a prebuilt search index; batch the per-fund canonical lookups in `exposureAsOf` (one query per
+  company), or cache per refresh run. Measured before P5: 176–454 ms cold, ~9 ms warm by company;
+  2–6 s by name pattern.
 
 **Tests**
 
 - Every existing `test/app-*.test.js` and `test/server.test.js` passes; update only fixtures, not assertions.
-- New: Single Security for Anthropic returns history from 2023, and Stripe and Databricks from 2019.
+- New: Single Security for Anthropic returns history from 2023-04-28, Stripe from 2019-12-31 and Databricks
+  from 2019-10-31.
+- Search: "Chobani", "FHU", "FHUS" and "fhu us holdings" all find FHU US Holdings; "Open AI" finds OpenAI
+  and lists OpenAir separately; "Databrick" finds Databricks.
 
 **Success criteria**
 
@@ -399,9 +470,18 @@ DATA-QUALITY trap 20.
   the firm's funds per report month. Show family lead/lag. Example: Capital Group Stripe marks in 8 of 12
   months.
 - **Holder changes:** entered and "no longer reported" per period, never a guessed cause.
-- **Tracked-list dashboard:** the ~250, sortable by exposure, holder change, mark velocity, dispersion and
+- **Tracked-list dashboard:** the tracked list (178 at P4), sortable by exposure, holder change, mark velocity, dispersion and
   staleness. Add or remove companies.
 - **Top private companies** for any date.
+- **Class mark comparison:** normalized class labels (starting from v1's `parseEquityLabel`), then per
+  company and date: every class's per-share mark by fund and firm, the within-filing gaps between classes and
+  cross-firm gaps on the same mark date. Real example: Capital Group marks all Anthropic classes at $589.01
+  (5/31 and 6/30/2026) while Fidelity marks Series D 5.76% above Series E–H in every filing (GOLDEN F30).
+  Show prices, gaps, ratios and dates only: filings don't state the valuation method (e.g. OPM vs. fully
+  diluted), so the app never labels one. Warn when comparing different mark dates or vehicle units whose
+  conversion to company shares isn't disclosed (Fidelity's per-fund LLC units vs. FHU units).
+- **Entity editing in the app:** rename, merge (with evidence), untrack, and edit tracked lists, writing to
+  the same review files as the CSV path.
 - Cuts by horizon, manager and fund. CSV/XLSX export of every view.
 - A freshness banner: last bulk quarter and last catch-up run.
 
@@ -444,6 +524,11 @@ numbers.
 - Refresh failure alerting.
 - A monthly `LIVE_SEC` regression run that re-verifies GOLDEN-NUMBERS.
 - `npm run doctor`: reports freshness, row counts, unresolved aliases and orphan processes.
+- **Nightly watch reports** after each refresh (suggestions only, never auto-applied):
+  - unresolved private value, ranked (the P4.5 report);
+  - rename / codename evidence: new same-instrument-id, same-share-count or same-mark links;
+  - status changes: new post-IPO lock-up, PIPE or listing evidence (likely IPOs), and delistings;
+  - new companies and vehicles crossing the candidate threshold.
 
 **Success criteria:** 30 days of unattended nightly refreshes with no gaps; the monthly regression is green.
 
