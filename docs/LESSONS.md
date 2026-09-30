@@ -128,3 +128,11 @@ this file is about **how we work**.
 30. **A shared constant or helper lives in one module.** Two different `VEHICLE_WORDS` and three copies of
     the same name helpers drifted apart silently; `lib/entities/names.js`, `keep-rule.js` and `values.js`
     now hold them.
+
+## Added in Phase 5 planning (2026-09-30)
+
+31. **Check a plan against the code and the data before it is signed off.** The first P5 plan read well but
+    contradicted itself on real inputs: "fall back for names never seen" would have answered Pfizer from its
+    restricted rows alone, "update fixtures, not assertions" would have kept v1's amendment double-count,
+    and "stable ids" were stable only inside one warehouse file. Each sentence of a plan that names a
+    behavior gets one query or one code read before sign-off.

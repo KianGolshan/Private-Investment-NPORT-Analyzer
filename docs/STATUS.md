@@ -1,9 +1,9 @@
 # Vantage v2 Status
 
-**Current phase:** Phase 5 (service layer, parity, search over every issuer), **not started: plan under
-revision** after the pre-P5 review (below). P4.5 signed off 2026-09-30. Read [LESSONS.md](LESSONS.md) first.
-**Branch:** `v2-plan-and-phase0`: P0–P4 pushed; P4.5, its sign-off and the pre-P5 review fixes are committed
-locally, not pushed. Not merged to `main`; no PR.
+**Current phase:** Phase 5 **planned, awaiting sign-off**. The plan (ROADMAP §Phase 5, split into 5a and 5b; ADR 0008) was decided with the user 2026-09-30; 5a starts after the user signs off the written plan. Read
+[LESSONS.md](LESSONS.md) first.
+**Branch:** `v2-phase5-plan` (off `v2-plan-and-phase0`, local, not pushed) holds the plan. `v2-plan-and-phase0`
+is pushed with PR #2 open to `main` (CI green on lint and tests 22.x/24.x, 2026-09-30), not merged.
 **Last updated:** 2026-09-30
 
 ## Phase tracker
@@ -14,11 +14,60 @@ locally, not pushed. Not merged to `main`; no PR.
 - [x] P3: canonical views and as-of engine (signed off 2026-09-28)
 - [x] P4: entities (companies, aliases, SPVs, managers, tracked list) (finalized 2026-09-29)
 - [x] P4.5: evidence-based company identity + unresolved-value report (signed off 2026-09-30)
-- [ ] P5: service layer and parity migration (+ search over every issuer)
+- [ ] P5a: services, search over every issuer, company page on the warehouse (planned 2026-09-30)
+- [ ] P5b: fund pages, lists, exports, per-filing flows retired
 - [ ] P6: new analysis and UI
-- [ ] P7: MCP server
+- [ ] P7: MCP server (may start after P5a)
 - [ ] P8: operations hardening
 - [ ] P9: public deployment (live site; hosting choice to confirm with the user as ADR 0006)
+
+## Phase 5 planning (2026-09-30)
+
+A planning-only session: no application code, no migrations.
+
+- **Step 0.** Refresh #7 `ok` in 0.6 min. No 2026Q3 bulk file yet. The EDGAR index lists 13,950 NPORT
+  filings for 2026-06-30..09-30, and all are already stored. N-CEN had nothing new. `ingest_errors` is empty.
+  The review queue has nothing over the threshold; tracked unresolved is 0.21%. Size: **513.0 MB (489 MiB)**
+  of 600 MB. Suite: 394 tests, 364 pass, 0 fail, 30 skipped. Lint and format are clean.
+- **The first P5 plan, checked against code and the live warehouse:**
+  - _Parity:_ all 502 listed companies have stored restricted/PIPE rows, so "seen by the warehouse" is not
+    "answered by it" (Pfizer, F24). v1's Single Security shows debt and any listed name.
+  - _v1 math:_ EFTS hits are capped at 50 filings by default and 250 at most (not 100). `groupAndDedupe`
+    keys on (date, shares, instrumentKey), so an amendment is kept arbitrarily or counted twice, and exits are
+    invisible.
+  - _Speed (live warehouse):_ one company p95 7 ms warm over the 180 tracked, 230–570 ms cold (Anthropic 362,
+    Databricks 568, Stripe 232). All 180 take 0.4 s warm and 1.7–4 s cold. A name pattern takes 2.7 s.
+    Anthropic at all 38 report dates takes 142 ms. SQLite 3.53.4 has FTS5 with the trigram tokenizer; spellfix
+    is not available.
+  - _History starts (P5 tests):_ Anthropic 2023-04-28, Stripe 2019-12-31, Databricks 2019-10-31.
+  - _Ids:_ a rename keeps the id (`renameInPlace`), but ids are SQLite-assigned and in no reviewed file. A
+    rebuild renumbers them, and a merged or dropped id disappears.
+  - _Fund X-Ray_ needs every row of a filing: totals, the listed count, % of holdings value, and debt tranches.
+  - _Unresolved rows:_ 846,488 stored rows have no company, and `holdings` has no issuer-key column, so an
+    "unreviewed" answer would take the regex path.
+  - _Search data:_ Hockey Parent's brand is stored as "HUB INTL", so search needs abbreviation pairs.
+    `OPENAIR` is a curated OpenAI alias (F32), so the OpenAir test asserts the match reason.
+  - _Size:_ an integer column's index costs about 15 MiB (`holdings_company` 15.1 MiB). Largest objects:
+    holdings 216.7 MiB, filings 84.7 MiB, the holdings key index 51.0 MiB.
+  - _Field coverage for P6:_ `pct_nav` is on 100% of tracked-company rows, `country` on 99.3%, and
+    `net_assets` on 100% of filings. Filings arrive about 58 days after the report date, and 3,884 arrived in
+    the 7 days to 2026-09-30. `companies.public_since` is empty for all 502 listed companies. N-CEN fund type
+    is not stored.
+- **Decisions (user, 2026-09-30; ADR 0008):**
+  - All 8 recommendations were accepted: routing by company status, the new API, stable ids, one tracked
+    list, the 5a/5b split, admin-only curation, unreviewed names, and a size gate.
+  - Two changes to the first recommendation: store X-Ray's full-book fields per filing (`filing_totals`),
+    and measure before precomputing.
+  - New features are folded into P6: firm pages, an as-of slider with `knownAsOf`, a what's-new feed and
+    RSS, conviction, mark disagreement, stale marks, an indirect exposure view, and geography.
+  - Two research tasks go to P8: the last private mark vs. the first listed price, and N-CEN fund type.
+- **Docs changed:**
+  - ROADMAP: §Phase 5 rewritten as 5a/5b, with P6, P7, P8 and P9 updated.
+  - ADR 0008 added.
+  - ARCHITECTURE: pipeline and planned modules.
+  - SESSION-PROMPTS: the 5a and 5b prompts; the P6, P7 and P9 prompts updated.
+- **Next:** the user signs off the plan, then Phase 5a with the SESSION-PROMPTS "Next session: Phase 5a"
+  prompt.
 
 ## Pre-Phase 5 review (2026-09-30)
 
@@ -294,7 +343,7 @@ The evidence as presented:
 | Warehouse size                          | ≤600 MB (raised 2026-09-30) | 364 MB (P1); 472 MB (P4); **513 MB / 489 MiB** (P4.5)                                            |
 | First catch-up                          | ≤90 min                     | **26.9 min** for 11,822 filings (about 9/s)                                                      |
 | Nightly refresh                         | ≤5 min                      | 1.1 s (P2, nothing new); **20–160 s** with N-CEN, entity upkeep and the review queue (runs #2–6) |
-| API p95                                 | <200 ms                     | n/a                                                                                              |
+| API p95                                 | <200 ms                     | n/a (P5a); pre-P5 by company: 7 ms warm p95, 230–570 ms cold                                     |
 | Single Security search (P0, live EDGAR) | n/a                         | 15–32 s per name for 100 filings                                                                 |
 
 ## Open decisions
@@ -302,9 +351,10 @@ The evidence as presented:
 - **Nightly refresh scheduling:** not installed. A ready-to-use launchd job is in ARCHITECTURE
   §Refresh lifecycle. Install only with the user's yes. Until then, run `npm run refresh` at the start of
   each session.
-- **Branch:** all work is on `v2-plan-and-phase0` (P0–P4 pushed; P4.5 and the pre-P5 review local). No PR
-  is open and it is not merged to `main`. Ask before pushing, opening a PR, renaming the branch or deleting
+- **Branch:** `v2-plan-and-phase0` is pushed with PR #2 open to `main` (CI green), not merged. The Phase 5
+  plan is on `v2-phase5-plan`, local. Ask before pushing, merging, opening PRs, renaming branches or deleting
   `audit-fixes` (already contained in this branch).
+- **Phase 5 plan sign-off:** the written plan (ROADMAP §Phase 5, ADR 0008) awaits the user's sign-off.
 - ~~Manager mapping source~~ Decided in P4: N-CEN advisers + reviewed `managers.csv` (ADR 0007).
 - ~~Entity review~~ Done 2026-09-29 (Claude, at the user's direction; `data/review/curation.json`). The
   user can still edit the CSVs or curation file; re-import with `npm run review:aliases`.
@@ -318,8 +368,8 @@ The evidence as presented:
 - **Fidelity opaque vehicles:** ~$0.6B across VETERINARY, AB, TC, TB, TRB, TB2 and THRIVE HOLDINGS LLCs. No
   filing names their targets; they stay on the review list (search again if Fidelity's N-CSR text becomes
   searchable).
-- **Open for the user:** one tracked list or several named lists (a schema change best made before P5), and
-  whether alerts on new marks belong in P6. Not decided; don't build either without a yes.
+- ~~One or several tracked lists~~ Decided 2026-09-30: one curated list; viewer watchlists in the browser store
+  ids (ADR 0008). Alerts: an RSS/Atom feed per company in P6 (no accounts).
 - **Search outside the list must keep working (user, 2026-09-29):** any company in the warehouse is
   analyzable by name pattern even if not in `companies`; P5 search must fall back to the pattern path
   and offer to add the company. The on-demand EDGAR keyword search stays.
@@ -337,6 +387,10 @@ The evidence as presented:
 - The SEC 2026Q3 bulk file (expected after 2026-09-30) loads on the next `npm run refresh`.
 
 ## Log
+
+- **2026-09-30:** Phase 5 planning. Refresh #7 `ok` (nothing new). The first P5 plan was checked against the
+  code and the warehouse (8 findings confirmed, 4 new). The user decided all 8 recommendations and the 2
+  changes. ROADMAP §5 was rewritten as 5a/5b, P6–P9 updated, and ADR 0008 added. Stopped for plan sign-off.
 
 - **2026-09-30:** Pre-P5 review of the whole v2 build, and every code and doc finding fixed (see "Pre-Phase 5
   review"). Next: Phase 5 planning with the user.

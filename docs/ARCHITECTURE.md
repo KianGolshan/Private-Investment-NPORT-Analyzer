@@ -36,8 +36,9 @@ N-CEN (data sets + EDGAR) ─► advisers ─► fund_advisers ─► managers (
                                     │
                  lib/analytics (asof, marks, splits, peer)
                                     │
-                    lib/services ──► Express API + UI
-                                  └► MCP server (stdio)
+                    lib/services ──► Express API + UI   (read-only; ADR 0008)
+                                  └► MCP server (stdio, read-only)
+live EDGAR ─► listed companies and debt (labeled "live, not warehoused", ADR 0008)
 EFTS keyword search ─► on-demand check (labeled "live, not yet warehoused")
 ```
 
@@ -239,8 +240,13 @@ public/splits.js, public/fund-groups.js   shared by the browser and Node (split 
 Planned:
 
 ```
-lib/services/search.js    P5 search over every issuer via the graph (forgiving match, candidates with evidence)
-lib/analytics/peer.js   outliers, velocity, repricing (from public/app.js)
-lib/services/*.js       search, company, fund, manager, marks
-mcp-server.js
+lib/services/search.js    P5a: FTS5 trigram index over names, aliases, brands and issuer keys; ranked
+                          candidates with match reason and evidence (ADR 0008)
+lib/services/company.js   P5a: exposure as of a date, full history (warehouse)
+lib/services/source.js    P5a: routing by company status (private -> warehouse; listed, debt -> live, labeled)
+lib/services/fund.js      P5b: fund page / X-Ray on the warehouse (+ filing_totals)
+lib/analytics/peer.js     P5b: velocity, outliers, leaderboard (from public/app.js, shared with the browser)
+lib/services/{manager,marks,feed}.js   P6: firm pages, mark series, what's-new feed
+scripts/bench.js          P5a: p50/p95 per route on the live warehouse, cold and warm
+mcp-server.js             P7 (after P5a)
 ```

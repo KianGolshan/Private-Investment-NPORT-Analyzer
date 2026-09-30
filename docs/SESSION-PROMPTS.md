@@ -69,50 +69,50 @@ Paste one of these at the start of a session. Each prompt tells Claude what to r
 > review-aliases scripts. Investigate N-CEN for manager mapping with real filings and report findings before
 > adopting it. Produce the review CSV for the top ~250 and stop for my review.
 
-### Next session: Phase 5 (written 2026-09-30, after P4.5 sign-off; plan under revision)
+### Next session: Phase 5a (written 2026-09-30, after the Phase 5 plan; use once the user signs off the plan)
 
-_The pre-P5 review (STATUS "Pre-Phase 5 review") found that ROADMAP §Phase 5 needs decisions on parity
-scope (debt, public securities), API shape, company ids and tracked lists before it starts. Use this
-prompt only after the revised plan is in ROADMAP._
-
-> Resume Vantage v2 at Phase 5 (service layer, parity, search over every issuer). P0–P4.5 are complete
-> (P4.5 signed off 2026-09-30). Read CLAUDE.md, docs/STATUS.md (Phase 4.5
-> results, Open decisions), docs/LESSONS.md (all 30), docs/ROADMAP.md §Phase 5 and the P6/P8 items,
-> docs/DATA-QUALITY.md (traps 1–42), docs/GOLDEN-NUMBERS.md (F29–F34), docs/ARCHITECTURE.md §Company identity.
+> Resume Vantage v2 at Phase 5a (services, search over every issuer, the company page on the warehouse).
+> P0–P4.5 are signed off; the Phase 5 plan was decided 2026-09-30 (ADR 0008). Read CLAUDE.md,
+> docs/STATUS.md ("Phase 5 planning", Open decisions), docs/LESSONS.md (all), docs/ROADMAP.md §Phase 5
+> (the decisions, then 5a), docs/decisions/0008-app-on-the-warehouse.md, ADRs 0003–0005,
+> docs/DATA-QUALITY.md (traps 1–42 and Display rules), docs/GOLDEN-NUMBERS.md and docs/ARCHITECTURE.md.
 >
-> Step 0: `npm run refresh` in the foreground (it loads 2026Q3 bulk if posted and rewrites the review queue
-> in reports/entities/); check `ingest_errors`, the size budget (600 MB; 513 MB after P4.5), and that the queue shows nothing over the threshold (>= $50M, 2+ funds) except the 3 opaque Fidelity
-> vehicles. Run `npm test`, lint, format and the LIVE golden + entities tests. Expected by company at 6/30:
-> Anthropic 117 / $17.29B, Databricks 120 / $6.23B, FHU US Holdings 13 / $0.36B, OpenAI 87 / $5.49B; Stripe
-> 35 / $1.31B at 12/31/25. Pattern goldens A1–A6 unchanged.
+> Step 0: `npm run refresh` in the foreground (it loads 2026Q3 bulk if posted); report what it loaded,
+> `ingest_errors` and the size against 600 MB (513 MB on 2026-09-30). Run npm test, lint, format and the
+> LIVE goldens. Expected by company at 6/30/2026: Anthropic 117 / $17.295B, Databricks 120 / $6.233B, FHU US
+> Holdings 13 / $359.0M, OpenAI 87 / $5.490B; Stripe 35 / $1.31B at 12/31/25. If a new bulk quarter or an
+> amendment moves a golden, re-verify it on raw EDGAR before anything else.
 >
-> Then ROADMAP §Phase 5: lib/services/*; routes answer from the warehouse with a labeled EDGAR fallback;
-> search over every issuer through identity_nodes/identity_edges, company_aliases and company_brands
-> (forgiving match; candidates with evidence; "make this a company" writes the review files and
-> re-resolves). "Chobani", "FHU", "FHUS", "Hub International" and "Open AI" must work; "OpenAir" never
-> matches OpenAI by name. Fund X-Ray: private = company status. p95 < 200 ms (batch/cache per-fund lookups).
-> Parity: existing tests pass with fixtures only changing; exports identical. New history tests: Anthropic
-> from 2023-04-28, Stripe from 2019-12-31, Databricks from 2019-10-31. Keep the user's display rules: mark
-> date + accession per fund, via_spv as "indirect", disclosed_exposure in the filing's words, exits as "no
-> longer reported", per-class marks without a method label. Stop for the P5 sign-off; no push/PR/launchd
-> without an explicit yes.
+> Then ROADMAP §5a tasks 1–8 in order, each ending green: prune indexes (prove each unused), stable company
+> ids in the reviewed files + redirects, entities + holdings.entity_id, the FTS5 trigram search index with
+> match reasons, lib/services (search, company, source), read-only server routes with source/refreshId,
+> `npm run bench` before any precompute, and the company page. Tests as listed (history starts, goldens
+> through the API and on screen, the search cases with their match reasons, routing, ids, read-only). An
+> app-test assertion changes only where v1 was wrong, with the golden named in the commit. Long jobs in the
+> foreground; one-line status before any wait. Stop for the 5a sign-off; no push, PR or launchd without an
+> explicit yes.
 
-### Phase 5: service layer and parity
+### Phase 5b: funds, lists, exports
 
-> Vantage v2 Phase 5. Read CLAUDE.md and docs/ROADMAP.md §Phase 5. Create lib/services, move peer
-> analytics out of public/app.js, and point existing routes at the warehouse with a labeled live-EDGAR
-> fallback. All existing tests must pass with assertions unchanged. Measure API p95.
+> Vantage v2 Phase 5b. Read CLAUDE.md, docs/STATUS.md, docs/LESSONS.md, docs/ROADMAP.md §Phase 5 (5b) and ADR 0008. Confirm 5a is signed off. Measure first, then build: filing_totals in both ingest paths with a
+> parity test and a foreground, resumable backfill (bulk ~14 min, catch-up ~26 min); measure the
+> capital-structure debt rows on one quarter and bring the numbers to me before any keep-rule change; then
+> the fund page, compare/returns, Batch and Watchlist on the services (ids, name migration), peer analytics
+> to lib/analytics/peer.js, exports, the admin "make this a company" job, and retire the per-filing flows.
+> Stop for sign-off.
 
 ### Phase 6: new analysis and UI
 
-> Vantage v2 Phase 6. Read CLAUDE.md, docs/ARCHITECTURE.md (Mark series, As-of) and docs/ROADMAP.md
-> §Phase 6. Build as-of exposure (company → firm → fund → class), firm/fund/class mark charts at every
-> report date, holder changes, the tracked-list dashboard, top-private ranking, freshness banner and
-> exports. Verify the Capital Group Stripe path from GOLDEN-NUMBERS renders on screen.
+> Vantage v2 Phase 6. Read CLAUDE.md, docs/ARCHITECTURE.md (Mark series, As-of), ADR 0008 and
+> docs/ROADMAP.md §Phase 6. Build the firm page and the P6 sections on the company, fund and firm pages: as-of
+> slider with knownAsOf, mark series, holder changes, the what's-new feed (+ RSS), conviction, mark
+> disagreement, stale marks, class comparison, indirect exposure, geography, the tracked dashboard, top
+> private, exports and the freshness banner. Check any new metric on real filings first. Verify the listed
+> goldens on screen.
 
 ### Phase 7: MCP server
 
-> Vantage v2 Phase 7. Read CLAUDE.md and docs/ROADMAP.md §Phase 7. Build mcp-server.js over lib/services
+> Vantage v2 Phase 7 (needs P5a signed off). Read CLAUDE.md, ADR 0008 and docs/ROADMAP.md §Phase 7. Build mcp-server.js over lib/services
 > with the listed tools. Tests return golden numbers. Document `claude mcp add` in README.
 
 ### Phase 8: operations
@@ -123,7 +123,8 @@ prompt only after the revised plan is in ROADMAP._
 ### Phase 9: public deployment
 
 > Vantage v2 Phase 9. Read CLAUDE.md, docs/STATUS.md, docs/LESSONS.md, docs/ROADMAP.md §Phase 9 and
-> docs/ARCHITECTURE.md (Refresh lifecycle, Configuration). Confirm P5 and P8 are signed off.
+> docs/ARCHITECTURE.md (Refresh lifecycle, Configuration). Confirm P5a, P5b and P8 are signed off and the deployed
+> curation path (ADR 0008) is decided.
 >
 > First, present the hosting options with current pricing and limits (verified now, not remembered), with
 > a recommendation. Record my choice as ADR 0006 before building.
