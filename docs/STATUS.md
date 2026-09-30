@@ -1,6 +1,6 @@
 # Vantage v2 Status
 
-**Current phase:** Phase 5a **built, awaiting sign-off** (services, search over every issuer, the company page on the
+**Current phase:** Phase 5b **next** (P5a signed off 2026-09-30, merged to `main`). Previously: Phase 5a (services, search over every issuer, the company page on the
 read-only warehouse). 5b follows the sign-off. Read [LESSONS.md](LESSONS.md) first.
 **Branch:** `v2-phase5a` (off `main` after PR #2 merged as e3164f6, 2026-09-30). No PR yet.
 **Last updated:** 2026-09-30
@@ -13,7 +13,7 @@ read-only warehouse). 5b follows the sign-off. Read [LESSONS.md](LESSONS.md) fir
 - [x] P3: canonical views and as-of engine (signed off 2026-09-28)
 - [x] P4: entities (companies, aliases, SPVs, managers, tracked list) (finalized 2026-09-29)
 - [x] P4.5: evidence-based company identity + unresolved-value report (signed off 2026-09-30)
-- [ ] P5a: services, search over every issuer, company page on the warehouse (built 2026-09-30, awaiting sign-off)
+- [x] P5a: services, search over every issuer, company page on the warehouse (signed off 2026-09-30)
 - [ ] P5b: fund pages, lists, exports, per-filing flows retired
 - [ ] P6: new analysis and UI
 - [ ] P7: MCP server (may start after P5a)
@@ -406,7 +406,7 @@ The evidence as presented:
   request. P5a is on `v2-phase5a`. Ask before merging to `main`, opening PRs, renaming or deleting branches
   (`audit-fixes`, `v2-plan-and-phase0`, `v2-phase5-plan` are all contained in `main`).
 - ~~Phase 5 plan sign-off~~ Signed off 2026-09-30.
-- **5a sign-off:** awaiting the user. Push of `v2-phase5a` done for backup; PR to `main` only with a yes.
+- ~~5a sign-off~~ Signed off by the user 2026-09-30; `v2-phase5a` merged to `main` by PR.
 - **Balance-0 rows (trap 43):** counted under the P3 NULL-balance precedent; the user can overrule (then
   `nullBalance` would need a separate flag for 0).
 - ~~Manager mapping source~~ Decided in P4: N-CEN advisers + reviewed `managers.csv` (ADR 0007).
@@ -441,6 +441,8 @@ The evidence as presented:
 - The SEC 2026Q3 bulk file (expected after 2026-09-30) loads on the next `npm run refresh`.
 
 ## Log
+
+- **2026-09-30:** User signed off P5a (incl. the balance-0 rule, trap 43); PR opened and merged to `main`. Next: Phase 5b.
 
 - **2026-09-30:** Phase 5a built (tasks 1–8, one commit each) on `v2-phase5a` after PR #2 merged. Traps 43–44, F35,
   ADR 0004 amended, LESSONS 32–35. Stopped for the 5a sign-off.
