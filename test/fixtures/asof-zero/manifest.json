@@ -1,0 +1,9 @@
+{
+  "builtAt": "2026-09-30T14:46:12.510Z",
+  "source": "warehouse.db",
+  "sourceNewestFilingDate": "2026-09-29",
+  "fundKey": "S000008787",
+  "pattern": "\\bmesquite energy\\b",
+  "filings": 29,
+  "holdings": 25
+}

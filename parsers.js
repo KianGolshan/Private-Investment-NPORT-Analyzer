@@ -158,6 +158,26 @@ function parseDebtLabel(title) {
   return label;
 }
 
+// Whole-word matcher for a user's search term. Plain substring matching let
+// real look-alike issuers through: "Revolut" matched REVOLUTION MEDICINES INC,
+// "OpenAI" matched OpenAir.com, "Anthropic" matched Anthropics Technology Ltd.
+// The term must start and end on a word boundary (letters/digits); inner
+// whitespace matches any run of whitespace, and surrounding quotes (as typed
+// for an exact-phrase EDGAR search) are ignored.
+function termMatcher(term) {
+  const t = String(term ?? '')
+    .trim()
+    .replace(/^"(.*)"$/, '$1')
+    .trim();
+  if (!t) return () => false;
+  const pattern = t
+    .split(/\s+/)
+    .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('\\s+');
+  const re = new RegExp(`(?:^|[^a-z0-9])${pattern}(?=$|[^a-z0-9])`, 'i');
+  return text => re.test(String(text || ''));
+}
+
 function extractHoldings(xml, securitySearchTerm) {
   const holdings = [];
   try {
@@ -181,7 +201,10 @@ function extractHoldings(xml, securitySearchTerm) {
     if (!investments) return holdings;
     if (!Array.isArray(investments)) investments = [investments];
 
-    const searchLower = securitySearchTerm.toLowerCase();
+    const matchesTerm = termMatcher(securitySearchTerm);
+    const tickerTerm = String(securitySearchTerm ?? '')
+      .trim()
+      .toLowerCase();
 
     for (const inv of investments) {
       const title = String(inv.title || inv.Title || inv.desc || inv.description || '');
@@ -193,10 +216,10 @@ function extractHoldings(xml, securitySearchTerm) {
         extractIdString(inv.identifiers?.ticker) || extractIdString(inv.ticker) || extractIdString(inv.Ticker);
 
       const matches =
-        name.toLowerCase().includes(searchLower) ||
-        issuer.toLowerCase().includes(searchLower) ||
-        title.toLowerCase().includes(searchLower) ||
-        ticker.toLowerCase().includes(searchLower);
+        matchesTerm(name) ||
+        matchesTerm(issuer) ||
+        matchesTerm(title) ||
+        (ticker !== '' && ticker.toLowerCase() === tickerTerm);
 
       if (!matches) continue;
 
@@ -244,7 +267,7 @@ function extractHoldings(xml, securitySearchTerm) {
       // title itself as a last resort.
       const otherIdValue =
         extractIdString(inv.identifiers?.other?.value) || String(inv.identifiers?.other?.value || '').trim();
-      const instrumentKey = otherIdValue || usableCusip(cusip) || title || name;
+      const instrumentKey = instrumentKeyOf({ otherId: otherIdValue, cusip, title, name });
 
       holdings.push({
         name,
@@ -342,14 +365,33 @@ function extractFundMeta(xml) {
     registrantName: String(genInfo.regName || genInfo.regname || ''),
     seriesName: String(genInfo.seriesName || genInfo.seriesname || ''),
     seriesId: String(genInfo.seriesId || genInfo.seriesid || ''),
+    seriesLei: String(genInfo.seriesLei || genInfo.serieslei || ''),
+    registrantLei: String(genInfo.regLei || genInfo.reglei || ''),
     reportDate: String(genInfo.repPdDate || genInfo.reppddate || genInfo.reportDate || ''),
     totalAssets: parseFloat(fundInfo.totAssets || fundInfo.totassets || 0) || 0,
     netAssets: parseFloat(fundInfo.netAssets || fundInfo.netassets || 0) || 0,
   };
 }
 
+// The filing's <invstOrSec> entries as parsed objects, in document order
+// ([] when the filing has none).
+function nportInvestments(xml) {
+  const formData =
+    xml?.edgarSubmission?.formData ||
+    xml?.edgarSubmission?.formdata ||
+    xml?.edgarsubmission?.formData ||
+    xml?.edgarsubmission?.formdata;
+  if (!formData) return [];
+  const investments =
+    formData.invstOrSecs?.invstOrSec || formData.invstorsecs?.invstorsec || formData.investments?.investment;
+  if (!investments) return [];
+  return Array.isArray(investments) ? investments : [investments];
+}
+
 // Every investment in the filing, unfiltered by search term — the raw
 // material for a fund-wide private-equity-vs-everything-else breakdown.
+// Each holding carries rowIndex, its position in nportInvestments(xml), so
+// the warehouse can read further raw fields from the same entry.
 function extractAllHoldings(xml) {
   const holdings = [];
   try {
@@ -363,12 +405,11 @@ function extractAllHoldings(xml) {
     const genInfo = formData.genInfo || formData.geninfo || {};
     const reportDate = genInfo.repPdDate || genInfo.reppddate || genInfo.reportDate || '';
 
-    let investments =
-      formData.invstOrSecs?.invstOrSec || formData.invstorsecs?.invstorsec || formData.investments?.investment;
-    if (!investments) return holdings;
-    if (!Array.isArray(investments)) investments = [investments];
+    const investments = nportInvestments(xml);
+    if (!investments.length) return holdings;
 
-    for (const inv of investments) {
+    for (let rowIndex = 0; rowIndex < investments.length; rowIndex++) {
+      const inv = investments[rowIndex];
       const title = String(inv.title || inv.Title || inv.desc || inv.description || '');
       // Real filings (T. Rowe Price, older periods) put the literal "N/A" in
       // <name>; the security title is then the only place the company appears.
@@ -388,7 +429,7 @@ function extractAllHoldings(xml) {
 
       const otherIdValue =
         extractIdString(inv.identifiers?.other?.value) || String(inv.identifiers?.other?.value || '').trim();
-      const instrumentKey = otherIdValue || usableCusip(cusip) || title || name;
+      const instrumentKey = instrumentKeyOf({ otherId: otherIdValue, cusip, title, name });
 
       holdings.push({
         name,
@@ -415,6 +456,7 @@ function extractAllHoldings(xml) {
         country: String(inv.invcountry ?? inv.invCountry ?? '')
           .trim()
           .toUpperCase(),
+        rowIndex,
       });
     }
   } catch (err) {
@@ -656,6 +698,13 @@ function usableCusip(raw) {
     .trim()
     .toUpperCase();
   return /^[0-9A-Z]{9}$/.test(c) && !/^(.)\1{8}$/.test(c) ? c : null;
+}
+// Within-filing instrument key (instrumentKey above): the filer's own id,
+// else a real CUSIP, else the title, else the name. The warehouse keys a
+// (fund, instrument) series the same way (lib/analytics/asof.js), which
+// follows renames such as "STRIPE INC" -> "STRIPE LLC" (DATA-QUALITY trap 10).
+function instrumentKeyOf({ otherId, cusip, title, name }) {
+  return otherId || usableCusip(cusip) || title || name;
 }
 function cusipKeyOf(h) {
   return usableCusip(h.cusip);
@@ -1555,11 +1604,15 @@ module.exports = {
   isPrivateEquityHolding,
   extractFundMeta,
   extractAllHoldings,
+  nportInvestments,
   buildFundXRay,
   positionMatchKey,
+  instrumentKeyOf,
   buildFundXRayComparison,
   buildIssuerCapitalStructure,
   issuerKeyOf,
+  ISSUER_CUT_TOKENS,
+  ISSUER_SUFFIX_TOKENS,
   parseDebtTerms,
   xirr,
   buildPositionReturns,

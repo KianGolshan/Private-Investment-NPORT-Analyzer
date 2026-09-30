@@ -1,0 +1,33 @@
+{
+  "source": "2026q1_ncen.zip",
+  "builtAt": "2026-09-29T04:52:21.117Z",
+  "dataset": {
+    "0001193125-26-108005": {
+      "cik": "729528",
+      "note": "American Funds Insurance Series: 42 series, Capital Research (801-8055)"
+    },
+    "0001193125-26-105983": {
+      "cik": "1919700",
+      "note": "Touchstone ETF Trust: adviser + sub-adviser per series"
+    },
+    "0001410368-26-026363": {
+      "cik": "2044519",
+      "note": "Coatue Innovative Strategies Fund: no series ID"
+    },
+    "0000894189-26-007823": {
+      "cik": "1843974",
+      "note": "Destiny Tech100: closed-end, no series ID"
+    }
+  },
+  "edgarOnly": {
+    "0001193125-25-282335": {
+      "cik": "44201",
+      "note": "Growth Fund of America 2025-11-14: missing from the 2025q4 data set"
+    }
+  },
+  "rows": {
+    "SUBMISSION.tsv": 4,
+    "FUND_REPORTED_INFO.tsv": 53,
+    "ADVISER.tsv": 62
+  }
+}

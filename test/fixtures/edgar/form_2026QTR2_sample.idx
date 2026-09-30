@@ -1,0 +1,21 @@
+Description:           Master Index of EDGAR Dissemination Feed by Form Type
+Last Data Received:    June 30, 2026
+Comments:              webmaster@sec.gov
+Anonymous FTP:         ftp://ftp.sec.gov/edgar/
+
+
+
+
+Form Type   Company Name                                                  CIK         Date Filed  File Name
+---------------------------------------------------------------------------------------------------------------------------------------------
+1                Reserved for Notice Registration of Security Futures Product  2132551     2026-04-29  edgar/data/2132551/9999999997-26-000773.txt         
+10-Q             1 800 FLOWERS COM INC                                         1084869     2026-05-07  edgar/data/1084869/0001084869-26-000019.txt         
+10-Q             10x Genomics, Inc.                                            1770787     2026-05-08  edgar/data/1770787/0001628280-26-032388.txt         
+10-Q             1606 CORP.                                                    1877461     2026-05-15  edgar/data/1877461/0001477932-26-003209.txt         
+NPORT-P          Destiny Tech100 Inc.                                          1843974     2026-05-29  edgar/data/1843974/0000894189-26-016628.txt         
+NPORT-P          FIDELITY SECURITIES FUND                                      754510      2026-06-26  edgar/data/754510/0000035402-26-004133.txt          
+NPORT-P          Federated Hermes Sustainable High Yield Bond Fund, Inc.       225318      2026-05-22  edgar/data/225318/0000225318-26-000007.txt          
+NPORT-P          GROWTH FUND OF AMERICA                                        44201       2026-04-27  edgar/data/44201/0001193125-26-182055.txt           
+NPORT-P          Global X Funds                                                1432353     2026-04-01  edgar/data/1432353/0002048251-26-002806.txt         
+NPORT-P          Innovation Access Fund                                        1905379     2026-05-26  edgar/data/1905379/0001193125-26-239358.txt         
+NPORT-P          Krane Shares Trust                                            1547576     2026-05-29  edgar/data/1547576/0002048251-26-004683.txt         

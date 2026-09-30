@@ -1,0 +1,21 @@
+{
+  "builtAt": "2026-09-29T04:51:50.828Z",
+  "source": "warehouse.db",
+  "sourceNewestFilingDate": "2026-09-28",
+  "sourceRefreshRun": {
+    "id": 2,
+    "finished_at": "2026-09-29T02:57:05.175Z"
+  },
+  "companies": {
+    "anthropic": "\\banthropic\\b",
+    "databricks": "\\bdatabricks\\b",
+    "stripe": "\\bstripe,? (inc|llc)\\b|^stripe\\b",
+    "bytedance": "\\bbytedance\\b|\\bdouyin\\b",
+    "spacex": "\\bspace exploration\\b|\\bspacex\\b"
+  },
+  "funds": 229,
+  "filings": 5740,
+  "holdings": 11002,
+  "ncenFilings": 1492,
+  "ncenAdviserRows": 30559
+}

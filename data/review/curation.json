@@ -1,0 +1,375 @@
+{
+  "_about": "Reviewed entity decisions applied on top of the seed rules (lib/entities/seed.js). Keys are issuer keys (parsers.issuerKeyOf). Merges require filing evidence: the same fund reporting the same filer instrument id or the same share count under both names (accession = the filing showing the new name). Reviewed 2026-09-29; P4.5 identity decisions 2026-09-30 (filing evidence, verified on EDGAR).",
+  "status": {
+    "SPACE EXPLORATION TECHNOLOGIES": {
+      "status": "public",
+      "note": "IPO completed June 2026 (Fundrise Innovation Fund report, 0001867090-26-000109); funds report 180-day lock-up Class A shares from 2026-06-30 (0000035402-26-005373)."
+    }
+  },
+  "merge": [
+    {
+      "into": "OURA HEALTH OY",
+      "keys": ["OURA"],
+      "reason": "Fidelity Contrafund: 1,123,976 Series E shares reported as OURA HEALTH OY through 2026-03-31, as OURA INC on 2026-06-30",
+      "evidence": "0000035402-26-005386"
+    },
+    {
+      "into": "NURO",
+      "keys": ["NURO INC CA"],
+      "reason": "same issuer, EDGAR-style name NURO INC/CA",
+      "evidence": ""
+    },
+    {
+      "into": "GENESIS MOLECULAR AI",
+      "keys": ["GENESIS THERA", "GENESIS THERAPEUTICS"],
+      "reason": "T. Rowe New Horizons instrument TC7KIHZP3: GENESIS THERA SER A-2 renamed Genesis Molecular AI Ser A-2",
+      "evidence": "0001099263-26-006557"
+    },
+    {
+      "into": "INCORA TOP HOLDCO",
+      "keys": ["INCORA NEW EQUITY"],
+      "reason": "PIMCO Strategic Income instrument EQTYINCO9: INCORA TOP HOLDCO LLC renamed INCORA NEW EQUITY",
+      "evidence": "0001410368-26-090108"
+    },
+    {
+      "into": "ARM MUSTANG EXPRESS HOLDCO",
+      "keys": ["MUSTANG EXPRESS"],
+      "reason": "PIMCO Flexible Credit Income instrument PFDMST9Z9: ARM MUSTANG EXPRESS HOLDCO LLC renamed MUSTANG EXPRESS SERIES A PFD",
+      "evidence": "0001410368-26-090130"
+    },
+    {
+      "into": "SUPERHUMAN PLATFORM",
+      "keys": ["GRAMMARLY", "SUPERHUMAN LABS"],
+      "reason": "Neuberger Next Generation instrument 936ZFQ900: GRAMMARLY SERIES 3 PFD renamed SUPERHUMAN PLATFORM INC; Destiny Tech100: Superhuman Labs renamed Superhuman Platform",
+      "evidence": "0001410368-26-029176"
+    },
+    {
+      "into": "SAIL BIOMEDICINES",
+      "keys": ["LARONDE"],
+      "reason": "Fidelity Growth Company instrument HJH872000: LARONDE INC renamed SAIL BIOMEDICINES",
+      "evidence": "0000035402-26-004656"
+    },
+    {
+      "into": "GUSTO",
+      "keys": ["ZENPAYROLL"],
+      "reason": "Fidelity Contrafund instrument EIB023000: ZENPAYROLL INC renamed GUSTO INC",
+      "evidence": "0001752724-23-265982"
+    },
+    {
+      "into": "JUUL LABS",
+      "keys": ["PAX LABS"],
+      "reason": "VIP Growth Opportunities instrument DDD774000: PAX LABS INC renamed JUUL LABS INC (23 fund series)",
+      "evidence": "0001752724-24-116589"
+    },
+    {
+      "into": "PARABILIS MEDICINES",
+      "keys": ["FOG PHARMACEUTICALS"],
+      "reason": "Fidelity Growth Company K6 instrument JMR047000: FOG PHARMACEUTICALS INC renamed PARABILIS MEDICINES INC",
+      "evidence": "0001752724-25-015231"
+    },
+    {
+      "into": "COMMERCIAL BARGE LINE",
+      "keys": ["AMERICAN COMMERCIAL BARGE LINE"],
+      "reason": "Invesco Senior Floating Rate instrument 2599854: same position under both names",
+      "evidence": "0001752724-22-020468"
+    },
+    {
+      "into": "NEON PAYMENTS",
+      "keys": ["NEON PARENT"],
+      "reason": "BlackRock Global Allocation instrument BRW2ME3P8: Neon Parent, Inc. renamed Neon Payments Ltd.",
+      "evidence": "0001752724-21-183162"
+    },
+    {
+      "into": "AIMBRIDGE TOPCO",
+      "keys": ["AIMBRIDGE ACQUISITION"],
+      "reason": "Capital World Bond instrument ECA401093: AIMBRIDGE ACQUISITION CO INC renamed AIMBRIDGE TOPCO LLC",
+      "evidence": "0001145549-25-053098"
+    },
+    {
+      "into": "EIKON THERAPEUTIC",
+      "keys": ["EIKON THERAPEUTICS", "EIKON THERA"],
+      "reason": "T. Rowe New Horizons instruments 10292872 and TC08RE2M7: same positions under the spelling variants",
+      "evidence": "0001099263-25-003600"
+    },
+    {
+      "into": "GM CRUISE HLDG",
+      "keys": ["CRUISE"],
+      "reason": "BlackRock Global Allocation instrument BRWJUP9R7: Cruise, Series G renamed GM Cruise Holdings LLC, Class G",
+      "evidence": "0001752724-24-194127"
+    },
+    {
+      "into": "IQHQ",
+      "keys": ["CREATIVE SCIENCE PROPERTIES"],
+      "reason": "Altegris/AACA instrument 22530K108: Creative Science Properties Inc renamed IQHQ Inc",
+      "evidence": "0001752724-20-107256"
+    },
+    {
+      "into": "TONIAN HOLD SR A VTG",
+      "keys": ["TONIAN HOLDINGS VOTING", "TONIAN HOLDINGS NON VOTING"],
+      "reason": "T. Rowe Global Allocation instruments TC6D3JB94 and TC5DDF1Q5: TONIAN HOLDINGS (NON-)VOTING renamed TONIAN HOLD SR A",
+      "evidence": "0001099263-25-005062"
+    },
+    {
+      "into": "DATABRICKS",
+      "keys": ["PROJECT DEBUSSY"],
+      "reason": "BlackRock Capital Appreciation instrument 956KCS006: PROJECT DEBUSSY SERIES D renamed Databricks Inc Ser D",
+      "evidence": "0001752724-25-207154"
+    },
+    {
+      "into": "VERSA NETWORKS",
+      "keys": ["PROJECT SASE"],
+      "reason": "BlackRock Bond Income instrument 944ZTU906: PROJECT SASE WARRANT renamed VERSA NETWORKS",
+      "evidence": "0001752724-25-120196"
+    },
+    {
+      "into": "PAYWARD",
+      "keys": ["KRAKEN"],
+      "reason": "C1 Fund instrument KRAKEN_P: KRAKEN Preferred Shs renamed Payward Inc. (Kraken), Series A",
+      "evidence": "0001049169-26-001554"
+    },
+    {
+      "into": "SAMBANOVA SYSTEMS",
+      "keys": ["SAMBADECA SYSTEMS"],
+      "reason": "BlackRock Technology Opportunities instrument BRW16DGF8: misspelling of SambaNova Systems, Series C, for one quarter",
+      "evidence": "0001752724-23-087106"
+    },
+    {
+      "into": "AIRWALLEX",
+      "keys": ["AIRWALLED ESOP"],
+      "reason": "First Trust Private Assets instrument: Airwalled ESOP Ltd corrected to Airwallex ESOP Ltd",
+      "evidence": "0001145549-25-025774"
+    },
+    {
+      "into": "ANDURIL INDUSTRIES",
+      "keys": ["ANDURIL ENGINEERING"],
+      "reason": "BlackRock Global Allocation: 306,011 ANDURIL SERIES F shares reported as Anduril Engineering LLC, Series F from 2025-07-31",
+      "evidence": "0002071691-26-013149"
+    },
+    {
+      "into": "VOUSSOIR RE",
+      "keys": ["WAFC VOUSSOIR"],
+      "reason": "PIMCO High Income instrument VOUS01917: VOUSSOIR RE LTD renamed WAFC VOUSSOIR",
+      "evidence": "0001410368-26-090139"
+    },
+    {
+      "into": "MARKET GARDEN",
+      "keys": ["DOGWOOD"],
+      "reason": "PIMCO Access Income instrument EQTYQL9A8: DOGWOOD LLC renamed MARKET GARDEN",
+      "evidence": "0001410368-26-090261"
+    },
+    {
+      "into": "ANTHROPIC",
+      "keys": ["ANTHROPICS TECHNOLOGY"],
+      "reason": "BlackRock mislabel: instrument BYDXGRZL8 is 'ANTHROPIC SERIES G' in BlackRock Bond Fund (0000940400-26-020796) and 'Anthropics Technology Ltd., Series G' in BlackRock Series Fund, both $259.14/sh on 2026-03-31 (raw EDGAR); BlackRock's 2026-06-30 rows carry Anthropic PBC's LEI 984500B6DEB8CEBC4Z70 (0002071691-26-019783). Every ANTHROPICS TECHNOLOGY row is this BlackRock label",
+      "evidence": "0002071691-26-012500"
+    },
+    {
+      "into": "OPENAI",
+      "keys": ["OPENAIR"],
+      "reason": "BlackRock mislabel: instrument BYJ0U3DG6 is 'OPENAI SERIES C' in BlackRock Bond Fund (0000940400-26-020796) and 'OpenAir.com, Series C' in BlackRock Series Fund, both $687.69/sh on 2026-03-31 (raw EDGAR); New York Life's Winslow funds report 'OpenAir.com, Series C' at the same $687.69 (0002071691-26-019475). All 11 OPENAIR rows (from 2026-03-31) carry OpenAI Series C's mark",
+      "evidence": "0002071691-26-012500"
+    },
+    {
+      "into": "RAMP BUSINESS",
+      "keys": ["RAMP"],
+      "reason": "Coatue Innovative Strategies Fund's 'RAMP SERIES E3 PREFERRED' and 'RAMP CLASS A COMMON STOCK' (First Trust: 'RAMP PREFERRED SERIES A-2 / C-3') are marked $120.00/sh on 2026-06-30 and $90.00 on 2026-03-31, the same classes at the same marks as 'Ramp Business Corp' Series E-3 and Class A in T. Rowe Price, Robinhood Ventures and Fundrise filings",
+      "evidence": "0001410368-26-085820"
+    }
+  ],
+  "spv": [
+    {
+      "into": "ANDURIL INDUSTRIES",
+      "raw": ["ANDURIL INVESTORS LLC"],
+      "reason": "BlackRock reports Anduril Series G through Anduril Investors LLC (title 'Anduril Investors LLC, Series G')",
+      "evidence": "0002071691-26-013149"
+    },
+    {
+      "into": "OPENAI",
+      "raw": ["AESTAS LLC DBA OPENAI LLC EV UNITS PP"],
+      "reason": "T. Rowe Price reports issuer 'AESTAS LLC dba OpenAI LLC EV Units': a vehicle (Aestas LLC) whose filing names OpenAI as what it holds",
+      "evidence": "0001099263-25-005046"
+    },
+    {
+      "into": "SPACE EXPLORATION TECHNOLOGIES",
+      "raw": [
+        "SPV EXPOSURE TO SPACEX, LP",
+        "SPV EXPOSURE TO SPACEX, LLC",
+        "SPV EXPOSURE TO SPACEX LLC",
+        "SPV EXPOSURE TO SPACEX",
+        "DXYZ SPACEX I LLC (ECONOMIC EXPOSURE TO SPACE EXPLORATION TECHNOLOGIES CORP. CLASS A COMMON STOCK)",
+        "DXYZ SPACEX I LLC (ECONOMIC EXPOSURE TO SPACE EXPLORATION TECHNOLOGIES CORP., 96% COMMON UNITS & STOCK EQ.;3% SERIES E, 1% SERIES C PREFERRED SHARES)",
+        "DXYZ SPACEX I LLC (ECONOMIC EXPOSURE TO SPACE EXPLORATION TECHNOLOGIES CORP., 99% CLASS A COMMON STOCK AND 1% SERIES J PREFERRED STOCK)",
+        "DXYZ SPACEX I LLC (SPACE EXPLORATION TECH CORP 99% CLASS A COMMON STOCK & 1% SERIES J PREF STOCK)"
+      ],
+      "reason": "The vehicles' own names say what they hold: 'SPV Exposure to SpaceX, LP'; Destiny Tech100's 'DXYZ SpaceX I LLC (economic exposure to Space Exploration Technologies Corp. Class A Common Stock)' (0000894189-26-024246)",
+      "evidence": "0001049169-26-002173"
+    }
+  ],
+  "drop": [
+    {
+      "key": "GUSTO DISTRIBUTING",
+      "reason": "different company (prefix coincidence)"
+    },
+    {
+      "key": "ICAPITAL MILLENNIUM FUND",
+      "reason": "a fund, not iCapital Inc."
+    },
+    {
+      "key": "CASTLE CREEK CAPITAL PARTNERS VIII CO INVESTMENT FUND",
+      "reason": "a PE fund, not Castle Creek Biosciences"
+    },
+    {
+      "key": "WINDSTREAM",
+      "reason": "bare name mixes pre-bankruptcy listed Windstream with Windstream Parent"
+    },
+    {
+      "key": "ALLIANT",
+      "reason": "ambiguous bare name (several Alliant issuers)"
+    },
+    {
+      "key": "EMPOWER",
+      "reason": "mixes Empower Finance and Empower CLOs with Empower Semiconductor"
+    },
+    {
+      "key": "PARAGON",
+      "reason": "ambiguous bare name"
+    },
+    {
+      "key": "CANDID",
+      "reason": "includes Candid, Inc., a different company"
+    },
+    {
+      "key": "END EAVOR BIO",
+      "reason": "Endeavor BioMedicines, not Endeavor"
+    },
+    {
+      "key": "ENDEAVOR BIOMEDICINES",
+      "reason": "different company from Endeavor"
+    },
+    {
+      "key": "ENDEAVOR BIO",
+      "reason": "different company from Endeavor"
+    },
+    {
+      "key": "AP 1125 FUND",
+      "reason": "a vehicle: resolves as an SPV of Apptronik instead"
+    },
+    {
+      "key": "UPGRADE MASTER PASS THRU TRUST",
+      "reason": "a loan pass-through trust, not Upgrade equity"
+    },
+    {
+      "key": "ASCENT RESOURCES FUND LP MF",
+      "reason": "a fund, not Ascent Resources"
+    },
+    {
+      "key": "SELECTA BIOSCIENCES",
+      "reason": "Selecta Biosciences (listed) is a different company from Selecta Group B.V."
+    },
+    {
+      "key": "SELECTA BIOSCIENCES INC WARRA SELECTA BIOSCIENCES INC WARRA",
+      "reason": "Selecta Biosciences warrants, a different company"
+    },
+    {
+      "key": "SELECTA BIOSCIENCES INC PIPE SELECTA BIOSCIENCES INC PIPE",
+      "reason": "Selecta Biosciences PIPE, a different company"
+    },
+    {
+      "key": "KALSHI SPV EXPOSURE",
+      "reason": "a vehicle: resolves as an SPV of Kalshi instead"
+    }
+  ],
+  "separate": [
+    {
+      "a": "ASCENT CNR",
+      "b": "ASCENT CAPITAL",
+      "reason": "Filers give both names LEI 549300FJ06NSN1X35841, but the marks differ: Brighthouse 'Ascent CNR Corp.' $2.00/sh at 2026-06-30 (0001410368-26-087669); Eaton Vance 'Ascent Capital Group Inc' $33.66/sh at 2026-07-31",
+      "evidence": "0001410368-26-101148"
+    }
+  ],
+  "rename": {
+    "OURA HEALTH OY": "Oura",
+    "GENESIS MOLECULAR AI": "Genesis Molecular AI",
+    "INCORA TOP HOLDCO": "Incora",
+    "ARM MUSTANG EXPRESS HOLDCO": "Mustang Express",
+    "SUPERHUMAN PLATFORM": "Superhuman (formerly Grammarly)",
+    "EIKON THERAPEUTIC": "Eikon Therapeutics",
+    "GM CRUISE HLDG": "Cruise (GM Cruise Holdings)",
+    "TONIAN HOLD SR A VTG": "Tonian Holdings",
+    "PAYWARD": "Payward (Kraken)",
+    "NSCALE GLOBAL": "Nscale",
+    "CRUSOE ENERGY SYSTEMS": "Crusoe",
+    "BYTEDANCE": "ByteDance",
+    "X AI": "xAI",
+    "SB TECHNOLOGY": "SandboxAQ (SB Technology)",
+    "NEUTRON": "Neutron (Lime)",
+    "AH PARENT": "Alliant (AH Parent)",
+    "NATIONAL RESILIENCE SR": "National Resilience",
+    "MLN US HOLDCO": "Mitel (MLN US Holdco)",
+    "RANGE RED ACQ LLC ROBERTSHAW": "Robertshaw (Range Red Acquisition)",
+    "ARCTIC WOLF NETWORKS INC COMMO": "Arctic Wolf Networks",
+    "TORY BURCH PRIVATE PLACE": "Tory Burch",
+    "JOHNNIE": "Johnnie-O",
+    "RAMP BUSINESS": "Ramp",
+    "FERRELLGAS ESCROW LLC 3 30 31 EQUITY": "Ferrellgas (escrow equity)",
+    "BOLT TECHNOLOGY OU": "Bolt Technology",
+    "SELECTA": "Selecta Group",
+    "FHU US": "FHU US Holdings",
+    "TRUMID HLDGS": "Trumid",
+    "HOCKEY PARENT": "Hockey Parent Holdings"
+  },
+  "note": {
+    "X AI": "Holdings stop after 2026-03; StepStone reports its X.AI Corp position as Space Exploration Technologies from 2026-03-31 (0001193125-26-247111).",
+    "FHU US": "Brand: Chobani (T. Rowe 'FHU US HLDGS Units dba Chobani LLC', 0001099263-26-009601). Fidelity holds it through per-fund LLCs ('<fund code> FHUS HOLDINGS LLC'), linked as indirect (DATA-QUALITY trap 31, GOLDEN F29).",
+    "HOCKEY PARENT": "Brand: Hub International ('HOCKEY PARENT DBA HUB INTL A UNITS PP', T. Rowe Price)."
+  },
+  "untrack": {
+    "PERMIRA VII": "PE fund interest",
+    "LINDEN INVESTORS": "PE fund interest",
+    "TRIDENT VIII": "PE fund interest",
+    "TRIDENT IX": "PE fund interest",
+    "2026 VDC": "SPV (2026 VDC LP SPV)",
+    "HGCAPITAL": "PE fund interest",
+    "KOHLBERG TE INVESTORS VIII": "PE fund interest",
+    "ASF IX": "secondaries fund interest",
+    "AT T MOBILITY II": "preferred interest in a subsidiary of a listed company",
+    "NEW ENTERPRISE ASSOCIATES": "VC fund interest",
+    "ACR III LSC": "holding vehicle",
+    "GABELLI DVD INC TR": "a registered fund's securities",
+    "TPG ASIA VII": "PE fund interest",
+    "FERRELLGAS ESCROW LLC 3 30 31 EQUITY": "escrow instrument",
+    "DISRUPTIVE TECHNOLOGY SOLUTIONS LI": "series LLC investment vehicle",
+    "FTAI AIRCRAFT LEASING FUN": "fund interest",
+    "DF RESIDENTIAL III": "real estate fund interest",
+    "QUIET OA ACCESS": "investment vehicle",
+    "ITASCA PARK": "investment vehicle",
+    "LEGACY GATEWAY JV": "real estate joint venture",
+    "QHP SAPPHIRE": "SPV",
+    "APAX XI USD": "PE fund interest",
+    "PARTHENON KAIROS": "PE continuation vehicle",
+    "AESTAS MANAGEMENT": "SPV manager",
+    "HNG HOSPITALITY OFFSHORE": "fund interest",
+    "HIG INTERMEDIATE": "holding vehicle",
+    "PLAYCORE CV": "PE continuation vehicle",
+    "AI ROBIN CY": "PE holding vehicle (S.C.A.)",
+    "ANE CAYMAN": "holding vehicle",
+    "7RIDGE INVESTMENTS": "fund interest",
+    "CALERA XXVIII": "investment vehicle",
+    "SCP DRAGON": "PE holding vehicle",
+    "NP KABA": "PE holding vehicle",
+    "SCRS INTERMEDIATE": "holding vehicle",
+    "KEYSTONE POWER CONEMAUGH": "power plant ownership interest",
+    "MARKET GARDEN": "investment vehicle",
+    "LINDSAY GOLDBERG ATTAIN": "PE continuation vehicle",
+    "CARCETTI CAPITAL": "holding vehicle",
+    "CARLYLE GLOBAL MARKET STRATEGI": "fund interest (Carlyle Global Market Strategies)",
+    "DAIWA ICP EUROPEAN INFRASTRUCTURE": "fund interest (infrastructure LP)",
+    "SNOWPOINT GROWTH": "investment vehicle"
+  },
+  "managerNames": {
+    "_about": "Adviser SEC file number (or registrant CIK) -> firm, where the adviser name does not carry the brand.",
+    "801-48187": "PIMCO",
+    "801-68463": "Partners Group",
+    "801-00856": "T. Rowe Price"
+  }
+}

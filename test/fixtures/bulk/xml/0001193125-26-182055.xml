@@ -1,0 +1,1167 @@
+<?xml version="1.0" encoding="UTF-8"?><edgarSubmission xmlns="http://www.sec.gov/edgar/nport" xmlns:com="http://www.sec.gov/edgar/common" xmlns:ncom="http://www.sec.gov/edgar/nportcommon" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <headerData>
+    <submissionType>NPORT-P</submissionType>
+    <isConfidential>false</isConfidential>
+    <filerInfo>
+
+      <filer>
+        <issuerCredentials>
+          <cik>0000044201</cik>
+          <ccc>XXXXXXXX</ccc>
+        </issuerCredentials>
+      </filer>
+
+
+      <seriesClassInfo>
+        <seriesId>S000009228</seriesId>
+        <classId>C000025073</classId>
+        <classId>C000025075</classId>
+        <classId>C000025076</classId>
+        <classId>C000025077</classId>
+        <classId>C000224555</classId>
+        <classId>C000224556</classId>
+        <classId>C000189486</classId>
+        <classId>C000025064</classId>
+        <classId>C000025071</classId>
+        <classId>C000025072</classId>
+        <classId>C000068598</classId>
+        <classId>C000180003</classId>
+        <classId>C000025065</classId>
+        <classId>C000025066</classId>
+        <classId>C000148456</classId>
+        <classId>C000025067</classId>
+        <classId>C000025068</classId>
+        <classId>C000025069</classId>
+        <classId>C000162626</classId>
+        <classId>C000077891</classId>
+        <classId>C000189487</classId>
+      </seriesClassInfo>
+
+
+    </filerInfo>
+  </headerData>
+  <formData>
+    <genInfo>
+      <regName>Growth Fund of America</regName>
+      <regFileNumber>811-00862</regFileNumber>
+      <regCik>0000044201</regCik>
+      <regLei>VOJHP0RJPD2FRCAXQJ44</regLei>
+      <regStreet1>6455 Irvine Center Drive</regStreet1>
+      <regCity>Irvine</regCity>
+      <regStateConditional regCountry="US" regState="US-CA"/>
+      <regZipOrPostalCode>92618-4518</regZipOrPostalCode>
+      <regPhone>9499755000</regPhone>
+      <seriesName>Growth Fund of America</seriesName>
+      <seriesId>S000009228</seriesId>
+      <seriesLei>VOJHP0RJPD2FRCAXQJ44</seriesLei>
+      <repPdEnd>2026-08-31</repPdEnd>
+      <repPdDate>2026-02-28</repPdDate>
+      <isFinalFiling>N</isFinalFiling>
+    </genInfo>
+    <fundInfo>
+      <totAssets>329108106886.810000000000</totAssets>
+      <totLiabs>1060456214.460000000000</totLiabs>
+      <netAssets>328047650672.350000000000</netAssets>
+      <assetsAttrMiscSec>0.000000000000</assetsAttrMiscSec>
+      <assetsInvested>0.000000000000</assetsInvested>
+      <amtPayOneYrBanksBorr>0.000000000000</amtPayOneYrBanksBorr>
+      <amtPayOneYrCtrldComp>0.000000000000</amtPayOneYrCtrldComp>
+      <amtPayOneYrOthAffil>0.000000000000</amtPayOneYrOthAffil>
+      <amtPayOneYrOther>0.000000000000</amtPayOneYrOther>
+      <amtPayAftOneYrBanksBorr>0.000000000000</amtPayAftOneYrBanksBorr>
+      <amtPayAftOneYrCtrldComp>0.000000000000</amtPayAftOneYrCtrldComp>
+      <amtPayAftOneYrOthAffil>0.000000000000</amtPayAftOneYrOthAffil>
+      <amtPayAftOneYrOther>0.000000000000</amtPayAftOneYrOther>
+      <delayDeliv>0.000000000000</delayDeliv>
+      <standByCommit>0.000000000000</standByCommit>
+      <liquidPref>0.000000000000</liquidPref>
+      <cshNotRptdInCorD>0.000000000000</cshNotRptdInCorD>
+      <borrowers>
+        <borrower aggrVal="12459096.000000000000" lei="4PQUHN3JPFGFNF3BB653" name="MORGAN STANLEY &amp; CO. INTL PLC"/>
+        <borrower aggrVal="4842716.510000000000" lei="549300HN4UKV1E2R3U73" name="BOFA SECURITIES  INC."/>
+        <borrower aggrVal="19186448.000000000000" lei="549300JRHF1MHHWUAW04" name="NATIONAL FINANCIAL SERVICE LLC"/>
+        <borrower aggrVal="19797400.000000000000" lei="549300KUN9K9K32C6D97" name="BNP PARIBAS PB INTL LTD"/>
+        <borrower aggrVal="9637648.520000000000" lei="9R7GPTSO7KV3UQJZQ078" name="MORGAN STANLEY &amp; CO. LLC"/>
+        <borrower aggrVal="32769415.400000000000" lei="AC28XWWI3WIBK2824319" name="BARCLAYS CAPITAL INC"/>
+        <borrower aggrVal="7320168.600000000000" lei="BFM8T61CT2L1QCEMIK50" name="UBS AG LONDON"/>
+        <borrower aggrVal="43562200.550000000000" lei="FOR8UP27PHTHYVLBNG30" name="GOLDMAN SACHS &amp; CO. LLC"/>
+        <borrower aggrVal="11397.490000000000" lei="MBNUM2BPBDO7JBLYG310" name="CITIGROUP GLOBAL MARKETS INC"/>
+        <borrower aggrVal="57512.000000000000" lei="MP6I5ZYZBEU3UXPYFY54" name="H.S.B.C.  BANK PLC"/>
+        <borrower aggrVal="1009800.000000000000" lei="RCNB6OTYUAMMP879YW96" name="BNP PARIBAS SECURITIES CORP"/>
+        <borrower aggrVal="2696000.000000000000" lei="T6FIZBDPKLYJKFCRVK44" name="UBS SECURITIES LLC"/>
+        <borrower aggrVal="8133093.160000000000" lei="VYVVCKR63DVZZN70PB21" name="WELLS FARGO SECURITIES LLC"/>
+        <borrower aggrVal="27716849.550000000000" lei="ZBUT11V806EZRVTWT807" name="J.P. MORGAN SECURITIES LLC"/>
+      </borrowers>
+      <aggregateCondition isNonCashCollateral="Y">
+        <aggregateInfos>
+          <aggregateInfo amt="60642164" collatrl="50985975.84">
+            <invstCat>UST</invstCat>
+          </aggregateInfo>
+        </aggregateInfos>
+      </aggregateCondition>
+      <returnInfo>
+        <monthlyTotReturns>
+          <monthlyTotReturn classId="C000025064" rtn1="0.1083320000000000" rtn2="0.6003259900000000" rtn3="-2.3213700000000000"/>
+          <monthlyTotReturn classId="C000025065" rtn1="0.0248379900000000" rtn2="0.5323129900000000" rtn3="-2.3766039900000000"/>
+          <monthlyTotReturn classId="C000025066" rtn1="0.0318440000000000" rtn2="0.5360720000000000" rtn3="-2.3884400000000000"/>
+          <monthlyTotReturn classId="C000025067" rtn1="0.0808899900000000" rtn2="0.5715679900000000" rtn3="-2.3465659900000000"/>
+          <monthlyTotReturn classId="C000025068" rtn1="0.0906609900000000" rtn2="0.6084860000000000" rtn3="-2.3286500000000000"/>
+          <monthlyTotReturn classId="C000025069" rtn1="0.1148580000000000" rtn2="0.6240199900000000" rtn3="-2.2976520000000000"/>
+          <monthlyTotReturn classId="C000025071" rtn1="0.0279899900000000" rtn2="0.5359939900000000" rtn3="-2.3781000000000000"/>
+          <monthlyTotReturn classId="C000025072" rtn1="0.0903020000000000" rtn2="0.6055999900000000" rtn3="-2.3376680000000000"/>
+          <monthlyTotReturn classId="C000025073" rtn1="0.0956319900000000" rtn2="0.5967359900000000" rtn3="-2.3296490000000000"/>
+          <monthlyTotReturn classId="C000025075" rtn1="0.0323480000000000" rtn2="0.5329340000000000" rtn3="-2.3788940000000000"/>
+          <monthlyTotReturn classId="C000025076" rtn1="0.0803099900000000" rtn2="0.5722380000000000" rtn3="-2.3441040000000000"/>
+          <monthlyTotReturn classId="C000025077" rtn1="0.1070840000000000" rtn2="0.6082640000000000" rtn3="-2.3160549900000000"/>
+          <monthlyTotReturn classId="C000068598" rtn1="0.1054560000000000" rtn2="0.6254629900000000" rtn3="-2.3230299900000000"/>
+          <monthlyTotReturn classId="C000077891" rtn1="0.1243390000000000" rtn2="0.6364960000000000" rtn3="-2.2979739900000000"/>
+          <monthlyTotReturn classId="C000148456" rtn1="0.0566320000000000" rtn2="0.5639049900000000" rtn3="-2.3597560000000000"/>
+          <monthlyTotReturn classId="C000162626" rtn1="0.1118160000000000" rtn2="0.6066399900000000" rtn3="-2.3073280000000000"/>
+          <monthlyTotReturn classId="C000180003" rtn1="0.1251680000000000" rtn2="0.6176499900000000" rtn3="-2.2947120000000000"/>
+          <monthlyTotReturn classId="C000189486" rtn1="0.1108480000000000" rtn2="0.6084499900000000" rtn3="-2.2993750000000000"/>
+          <monthlyTotReturn classId="C000189487" rtn1="0.1188800000000000" rtn2="0.6209000000000000" rtn3="-2.3027920000000000"/>
+          <monthlyTotReturn classId="C000224555" rtn1="0.1127440000000000" rtn2="0.6232660000000000" rtn3="-2.3015290000000000"/>
+          <monthlyTotReturn classId="C000224556" rtn1="0.1162960000000000" rtn2="0.6196909900000000" rtn3="-2.3071240000000000"/>
+        </monthlyTotReturns>
+        <othMon1 netRealizedGain="3585048688.81" netUnrealizedAppr="-3413977835.79"/>
+        <othMon2 netRealizedGain="2594427468.53" netUnrealizedAppr="-521993386.6"/>
+        <othMon3 netRealizedGain="1201995923.35" netUnrealizedAppr="-9063146926.59"/>
+      </returnInfo>
+      <mon1Flow redemption="6548981308.9600" reinvestment="32648110313.2200" sales="2757197825.3800"/>
+      <mon2Flow redemption="4740928829.9300" reinvestment="-50079.6200" sales="3034658504.6200"/>
+      <mon3Flow redemption="3577117001.8900" reinvestment="-9376.7600" sales="3006289267.6700"/>
+
+
+    </fundInfo>
+    <invstOrSecs>
+      <invstOrSec>
+        <name>OPENAI GROUP PBC</name>
+        <lei>N/A</lei>
+        <title>OPENAI GROUP PBC CL A-2 CV PFD PP (DRS) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="EPO8071"/>
+        </identifiers>
+        <balance>945843.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>617919231.899999976158</valUSD>
+        <pctVal>0.1883626451</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>PSIQUANTUM CORP</name>
+        <lei>N/A</lei>
+        <title>PSIQUANTUM CORP PFD SER E PP (DRS) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="EPP7408"/>
+        </identifiers>
+        <balance>2330099.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>95828117.489999994636</valUSD>
+        <pctVal>0.0292116457</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>STRIPE LLC</name>
+        <lei>549300CLHGIPTCYHQ143</lei>
+        <title>STRIPE LLC PFD SER BB-1 6.00% NON-CUM PP (DRS) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="EPS6557"/>
+        </identifiers>
+        <balance>604130.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>38060190.000000000000</valUSD>
+        <pctVal>0.0116020310</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>STRIPE LLC</name>
+        <lei>549300CLHGIPTCYHQ143</lei>
+        <title>STRIPE LLC CL B PP (PHYSICAL) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="0170016D"/>
+          <other otherDesc="CGSymbol" value="ECS282034"/>
+        </identifiers>
+        <balance>1123404.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>70774452.000000000000</valUSD>
+        <pctVal>0.0215744426</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>STRIPE LLC</name>
+        <lei>549300CLHGIPTCYHQ143</lei>
+        <title>STRIPE LLC PFD SER H 6.00% NON-CUM PP (PHYSICAL) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="ECS283004"/>
+        </identifiers>
+        <balance>376444.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>23715972.000000000000</valUSD>
+        <pctVal>0.0072294290</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>Y</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>STRIPE LLC</name>
+        <lei>549300CLHGIPTCYHQ143</lei>
+        <title>STRIPE LLC PFD SER I 6.00% NON-CUM PP (PHYSICAL) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="ECS319964"/>
+        </identifiers>
+        <balance>7098300.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>447192900.000000000000</valUSD>
+        <pctVal>0.1363194948</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>Y</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>STRIPE LLC</name>
+        <lei>549300CLHGIPTCYHQ143</lei>
+        <title>STRIPE LLC CL B PP (DRS) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="ECS327876"/>
+        </identifiers>
+        <balance>30538.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1923894.000000000000</valUSD>
+        <pctVal>0.0005864678</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>TIPALTI SOLUTIONS LTD</name>
+        <lei>2549009PMFQYXXCS1H70</lei>
+        <title>TIPALTI SOLUTIONS LTD PFD SER F PP (USD) (PHYSICAL) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="ECT299928"/>
+        </identifiers>
+        <balance>3800381.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>15087512.570000000298</valUSD>
+        <pctVal>0.0045991832</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>GB</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>VERILY LIFE SCIENCES LLC</name>
+        <lei>5493003ZYK1Z7M670M44</lei>
+        <title>VERILY HEALTH INC. CL B PP (DRS) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="1429880D"/>
+          <other otherDesc="CGSymbol" value="ECV202817"/>
+        </identifiers>
+        <balance>673374.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>5925691.200000000186</valUSD>
+        <pctVal>0.0018063508</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>WAYMO LLC</name>
+        <lei>N/A</lei>
+        <title>WAYMO LLC PFD SER A-2 8.00% NON-CUM PP (DRS) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="ECW252371"/>
+        </identifiers>
+        <balance>1164589.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>191360489.669999986887</valUSD>
+        <pctVal>0.0583331383</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>Y</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>LONG WALL CO</name>
+        <lei>N/A</lei>
+        <title>LONG WALL CO CL A-9 CV PFD PP (DRS) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="EPA7310"/>
+        </identifiers>
+        <balance>644229.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>425191.140000000014</valUSD>
+        <pctVal>0.0001296126</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>LONG WALL CO</name>
+        <lei>N/A</lei>
+        <title>LONG WALL CO CL A10 CV PFD PP (DRS) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="EPA7311"/>
+        </identifiers>
+        <balance>3616767.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>2387066.220000000205</valUSD>
+        <pctVal>0.0007276584</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>ANTHROPIC PBC</name>
+        <lei>984500B6DEB8CEBC4Z70</lei>
+        <title>ANTHROPIC PBC CL G-1 PFD PP (PHYSICAL) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="EPA8230"/>
+        </identifiers>
+        <balance>5075585.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1315268824.789999961853</valUSD>
+        <pctVal>0.4009383460</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>CRUSOE INC</name>
+        <lei>N/A</lei>
+        <title>CRUSOE INC CL E PFD PP (PHYSICAL) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="EPC7931"/>
+        </identifiers>
+        <balance>1162528.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>125553024.000000000000</valUSD>
+        <pctVal>0.0382728008</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>DATABRICKS INC</name>
+        <lei>984500FEDAC7FBD96273</lei>
+        <title>DATABRICKS INC SER J PFD PP (PHYSICAL) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="EPD7369"/>
+        </identifiers>
+        <balance>2241043.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>399241810.449999988079</valUSD>
+        <pctVal>0.1217023837</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>DATABRICKS INC</name>
+        <lei>984500FEDAC7FBD96273</lei>
+        <title>DATABRICKS INC SER K PFD PP (PHYSICAL) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="EPD7851"/>
+        </identifiers>
+        <balance>423300.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>75410895.000000000000</valUSD>
+        <pctVal>0.0229877869</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>DATABRICKS INC</name>
+        <lei>984500FEDAC7FBD96273</lei>
+        <title>DATABRICKS INC CL L PFD PP (PHYSICAL) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="EPD8133"/>
+        </identifiers>
+        <balance>642100.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>114390115.000000000000</valUSD>
+        <pctVal>0.0348699693</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>GROQ INC</name>
+        <lei>N/A</lei>
+        <title>GROQ INC PFD SER D-3 PP (PHYSICAL) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="EPG7912"/>
+        </identifiers>
+        <balance>583022.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>51288445.340000003576</valUSD>
+        <pctVal>0.0156344498</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>TOPBUILD CORP</name>
+        <lei>5493007YSKHOL4RWII46</lei>
+        <title>TOPBUILD CORP</title>
+        <cusip>89055F103</cusip>
+        <identifiers>
+          <isin value="US89055F1030"/>
+          <ticker value="BLD"/>
+          <other otherDesc="CG Symbol" value="BLD"/>
+        </identifiers>
+        <balance>582928.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>261326622.400000005960</valUSD>
+        <pctVal>0.0796611778</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>ANTHROPIC PBC</name>
+        <lei>984500B6DEB8CEBC4Z70</lei>
+        <title>ANTHROPIC PBC CL F-1 PFD PP (PHYSICAL) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="1892140D"/>
+          <other otherDesc="CGSymbol" value="ECA408707"/>
+        </identifiers>
+        <balance>2859590.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>741023858.080000042915</valUSD>
+        <pctVal>0.2258890916</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>EPIC GAMES INC</name>
+        <lei>549300I2RHITL4UP9K78</lei>
+        <title>EPIC GAMES INC PP (DRS) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="748448Z"/>
+          <other otherDesc="CGSymbol" value="ECE283892"/>
+        </identifiers>
+        <balance>84249.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>44420285.250000000000</valUSD>
+        <pctVal>0.0135408027</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>EINRIDE AB</name>
+        <lei>636700Y8RNIAAGA2PK13</lei>
+        <title>EINRIDE AB PP (DRS) (EURO)(NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="1757969D"/>
+          <other otherDesc="CGSymbol" value="ECE293295"/>
+        </identifiers>
+        <balance>267404.000000000000</balance>
+        <units>NS</units>
+        <currencyConditional curCd="EUR" exchangeRt="0.84631009034386992327"/>
+        <valUSD>6495251.980000000447</valUSD>
+        <pctVal>0.0019799721</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>SE</invCountry>
+
+        <isRestrictedSec>Y</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>EINRIDE AB</name>
+        <lei>636700Y8RNIAAGA2PK13</lei>
+        <title>EINRIDE AB PFD SER C PP (DRS) (USD)(NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="ECE311326"/>
+        </identifiers>
+        <balance>658158.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>15986657.820000000298</valUSD>
+        <pctVal>0.0048732731</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>SE</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>EINRIDE AB</name>
+        <lei>636700Y8RNIAAGA2PK13</lei>
+        <title>EINRIDE AB PP (DRS) (USD)(NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="1757969D"/>
+          <other otherDesc="CGSymbol" value="ECE406737"/>
+        </identifiers>
+        <balance>788000.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>19140520.000000000000</valUSD>
+        <pctVal>0.0058346767</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>SE</invCountry>
+
+        <isRestrictedSec>Y</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>METAPLANET INC</name>
+        <lei>3538006DGBY53D3UEV95</lei>
+        <title>METAPLANET INC</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <isin value="JP3481200008"/>
+          <ticker value="3350"/>
+          <other otherDesc="CG Symbol" value="3350"/>
+        </identifiers>
+        <balance>48674100.000000000000</balance>
+        <units>NS</units>
+        <currencyConditional curCd="JPY" exchangeRt="156.1649999986780287"/>
+        <valUSD>100985549.900000005960</valUSD>
+        <pctVal>0.0307838052</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>JP</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <loanByFundCondition isLoanByFund="Y" loanVal="51016468.050000000000"/>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>SAP SE</name>
+        <lei>529900D6BF99LW9R2E68</lei>
+        <title>SAP SE</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <isin value="DE0007164600"/>
+          <ticker value="SAP"/>
+          <other otherDesc="CG Symbol" value="SAPG1"/>
+        </identifiers>
+        <balance>4400876.000000000000</balance>
+        <units>NS</units>
+        <currencyConditional curCd="EUR" exchangeRt="0.84631008999667634169"/>
+        <valUSD>889004833.870000004768</valUSD>
+        <pctVal>0.2709986894</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>DE</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>OPENAI GROUP PBC</name>
+        <lei>N/A</lei>
+        <title>OPENAI GROUP PBC CL A PP (DRS) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="ECO413394"/>
+        </identifiers>
+        <balance>457540.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>298910882.000000000000</valUSD>
+        <pctVal>0.0911181291</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>PSIQUANTUM CORP</name>
+        <lei>N/A</lei>
+        <title>PSIQUANTUM CORP PFD SER D PP (PHYSICAL) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <ticker value="1794335D"/>
+          <other otherDesc="CGSymbol" value="ECP288836"/>
+        </identifiers>
+        <balance>613889.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>25246921.789999999106</valUSD>
+        <pctVal>0.0076961142</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>Y</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>STRIPE LLC</name>
+        <lei>549300CLHGIPTCYHQ143</lei>
+        <title>STRIPE LLC PFD SER BB 6.00% NON-CUM PP (DRS) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="EPS6558"/>
+        </identifiers>
+        <balance>214287.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>13500081.000000000000</valUSD>
+        <pctVal>0.0041152805</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>STRIPE LLC</name>
+        <lei>549300CLHGIPTCYHQ143</lei>
+        <title>STRIPE LLC PFD SER G 6.00% NON-CUM PP (DRS) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="EPS6617"/>
+        </identifiers>
+        <balance>396250.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>24963750.000000000000</valUSD>
+        <pctVal>0.0076097939</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>Y</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>WAYMO LLC</name>
+        <lei>N/A</lei>
+        <title>WAYMO LLC PFD SER B-2 NON-CUM PP (DRS) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="EPW3974"/>
+        </identifiers>
+        <balance>163537.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>26871729.339999999851</valUSD>
+        <pctVal>0.0081914104</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>Y</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>WAYMO LLC</name>
+        <lei>N/A</lei>
+        <title>WAYMO LLC CL D-2 PFD PP (DRS) (NOT LISTED OR TRADING)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="CGSymbol" value="EPW8270"/>
+        </identifiers>
+        <balance>267300.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>43921640.070000000298</valUSD>
+        <pctVal>0.0133887988</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>CONSTELLATION SOFTWARE INC</name>
+        <lei>549300B6PYHMCTDWQV29</lei>
+        <title>CONSTELLATION SOFTWARE INC WTS 1:1 @ CAD 03-31-40 (NOT LISTED OR TRADING)</title>
+        <cusip>21037X134</cusip>
+        <identifiers>
+          <isin value="CA21037X1345"/>
+          <other otherDesc="CGSymbol" value="EWC21410"/>
+        </identifiers>
+        <balance>180549.000000000000</balance>
+        <units>NS</units>
+        <currencyConditional curCd="CAD" exchangeRt="1.3640499998008220"/>
+        <valUSD>0.010000000000</valUSD>
+        <pctVal>0.0000000000</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>CA</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>3</fairValLevel>
+        <derivativeInfo>
+          <optionSwaptionWarrantDeriv derivCat="WAR">
+            <counterparties>
+              <counterpartyName>N/A</counterpartyName>
+              <counterpartyLei>N/A</counterpartyLei>
+            </counterparties>
+            <putOrCall>Call</putOrCall>
+            <writtenOrPur>Purchased</writtenOrPur>
+            <descRefInstrmnt>
+              <otherRefInst>
+                <issuerName>CONSTELLATION SOFTWARE INC</issuerName>
+                <issueTitle>CONSTELLATION SOFTWARE INC CAD SUB FRN 03-31-40</issueTitle>
+                <identifiers>
+                  <other otherDesc="CGSymbol" value="FCC94850"/>
+                </identifiers>
+              </otherRefInst>
+            </descRefInstrmnt>
+            <shareNo>180549</shareNo>
+            <exercisePrice>0.000000000000</exercisePrice>
+            <exercisePriceCurCd>CAD</exercisePriceCurCd>
+            <expDt>2040-03-31</expDt>
+            <delta>XXXX</delta>
+            <unrealizedAppr>0.000000000000</unrealizedAppr>
+          </optionSwaptionWarrantDeriv>
+        </derivativeInfo>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>WOLFSPEED INC</name>
+        <lei>N/A</lei>
+        <title>WOLFSPEED INC CV 144A SR SEC 2ND LIEN 2.5% 06-15-31</title>
+        <cusip>977852AQ5</cusip>
+        <identifiers>
+          <isin value="US977852AQ57"/>
+          <other otherDesc="CG Symbol" value="FBW9013"/>
+        </identifiers>
+        <balance>9008000.000000000000</balance>
+        <units>PA</units>
+        <curCd>USD</curCd>
+        <valUSD>15274190.000000000000</valUSD>
+        <pctVal>0.0046560888</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>DBT</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>Y</isRestrictedSec>
+
+        <fairValLevel>2</fairValLevel>
+        <debtSec>
+          <maturityDt>2031-06-15</maturityDt>
+          <couponKind>Fixed</couponKind>
+          <annualizedRt>2.500000000000</annualizedRt>
+          <isDefault>N</isDefault>
+          <areIntrstPmntsInArrs>N</areIntrstPmntsInArrs>
+          <isPaidKind>N</isPaidKind>
+          <isMandatoryConvrtbl>N</isMandatoryConvrtbl>
+          <isContngtConvrtbl>N</isContngtConvrtbl>
+          <dbtSecRefInstruments>
+            <dbtSecRefInstrument>
+              <name>WOLFSPEED INC</name>
+              <title>WOLFSPEED INC</title>
+              <curCd>USD</curCd>
+              <identifiers>
+                <cusip value="97785W106"/>
+                <isin value="US97785W1062"/>
+                <ticker value="WOLF"/>
+                <other otherDesc="CGSymbol" value="WOLF"/>
+              </identifiers>
+            </dbtSecRefInstrument>
+          </dbtSecRefInstruments>
+          <currencyInfos>
+            <currencyInfo convRatio="0.081750800000" curCd="USD"/>
+          </currencyInfos>
+          <delta>XXXX</delta>
+        </debtSec>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>WOLFSPEED INC</name>
+        <lei>N/A</lei>
+        <title>WOLFSPEED INC SR SEC 2ND LIEN PIK 12.0% 06-15-31</title>
+        <cusip>977852AS1</cusip>
+        <identifiers>
+          <isin value="US977852AS14"/>
+          <other otherDesc="CG Symbol" value="FCW131629"/>
+        </identifiers>
+        <balance>23518947.000000000000</balance>
+        <units>PA</units>
+        <curCd>USD</curCd>
+        <valUSD>17484314.469999998808</valUSD>
+        <pctVal>0.0053298094</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>DBT</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+
+        <isRestrictedSec>N</isRestrictedSec>
+
+        <fairValLevel>2</fairValLevel>
+        <debtSec>
+          <maturityDt>2031-06-15</maturityDt>
+          <couponKind>Variable</couponKind>
+          <annualizedRt>12.000000000000</annualizedRt>
+          <isDefault>N</isDefault>
+          <areIntrstPmntsInArrs>N</areIntrstPmntsInArrs>
+          <isPaidKind>N</isPaidKind>
+        </debtSec>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+    </invstOrSecs>
+    <signature>
+      <ncom:dateSigned>2026-04-27</ncom:dateSigned>
+      <ncom:nameOfApplicant>Growth Fund of America</ncom:nameOfApplicant>
+      <ncom:signature>Scott Lewis</ncom:signature>
+      <ncom:signerName>Scott Lewis</ncom:signerName>
+      <ncom:title>Compliance Specialist Senior</ncom:title>
+    </signature>
+  </formData>
+</edgarSubmission>

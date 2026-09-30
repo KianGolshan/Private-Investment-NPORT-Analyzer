@@ -1,0 +1,1291 @@
+<?xml version="1.0" encoding="UTF-8"?><edgarSubmission xmlns="http://www.sec.gov/edgar/nport" xmlns:com="http://www.sec.gov/edgar/common" xmlns:ncom="http://www.sec.gov/edgar/nportcommon" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <headerData>
+    <submissionType>NPORT-P</submissionType>
+    <isConfidential>false</isConfidential>
+    <filerInfo>
+
+      <filer>
+        <issuerCredentials>
+          <cik>0001843974</cik>
+          <ccc>XXXXXXXX</ccc>
+        </issuerCredentials>
+      </filer>
+
+
+
+
+    </filerInfo>
+  </headerData>
+  <formData>
+    <genInfo>
+      <regName>Destiny Tech100 Inc.</regName>
+      <regFileNumber>811-23802</regFileNumber>
+      <regCik>0001843974</regCik>
+      <regLei>549300RWPCPQ8X46PR42</regLei>
+      <regStreet1>1401 Lavaca Street, #144</regStreet1>
+      <regCity>Austin</regCity>
+      <regStateConditional regCountry="US" regState="US-TX"/>
+      <regZipOrPostalCode>78701</regZipOrPostalCode>
+      <regPhone>415-639-9966</regPhone>
+      <seriesName>Destiny Tech100 Inc.</seriesName>
+      <seriesLei>549300RWPCPQ8X46PR42</seriesLei>
+      <repPdEnd>2026-12-31</repPdEnd>
+      <repPdDate>2026-03-31</repPdDate>
+      <isFinalFiling>N</isFinalFiling>
+    </genInfo>
+    <fundInfo>
+      <totAssets>753288630.800000000000</totAssets>
+      <totLiabs>4927658.500000000000</totLiabs>
+      <netAssets>748360972.300000000000</netAssets>
+      <assetsAttrMiscSec>0.000000000000</assetsAttrMiscSec>
+      <assetsInvested>0.000000000000</assetsInvested>
+      <amtPayOneYrBanksBorr>0.000000000000</amtPayOneYrBanksBorr>
+      <amtPayOneYrCtrldComp>0.000000000000</amtPayOneYrCtrldComp>
+      <amtPayOneYrOthAffil>0.000000000000</amtPayOneYrOthAffil>
+      <amtPayOneYrOther>0.000000000000</amtPayOneYrOther>
+      <amtPayAftOneYrBanksBorr>0.000000000000</amtPayAftOneYrBanksBorr>
+      <amtPayAftOneYrCtrldComp>0.000000000000</amtPayAftOneYrCtrldComp>
+      <amtPayAftOneYrOthAffil>0.000000000000</amtPayAftOneYrOthAffil>
+      <amtPayAftOneYrOther>0.000000000000</amtPayAftOneYrOther>
+      <delayDeliv>0.000000000000</delayDeliv>
+      <standByCommit>0.000000000000</standByCommit>
+      <liquidPref>0.000000000000</liquidPref>
+      <isNonCashCollateral>N</isNonCashCollateral>
+      <returnInfo>
+        <monthlyTotReturns>
+          <monthlyTotReturn rtn1="12.08" rtn2="-17.22" rtn3="-5.77"/>
+        </monthlyTotReturns>
+        <othMon1 netRealizedGain="0" netUnrealizedAppr="0"/>
+        <othMon2 netRealizedGain="0" netUnrealizedAppr="0"/>
+        <othMon3 netRealizedGain="0" netUnrealizedAppr="69068404"/>
+      </returnInfo>
+      <mon1Flow redemption=".000000000000" reinvestment=".000000000000" sales=".000000000000"/>
+      <mon2Flow redemption=".000000000000" reinvestment=".000000000000" sales=".000000000000"/>
+      <mon3Flow redemption=".000000000000" reinvestment=".000000000000" sales=".000000000000"/>
+
+
+      <varInfo>
+
+        <fundsDesignatedInfo>
+          <nameDesignatedIndex>N/A</nameDesignatedIndex>
+          <indexIdentifier>N/A</indexIdentifier>
+
+        </fundsDesignatedInfo>
+
+      </varInfo>
+    </fundInfo>
+    <invstOrSecs>
+      <invstOrSec>
+        <name>Jeeves, Inc. - Series C Preferred Stock</name>
+        <lei>N/A</lei>
+        <title>Jeeves, Inc. - Series C Preferred Stock</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Jeeves"/>
+        </identifiers>
+        <balance>176886.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>449290.440000000000</valUSD>
+        <pctVal>0.0600365942</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Khosla Ventures IFSPV II, LLC (invested in Impossible Foods, Inc., Series H Preferred Stock)</name>
+        <lei>N/A</lei>
+        <title>Khosla Ventures IFSPV II, LLC (invested in Impossible Foods, Inc., Series H Preferred Stock)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Impossible Foods"/>
+        </identifiers>
+        <balance>N/A</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>141556.290000000000</valUSD>
+        <pctVal>0.0189155094</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Klarna Group PLC Class B Shares</name>
+        <lei>N/A</lei>
+        <title>Klarna Group PLC Class B Shares</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Klarna B Shares"/>
+        </identifiers>
+        <balance>36924.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>.000000000000</valUSD>
+        <pctVal>0.0000000000</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>GB</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Astranis Space Technologies Corp. - Series E Preferred Stock</name>
+        <lei>N/A</lei>
+        <title>Astranis Space Technologies Corp. - Series E Preferred Stock</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Astranis"/>
+        </identifiers>
+        <balance>129980.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>2499998.000000000000</valUSD>
+        <pctVal>0.3340631183</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Automation Anywhere, Inc.</name>
+        <lei>N/A</lei>
+        <title>Automation Anywhere, Inc.</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Automation Anywhere"/>
+        </identifiers>
+        <balance>88885.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>314652.900000000000</valUSD>
+        <pctVal>0.0420456052</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Axiom Space, Inc. Series C Preferred Stock</name>
+        <lei>N/A</lei>
+        <title>Axiom Space, Inc. Series C Preferred Stock</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Axiom Space Preferred Shares Series C"/>
+        </identifiers>
+        <balance>8879.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1143082.460000000000</valUSD>
+        <pctVal>0.1527447986</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Klarna Group PLC</name>
+        <lei>636700HER4JIK7GZUN17</lei>
+        <title>Klarna Group PLC</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <isin value="GB00BMHVL512"/>
+          <ticker value="KLAR"/>
+        </identifiers>
+        <balance>36924.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>483335.160000000000</valUSD>
+        <pctVal>0.0645858320</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>GB</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Lemonade 18, LLC (invested in Monzo Bank Holding Group Limited F Ordinary Shares)</name>
+        <lei>N/A</lei>
+        <title>Lemonade 18, LLC (invested in Monzo Bank Holding Group Limited F Ordinary Shares)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Monzo"/>
+        </identifiers>
+        <balance>306480.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>6201580.510000000000</valUSD>
+        <pctVal>0.8286883923</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Magnitude ANC III, LLC (economic exposure to Anthropic PBC. Series B Preferred Shares)</name>
+        <lei>N/A</lei>
+        <title>Magnitude ANC III, LLC (economic exposure to Anthropic PBC. Series B Preferred Shares)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Anthropic"/>
+        </identifiers>
+        <balance>386088.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>134092223.280000000000</valUSD>
+        <pctVal>17.9181208325</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>MCTC Investments Holdings (Delaware) LLC (invested in Databricks, Inc. Series L Preferred Stock)</name>
+        <lei>N/A</lei>
+        <title>MCTC Investments Holdings (Delaware) LLC (invested in Databricks, Inc. Series L Preferred Stock)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:MCTC"/>
+        </identifiers>
+        <balance>52632.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>10403767.440000000000</valUSD>
+        <pctVal>1.3902071093</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>MW LSV Relativity Space, LLC</name>
+        <lei>N/A</lei>
+        <title>MW LSV Relativity Space, LLC</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Relativity Space"/>
+        </identifiers>
+        <balance>887.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>.000000000000</valUSD>
+        <pctVal>0.0000000000</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>N/A</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>MWAM VC SpaceX-II, LLC (economic exposure to Space Exploration Technologies Corp., 55% Class A Common Stock and 45% Class C Common Stock)</name>
+        <lei>N/A</lei>
+        <title>MWAM VC SpaceX-II, LLC (economic exposure to Space Exploration Technologies Corp., 55% Class A Common Stock and 45% Class C Common Stock)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:SpaceX - MWAM VC SpaceX-II"/>
+        </identifiers>
+        <balance>42857.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>20738073.730000000000</valUSD>
+        <pctVal>2.7711324478</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Payward, Inc. - Series C Preferred Stock</name>
+        <lei>N/A</lei>
+        <title>Payward, Inc. - Series C Preferred Stock</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Payward"/>
+        </identifiers>
+        <balance>102606.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>4084744.860000000000</valUSD>
+        <pctVal>0.5458254788</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Prive Tens, LLC (invested in Tenstorrent Holdings Inc., 15.00% 12/31/2026)</name>
+        <lei>N/A</lei>
+        <title>Prive Tens, LLC (invested in Tenstorrent Holdings Inc., 15.00% 12/31/2026)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:PriveTens"/>
+        </identifiers>
+        <balance>12500000.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>12500000.000000000000</valUSD>
+        <pctVal>1.6703169276</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Public Holdings, Inc.</name>
+        <lei>N/A</lei>
+        <title>Public Holdings, Inc.</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Public"/>
+        </identifiers>
+        <balance>55555.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>364996.350000000000</valUSD>
+        <pctVal>0.0487727666</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Redwood Materials, Inc.</name>
+        <lei>N/A</lei>
+        <title>Redwood Materials, Inc.</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Redwood"/>
+        </identifiers>
+        <balance>114000.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>5041080.000000000000</valUSD>
+        <pctVal>0.6736161006</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Revolut Group Holdings Ltd.</name>
+        <lei>N/A</lei>
+        <title>Revolut Group Holdings Ltd.</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Revolut"/>
+        </identifiers>
+        <balance>8200.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>11771100.000000000000</valUSD>
+        <pctVal>1.5729174069</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>GB</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Rhenium Bolt 2021, LLC</name>
+        <lei>N/A</lei>
+        <title>Rhenium Bolt 2021, LLC</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Bolt Financial"/>
+        </identifiers>
+        <balance>N/A</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>.000000000000</valUSD>
+        <pctVal>0.0000000000</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Skild AI, Inc. - Series C Preferred Stock</name>
+        <lei>N/A</lei>
+        <title>Skild AI, Inc. - Series C Preferred Stock</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Skild"/>
+        </identifiers>
+        <balance>153957.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>10327435.560000000000</valUSD>
+        <pctVal>1.3800072348</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Snowpoint Growth 2.5, LLC (invested in Shield AI Inc. Series F1 Preferred Stock)</name>
+        <lei>N/A</lei>
+        <title>Snowpoint Growth 2.5, LLC (invested in Shield AI Inc. Series F1 Preferred Stock)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Shield"/>
+        </identifiers>
+        <balance>192668.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>31052301.560000000000</valUSD>
+        <pctVal>4.1493747950</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Snowpoint Growth 2.6, LLC (invested in Space Exploration Technologies Corp. Class B Common Stock)</name>
+        <lei>N/A</lei>
+        <title>Snowpoint Growth 2.6, LLC (invested in Space Exploration Technologies Corp. Class B Common Stock)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:SpaceX Snowpoint"/>
+        </identifiers>
+        <balance>28486.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>15071942.600000000000</valUSD>
+        <pctVal>2.0139936685</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Snowpoint Growth 2.7, LLC (invested in Astranis Space Technologies Corp. Series E Preferred Stock)</name>
+        <lei>N/A</lei>
+        <title>Snowpoint Growth 2.7, LLC (invested in Astranis Space Technologies Corp. Series E Preferred Stock)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Snowpoint"/>
+        </identifiers>
+        <balance>259960.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>4999995.000000000000</valUSD>
+        <pctVal>0.6681261029</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>SP21Z Opportunities LLC (invested in OpenEvidence Inc. Common Stock)</name>
+        <lei>N/A</lei>
+        <title>SP21Z Opportunities LLC (invested in OpenEvidence Inc. Common Stock)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:OpenEvidence"/>
+        </identifiers>
+        <balance>69707.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>33973672.500000000000</valUSD>
+        <pctVal>4.5397440216</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Supabase, Inc. - Series A Preferred Stock</name>
+        <lei>N/A</lei>
+        <title>Supabase, Inc. - Series A Preferred Stock</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Supabase"/>
+        </identifiers>
+        <balance>40909.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1677269.000000000000</valUSD>
+        <pctVal>0.2241256642</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>SuperHuman Platform, Inc.</name>
+        <lei>N/A</lei>
+        <title>SuperHuman Platform, Inc.</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Superhuman Platform"/>
+        </identifiers>
+        <balance>82720.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>794112.000000000000</valUSD>
+        <pctVal>0.1061134973</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Axiom Space, Inc. Series C-1 Preferred Stock</name>
+        <lei>N/A</lei>
+        <title>Axiom Space, Inc. Series C-1 Preferred Stock</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Axiom Space Preferred Shares"/>
+        </identifiers>
+        <balance>21517.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>2636693.180000000000</valUSD>
+        <pctVal>0.3523290601</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Beast Industries Co. - Series C Preferred Stock</name>
+        <lei>N/A</lei>
+        <title>Beast Industries Co. - Series C Preferred Stock</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Beast"/>
+        </identifiers>
+        <balance>372578.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>14999990.280000000000</valUSD>
+        <pctVal>2.0043790143</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Boom Technology, Inc. Series B-2 Preferred Stock</name>
+        <lei>N/A</lei>
+        <title>Boom Technology, Inc. Series B-2 Preferred Stock</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Boom Technology"/>
+        </identifiers>
+        <balance>546093.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1567286.910000000000</valUSD>
+        <pctVal>0.2094292685</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>CElegans Labs, Inc.</name>
+        <lei>N/A</lei>
+        <title>CElegans Labs, Inc.</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:AtoB"/>
+        </identifiers>
+        <balance>90952.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1603483.760000000000</valUSD>
+        <pctVal>0.2142660854</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Chime Financial Inc.</name>
+        <lei>N/A</lei>
+        <title>Chime Financial Inc.</title>
+        <cusip>16935C109</cusip>
+        <identifiers>
+          <isin value="US16935C1099"/>
+          <ticker value="CHYM"/>
+        </identifiers>
+        <balance>60785.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1138503.050000000000</valUSD>
+        <pctVal>0.1521328733</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>ClassDojo, Inc.</name>
+        <lei>N/A</lei>
+        <title>ClassDojo, Inc.</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:ClassDojo"/>
+        </identifiers>
+        <balance>106136.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>2440066.640000000000</valUSD>
+        <pctVal>0.3260547691</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>DA-1125 Gaingels Fund II (invested in Databricks, Inc. Series L Preferred Stock)</name>
+        <lei>N/A</lei>
+        <title>DA-1125 Gaingels Fund II (invested in Databricks, Inc. Series L Preferred Stock)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Gaingels"/>
+        </identifiers>
+        <balance>39474.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>7802825.580000000000</valUSD>
+        <pctVal>1.0426553320</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Discord, Inc.</name>
+        <lei>N/A</lei>
+        <title>Discord, Inc.</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Discord CS"/>
+        </identifiers>
+        <balance>10690.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>302099.400000000000</valUSD>
+        <pctVal>0.0403681393</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Discord, Inc. - Series G Preferred Stock</name>
+        <lei>N/A</lei>
+        <title>Discord, Inc. - Series G Preferred Stock</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Discord PG"/>
+        </identifiers>
+        <balance>13110.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>370488.600000000000</valUSD>
+        <pctVal>0.0495066704</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>DXYZ OAI I LLC (economic exposure to OpenAI Global LLC, Profit Participation Units)</name>
+        <lei>N/A</lei>
+        <title>DXYZ OAI I LLC (economic exposure to OpenAI Global LLC, Profit Participation Units)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:DXYZ OAI I LLC"/>
+        </identifiers>
+        <balance>11236.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>7726850.010000000000</valUSD>
+        <pctVal>1.0325030695</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>DXYZ SpaceX I LLC (economic exposure to Space Exploration Technologies Corp., 96% Common units &amp; stock eq.;3% Series E, 1% Series C preferred shares)</name>
+        <lei>N/A</lei>
+        <title>DXYZ SpaceX I LLC (economic exposure to Space Exploration Technologies Corp., 96% Common units &amp; stock eq.;3% Series E, 1% Series C preferred shares)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:DXYZ SpaceX I LLC"/>
+        </identifiers>
+        <balance>135135.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>71499928.500000000000</valUSD>
+        <pctVal>9.5542032718</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>First American Treasury Obligations, Class X, 3.59%</name>
+        <lei>549300UU586IAH2B8H03</lei>
+        <title>First American Treasury Obligations, Class X, 3.59%</title>
+        <cusip>31846V328</cusip>
+        <identifiers>
+          <isin value="US31846V3289"/>
+          <ticker value="FXFXX"/>
+        </identifiers>
+        <balance>232913630.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>232913629.950000000000</valUSD>
+        <pctVal>31.1231663022</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>STIV</assetCat>
+        <issuerCat>RF</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>N</isRestrictedSec>
+        <fairValLevel>1</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Flexport, Inc.</name>
+        <lei>N/A</lei>
+        <title>Flexport, Inc.</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Flexport"/>
+        </identifiers>
+        <balance>26000.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>82420.000000000000</valUSD>
+        <pctVal>0.0110134017</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Fund FG-RTA, a series of Forge Investments LLC (economic exposure to Stripe, Inc., Common Stock)</name>
+        <lei>N/A</lei>
+        <title>Fund FG-RTA, a series of Forge Investments LLC (economic exposure to Stripe, Inc., Common Stock)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Fund FG-RTA"/>
+        </identifiers>
+        <balance>49075.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>3065224.500000000000</valUSD>
+        <pctVal>0.4095917095</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Fund FG-TQY, a series of Forge Investments LLC (economic exposure to Plaid, Inc., Common Stock)</name>
+        <lei>N/A</lei>
+        <title>Fund FG-TQY, a series of Forge Investments LLC (economic exposure to Plaid, Inc., Common Stock)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Plaid"/>
+        </identifiers>
+        <balance>1540.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>313728.800000000000</valUSD>
+        <pctVal>0.0419221220</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>G Squared Special Situations Fund, LLC - Series H-1 (invested in Brex, Inc., Common Stock)</name>
+        <lei>N/A</lei>
+        <title>G Squared Special Situations Fund, LLC - Series H-1 (invested in Brex, Inc., Common Stock)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Brex"/>
+        </identifiers>
+        <balance>N/A</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>1332733.300000000000</valUSD>
+        <pctVal>0.1780869593</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Goanna Capital 26E LLC (invested in OpenAI Group PBC Series C Preferred Stock)</name>
+        <lei>N/A</lei>
+        <title>Goanna Capital 26E LLC (invested in OpenAI Group PBC Series C Preferred Stock)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Goanna"/>
+        </identifiers>
+        <balance>50895.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>34999824.780000000000</valUSD>
+        <pctVal>4.6768639835</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Hermeus Corporation - Series C Preferred Stock</name>
+        <lei>N/A</lei>
+        <title>Hermeus Corporation - Series C Preferred Stock</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Hermeus"/>
+        </identifiers>
+        <balance>642357.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>14999999.500000000000</valUSD>
+        <pctVal>2.0043802463</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Hexagon Master LLC - Series 1 (invested in Ferox Games B.V. Series F Preferred Stock)</name>
+        <lei>N/A</lei>
+        <title>Hexagon Master LLC - Series 1 (invested in Ferox Games B.V. Series F Preferred Stock)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Hexagon"/>
+        </identifiers>
+        <balance>374950.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>11263273.030000000000</valUSD>
+        <pctVal>1.5050588482</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Impossible Foods, Inc. - Series A Preferred Stock</name>
+        <lei>N/A</lei>
+        <title>Impossible Foods, Inc. - Series A Preferred Stock</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Impossible Foods - Series A Preferred"/>
+        </identifiers>
+        <balance>52000.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>88920.000000000000</valUSD>
+        <pctVal>0.0118819665</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Vast, Inc. - Series A Preferred Stock</name>
+        <lei>N/A</lei>
+        <title>Vast, Inc. - Series A Preferred Stock</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Vast"/>
+        </identifiers>
+        <balance>2493143.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>4999998.290000000000</valUSD>
+        <pctVal>0.6681265425</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EP</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>Vercel Inc.</name>
+        <lei>N/A</lei>
+        <title>Vercel Inc.</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:Vercel"/>
+        </identifiers>
+        <balance>12448.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>2500180.800000000000</valUSD>
+        <pctVal>0.3340875450</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>EC</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
+        <name>WH Strategic Opportunities Fund V LP (invested in Chaos Industries, Inc. Series D Preferred Stock)</name>
+        <lei>N/A</lei>
+        <title>WH Strategic Opportunities Fund V LP (invested in Chaos Industries, Inc. Series D Preferred Stock)</title>
+        <cusip>N/A</cusip>
+        <identifiers>
+          <other otherDesc="USER DEFINED" value="DES:WHStrategic"/>
+        </identifiers>
+        <balance>113088.000000000000</balance>
+        <units>NS</units>
+        <curCd>USD</curCd>
+        <valUSD>15712254.000000000000</valUSD>
+        <pctVal>2.0995555062</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetConditional assetCat="OTHER" desc="Special Purpose Vehicle"/>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>US</invCountry>
+        <isRestrictedSec>Y</isRestrictedSec>
+        <fairValLevel>3</fairValLevel>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+    </invstOrSecs>
+    <signature>
+      <ncom:dateSigned>2026-05-29</ncom:dateSigned>
+      <ncom:nameOfApplicant>Destiny Tech100 Inc.</ncom:nameOfApplicant>
+      <ncom:signature>Peter Sattelmair</ncom:signature>
+      <ncom:signerName>Destiny Tech100 Inc.</ncom:signerName>
+      <ncom:title>PFO/Treasurer</ncom:title>
+    </signature>
+  </formData>
+  <documents>XXXX</documents>
+</edgarSubmission>
