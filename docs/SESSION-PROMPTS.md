@@ -69,37 +69,25 @@ Paste one of these at the start of a session. Each prompt tells Claude what to r
 > review-aliases scripts. Investigate N-CEN for manager mapping with real filings and report findings before
 > adopting it. Produce the review CSV for the top ~250 and stop for my review.
 
-### Next session: Phase 5a (written 2026-09-30, after the Phase 5 plan; use once the user signs off the plan)
+### Next session: Phase 5b (written 2026-09-30, after the 5a checkpoint; use once the user signs off 5a)
 
-> Resume Vantage v2 at Phase 5a (services, search over every issuer, the company page on the warehouse).
-> P0–P4.5 are signed off; the Phase 5 plan was decided 2026-09-30 (ADR 0008). Read CLAUDE.md,
-> docs/STATUS.md ("Phase 5 planning", Open decisions), docs/LESSONS.md (all), docs/ROADMAP.md §Phase 5
-> (the decisions, then 5a), docs/decisions/0008-app-on-the-warehouse.md, ADRs 0003–0005,
-> docs/DATA-QUALITY.md (traps 1–42 and Display rules), docs/GOLDEN-NUMBERS.md and docs/ARCHITECTURE.md.
+> Resume Vantage v2 at Phase 5b (fund pages, lists, exports, retiring the per-filing flows). P5a is built
+> (STATUS "Phase 5a results"). Read CLAUDE.md, docs/STATUS.md, docs/LESSONS.md (all), docs/ROADMAP.md §Phase 5 (the
+> decisions and 5b), ADR 0008, ADRs 0003–0004, docs/DATA-QUALITY.md (traps 1–44, Display rules),
+> docs/GOLDEN-NUMBERS.md and docs/ARCHITECTURE.md.
 >
-> Step 0: `npm run refresh` in the foreground (it loads 2026Q3 bulk if posted); report what it loaded,
-> `ingest_errors` and the size against 600 MB (513 MB on 2026-09-30). Run npm test, lint, format and the
-> LIVE goldens. Expected by company at 6/30/2026: Anthropic 117 / $17.295B, Databricks 120 / $6.233B, FHU US
-> Holdings 13 / $359.0M, OpenAI 87 / $5.490B; Stripe 35 / $1.31B at 12/31/25. If a new bulk quarter or an
-> amendment moves a golden, re-verify it on raw EDGAR before anything else.
+> Step 0: `npm run refresh` in the foreground (it loads 2026Q3 bulk if posted and rebuilds entities and search);
+> report what it loaded, `ingest_errors` and the size against 600 MB (run `sqlite3 warehouse.db VACUUM` first if the
+> free-page count is large). Run npm test, lint, format, the LIVE goldens and `npm run bench` (note the load average).
 >
-> Then ROADMAP §5a tasks 1–8 in order, each ending green: prune indexes (prove each unused), stable company
-> ids in the reviewed files + redirects, entities + holdings.entity_id, the FTS5 trigram search index with
-> match reasons, lib/services (search, company, source), read-only server routes with source/refreshId,
-> `npm run bench` before any precompute, and the company page. Tests as listed (history starts, goldens
-> through the API and on screen, the search cases with their match reasons, routing, ids, read-only). An
-> app-test assertion changes only where v1 was wrong, with the golden named in the commit. Long jobs in the
-> foreground; one-line status before any wait. Stop for the 5a sign-off; no push, PR or launchd without an
-> explicit yes.
-
-### Phase 5b: funds, lists, exports
-
-> Vantage v2 Phase 5b. Read CLAUDE.md, docs/STATUS.md, docs/LESSONS.md, docs/ROADMAP.md §Phase 5 (5b) and ADR 0008. Confirm 5a is signed off. Measure first, then build: filing_totals in both ingest paths with a
-> parity test and a foreground, resumable backfill (bulk ~14 min, catch-up ~26 min); measure the
-> capital-structure debt rows on one quarter and bring the numbers to me before any keep-rule change; then
-> the fund page, compare/returns, Batch and Watchlist on the services (ids, name migration), peer analytics
-> to lib/analytics/peer.js, exports, the admin "make this a company" job, and retire the per-filing flows.
-> Stop for sign-off.
+> Then ROADMAP §5b in order. Measure first: `filing_totals` in both ingest paths with a parity test on the 7 real
+> fixture filings, then a foreground, resumable backfill (bulk ~14 min, catch-up ~26 min); measure the
+> capital-structure debt rows on one quarter and bring me the numbers before any keep-rule change. Then the fund
+> page (private = company status; unreviewed labeled), compare and returns across canonical filings, Batch and
+> Watchlist on the company services (ids; existing names resolved once through search, unmatched kept), peer
+> analytics to lib/analytics/peer.js, exports with mark date / accession / source, the admin-only "make this a
+> company" job under the refresh lock, and the per-filing flows kept only as a compatibility layer. Stop for the 5b
+> sign-off; no push to main, PR or launchd without an explicit yes.
 
 ### Phase 6: new analysis and UI
 
