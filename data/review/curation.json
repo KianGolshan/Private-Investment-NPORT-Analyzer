@@ -1,5 +1,5 @@
 {
-  "_about": "Reviewed entity decisions applied on top of the seed rules (lib/entities/seed.js). Keys are issuer keys (parsers.issuerKeyOf). Merges require filing evidence: the same fund reporting the same filer instrument id or the same share count under both names (accession = the filing showing the new name). Reviewed 2026-09-29.",
+  "_about": "Reviewed entity decisions applied on top of the seed rules (lib/entities/seed.js). Keys are issuer keys (parsers.issuerKeyOf). Merges require filing evidence: the same fund reporting the same filer instrument id or the same share count under both names (accession = the filing showing the new name). Reviewed 2026-09-29; P4.5 identity decisions 2026-09-30 (filing evidence, verified on EDGAR).",
   "merge": [
     {
       "into": "OURA HEALTH OY",
@@ -150,6 +150,24 @@
       "keys": ["DOGWOOD"],
       "reason": "PIMCO Access Income instrument EQTYQL9A8: DOGWOOD LLC renamed MARKET GARDEN",
       "evidence": "0001410368-26-090261"
+    },
+    {
+      "into": "ANTHROPIC",
+      "keys": ["ANTHROPICS TECHNOLOGY"],
+      "reason": "BlackRock mislabel: instrument BYDXGRZL8 is 'ANTHROPIC SERIES G' in BlackRock Bond Fund (0000940400-26-020796) and 'Anthropics Technology Ltd., Series G' in BlackRock Series Fund, both $259.14/sh on 2026-03-31 (raw EDGAR); BlackRock's 2026-06-30 rows carry Anthropic PBC's LEI 984500B6DEB8CEBC4Z70 (0002071691-26-019783). Every ANTHROPICS TECHNOLOGY row is this BlackRock label",
+      "evidence": "0002071691-26-012500"
+    },
+    {
+      "into": "OPENAI",
+      "keys": ["OPENAIR"],
+      "reason": "BlackRock mislabel: instrument BYJ0U3DG6 is 'OPENAI SERIES C' in BlackRock Bond Fund (0000940400-26-020796) and 'OpenAir.com, Series C' in BlackRock Series Fund, both $687.69/sh on 2026-03-31 (raw EDGAR); New York Life's Winslow funds report 'OpenAir.com, Series C' at the same $687.69 (0002071691-26-019475). All 11 OPENAIR rows (from 2026-03-31) carry OpenAI Series C's mark",
+      "evidence": "0002071691-26-012500"
+    },
+    {
+      "into": "RAMP BUSINESS",
+      "keys": ["RAMP"],
+      "reason": "Coatue Innovative Strategies Fund's 'RAMP SERIES E3 PREFERRED' and 'RAMP CLASS A COMMON STOCK' (First Trust: 'RAMP PREFERRED SERIES A-2 / C-3') are marked $120.00/sh on 2026-06-30 and $90.00 on 2026-03-31, the same classes at the same marks as 'Ramp Business Corp' Series E-3 and Class A in T. Rowe Price, Robinhood Ventures and Fundrise filings",
+      "evidence": "0001410368-26-085820"
     }
   ],
   "spv": [
@@ -158,6 +176,27 @@
       "raw": ["ANDURIL INVESTORS LLC"],
       "reason": "BlackRock reports Anduril Series G through Anduril Investors LLC (title 'Anduril Investors LLC, Series G')",
       "evidence": "0002071691-26-013149"
+    },
+    {
+      "into": "OPENAI",
+      "raw": ["AESTAS LLC DBA OPENAI LLC EV UNITS PP"],
+      "reason": "T. Rowe Price reports issuer 'AESTAS LLC dba OpenAI LLC EV Units': a vehicle (Aestas LLC) whose filing names OpenAI as what it holds",
+      "evidence": "0001099263-25-005046"
+    },
+    {
+      "into": "SPACE EXPLORATION TECHNOLOGIES",
+      "raw": [
+        "SPV EXPOSURE TO SPACEX, LP",
+        "SPV EXPOSURE TO SPACEX, LLC",
+        "SPV EXPOSURE TO SPACEX LLC",
+        "SPV EXPOSURE TO SPACEX",
+        "DXYZ SPACEX I LLC (ECONOMIC EXPOSURE TO SPACE EXPLORATION TECHNOLOGIES CORP. CLASS A COMMON STOCK)",
+        "DXYZ SPACEX I LLC (ECONOMIC EXPOSURE TO SPACE EXPLORATION TECHNOLOGIES CORP., 96% COMMON UNITS & STOCK EQ.;3% SERIES E, 1% SERIES C PREFERRED SHARES)",
+        "DXYZ SPACEX I LLC (ECONOMIC EXPOSURE TO SPACE EXPLORATION TECHNOLOGIES CORP., 99% CLASS A COMMON STOCK AND 1% SERIES J PREFERRED STOCK)",
+        "DXYZ SPACEX I LLC (SPACE EXPLORATION TECH CORP 99% CLASS A COMMON STOCK & 1% SERIES J PREF STOCK)"
+      ],
+      "reason": "The vehicles' own names say what they hold: 'SPV Exposure to SpaceX, LP'; Destiny Tech100's 'DXYZ SpaceX I LLC (economic exposure to Space Exploration Technologies Corp. Class A Common Stock)' (0000894189-26-024246)",
+      "evidence": "0001049169-26-002173"
     }
   ],
   "drop": [
@@ -234,6 +273,14 @@
       "reason": "a vehicle: resolves as an SPV of Kalshi instead"
     }
   ],
+  "separate": [
+    {
+      "a": "ASCENT CNR",
+      "b": "ASCENT CAPITAL",
+      "reason": "Filers give both names LEI 549300FJ06NSN1X35841, but the marks differ: Brighthouse 'Ascent CNR Corp.' $2.00/sh at 2026-06-30 (0001410368-26-087669); Eaton Vance 'Ascent Capital Group Inc' $33.66/sh at 2026-07-31",
+      "evidence": "0001410368-26-101148"
+    }
+  ],
   "rename": {
     "OURA HEALTH OY": "Oura",
     "GENESIS MOLECULAR AI": "Genesis Molecular AI",
@@ -260,10 +307,15 @@
     "RAMP BUSINESS": "Ramp",
     "FERRELLGAS ESCROW LLC 3 30 31 EQUITY": "Ferrellgas (escrow equity)",
     "BOLT TECHNOLOGY OU": "Bolt Technology",
-    "SELECTA": "Selecta Group"
+    "SELECTA": "Selecta Group",
+    "FHU US": "FHU US Holdings",
+    "TRUMID HLDGS": "Trumid",
+    "HOCKEY PARENT": "Hockey Parent Holdings"
   },
   "note": {
-    "X AI": "Holdings stop after 2026-03; StepStone reports its X.AI Corp position as Space Exploration Technologies from 2026-03-31 (0001193125-26-247111)."
+    "X AI": "Holdings stop after 2026-03; StepStone reports its X.AI Corp position as Space Exploration Technologies from 2026-03-31 (0001193125-26-247111).",
+    "FHU US": "Brand: Chobani (T. Rowe 'FHU US HLDGS Units dba Chobani LLC', 0001099263-26-009601). Fidelity holds it through per-fund LLCs ('<fund code> FHUS HOLDINGS LLC'), linked as indirect (DATA-QUALITY trap 31, GOLDEN F29).",
+    "HOCKEY PARENT": "Brand: Hub International ('HOCKEY PARENT DBA HUB INTL A UNITS PP', T. Rowe Price)."
   },
   "untrack": {
     "PERMIRA VII": "PE fund interest",
@@ -303,7 +355,10 @@
     "KEYSTONE POWER CONEMAUGH": "power plant ownership interest",
     "MARKET GARDEN": "investment vehicle",
     "LINDSAY GOLDBERG ATTAIN": "PE continuation vehicle",
-    "CARCETTI CAPITAL": "holding vehicle"
+    "CARCETTI CAPITAL": "holding vehicle",
+    "CARLYLE GLOBAL MARKET STRATEGI": "fund interest (Carlyle Global Market Strategies)",
+    "DAIWA ICP EUROPEAN INFRASTRUCTURE": "fund interest (infrastructure LP)",
+    "SNOWPOINT GROWTH": "investment vehicle"
   },
   "managerNames": {
     "_about": "Adviser SEC file number (or registrant CIK) -> firm, where the adviser name does not carry the brand.",

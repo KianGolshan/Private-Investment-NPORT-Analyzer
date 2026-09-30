@@ -68,6 +68,9 @@ ncen_filings(accession, cik, filing_date, source);  ncen_advisers(accession, cik
 fund_advisers(fund_key, file_num, role, source_accession, ncen_filing_date)     -- derived after each ingest
 managers(id, name);  manager_advisers(manager_id, file_num);  manager_registrants(manager_id, cik)
 tracked_companies(company_id, added_at, note)
+company_brands(company_id, brand, source_accession)                            -- 'Chobani' for FHU US Holdings (P4.5)
+identity_edges(a, b, kind, accession, confidence, detail, applied, conflict)    -- evidence graph, rebuilt after every refresh
+identity_nodes(key, component, vehicle_target)                                  -- keys in multi-name components
 -- views
 canonical_filings        -- one per (fund_key, report_date); latest filing_date wins
 fund_filing_timeline     -- all canonical filings per fund
@@ -78,6 +81,20 @@ ingest `lib/warehouse/fund-keys.js` applies curated overrides, joins a blank-ser
 with its LEI, and keys registrants that file several series without IDs by `'CIK'||cik||':'||series_lei`
 (DATA-QUALITY trap 20). Dates are stored as ISO `YYYY-MM-DD`; bulk
 `DD-MON-YYYY` is converted at ingest.
+
+## Company identity (P4.5)
+
+Issuer keys (`issuerKeyOf`) are nodes. `lib/entities/identity.js` adds an edge only on filing evidence, strongest
+first: the same issuer LEI (trusted when >= 2 filer families give it), the same instrument id in one filer family
+(a corroborated rename, or two funds at the same mark on one date), the same share count across a name change,
+the same marks in one filing at >= 2 prices, a title or "dba"/"formerly" naming the company, and normalized names
+(spacing, abbreviations, per-fund holding-vehicle prefixes such as Fidelity's "CONTSA FHUS HOLDINGS LLC").
+Companies are the connected components. A union that would join two trusted LEIs, a listed and a private
+company, two curated companies, or a `curation.separate` pair is recorded as a conflict and not made. The seed
+applies the candidate rule to whole components (>= 3 funds and $25M, or >= 2 funds and $50M for private
+candidates); vehicles join as indirect; fund interests, CLOs, reinsurance accounts and SPV-named keys never
+join by identity. Brands go to `company_brands`. `npm run entities:report` (and every refresh) ranks what
+is still unresolved by component and category.
 
 ## As-of semantics
 
@@ -110,9 +127,11 @@ Fund calendars are staggered, so "as of D" mixes mark dates. The UI always shows
   2. Catch up on every NPORT-P / NPORT-P/A filed on or after the newest bulk filing date.
      - Filings already stored are skipped.
      - Earlier failures in `ingest_errors` are retried.
-  3. Write a `refresh_runs` row, with a warning if any catch-up filing predates bulk coverage but isn't
+  3. Entity upkeep (fund advisers, company resolution), then the identity graph and the review queue
+     (`reports/entities/unresolved.csv`, `conflicts.csv`; P4.5).
+  4. Write a `refresh_runs` row, with a warning if any catch-up filing predates bulk coverage but isn't
      in bulk (expected 0).
-  4. Exit non-zero on any failure, so the scheduler can alert.
+  5. Exit non-zero on any failure, so the scheduler can alert.
 - Catch-up safeguards, each added after a real failure (DATA-QUALITY traps 17–19):
   - 60 s timeout, with network errors retried twice.
   - Truncated `primary_doc.xml` falls back to the full submission `.txt`.
@@ -178,7 +197,7 @@ Check health with `sqlite3 warehouse.db "select * from refresh_runs order by id 
 
 ## Module map
 
-Built so far (P1–P4):
+Built so far (P1–P4.5):
 
 ```
 lib/edgar.js                       fetchWithRetry, pace (moved from server.js; shared by server and jobs)
@@ -200,17 +219,17 @@ lib/entities/review.js, csv.js     import of the reviewed CSVs (transactional, f
 lib/entities/resolve.js            holdings.company_id / via_spv from the aliases
 lib/entities/managers.js           fund_advisers from the latest N-CEN
 lib/entities/upkeep.js             fund advisers + company resolution after any ingest
+lib/entities/identity.js           P4.5 identity graph: evidence edges (LEI, instrument id, share count, same mark,
+                                   title/dba, normalized names, per-fund vehicles) -> guarded components
+lib/entities/report.js             stores the graph; unresolved private value ranked by component (review queue)
 scripts/ingest-bulk.js, ingest-delta.js, refresh.js, ingest-ncen.js
-scripts/seed-entities.js, review-aliases.js, backfill-leis.js, backfill-listing-evidence.js
+scripts/seed-entities.js, review-aliases.js, entities-report.js, backfill-leis.js, backfill-listing-evidence.js
 data/review/{aliases,managers,disclosed_exposure}.csv, curation.json   reviewed entity decisions (imported)
 ```
 
 Planned:
 
 ```
-lib/entities/identity.js  P4.5 identity graph: evidence edges (LEI, instrument id, share count, same mark,
-                          title/dba, normalized names) -> components; conflicts flagged
-scripts/entities-report.js  P4.5 unresolved private value ranked by dollars (review queue after each refresh)
 lib/services/search.js    P5 search over every issuer via the graph (forgiving match, candidates with evidence)
 lib/analytics/peer.js   outliers, velocity, repricing (from public/app.js)
 lib/services/*.js       search, company, fund, manager, marks

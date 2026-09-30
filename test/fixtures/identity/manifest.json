@@ -1,0 +1,34 @@
+{
+  "builtAt": "2026-09-30T06:15:08.437Z",
+  "source": "warehouse.db",
+  "sourceNewestFilingDate": "2026-09-29",
+  "sourceRefreshRun": {
+    "id": 5,
+    "finished_at": "2026-09-30T02:35:00.713Z"
+  },
+  "names": [
+    "\\bFHU ?U?S\\b|\\bCHOBANI\\b",
+    "\\b(VETERINARY|TC|AB|TRB|THRIVE) HOLDINGS LLC\\b|\\bTB2 HLDG LLC\\b",
+    "\\bproject debussy\\b",
+    "\\boura\\b",
+    "\\banduril\\b",
+    "\\banthropics\\b|\\bopenair\\b",
+    "\\bwindstream\\b|\\buniti\\b|\\bnew unity\\b",
+    "\\bxiaoju\\b|\\bant (financial|group|intl|international)\\b"
+  ],
+  "ids": [
+    "BYDXGRZL8",
+    "BYJ0U3DG6",
+    "BRTGP5LH5",
+    "956KCS006"
+  ],
+  "leis": [
+    "549300ISVDMZ91KNTR38",
+    "984500B6DEB8CEBC4Z70",
+    "984500FEDAC7FBD96273"
+  ],
+  "funds": 267,
+  "filings": 7034,
+  "holdings": 6106,
+  "listingEvidence": 5
+}

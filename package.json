@@ -20,7 +20,8 @@
     "refresh": "node scripts/refresh.js",
     "ingest:ncen": "node scripts/ingest-ncen.js",
     "seed:entities": "node scripts/seed-entities.js",
-    "review:aliases": "node scripts/review-aliases.js"
+    "review:aliases": "node scripts/review-aliases.js",
+    "entities:report": "node scripts/entities-report.js"
   },
   "dependencies": {
     "axios": "^1.6.7",

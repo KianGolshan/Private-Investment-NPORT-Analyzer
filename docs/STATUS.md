@@ -1,11 +1,10 @@
 # Vantage v2 Status
 
-**Current phase:** Phase 4.5 (evidence-based company identity + unresolved-value report), **not started**.
-P0–P4 are complete. P4.5 was added 2026-09-29 after FHU US Holdings (Chobani, 13 funds, ~$359M) turned out
-to be in no company group (DATA-QUALITY traps 31–33). Start with the SESSION-PROMPTS prompt "Next session:
-Phase 4.5, then Phase 5 (written 2026-09-29)"; read [LESSONS.md](LESSONS.md) first.
-**Branch:** `v2-plan-and-phase0`
-**Last updated:** 2026-09-28
+**Current phase:** Phase 4.5 (evidence-based company identity + unresolved-value report), **built; awaiting
+the user's sign-off**. Phase 5 starts only after it. Next-session prompt: SESSION-PROMPTS "Next session: Phase 5
+(written 2026-09-30)"; read [LESSONS.md](LESSONS.md) first.
+**Branch:** `v2-plan-and-phase0` (P4.5 committed locally, not pushed)
+**Last updated:** 2026-09-30
 
 ## Phase tracker
 
@@ -14,12 +13,47 @@ Phase 4.5, then Phase 5 (written 2026-09-29)"; read [LESSONS.md](LESSONS.md) fir
 - [x] P2: daily catch-up and refresh (signed off 2026-09-28)
 - [x] P3: canonical views and as-of engine (signed off 2026-09-28)
 - [x] P4: entities (companies, aliases, SPVs, managers, tracked list) (finalized 2026-09-29)
-- [ ] P4.5: evidence-based company identity + unresolved-value report (added 2026-09-29)
+- [x] P4.5: evidence-based company identity + unresolved-value report (built 2026-09-30; sign-off pending)
 - [ ] P5: service layer and parity migration (+ search over every issuer)
 - [ ] P6: new analysis and UI
 - [ ] P7: MCP server
 - [ ] P8: operations hardening
 - [ ] P9: public deployment (live site; hosting choice to confirm with the user as ADR 0006)
+
+## Phase 4.5 results (built 2026-09-30, awaiting sign-off)
+
+- **Refresh at session start:** #5 ok, no 2026Q3 bulk file yet; 777 catch-up filings loaded, 0 failed;
+  `ingest_errors` empty. Goldens A1–A6 and the P4 by-company goldens reproduced before any change.
+- **Built:**
+  - `lib/entities/identity.js`: evidence edges (LEI, instrument id, share count, same mark, title/dba,
+    normalized names, Fidelity-style per-fund vehicles) and guarded components (two LEIs, listed vs private,
+    two curated companies, curation `separate`).
+  - `lib/entities/report.js`, `npm run entities:report`: stores the graph, ranks unresolved value by
+    component and category, measures tracked unresolved exposure; also runs in every `npm run refresh`
+    (writes `reports/entities/{unresolved,conflicts}.csv`, git-ignored).
+  - Migration 0011: `identity_edges`, `identity_nodes`, `company_brands`.
+  - Seed: component-level candidate rule; the user's 2-fund/$50M rule; vehicles as indirect; brands
+    (`kind=brand` rows in aliases.csv, evidence required); generic keys never anchor.
+  - Tests: `test/identity.test.js` (12, on the new real-data fixture `test/fixtures/identity/`, 393 KB).
+- **Decisions (user, 2026-09-30):** threshold = no unresolved component >= $50M held by >= 2 funds that is not
+  an opaque vehicle on the review list. OpenAir merges into OpenAI on BlackRock's filer evidence (F32).
+- **Curation (curation.json, each with an accession):** Anthropics Technology -> Anthropic (F31), OpenAir ->
+  OpenAI (F32), RAMP -> Ramp (F33), Aestas LLC dba OpenAI and the SpaceX SPVs as indirect, Ascent CNR /
+  Ascent Capital kept separate (contradicting marks), renames (FHU US Holdings, Trumid, Hockey Parent
+  Holdings), 3 untracks.
+- **Results on the live warehouse:** 806 companies (304 private, 502 public), 180 tracked, 2,402 aliases, 4
+  brands; 318,751 rows resolved; 5,206 evidence edges, 51 conflicts flagged.
+  - FHU US Holdings (brand Chobani): **13 funds / $359.0M** at 2026-06-30, identical to the F29 pattern;
+    Fidelity's 10 per-fund LLCs resolve as indirect.
+  - Threshold met: the only unresolved components >= $50M in 2+ funds are 3 opaque Fidelity per-fund vehicles
+    (VETERINARY HOLDINGS $257.7M / 9 funds, AB HOLDINGS $90.5M, TC HOLDINGS $81.6M). EDGAR full-text search
+    finds no filing stating what they hold (negative finding), so they stay on the review list.
+  - Tracked unresolved exposure **0.21%** ($135M of $63.4B; the largest items are look-alikes curation keeps
+    apart).
+  - By company at 6/30: Anthropic 117 / $17.295B (+$34.1M, F31), Stripe 35 / $1.31B (12/31/25), Databricks
+    120 / $6.233B, OpenAI 87 / $5.490B. Pattern goldens A1–A6 unchanged.
+- **Suite:** 388 tests, 358 pass, 0 fail, 30 skipped (LIVE). LIVE goldens and LIVE entities pass. Lint and
+  format clean.
 
 ## Phase 4 results (complete 2026-09-29)
 
@@ -210,14 +244,14 @@ The evidence as presented:
 
 ## Measurements to record (fill in as phases complete)
 
-| Metric                                  | Budget  | Measured                                        |
-| --------------------------------------- | ------- | ----------------------------------------------- |
-| Full bulk backfill, 27 quarters         | ≤45 min | **13.6 min** (2026-09-28)                       |
-| Warehouse size                          | ≤500 MB | 364 MB (P1); **472 MB** after P4 (2026-09-29)   |
-| First catch-up                          | ≤90 min | **26.9 min** for 11,822 filings (about 9/s)     |
-| Nightly refresh                         | ≤5 min  | **1.1 s** with nothing new (run #1, 2026-09-28) |
-| API p95                                 | <200 ms | n/a                                             |
-| Single Security search (P0, live EDGAR) | n/a     | 15–32 s per name for 100 filings                |
+| Metric                                  | Budget  | Measured                                              |
+| --------------------------------------- | ------- | ----------------------------------------------------- |
+| Full bulk backfill, 27 quarters         | ≤45 min | **13.6 min** (2026-09-28)                             |
+| Warehouse size                          | ≤500 MB | 364 MB (P1); 472 MB (P4); **513 MB / 489 MiB** (P4.5) |
+| First catch-up                          | ≤90 min | **26.9 min** for 11,822 filings (about 9/s)           |
+| Nightly refresh                         | ≤5 min  | **1.1 s** with nothing new (run #1, 2026-09-28)       |
+| API p95                                 | <200 ms | n/a                                                   |
+| Single Security search (P0, live EDGAR) | n/a     | 15–32 s per name for 100 filings                      |
 
 ## Open decisions
 
@@ -231,10 +265,14 @@ The evidence as presented:
   user can still edit the CSVs or curation file; re-import with `npm run review:aliases`.
 - **Tracked list (user, 2026-09-29):** size is the user's choice (100–200 likely); the 242 in the draft
   are a suggestion. The user may send their own names to resolve against the warehouse.
-- **P4.5 success threshold (proposed, confirm with the user):** no unresolved component above $50M that is
-  not an opaque vehicle on the review list.
-- **Known gap until P4.5:** FHU US Holdings (Chobani) and ~$0.7B of Fidelity per-fund holding LLCs are
-  unresolved; name search needs the exact spelling (`FHU ?U?S`, not `FHU ?US`).
+- ~~P4.5 threshold~~ Decided 2026-09-30: >= $50M held by >= 2 funds.
+- **P4.5 sign-off** (user): review the checkpoint above, the OpenAir/Anthropics merges and the review queue.
+- **Size budget (user):** `warehouse.db` is **513 MB on disk (489 MiB)** after P4.5 (P4.5 tables ~1.4 MB; the
+  rest is catch-up growth). The 2026Q3 bulk file replaces catch-up rows (about neutral) and adds ~2.5 MB of
+  listing evidence. Raise the budget, or prune (e.g. unused indexes, old listing evidence) before it grows.
+- **Fidelity opaque vehicles:** ~$0.6B across VETERINARY, AB, TC, TB, TRB, TB2 and THRIVE HOLDINGS LLCs. No
+  filing names their targets; they stay on the review list (search again if Fidelity's N-CSR text becomes
+  searchable).
 - **Open for the user:** one tracked list or several named lists (a schema change best made before P5), and
   whether alerts on new marks belong in P6. Not decided; don't build either without a yes.
 - **Search outside the list must keep working (user, 2026-09-29):** any company in the warehouse is
@@ -243,6 +281,8 @@ The evidence as presented:
 
 ## Warehouse state at hand-off (2026-09-29, after the Phase 4 review)
 
+- **After P4.5 (2026-09-30):** refresh #6 ok; schema at migration 0011; 354,997 filings, 1,165,239 holdings;
+  806 companies, 180 tracked; 513 MB on disk (489 MiB).
 - `warehouse.db` (git-ignored, **472 MB of the 500 MB budget**), schema at migration 0010. Largest: holdings
   215 MB (+54 MB key index), filings 89 MB, N-CEN adviser rows 38 MB, listing evidence ~10 MB per 4 quarters.
   - 354,220 N-PORT filings (341,049 bulk 2019Q4–2026Q2; 13,171 EDGAR catch-up through filings of
@@ -256,6 +296,8 @@ The evidence as presented:
   loads on the next `npm run refresh`, replacing matching catch-up rows and adding listing evidence.
 
 ## Log
+
+- **2026-09-30:** Phase 4.5 built: identity graph, review queue (also in refresh), migration 0011, re-seed with evidence, curation (Anthropics, OpenAir, Ramp, SpaceX SPVs), threshold agreed (2 funds / $50M) and met; F31–F33, C21, traps 35–39, lessons 24–27. Stopped for sign-off.
 
 - **2026-09-29:** Reviewed FHU US Holdings (Chobani) and Anthropic class marks with the user. Added Phase 4.5 (identity graph, vehicles, unresolved-value report) and search/class-comparison/watch items to P5, P6 and P8; findings recorded (GOLDEN F29–F30, traps 31–34, lesson 23); handoff prompt rewritten.
 

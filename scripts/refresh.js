@@ -4,6 +4,7 @@
 //
 //   npm run refresh
 require('dotenv').config();
+const path = require('path');
 const { openWarehouse, defaultWarehousePath } = require('../lib/warehouse/db');
 const { refresh } = require('../lib/warehouse/refresh');
 
@@ -11,7 +12,10 @@ async function main() {
   const db = openWarehouse(defaultWarehousePath());
   const started = Date.now();
   try {
-    const r = await refresh(db, { log: line => console.log(`[${new Date().toISOString()}] ${line}`) });
+    const r = await refresh(db, {
+      log: line => console.log(`[${new Date().toISOString()}] ${line}`),
+      entityReport: path.join(__dirname, '..', 'reports', 'entities'),
+    });
     console.log(
       `refresh #${r.runId} ${r.status}: bulk added [${r.bulkQuartersAdded.join(' ') || 'none'}], ` +
         `catch-up since ${r.since}: ${r.loaded} loaded, ${r.failed} failed, ` +

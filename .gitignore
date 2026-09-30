@@ -8,3 +8,4 @@ cache.db-shm
 warehouse.db
 warehouse.db-wal
 warehouse.db-shm
+reports/

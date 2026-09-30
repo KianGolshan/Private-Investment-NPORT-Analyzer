@@ -418,6 +418,25 @@ cases; resolve identity from evidence and measure what is missed by dollars (DAT
 - Tracked-company unresolved exposure stays under 1%.
 - Every edge and every curated decision cites an accession.
 
+**Checkpoint (built 2026-09-30, awaiting sign-off)**
+
+- Built: `lib/entities/identity.js` (edges + guarded components), `lib/entities/report.js` and
+  `npm run entities:report` (review queue, also run by every refresh), migration 0011 (`identity_edges`,
+  `identity_nodes`, `company_brands`), seed integration (component-level candidate rule, vehicles as
+  indirect, brands), `test/identity.test.js` on a new real-data fixture (`test/fixtures/identity/`).
+- Threshold agreed with the user (2026-09-30): **>= $50M held by >= 2 funds**. A name held by 2 funds is a
+  candidate from $50M (an entity, tracked only from 3 funds).
+- Results on the live warehouse: FHU US Holdings = 13 funds / $359.0M at 2026-06-30 (brand Chobani, Fidelity
+  LLCs indirect); nothing >= $50M in 2+ funds unresolved except 3 opaque Fidelity vehicles on the review list
+  (no filing states their holdings); tracked unresolved 0.21%; every edge except pure spelling edges and every
+  curation decision cites an accession.
+- Found on real data: BlackRock's look-alike labels for Anthropic and OpenAI (F31, F32; merged with the user's
+  approval), Ramp's unmatched Coatue rows (F33), reused position ids, wrong LEIs and merger chains
+  (DATA-QUALITY traps 35–39). Anthropic by company at 6/30 is 117 / $17.295B; pattern goldens unchanged.
+- Deviations: guardrail test "OpenAir stays separate" became "the name rule never joins OpenAir and OpenAI;
+  filer evidence does" (user decision 2026-09-30). The Windstream/Uniti chain is real id evidence, stopped by
+  the listed-vs-private guard.
+
 ---
 
 ## Phase 5: service layer and parity migration
@@ -447,8 +466,9 @@ cases; resolve identity from evidence and measure what is missed by dollars (DAT
 - Every existing `test/app-*.test.js` and `test/server.test.js` passes; update only fixtures, not assertions.
 - New: Single Security for Anthropic returns history from 2023-04-28, Stripe from 2019-12-31 and Databricks
   from 2019-10-31.
-- Search: "Chobani", "FHU", "FHUS" and "fhu us holdings" all find FHU US Holdings; "Open AI" finds OpenAI
-  and lists OpenAir separately; "Databrick" finds Databricks.
+- Search: "Chobani", "FHU", "FHUS" and "fhu us holdings" all find FHU US Holdings; "Open AI" finds OpenAI;
+  "OpenAir" never matches OpenAI by name (BlackRock's "OpenAir.com" rows are OpenAI by filer evidence, F32);
+  "Databrick" finds Databricks; "Hub International" finds Hockey Parent Holdings.
 
 **Success criteria**
 

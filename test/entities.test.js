@@ -351,7 +351,7 @@ test('review import fails loudly on bad rows and leaves the previous import inta
     { company: 'Acme', status: 'private', track: 'Y', kind: 'exact', alias: 'ACME SPV LLC', via_spv: '1' },
     { company: '', status: 'private', track: 'N', kind: 'issuer_key', alias: 'DROPPED', via_spv: '0' },
   ];
-  assert.deepEqual(importAliases(db, good), { companies: 1, aliases: 2, tracked: 1 });
+  assert.deepEqual(importAliases(db, good), { companies: 1, aliases: 2, brands: 0, tracked: 1 });
   const bad = [
     [{ ...good[0], status: 'maybe' }, /status must be private or public/],
     [{ ...good[0], track: 'yes' }, /track must be Y or N/],
@@ -359,6 +359,7 @@ test('review import fails loudly on bad rows and leaves the previous import inta
     [{ ...good[0], kind: 'regex', alias: '(' }, /bad regex/],
     [{ ...good[0], via_spv: '2' }, /via_spv must be 0 or 1/],
     [{ ...good[0], alias: ' ' }, /empty alias/],
+    [{ ...good[0], kind: 'brand', alias: 'Acme Brand' }, /needs an evidence accession/],
   ];
   for (const [row, err] of bad) assert.throws(() => importAliases(db, [good[0], row]), err);
   assert.throws(() => importAliases(db, [good[0], { ...good[1], status: 'public' }]), /conflicting status\/track/);

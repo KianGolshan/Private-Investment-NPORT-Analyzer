@@ -135,10 +135,30 @@ test(
         const r = exposureAsOf(db, { companyId: id(name), date });
         return [r.funds, Math.round(r.total / 1e7) / 100];
       };
-      assert.deepEqual(by('Anthropic', '2026-06-30'), [117, 17.26]);
+      // By company Anthropic includes BlackRock's "Anthropics Technology Ltd., Series G" rows (same
+      // instrument id and marks as its "ANTHROPIC SERIES G", GOLDEN F31): +$34.1M in 3 funds that already
+      // hold Anthropic. The pattern golden A2 (117 / $17.26B) is unchanged.
+      assert.deepEqual(by('Anthropic', '2026-06-30'), [117, 17.29]);
       assert.deepEqual(by('Stripe', '2025-12-31'), [35, 1.31]);
       // Includes Project Debussy Series J, Databricks under a codename (GOLDEN-NUMBERS F25).
       assert.deepEqual(by('Databricks', '2026-06-30'), [120, 6.23]);
+      // Phase 4.5: FHU US Holdings (Chobani) is one company (GOLDEN F29); BlackRock's "OpenAir.com"
+      // rows are OpenAI (F32).
+      assert.deepEqual(by('FHU US Holdings', '2026-06-30'), [13, 0.36]);
+      assert.deepEqual(by('OpenAI', '2026-06-30'), [87, 5.49]);
+      assert.deepEqual(one("SELECT DISTINCT company_id FROM holdings WHERE issuer_name = 'OpenAir.com'"), [
+        id('OpenAI'),
+      ]);
+      assert.deepEqual(
+        one("SELECT DISTINCT company_id FROM holdings WHERE issuer_name = 'Anthropics Technology Ltd.'"),
+        [id('Anthropic')]
+      );
+      assert.deepEqual(
+        one(
+          "SELECT DISTINCT via_spv FROM holdings WHERE issuer_name LIKE '% FHUS HOLDINGS LLC' AND company_id IS NOT NULL"
+        ),
+        [1]
+      );
     } finally {
       db.close();
     }

@@ -1,4 +1,4 @@
-# Lessons Learned (P0–P2, 2026-09-27/28)
+# Lessons Learned (P0–P4.5, 2026-09-27/30)
 
 These are the mistakes and surprises from building the warehouse, each with the rule that now prevents it.
 Read this before starting a phase. Data traps with real examples live in [DATA-QUALITY.md](DATA-QUALITY.md);
@@ -97,3 +97,21 @@ this file is about **how we work**.
     every P4 check because it never became a candidate. A ranked unresolved-value report over _all_
     holdings would have shown it first. Even a hand-written search pattern missed it ("FHU ?US" never
     matches "FHUS"), which is why identity must come from evidence and search must be forgiving (P4.5, P5).
+
+## Added in P4.5
+
+24. **Every evidence rule needs a pass over its own output before anyone trusts it.** Each first cut of an
+    edge rule was mostly right and partly badly wrong: "SERIES" became a $5B company, hedge-fund position ids
+    merged Point72 with Schonfeld, a reused BlackRock id pulled all of DiDi into Ant, and a one-price
+    coincidence joined two biotechs. Diff every re-seed against the last reviewed file, read the joins on
+    private companies one by one, and turn each class of error into a rule and a test.
+25. **Filer evidence can overturn a "look-alike" decision.** P4 kept "Anthropics Technology" and "OpenAir"
+    apart as look-alikes (trap 26); the same instrument ids and marks showed they were BlackRock's labels for
+    Anthropic and OpenAI (F31, F32). Name rules stay conservative; filer evidence decides, and it is shown to
+    the user when it contradicts an earlier instruction.
+26. **Check a derived test against a hand calculation.** "Exact to the cent" silently rejected real matching
+    marks ($2,406,216.46 / 3,499 = $687.6869), and "three share classes in one filing" looked like an
+    umbrella trust. Both surfaced only when a fixture case that should have an edge had none.
+27. **A threshold must be measured before it is agreed.** "No unresolved component above $50M" over all
+    holdings meant $300B+ of feeder-fund and PE-fund interests and ~140 single-fund positions. The ranked
+    report by category turned it into a decision the user could make (2+ funds, 2026-09-30).
