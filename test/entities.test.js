@@ -13,7 +13,13 @@ const { ingestNcenDataset, ncenRowsFromXml, adviserKey } = require('../lib/wareh
 const { refreshFundAdvisers } = require('../lib/entities/managers');
 const seed = require('../lib/entities/seed');
 const { identityRows } = require('../lib/entities/identity');
-const { importAliases, importManagers, importDisclosedExposure } = require('../lib/entities/review');
+const {
+  importAliases,
+  importManagers,
+  importDisclosedExposure,
+  companyIdRows,
+  COMPANY_ID_COLUMNS,
+} = require('../lib/entities/review');
 const { resolveCompanies } = require('../lib/entities/resolve');
 const { toCsv, parseCsv } = require('../lib/entities/csv');
 const { exposureAsOf } = require('../lib/analytics/asof');
@@ -400,6 +406,88 @@ test('review import fails loudly on bad rows and leaves the previous import inta
   assert.throws(() => importManagers(db, [{ manager: 'X', kind: 'registrant', key: 'abc' }]), /must be a CIK/);
 });
 
+test('company ids are stable: a rebuild from the ledger reproduces them, merged and dropped ids redirect, none is reused', () => {
+  const row = (company, alias, extra = {}) => ({
+    company,
+    status: 'private',
+    track: 'N',
+    kind: 'issuer_key',
+    alias,
+    via_spv: '0',
+    ...extra,
+  });
+  const db = openWarehouse(':memory:');
+  importAliases(db, [row('Acme', 'ACME'), row('Beta', 'BETA'), row('Gamma', 'GAMMA'), row('Delta', 'DELTA')]);
+  const id = name => db.prepare('SELECT id FROM companies WHERE name = ?').get(name)?.id;
+  const [acme, beta, gamma, delta] = ['Acme', 'Beta', 'Gamma', 'Delta'].map(id);
+  // Beta's alias moves to Acme (a merge), Gamma leaves the file (a drop).
+  importAliases(db, [row('Acme', 'ACME'), row('Acme', 'BETA'), row('Delta', 'DELTA')], { now: '2026-10-01' });
+  // Delta merges into Acme too, then a new company arrives: its id is above every id ever used.
+  importAliases(db, [
+    row('Acme', 'ACME'),
+    row('Acme', 'BETA'),
+    row('Acme', 'DELTA'),
+    row('Epsilon', 'EPSILON'),
+    row('Zeta', 'ZETA'),
+  ]);
+  assert.ok(id('Epsilon') > Math.max(acme, beta, gamma, delta), 'retired ids are never reused');
+  const redirects = db.prepare('SELECT old_id, new_id, reason FROM company_redirects ORDER BY old_id').all();
+  assert.deepEqual(redirects, [
+    { old_id: beta, new_id: acme, reason: 'merged' },
+    { old_id: gamma, new_id: null, reason: 'dropped' },
+    { old_id: delta, new_id: acme, reason: 'merged' },
+  ]);
+  // A fresh warehouse built from the files reproduces every id and redirect.
+  const ledger = parseCsv(toCsv(COMPANY_ID_COLUMNS, companyIdRows(db)));
+  const fresh = openWarehouse(':memory:');
+  const aliases = [
+    row('Zeta', 'ZETA'),
+    row('Epsilon', 'EPSILON'),
+    row('Acme', 'ACME'),
+    row('Acme', 'BETA'),
+    row('Acme', 'DELTA'),
+  ];
+  importAliases(fresh, aliases, { ids: ledger });
+  const all = d => d.prepare('SELECT id, name FROM companies ORDER BY id').all();
+  assert.deepEqual(all(fresh), all(db));
+  assert.deepEqual(
+    fresh.prepare('SELECT old_id, new_id, reason FROM company_redirects ORDER BY old_id').all(),
+    redirects
+  );
+  assert.deepEqual(companyIdRows(fresh), companyIdRows(db));
+  // A chain collapses: Acme merges into Zeta, so Beta and Delta now point at Zeta.
+  const zeta = id('Zeta');
+  importAliases(
+    fresh,
+    aliases.map(r => ({ ...r, company: r.company === 'Acme' ? 'Zeta' : r.company })),
+    { ids: companyIdRows(fresh) }
+  );
+  assert.deepEqual(
+    fresh
+      .prepare('SELECT new_id FROM company_redirects WHERE old_id IN (?, ?, ?) ORDER BY old_id')
+      .all(acme, beta, delta)
+      .map(r => r.new_id),
+    [zeta, zeta, zeta]
+  );
+  // A ledger that disagrees with the warehouse, or reuses a retired id, fails loudly.
+  assert.throws(
+    () => importAliases(db, aliases, { ids: [{ id: String(acme + 100), company: 'Acme' }] }),
+    /gives "Acme" id \d+, but the warehouse has/
+  );
+  assert.throws(
+    () =>
+      importAliases(openWarehouse(':memory:'), [row('Omega', 'OMEGA')], {
+        ids: [...ledger, { id: String(gamma), company: 'Omega' }],
+      }),
+    /appears twice/
+  );
+  assert.throws(() => importAliases(db, aliases, { ids: [{ id: 'x', company: 'Acme' }] }), /positive integer/);
+  assert.throws(
+    () => importAliases(db, aliases, { ids: [{ id: '9', company: 'A', reason: 'merged' }] }),
+    /needs a successor/
+  );
+});
+
 test('CSV round trip keeps commas, quotes and newlines; a ragged row fails', () => {
   const rows = [{ a: 'x, y', b: 'say "hi"', c: 'line1\nline2' }];
   assert.deepEqual(parseCsv(toCsv(['a', 'b', 'c'], rows)), rows);
@@ -415,8 +503,14 @@ test('the committed review files import cleanly, and every issuer_key alias is a
   const read = f => parseCsv(fs.readFileSync(path.join(dir, f), 'utf8'));
   const db = openWarehouse(':memory:');
   const aliases = read('aliases.csv');
-  const a = importAliases(db, aliases);
+  const a = importAliases(db, aliases, { ids: read('company_ids.csv') });
   assert.ok(a.companies > 700 && a.tracked > 100, JSON.stringify(a));
+  // Stable ids (ADR 0008): a warehouse built from the committed files has exactly the ledger's ids.
+  const ledger = read('company_ids.csv');
+  assert.deepEqual(
+    companyIdRows(db),
+    ledger.map(r => ({ ...r, id: Number(r.id), successor: r.successor && Number(r.successor) }))
+  );
   assert.ok(importManagers(db, read('managers.csv')).managers > 100);
   assert.ok(importDisclosedExposure(db, read('disclosed_exposure.csv')).rows > 0);
   // Holdings resolve by issuerKeyOf(row) === alias; a change to the name
