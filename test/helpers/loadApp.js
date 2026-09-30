@@ -20,11 +20,13 @@ const ROOT = path.join(__dirname, '..', '..');
 const rawHtml = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8');
 const appJsSource = fs.readFileSync(path.join(ROOT, 'public', 'app.js'), 'utf8');
 const splitsSource = fs.readFileSync(path.join(ROOT, 'public', 'splits.js'), 'utf8');
+const peerSource = fs.readFileSync(path.join(ROOT, 'lib', 'analytics', 'peer.js'), 'utf8');
 const fundGroupsSource = fs.readFileSync(path.join(ROOT, 'public', 'fund-groups.js'), 'utf8');
 
 const htmlWithoutScripts = rawHtml
   .replace(/<script src="https:\/\/[^"]*"><\/script>\s*/g, '')
   .replace(/<script src="\/?splits\.js"><\/script>\s*/g, '')
+  .replace(/<script src="\/?peer\.js"><\/script>\s*/g, '')
   .replace(/<script src="\/?fund-groups\.js"><\/script>\s*/g, '')
   .replace(/<script src="\/?app\.js"><\/script>\s*/g, '');
 
@@ -75,6 +77,7 @@ async function loadApp({ fetchImpl, url = 'http://localhost/' } = {}) {
   context.XLSX = {};
 
   vm.runInContext(splitsSource, context, { filename: 'public/splits.js' });
+  vm.runInContext(peerSource, context, { filename: 'lib/analytics/peer.js' });
   vm.runInContext(fundGroupsSource, context, { filename: 'public/fund-groups.js' });
   vm.runInContext(appJsSource, context, { filename: 'public/app.js' });
 

@@ -49,6 +49,8 @@ app.use((_req, res, next) => {
   });
   next();
 });
+// lib/analytics/peer.js is shared with the browser, like public/splits.js (P5b).
+app.get('/peer.js', (_req, res) => res.sendFile(path.join(__dirname, 'lib', 'analytics', 'peer.js')));
 app.use(express.static('public'));
 // Permalinks (ADR 0008): the page itself; app.js reads the path.
 app.get(['/company/:ref', '/name/:key', '/fund/:key'], (_req, res) =>
