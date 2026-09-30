@@ -164,3 +164,37 @@ test(
     }
   }
 );
+
+// Phase 5b: filing_totals from the bulk dataset equal v1 Fund X-Ray
+// (buildFundXRay) on the full, untrimmed primary_doc.xml from EDGAR.
+test('LIVE: bulk filing_totals equal v1 Fund X-Ray on the full EDGAR XML', { skip: !LIVE }, async () => {
+  const { fetchFilingRows } = require('../lib/warehouse/delta');
+  const { parseNportXml } = require('../lib/warehouse/edgar-rows');
+  const { extractAllHoldings, extractFundMeta, buildFundXRay } = require('../parsers');
+  const db = openWarehouse(DB_PATH);
+  const cases = [
+    ['0001193125-26-182055', '44201'], // Growth Fund of America 2026-02-28 (F1): a large book
+    ['0000035402-25-002966', '754510'], // Fidelity OTC 2025-10-31 (F8)
+    ['0001752724-22-239970', null], // T. Rowe Tax-Efficient Equity 2022-08-31 (F13), bulk 2022q3
+  ];
+  const close = (a, b) => Math.abs(a - b) <= 1e-6 * Math.max(1, Math.abs(a));
+  for (const [accession, knownCik] of cases) {
+    const f = db.prepare('SELECT * FROM filings WHERE accession = ?').get(accession);
+    assert.ok(f && f.source.startsWith('bulk:'), `${accession} is a bulk filing`);
+    const t = db.prepare('SELECT * FROM filing_totals WHERE accession = ?').get(accession);
+    const cik = knownCik || f.cik;
+    const url = `https://www.sec.gov/Archives/edgar/data/${cik}/${accession.replace(/-/g, '')}/primary_doc.xml`;
+    await sleep(150);
+    const xml = await parseNportXml(
+      (await axios.get(url, { headers: { 'User-Agent': process.env.SEC_USER_AGENT }, timeout: 60000 })).data
+    );
+    const v1 = buildFundXRay(extractAllHoldings(xml), extractFundMeta(xml));
+    assert.equal(t.rows, v1.totalHoldingsCount, `${accession} rows`);
+    assert.ok(close(t.value_usd, v1.totalValueUSD), `${accession} value ${t.value_usd} vs ${v1.totalValueUSD}`);
+    assert.equal(t.rows_l3_equity, v1.privateHoldingsCount, `${accession} v1 private rows`);
+    assert.ok(close(t.value_l3_equity, v1.privateValueUSD), `${accession} v1 private value`);
+    const edgar = (await fetchFilingRows({ accession, cik, filingDate: f.filing_date, form: f.form })).totals;
+    for (const k of Object.keys(edgar)) assert.ok(close(t[k], edgar[k]), `${accession} ${k}: ${t[k]} vs ${edgar[k]}`);
+  }
+  db.close();
+});
