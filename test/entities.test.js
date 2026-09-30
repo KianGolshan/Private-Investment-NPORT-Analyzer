@@ -238,6 +238,110 @@ test('disclosed exposure: Fundrise reports Anthropic as a range with its source 
   );
 });
 
+// ---- Seed rules added in the Phase 4 review (real names from the warehouse) ----
+
+test("display names use the filers' own spelling, cut at security words and legal suffixes", () => {
+  for (const [filed, name] of [
+    ['OpenAI Group PBC', 'OpenAI'],
+    ['Anthropic, PBC', 'Anthropic'],
+    ['Space Exploration Technologies Corp.', 'Space Exploration Technologies'],
+    ['X.AI Holdings Corp SER C CVT', 'X.AI'],
+    ['ByteDance Ltd.', 'ByteDance'],
+    ['Stripe, Inc. - Class B', 'Stripe'],
+  ])
+    assert.equal(seed.cleanName(filed), name, filed);
+});
+
+test("named SPVs: vehicle rows only, never look-alike companies, a company's own fund, or a note", () => {
+  const words = k => ` ${k} `;
+  const yes = [
+    ['TIGER GLOBAL PIP 12-1, LLC (INVESTED IN DATABRICKS, INC., PREFERRED SERIES G)', 'DATABRICKS'],
+    ['CARLYLE SYNIVERSE CO INVEST LP', 'SYNIVERSE'],
+    ['HEDOSOPHIA VINTED INVESTMENTS VI /', 'VINTED'],
+    ['KALSHI SPV EXPOSURE', 'KALSHI'],
+  ];
+  const no = [
+    ['FORUM ENERGY TECHNOLOGIES INC', 'ENERGY TECHNOLOGIES'],
+    ['ICAPITAL MILLENNIUM FUND LP', 'ICAPITAL'],
+    ['WELLPATH RECOVERY SOLUTIONS LLC', 'RECOVERY SOLUTIONS'],
+    [
+      'PRIVE TENS, LLC (INVESTED IN TENSTORRENT HOLDINGS INC., SUBORDINATED CONVERTIBLE PROMISSORY NOTE 15.00%)',
+      'TENSTORRENT',
+    ],
+    ['STRIPES VI RAINIER CO INVEST', 'STRIPE'],
+  ];
+  for (const [raw, key] of yes) assert.equal(seed.isVehicleFor(raw, words(key)), true, raw);
+  for (const [raw, key] of no) assert.equal(seed.isVehicleFor(raw, words(key)), false, raw);
+});
+
+test('manager firm names come from adviser names: brand kept, entity words dropped, initials kept', () => {
+  for (const [adviser, firm] of [
+    ['BlackRock Fund Advisors', 'BlackRock'],
+    ['BlackRock Advisors, LLC', 'BlackRock'],
+    ['J.P. Morgan Investment Management Inc.', 'J.P. Morgan'],
+    ['Pantheon Infra Advisors, LLC', 'Pantheon'],
+    ['Hamilton Lane Advisors, L.L.C.', 'Hamilton Lane'],
+    ['Hamilton Capital, LLC', 'Hamilton'],
+    ['PGIM INVESTMENTS LLC', 'PGIM'],
+    ['NEUBERGER BERMAN INVESTMENT ADVISERS LLC', 'Neuberger Berman'],
+    ['First Trust Capital Management L.P', 'First Trust'],
+    ['F. L. Putnam Investment Management Company', 'F. L. Putnam'],
+  ])
+    assert.equal(seed.managerStem(adviser), firm, adviser);
+});
+
+function clusterFrom(rows, asOf = '2026-06-30') {
+  const base = { accession: '0000000000-26-000001', value_usd: 10e6, fv_level: '3', instrument_type: 'equity' };
+  return seed.buildClusters(
+    rows.map((r, i) => ({ ...base, fund_key: `S${i % 4}`, report_date: asOf, ...r })),
+    { asOf }
+  ).clusters;
+}
+
+test('status: recent post-IPO lock-up or PIPE shares mean listed; "lockup upon IPO" does not', () => {
+  const status = rows => seed.suggestCompanies(clusterFrom(rows)).groups[0];
+  const four = (issuer, title) => Array.from({ length: 4 }, () => ({ issuer_name: issuer, title }));
+  const ipo = status(four('KARDIGAN INC', 'KARDIGAN, INC. LOCKUP SHARES PP'));
+  assert.equal(ipo.status, 'public');
+  assert.match(ipo.note, /post-IPO lock-up shares from 2026-06-30/);
+  assert.equal(status(four('KEURIG DR PEPPER', 'KEURIG DR PEPPER SER A CVT PIPE COMMIT PP')).status, 'public');
+  assert.equal(status(four('CELONIS SE', 'CELONIS SE ORD USD 1 180 DAYS LOCKUP UPON IPO')).status, 'private');
+  assert.equal(status(four('ACME ROBOTICS INC', 'ACME ROBOTICS SER B PFD')).status, 'private');
+});
+
+test('curation: evidence-backed merges, drops, renames and untracks apply; unknown keys are errors', () => {
+  const rows = [
+    ...Array.from({ length: 4 }, () => ({ issuer_name: 'OURA HEALTH OY', title: 'OURA HEALTH OY SER E PC PP' })),
+    { issuer_name: 'OURA INC', title: 'OURA INC SER E PC PP' },
+    ...Array.from({ length: 4 }, () => ({ issuer_name: 'GUSTO INC', title: 'GUSTO INC SER E' })),
+    { issuer_name: 'GUSTO DISTRIBUTING CO.', title: 'GUSTO DISTRIBUTING CO.' },
+  ];
+  const curation = {
+    merge: [{ into: 'OURA HEALTH OY', keys: ['OURA'], reason: 'same shares', evidence: '0000035402-26-005386' }],
+    drop: [{ key: 'GUSTO DISTRIBUTING', reason: 'different company' }],
+    rename: { 'OURA HEALTH OY': 'Oura' },
+    untrack: { GUSTO: 'test' },
+  };
+  const { groups, issues } = seed.suggestCompanies(clusterFrom(rows), { curation });
+  assert.deepEqual(issues, []);
+  const oura = groups.find(g => g.name === 'Oura');
+  assert.deepEqual(oura.aliases.map(a => a.cluster.key).sort(), ['OURA', 'OURA HEALTH OY']);
+  assert.equal(oura.aliases.find(a => a.cluster.key === 'OURA').evidence, '0000035402-26-005386');
+  const gusto = groups.find(g => g.anchor.key === 'GUSTO');
+  assert.ok(!gusto.aliases.some(a => a.cluster.key === 'GUSTO DISTRIBUTING'));
+  assert.equal(gusto.track, false);
+  const bad = seed.suggestCompanies(clusterFrom(rows), {
+    curation: { merge: [{ into: 'NOPE', keys: ['OURA'] }], rename: { NOPE: 'x' } },
+  }).issues;
+  assert.equal(bad.length, 2);
+});
+
+test('the committed curation file: every merge gives a reason and cites an accession when it has one', () => {
+  const file = seed.loadCuration();
+  assert.ok(file.merge.every(m => m.reason && typeof m.evidence === 'string'));
+  assert.ok(file.merge.filter(m => m.evidence).every(m => /^\d{10}-\d{2}-\d{6}$/.test(m.evidence)));
+});
+
 // ---- Review import rules ----
 
 test('review import fails loudly on bad rows and leaves the previous import intact', () => {

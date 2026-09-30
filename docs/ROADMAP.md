@@ -335,28 +335,29 @@ DATA-QUALITY trap 20.
 - Under 1% of tracked-company exposure sits in unresolved aliases.
 - Every SPV mapping has a source.
 
-**Checkpoint (2026-09-29, built; waiting on the user's review of `data/review/*.csv`)**
+**Checkpoint (complete 2026-09-29)**
 
 - Built:
   - Fund identity by series LEI (0005–0007).
   - N-CEN advisers (ADR 0007).
   - Entity tables (0008–0009) and listing evidence (0010).
-  - Seed, review-import, resolve and upkeep modules; refresh runs N-CEN and entity upkeep.
-  - Tests: `entities`, `ncen-refresh`, `warehouse-fund-keys`.
-- Measured on real data:
-  - All roadmap tests pass on a trial import of the unreviewed seed.
-  - Unresolved tracked exposure is 0.71%.
-  - `companyId` reproduces A1–A6.
-  - Keep-rule re-check (ADR 0003): no private company is dropped (C20).
+  - Seed, curation, review-import, resolve and upkeep modules; refresh runs N-CEN and entity upkeep.
+- Entity review finalized with filing evidence (`data/review/curation.json`) and imported: 739 companies,
+  178 tracked, 529 firms. See STATUS "Phase 4 results".
+- Success criteria met on the live warehouse:
+  - Top companies reviewed.
+  - Unresolved tracked exposure 0.46% (under 1%).
+  - Every SPV mapping has a source: named SPVs cite the vehicle row; the curated one and the Fundrise ranges
+    cite an accession.
 - Deviations from the task list, each with its reason:
   - `manager_advisers` (by SEC file number) sits next to `manager_registrants`, because trusts mix advisers
     per series.
-  - `disclosed_exposure` records range-only disclosures (Fundrise names no vehicle, trap 24).
-  - `listing_evidence` exists because listed companies look private in the warehouse (trap 25).
-  - Migrations run to 0010 (0004 was used in P3).
-- After the review: run `npm run review:aliases` on the live warehouse, then re-measure unresolved exposure.
-  Listing evidence exists for the latest 4 quarters. A full 27-quarter backfill (for `public_since`) would
-  push the warehouse (472 MB) past its 500 MB budget: prune or ask first.
+  - `disclosed_exposure` records range-only disclosures (trap 24).
+  - `listing_evidence` exists because listed companies look private (trap 25).
+  - `curation.json` keeps reviewed decisions across re-seeds.
+  - Migrations run to 0010.
+- Listing evidence covers the latest 4 quarters. A full 27-quarter backfill (for `public_since`) would push
+  the warehouse (472 MB) past its 500 MB budget: prune or ask first.
 
 ---
 

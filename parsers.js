@@ -1611,6 +1611,8 @@ module.exports = {
   buildFundXRayComparison,
   buildIssuerCapitalStructure,
   issuerKeyOf,
+  ISSUER_CUT_TOKENS,
+  ISSUER_SUFFIX_TOKENS,
   parseDebtTerms,
   xirr,
   buildPositionReturns,

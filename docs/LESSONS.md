@@ -84,3 +84,12 @@ this file is about **how we work**.
     lacked 16% of the filings EDGAR indexes. Compare every quarter with the index, as for N-PORT.
 19. **Records can say less than they seem to.** Fundrise names Anthropic as >20% of net assets but not
     which vehicle holds it. Store what the filing says (a range) rather than a plausible mapping.
+20. **Seed suggestions need an adversarial pass before anyone relies on them.** The first seed tracked
+    listed companies (Pfizer via a PIPE), merged unrelated names (Gusto Distributing, iCapital Millennium
+    Fund), and called look-alike companies SPVs. Each class of error is now a rule plus a test.
+21. **The filers' own identifiers beat name similarity.** A fund that keeps an instrument id or an exact
+    share count across a name change proves a rename (Oura, Anduril, Project Debussy). Name prefixes alone
+    only merge spellings of one name.
+22. **Keep "evidence" rules honest.** Firms are grouped by the brand in the adviser's SEC-registered name
+    only; ownership links from outside knowledge (Eaton Vance → Morgan Stanley, Teachers Advisors → TIAA)
+    stay out until a filing shows them.

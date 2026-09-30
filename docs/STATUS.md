@@ -1,7 +1,9 @@
 # Vantage v2 Status
 
-**Current phase:** Phase 4 (entities), **built and code-reviewed; waiting on the user's review of `data/review/*.csv`**.
-P0–P3 are signed off. Read [LESSONS.md](LESSONS.md) first.
+**Current phase:** Phase 5 (service layer and parity), **not started**. P0–P4 are complete. P4's entity
+review was finalized by Claude on 2026-09-29 at the user's direction ("finalize and push it through") and
+imported into `warehouse.db`. Start with the SESSION-PROMPTS prompt "Next session: Phase 5 (written
+2026-09-29)"; read [LESSONS.md](LESSONS.md) first.
 **Branch:** `v2-plan-and-phase0`
 **Last updated:** 2026-09-28
 
@@ -11,45 +13,41 @@ P0–P3 are signed off. Read [LESSONS.md](LESSONS.md) first.
 - [x] P1: warehouse foundation and bulk history (signed off 2026-09-28)
 - [x] P2: daily catch-up and refresh (signed off 2026-09-28)
 - [x] P3: canonical views and as-of engine (signed off 2026-09-28)
-- [ ] P4: entities (companies, aliases, SPVs, managers, tracked list)
+- [x] P4: entities (companies, aliases, SPVs, managers, tracked list) (finalized 2026-09-29)
 - [ ] P5: service layer and parity migration
 - [ ] P6: new analysis and UI
 - [ ] P7: MCP server
 - [ ] P8: operations hardening
 - [ ] P9: public deployment (live site; hosting choice to confirm with the user as ADR 0006)
 
-## Phase 4 checkpoint (2026-09-29): built and reviewed; waiting on the user's CSV review
+## Phase 4 results (complete 2026-09-29)
 
-- **Built:**
-  - Fund identity by series LEI: migrations 0005–0007, `fund-keys.js`, LEI backfill.
-  - N-CEN adviser ingest (ADR 0007): 28,590 data set filings plus 534 read from EDGAR.
-  - Entity tables (0008–0009) and listing evidence (0010, backfilled for 2025q3–2026q2).
-  - Seed, review-import, resolve and entity-upkeep modules.
-  - Nightly refresh runs N-CEN and entity upkeep: 0.3 min, run #4 ok.
-- **Code review (2026-09-29), fixed:**
-  - The N-CEN data set download bypassed the paced SEC client.
-  - `seed:entities` would overwrite reviewed CSVs; it now needs `--force`.
-  - `ingest:bulk` and `ingest:delta` skipped entity upkeep.
-  - `exposureAsOf` positions lacked `viaSpv`.
-  - Renamed companies lingered.
-  - **Listed companies were suggested as private and tracked** (Pfizer, Apollo, QXO…). Status now comes from
-    listing evidence first (trap 25).
-- **Review files** (`data/review/`):
-  - `aliases.csv`: 731 companies, 242 private tracked, 289 private, 442 public. Tracked rows come first;
-    every merge shows its reason.
-  - `managers.csv`: 619 rows.
-  - `disclosed_exposure.csv`: Fundrise's ranges.
-- **Measured on a trial import of the unreviewed seed (warehouse copy):**
-  - Roadmap tests: Databricks' 59 raw strings resolve to 1 company; Stripe INC/LLC are one company; Douyin
-    resolves to ByteDance; Magnitude resolves to Anthropic via SPV; SpaceX is public; Capital Group includes
-    all 7 CIKs.
-  - Unresolved tracked exposure is 0.71%.
-  - `companyId` reproduces A1–A6.
-  - Keep-rule re-check: no private company is dropped (C20).
-- **Suite:** 369 tests: 340 pass, 0 fail, 29 skipped (LIVE). Lint and format are clean. The LIVE goldens pass.
-- **Next:** start the next session with the SESSION-PROMPTS prompt "Next session (written 2026-09-29)":
-  refresh, ask about the entity review, import, sign off P4, then Phase 5. `warehouse.db` has no reviewed
-  entities yet, so every `holdings.company_id` is NULL until the import.
+- **Built:** fund identity by series LEI (0005–0007); N-CEN advisers (ADR 0007); entity tables (0008–0009);
+  listing evidence (0010); seed, curation, review-import, resolve and upkeep modules; refresh runs N-CEN
+  and entity upkeep.
+- **Entity review (finalized by Claude with filing evidence):**
+  - `data/review/curation.json` holds every decision with its reason: 25 merges, each citing the filers'
+    own evidence (same instrument id, same share count, or a title naming the company), 1 curated SPV,
+    18 drops, 26 renames, 38 untracks and 3 firm names.
+  - New seed rules found in review:
+    - status from post-IPO lock-up/PIPE rows and the best of 4 listing-evidence quarters;
+    - reverse-prefix and spelling merges;
+    - display names from the filers' own casing;
+    - stricter named-SPV test;
+    - firm names by brand, with no ownership assumed.
+  - Result: 739 companies (257 private, 482 public), **178 tracked** private operating companies,
+    2,173 aliases (26 named SPVs), 529 firms, and 11 Fundrise disclosed ranges.
+- **Imported into `warehouse.db`:** 305,914 holding rows resolved.
+  - Roadmap tests pass live: Databricks' 59 raw strings map to 1 company; Stripe INC/LLC are one company;
+    Douyin maps to ByteDance; Magnitude maps to Anthropic via SPV; SpaceX is public; all 7 Capital Group
+    CIKs are one firm.
+  - Unresolved tracked exposure is **0.46%**.
+  - `companyId` reproduces A1, A2 and A5. For A6, Databricks by company is **120 / $6.233B**: a fund's
+    codename rows ("Project Debussy") are Databricks (F25, verified on EDGAR).
+- **Speed:** `exposureAsOf({ companyId })` takes 176–454 ms cold and ~9 ms warm. P5's p95 < 200 ms needs
+  batching or caching of the per-fund canonical lookups.
+- **Suite:** 376 tests: 346 pass, 0 fail, 30 skipped (LIVE). The LIVE goldens and LIVE entity test pass. Lint
+  and format are clean.
 
 ## Phase 3 checkpoint results
 
@@ -228,9 +226,8 @@ The evidence as presented:
 - **Branch:** all work is on `v2-plan-and-phase0`, pushed to origin (P0–P4 review, 2026-09-29). No PR
   is open and it is not merged to `main`. Ask before opening a PR.
 - ~~Manager mapping source~~ Decided in P4: N-CEN advisers + reviewed `managers.csv` (ADR 0007).
-- **Entity review (gates P4 sign-off):** the user has not yet reviewed `data/review/aliases.csv`,
-  `managers.csv`, `disclosed_exposure.csv`. Ask whether they reviewed, want the draft imported as-is, or
-  want to supply their own tracked list. Check with `git diff 6178f6e -- data/review/`.
+- ~~Entity review~~ Done 2026-09-29 (Claude, at the user's direction; `data/review/curation.json`). The
+  user can still edit the CSVs or curation file; re-import with `npm run review:aliases`.
 - **Tracked list (user, 2026-09-29):** size is the user's choice (100–200 likely); the 242 in the draft
   are a suggestion. The user may send their own names to resolve against the warehouse.
 - **Open for the user:** one tracked list or several named lists (a schema change best made before P5), and
@@ -249,11 +246,13 @@ The evidence as presented:
   - `listing_evidence` for 2025q3–2026q2. Status needs only the latest quarter. **Don't backfill all 27
     quarters** (+60–70 MB, over budget) without first pruning old quarters or raising the budget with the
     user.
-  - Entity tables are **empty** (no reviewed import yet): every `holdings.company_id` is NULL.
+  - Entities imported (2026-09-29): 739 companies, 178 tracked, 529 firms; 305,914 holdings resolved.
 - `ingest_errors` empty; `refresh_runs` #4 ok. The SEC 2026Q3 N-PORT bulk file (expected after 2026-09-30)
   loads on the next `npm run refresh`, replacing matching catch-up rows and adding listing evidence.
 
 ## Log
+
+- **2026-09-29:** Finalized the Phase 4 entity lists with filing evidence (curation.json, new seed rules); imported into the warehouse; P4 complete; pushed.
 
 - **2026-09-29:** Answered the user's questions (aliases, search outside the list, custom tracked list); recorded them under Open decisions. Wrote the next-session handoff prompt. Pushed.
 - **2026-09-29:** Full P3–P4 review. Fixed six issues (listed companies seeded as private, among others); docs brought current (ADR 0007, traps 20–26, F21–F24, C16–C20).

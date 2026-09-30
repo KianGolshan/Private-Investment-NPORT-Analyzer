@@ -1,34 +1,34 @@
 manager,kind,key,name,funds,private_value_musd,v1_group,flags
-Blackrock,adviser,801-22609,BlackRock Fund Advisors,247,143801.5,,name stem
+BlackRock,adviser,801-22609,BlackRock Fund Advisors,247,143801.5,,name stem
 Dimensional Fund Advisors,adviser,801-16283,Dimensional Fund Advisors LP,79,85760.3,Dimensional Fund Advisors,
 Fidelity,adviser,801-7884,Fidelity Management & Research Company LLC,208,56005.1,Fidelity,
 Eaton Vance,adviser,801-15930,Eaton Vance Management,44,51030.2,,name stem
 Vanguard,adviser,801-11953,"Vanguard Group, Inc",49,28486.1,,name stem
 StepStone,adviser,801-117639,StepStone Group Private Wealth LLC,5,17495.0,StepStone,
 Cliffwater,adviser,801-63344,Cliffwater LLC,3,16883.6,,name stem
-T Rowe,adviser,801-00856,"T. Rowe Price Associates, Inc.",78,16815.1,,name stem
+T. Rowe Price,adviser,801-00856,"T. Rowe Price Associates, Inc.",78,16815.1,T. Rowe Price,curated
 Capital Group (American Funds),adviser,801-8055,Capital Research and Management Company,44,16464.9,Capital Group (American Funds),
-Sunamerica,adviser,801-19813,"SunAmerica Asset Management, LLC",50,16206.4,,name stem
-Pantheon Ventures,adviser,801-71327,Pantheon Ventures (US) LP,3,14107.4,,name stem
-Partners,adviser,801-68463,Partners Group (USA) Inc.,4,13454.1,,name stem
+SunAmerica,adviser,801-19813,"SunAmerica Asset Management, LLC",50,16206.4,,name stem
+Pantheon,adviser,801-71327,Pantheon Ventures (US) LP,3,14107.4,,name stem
+Partners Group,adviser,801-68463,Partners Group (USA) Inc.,4,13454.1,,curated
 BlackRock,adviser,801-47710,"BlackRock Advisors, LLC",133,11922.5,BlackRock,
 Allspring,adviser,801-58237,"Allspring Funds Management, LLC",76,10016.9,,name stem
 Invesco,adviser,801-61851,Invesco Capital Management LLC,51,9999.5,,name stem
 Ironwood,adviser,801-56679,Ironwood Capital Management,2,9953.9,,name stem
-Pgim,adviser,801-31104,PGIM INVESTMENTS LLC,95,9287.0,,name stem
-Ast,adviser,801-40532,"AST Investment Services, Inc.",35,8123.6,,name stem
-Ssga,adviser,801-60103,"SSGA Funds Management, Inc.",64,7665.1,,name stem
+PGIM,adviser,801-31104,PGIM INVESTMENTS LLC,95,9287.0,,name stem
+AST,adviser,801-40532,"AST Investment Services, Inc.",35,8123.6,,name stem
+SSGA,adviser,801-60103,"SSGA Funds Management, Inc.",64,7665.1,,name stem
 Hamilton Lane,adviser,801-55813,"Hamilton Lane Advisors, L.L.C.",6,6825.5,,name stem
 Neuberger Berman,adviser,801-61757,NEUBERGER BERMAN INVESTMENT ADVISERS LLC,34,5939.9,Neuberger Berman,
 Ares,adviser,801-72399,Ares Capital Management II LLC,1,5826.3,,name stem
-Alpinvest Private,adviser,801-126208,"ALPINVEST PRIVATE EQUITY INVESTMENT MANAGEMENT, LLC",2,5148.1,,name stem
+Alpinvest,adviser,801-126208,"ALPINVEST PRIVATE EQUITY INVESTMENT MANAGEMENT, LLC",2,5148.1,,name stem
 Empowered,adviser,801-79835,"Empowered Funds, LLC d/b/a EA Advisers",65,4815.0,,name stem
 Brookfield,adviser,801-70688,"Brookfield Asset Management Private Institutional Capital Adviser (Canada), L.P.",1,4790.8,,name stem
 Franklin Templeton,adviser,801-26292,"Franklin Advisers, Inc.",60,4402.0,Franklin Templeton,
-Macquarie Wealth,adviser,801-67480,"Macquarie Wealth Advisers, LLC",10,4161.7,,name stem
+Macquarie,adviser,801-67480,"Macquarie Wealth Advisers, LLC",10,4161.7,,name stem
 Coatue,adviser,801-73669,"Coatue Management, L.L.C.",1,4116.2,Coatue,
 Principal,adviser,801-55959,"Principal Global Investors, LLC",31,3712.2,,name stem
-J,adviser,801-21011,J.P. Morgan Investment Management Inc.,65,3282.2,,name stem
+J.P. Morgan,adviser,801-21011,J.P. Morgan Investment Management Inc.,65,3282.2,,name stem
 Invesco,adviser,801-33949,"Invesco Advisers, Inc.",62,3216.1,,name stem
 Harrison Street,adviser,801-72298,Harrison Street Private Wealth LLC,3,2999.9,,name stem
 Franklin Templeton,adviser,801-66785,"FRANKLIN TEMPLETON FUND ADVISER, LLC",39,2931.8,,name stem
@@ -36,24 +36,24 @@ Horizon Kinetics,adviser,801-52581,Horizon Kinetics Asset Management,14,2435.3,,
 Teachers,adviser,801-46887,"Teachers Advisors, LLC",31,2342.6,,name stem
 Pacific Life,adviser,801-15057,Pacific Life Fund Advisors LLC,20,2195.2,,name stem
 First Trust,adviser,801-122924,FIRST TRUST CAPITAL MANAGEMENT L.P,10,2155.5,First Trust,
-Icapital,adviser,801-131729,iCapital Fund Advisors LLC,3,2142.5,,name stem
-Dws,adviser,801-252,"DWS Investment Management Americas, Inc.",21,2021.1,,name stem
+iCapital,adviser,801-131729,iCapital Fund Advisors LLC,3,2142.5,,name stem
+DWS,adviser,801-252,"DWS Investment Management Americas, Inc.",21,2021.1,,name stem
 Pear Tree,adviser,801-19222,Pear Tree Advisors Inc.,6,1966.7,,name stem
-Coller Private,adviser,801-128738,"Coller Private Market Secondaries Advisors, LLC",2,1935.1,,name stem
-Fundrise,adviser,801-80060,Fundrise Advisors LLC,3,1923.3,,name stem
-Pacific,adviser,801-48187,Pacific Investment Management Company LLC,48,1814.0,,name stem
+Coller,adviser,801-128738,"Coller Private Market Secondaries Advisors, LLC",2,1935.1,,name stem
+Fundrise,adviser,801-80060,Fundrise Advisors LLC,3,1923.3,Fundrise,
+PIMCO,adviser,801-48187,Pacific Investment Management Company LLC,48,1814.0,,curated
 Stone Ridge,adviser,801-77228,Stone Ridge Asset Management LLC,5,1790.5,Stone Ridge,
 Alger,adviser,801-6709,"Fred Alger Management, LLC",25,1737.3,Alger,
 Oxford Lane,adviser,801-71654,"Oxford Lane Management, LLC",1,1681.7,,name stem
 Portfolio,adviser,801-46369,"Portfolio Advisers, LLC",1,1674.7,,name stem
 Pomona,adviser,801-69755,"Pomona Management, LLC",1,1623.3,,name stem
-Fs,adviser,801-78346,"FS Global Advisor, LLC",6,1490.3,,name stem
-Nexpoint,adviser,801-75490,"NexPoint Advisors, L.P.",2,1254.8,,name stem
-Alliancebernstein,adviser,801-56720,AllianceBernstein L.P.,45,1249.3,,name stem
-Tiaa Cref,adviser,801-38029,TIAA-CREF Investment Management LLC,4,1235.4,,name stem
-Liberty Street,adviser,801-67698,"Liberty Street Advisors, Inc.",1,1230.0,,name stem
+FS,adviser,801-78346,"FS Global Advisor, LLC",6,1490.3,,name stem
+NexPoint,adviser,801-75490,"NexPoint Advisors, L.P.",2,1254.8,,name stem
+AllianceBernstein,adviser,801-56720,AllianceBernstein L.P.,45,1249.3,AllianceBernstein,
+Tiaa-cref,adviser,801-38029,TIAA-CREF Investment Management LLC,4,1235.4,,name stem
+The Private Shares Fund,adviser,801-67698,"Liberty Street Advisors, Inc.",1,1230.0,The Private Shares Fund,
 Morgan Stanley,adviser,801-60699,Morgan Stanley AIP GP LP,7,1227.3,,name stem
-Icapital Registered,adviser,801-119679,iCapital Registered Fund Adviser LLC,1,1191.3,,name stem
+iCapital,adviser,801-119679,iCapital Registered Fund Adviser LLC,1,1191.3,,name stem
 Jackson National,adviser,801-58171,"Jackson National Asset Management, LLC",74,1190.0,Jackson National,
 Boston,adviser,801-43127,Boston Management and Research,15,1115.2,,name stem
 Bow River,adviser,801-127488,Bow River Advisers LLC,1,1107.0,,name stem
@@ -68,31 +68,31 @@ Matson Money,adviser,801-40176,"Matson Money, Inc.",2,846.8,,name stem
 Ardian,adviser,801-63098,Ardian US LLC,1,814.6,,name stem
 Harding Loevner,adviser,801-36845,Harding Loevner LP,8,805.0,,name stem
 Victory,adviser,801-46878,Victory Capital Management Inc.,58,802.2,,name stem
-Wisdomtree,adviser,801-66567,"WisdomTree Asset Management, Inc.",49,789.7,,name stem
+WisdomTree,adviser,801-66567,"WisdomTree Asset Management, Inc.",49,789.7,,name stem
 Aspiriant,adviser,801-68987,"Aspiriant, LLC",6,778.4,,name stem
-Caz,adviser,801-128764,CAZ Investments Registered Adviser LLC,1,746.7,,name stem
+CAZ,adviser,801-128764,CAZ Investments Registered Adviser LLC,1,746.7,,name stem
 Lord Abbett,adviser,801-6997,"Lord, Abbett & Co. LLC",28,738.7,,name stem
 Blue Owl,adviser,801-131788,Blue Owl Alternative Credit Advisors II LLC,1,738.5,,name stem
 Adams Street,adviser,801-131949,"Adams Street Advisors, LLC",1,735.3,,name stem
 Calamos,adviser,801-29688,Calamos Advisors LLC,20,734.3,,name stem
 Flowstone,adviser,801-115230,"FLOWSTONE PARTNERS, LLC",1,708.3,,name stem
-Destiny,adviser,801-123048,Destiny Advisors LLC,1,698.3,,name stem
+Destiny Capital,adviser,801-123048,Destiny Advisors LLC,1,698.3,Destiny Capital,
 New York Life Investments,adviser,801-57396,New York Life Investment Management LLC,18,689.4,New York Life Investments,
 Janus Henderson,adviser,801-13991,Janus Henderson Investors US LLC,38,688.8,,name stem
-Cion Ares,adviser,801-108788,"CION Ares Management, LLC",1,670.5,,name stem
-Penn Mutual,adviser,801-35477,"Penn Mutual Asset Management, LLC",11,667.8,,name stem
+CION Ares,adviser,801-108788,"CION Ares Management, LLC",1,670.5,,name stem
+Penn,adviser,801-35477,"Penn Mutual Asset Management, LLC",11,667.8,,name stem
 Krane,adviser,801-77589,"Krane Funds Advisors, LLC",19,657.2,,name stem
 First Pacific,adviser,801-67160,"First Pacific Advisors, LP",8,638.9,,name stem
-Abrdn,adviser,801-49966,abrdn Inc.,23,632.6,,name stem
+abrdn,adviser,801-49966,abrdn Inc.,23,632.6,,name stem
 Oberweis,adviser,801-35657,"Oberweis Asset Management, Inc.",6,632.3,,name stem
-Blackstone Private,adviser,801-128455,Blackstone Private Credit Strategies LLC,1,628.1,,name stem
-Sei,adviser,801-24593,SEI Investments Management Corporation,33,612.8,,name stem
+Blackstone,adviser,801-128455,Blackstone Private Credit Strategies LLC,1,628.1,,name stem
+SEI,adviser,801-24593,SEI Investments Management Corporation,33,612.8,,name stem
 Variant,adviser,801-113357,VARIANT INVESTMENTS LLC,3,610.3,,name stem
-Harbourvest Registered,adviser,801-131309,HarbourVest Registered Advisers L.P.,1,608.2,,name stem
+HarbourVest,adviser,801-131309,HarbourVest Registered Advisers L.P.,1,608.2,,name stem
 Segall Bryant,adviser,801-47232,"Segall Bryant & Hamill, LLC",7,607.7,,name stem
-Nexpoint,adviser,801-69968,"NexPoint Asset Management, L.P.",8,593.9,,name stem
-Aqr,adviser,801-55543,AQR Capital Management LLC,32,563.8,,name stem
-Ubs,adviser,801-34910,UBS Asset Management (Americas) LLC,11,559.6,,name stem
+NexPoint,adviser,801-69968,"NexPoint Asset Management, L.P.",8,593.9,,name stem
+AQR,adviser,801-55543,AQR Capital Management LLC,32,563.8,,name stem
+UBS,adviser,801-34910,UBS Asset Management (Americas) LLC,11,559.6,,name stem
 Security Investors,adviser,801-8008,"Security Investors, LLC",26,523.2,,name stem
 Morgan Stanley,adviser,801-15757,Morgan Stanley Investment Management Inc.,39,496.1,Morgan Stanley,
 Brighton Jones,adviser,801-57087,"Brighton Jones, LLC",1,476.9,,name stem
@@ -100,78 +100,78 @@ Brighton Jones,adviser,801-57087,"Brighton Jones, LLC",1,476.9,,name stem
 Brighthouse,adviser,801-47459,"Brighthouse Investment Advisers, LLC",27,457.2,,name stem
 Robinhood,adviser,801-135024,"Robinhood Ventures DE, LLC",1,456.6,Robinhood,
 Beacon Pointe,adviser,801-60943,"Beacon Pointe Advisors, LLC",1,437.0,,name stem
-Apollo S3,adviser,801-129730,"Apollo S3 RIC Management, L.P.",1,425.2,,name stem
-Thrivent Financial,adviser,801-60701,Thrivent Financial for Lutherans,16,423.3,,name stem
+Apollo,adviser,801-129730,"Apollo S3 RIC Management, L.P.",1,425.2,,name stem
+Thrivent,adviser,801-60701,Thrivent Financial for Lutherans,16,423.3,,name stem
 Endowment,adviser,801-62618,"ENDOWMENT ADVISERS, L.P. d/b/a CYPRESS CREEK PARTNERS",6,416.2,,name stem
-Gcm Grosvenor,adviser,801-54965,GCM Grosvenor L.P.,4,409.6,,name stem
-Abs,adviser,801-62188,ABS Investment Management LLC,3,407.7,,name stem
+GCM Grosvenor,adviser,801-54965,GCM Grosvenor L.P.,4,409.6,,name stem
+ABS,adviser,801-62188,ABS Investment Management LLC,3,407.7,,name stem
 Carlyle,adviser,801-77691,CARLYLE GLOBAL CREDIT INVESTMENT MANAGEMENT L.L.C.,1,406.0,Carlyle,
-J,adviser,801-41088,J.P. Morgan Private Investments Inc.,9,402.8,,name stem
-Blackstone Alternative,adviser,801-52559,Blackstone Alternative Asset Management L.P.,2,400.1,,name stem
+J.P. Morgan,adviser,801-41088,J.P. Morgan Private Investments Inc.,9,402.8,,name stem
+Blackstone,adviser,801-52559,Blackstone Alternative Asset Management L.P.,2,400.1,,name stem
 ERShares,adviser,801-78345,"Capital Impact Advisors, LLC",2,393.9,ERShares,
 Global X,adviser,801-69093,Global X Management Company LLC,41,392.0,,name stem
 John Hancock,adviser,801-8124,John Hancock Investment Management LLC,80,385.8,John Hancock,
 Primark,adviser,801-119013,"Primark Advisors, LLC",1,383.0,,name stem
-Pantheon Infra,adviser,801-132356,"Pantheon Infra Advisors, LLC",1,382.1,,name stem
+Pantheon,adviser,801-132356,"Pantheon Infra Advisors, LLC",1,382.1,,name stem
 Grandeur Peak,adviser,801-72540,"Grandeur Peak Global Advisors, LLC",19,374.2,,name stem
 Russell,adviser,801-17141,"RUSSELL INVESTMENT MANAGEMENT, LLC",21,362.6,,name stem
 Nomura,adviser,801-127179,Nomura Capital Management LLC,1,350.3,,name stem
-Aetos Alternatives,adviser,801-60760,"AETOS ALTERNATIVES MANAGEMENT, L.P.",3,340.0,,name stem
-Hc,adviser,801-32688,"HC Capital Solutions an operating division of Hirtle Callaghan & Co., LLC",10,330.8,,name stem
+Aetos,adviser,801-60760,"AETOS ALTERNATIVES MANAGEMENT, L.P.",3,340.0,,name stem
+HC,adviser,801-32688,"HC Capital Solutions an operating division of Hirtle Callaghan & Co., LLC",10,330.8,,name stem
 Tocqueville,adviser,801-36209,"Tocqueville Asset Management, LP",2,328.4,,name stem
 Hamilton,adviser,801-54611,"Hamilton Capital, LLC",1,314.7,,name stem
-Blackstone Alternative,adviser,801-77791,Blackstone Alternative Investment Advisors LLC,1,313.3,,name stem
+Blackstone,adviser,801-77791,Blackstone Alternative Investment Advisors LLC,1,313.3,,name stem
 Cantor Fitzgerald,adviser,801-72852,"Cantor Fitzgerald Investment Advisors, L.P.",2,310.9,,name stem
 Thrivent,adviser,801-64988,Thrivent Asset Management LLC,11,305.8,,name stem
 Securian,adviser,801-47262,"Securian Asset Management, Inc.",3,304.4,,name stem
 Wilshire,adviser,801-36233,WILSHIRE ADVISORS LLC,5,283.8,,name stem
 Variable Annuity,adviser,801-8138,The Variable Annuity Life Insurance Company,26,281.1,,name stem
 M83,adviser,801-131436,"M83 Investment Group, LLC",1,280.7,,name stem
-Bbr,adviser,801-57219,"BBR Partners, LLC",1,278.5,,name stem
-Jo Hambro,adviser,801-69614,JO Hambro Capital Management Limited,6,277.0,,name stem
-Blackstone Real,adviser,801-79357,Blackstone Real Estate Income Advisors L.L.C.,2,275.7,,name stem
-Cion Grosvenor,adviser,801-130219,"CION Grosvenor Management, LLC",1,275.4,,name stem
+BBR,adviser,801-57219,"BBR Partners, LLC",1,278.5,,name stem
+JO Hambro,adviser,801-69614,JO Hambro Capital Management Limited,6,277.0,,name stem
+Blackstone,adviser,801-79357,Blackstone Real Estate Income Advisors L.L.C.,2,275.7,,name stem
+CION Grosvenor,adviser,801-130219,"CION Grosvenor Management, LLC",1,275.4,,name stem
 Transamerica,adviser,801-53319,"Transamerica Asset Management, Inc.",32,273.9,,name stem
 Kopernik,adviser,801-78514,"Kopernik Global Investors, LLC",2,262.9,,name stem
-Hb Wealth,adviser,801-122595,"HB Wealth Management, LLC",1,261.9,,name stem
+HB,adviser,801-122595,"HB Wealth Management, LLC",1,261.9,,name stem
 Goldman Sachs,adviser,801-37591,"Goldman Sachs Asset Management, L.P.",22,258.5,,name stem
 Columbia Threadneedle,adviser,801-25943,"Columbia Management Investment Advisers, LLC",34,248.4,Columbia Threadneedle,
 Brandes,adviser,801-24896,"Brandes Investment Partners, L.P.",10,247.5,,name stem
 Sprott,adviser,801-66131,"Sprott Asset Management USA, Inc.",2,243.1,,name stem
 Northern Trust,adviser,801-33358,"NORTHERN TRUST INVESTMENTS, INC.",25,236.7,,name stem
-Gqg,adviser,801-107734,GQG Partners LLC,4,235.4,,name stem
+GQG,adviser,801-107734,GQG Partners LLC,4,235.4,,name stem
 Putnam,adviser,801-7974,"Putnam Investment Management, LLC",11,228.4,,name stem
 Causeway,adviser,801-60343,CAUSEWAY CAPITAL MANAGEMENT LLC,4,223.2,,name stem
 Nomura,adviser,801-32108,Nomura Investment Management Business Trust,35,218.8,,name stem
 Saba,adviser,801-71740,"Saba Capital Management, L.P.",2,217.4,,name stem
 First Eagle,adviser,801-50659,"First Eagle Investment Management, LLC",7,217.4,,name stem
-Hartford,adviser,801-77209,"Hartford Funds Management Company, LLC",21,213.9,,name stem
+Hartford Funds,adviser,801-77209,"Hartford Funds Management Company, LLC",21,213.9,Hartford Funds,
 Cohen Steers,adviser,801-27721,"Cohen & Steers Capital Management, Inc.",9,210.3,,name stem
-Tiff,adviser,801-45618,"TIFF Advisory Services, LLC",1,208.7,,name stem
-Lincoln Financial,adviser,801-23411,Lincoln Financial Investments Corporation,18,208.2,,name stem
+TIFF,adviser,801-45618,"TIFF Advisory Services, LLC",1,208.7,,name stem
+Lincoln,adviser,801-23411,Lincoln Financial Investments Corporation,18,208.2,,name stem
 Bluerock,adviser,801-77049,"Bluerock Fund Advisor, LLC",1,207.1,,name stem
-Ab Carval,adviser,801-71932,"AB CarVal Investors, L.P.",1,203.6,,name stem
+AB CarVal,adviser,801-71932,"AB CarVal Investors, L.P.",1,203.6,,name stem
 Eventide,adviser,801-69154,"Eventide Asset Management, LLC",3,191.9,,name stem
 Equitable,adviser,801-72220,"Equitable Investment Management Group, LLC",40,191.6,,name stem
 Wellington,adviser,801-15908,Wellington Management Company LLP,13,191.1,,name stem
 Nuveen,adviser,801-14147,"Nuveen Fund Advisors, LLC",42,186.0,Nuveen,
 Virtus,adviser,801-5995,"Virtus Investment Advisers, LLC",27,181.5,,name stem
-Ofs,adviser,801-71366,"OFS Capital Management, LLC",1,181.5,,name stem
+OFS,adviser,801-71366,"OFS Capital Management, LLC",1,181.5,,name stem
 Guggenheim,adviser,801-66786,"Guggenheim Partners Investment Management, LLC",9,181.2,,name stem
 Johcm,adviser,801-78083,JOHCM (USA) Inc.,8,179.1,,name stem
 Voya,adviser,801-48282,"Voya Investments, LLC",21,173.4,,name stem
-Cais,adviser,801-130768,CAIS ADVISORS LLC,1,158.3,,name stem
-Resource Real,adviser,801-74489,"Resource Real Estate, LLC",1,156.1,,name stem
+CAIS,adviser,801-130768,CAIS ADVISORS LLC,1,158.3,,name stem
+Resource,adviser,801-74489,"Resource Real Estate, LLC",1,156.1,,name stem
 Accordant,adviser,801-128031,Accordant Investments LLC,1,147.0,,name stem
 Bamco,adviser,801-29080,"BAMCO, Inc.",9,146.7,,name stem
-Calvert Research,adviser,801-108378,Calvert Research and Management,20,146.5,,name stem
-Kkr Credit,adviser,801-69633,KKR Credit Advisors (US) LLC,4,143.5,,name stem
-Liquid Strategies,adviser,801-79222,Liquid Strategies LLC,2,140.6,,name stem
+Calvert,adviser,801-108378,Calvert Research and Management,20,146.5,,name stem
+KKR,adviser,801-69633,KKR Credit Advisors (US) LLC,4,143.5,,name stem
+Liquid,adviser,801-79222,Liquid Strategies LLC,2,140.6,,name stem
 Water Island,adviser,801-57341,"Water Island Capital, LLC",6,139.9,,name stem
 Flat Rock,adviser,801-110612,"Flat Rock Global, LLC",3,136.9,,name stem
 Merk,adviser,801-60616,"Merk Investments, LLC",1,135.7,,name stem
 Thornburg,adviser,801-17853,"Thornburg Investment Management, Inc.",12,134.6,,name stem
-Franklin Mutual,adviser,801-53068,"Franklin Mutual Advisers, LLC",6,132.2,,name stem
+Franklin Templeton,adviser,801-53068,"Franklin Mutual Advisers, LLC",6,132.2,,name stem
 Nationwide,adviser,801-56370,NATIONWIDE FUND ADVISORS,24,132.0,,name stem
 Grantham Mayo,adviser,801-15028,"Grantham, Mayo, Van Otterloo & Company, LLC",16,125.8,,name stem
 Oaktree,adviser,801-112570,"Oaktree Fund Advisors, LLC",2,124.7,,name stem
@@ -182,15 +182,15 @@ Princeton,adviser,801-72525,"PRINCETON FUND ADVISORS, LLC",2,118.6,,name stem
 Eagle Point,adviser,801-77721,Eagle Point Credit Management LLC,3,115.4,,name stem
 Driehaus,adviser,801-18439,DRIEHAUS CAPITAL MANAGEMENT LLC,6,113.0,,name stem
 Touchstone,adviser,801-45963,"Touchstone Advisors, Inc.",12,111.4,,name stem
-Guidestone,adviser,801-60303,"GuideStone Capital Management, LLC",7,109.0,,name stem
+GuideStone,adviser,801-60303,"GuideStone Capital Management, LLC",7,109.0,,name stem
 Evanston,adviser,801-61115,"Evanston Capital Management, LLC",1,106.5,,name stem
 William Blair,adviser,801-80640,"WILLIAM BLAIR INVESTMENT MANAGEMENT, LLC",10,103.7,,name stem
 Arrow,adviser,801-66595,"Arrow Investment Advisors, LLC",2,102.9,,name stem
-Rex,adviser,801-128357,"REX Advisers, LLC",4,97.6,,name stem
+REX,adviser,801-128357,"REX Advisers, LLC",4,97.6,,name stem
 Patient,adviser,801-118170,"Patient Capital Management, LLC",2,96.6,,name stem
 Tortoise,adviser,801-61622,"Tortoise Capital Advisors, LLC",2,96.5,,name stem
 Forum,adviser,801-120917,"Forum Capital Advisors, LLC",1,93.7,,name stem
-F,adviser,801-21951,F. L. Putnam Investment Management Company,1,90.1,,name stem
+F. L. Putnam,adviser,801-21951,F. L. Putnam Investment Management Company,1,90.1,,name stem
 Clearwater,adviser,801-29336,Clearwater Management Co Inc.,1,89.7,,name stem
 Brown Brothers,adviser,801-60256,Brown Brothers Harriman Mututal Fund Advisory Department,1,87.4,,name stem
 Destra,adviser,801-71604,DESTRA CAPITAL ADVISORS LLC,3,87.4,,name stem
@@ -200,30 +200,30 @@ Hotchkis Wiley,adviser,801-60512,"Hotchkis & Wiley Capital Management, LLC",4,81
 Skypoint,adviser,801-128009,"Skypoint Capital Advisors, LLC",1,81.7,,name stem
 Westwood,adviser,801-18727,Westwood Management Corp,5,81.6,,name stem
 Recurrent,adviser,801-110728,"Recurrent Investment Advisors, LLC",1,79.8,,name stem
-Artisan,adviser,801-70101,Artisan Partners Limited Partnership,4,75.7,,name stem
+Artisan Partners,adviser,801-70101,Artisan Partners Limited Partnership,4,75.7,Artisan Partners,
 Advisors Preferred,adviser,801-72430,"Advisors Preferred, LLC",6,72.7,,name stem
 Advisors,adviser,801-62731,"ADVISORS ASSET MANAGEMENT, INC.",2,71.2,,name stem
 Oxford Park,adviser,801-127170,"Oxford Park Management, LLC",1,69.7,,name stem
 Empowered,adviser,811-22961,"Empowered Funds, LLC d/b/a EA Advisers",9,66.8,,name stem
-Locorr,adviser,801-72130,LoCorr Fund Management LLC,2,66.2,,name stem
-Idirect Private,adviser,801-131566,"iDirect Private Credit Advisors, LLC",1,66.1,,name stem
+LoCorr,adviser,801-72130,LoCorr Fund Management LLC,2,66.2,,name stem
+iDirect,adviser,801-131566,"iDirect Private Credit Advisors, LLC",1,66.1,,name stem
 Aristotle,adviser,801-60014,"Aristotle Capital Management, LLC",2,64.3,,name stem
 Emery,adviser,801-133801,Emery Partners LLC,1,63.6,,name stem
 Guggenheim,adviser,801-62515,"Guggenheim Funds Investment Advisors, LLC",5,62.4,,name stem
 Meketa,adviser,801-128821,"Meketa Capital, LLC",1,61.8,,name stem
 Mount Logan,adviser,801-119731,MOUNT LOGAN MANAGEMENT LLC,1,60.2,,name stem
-Arrowmark Colorado,adviser,801-69868,"ArrowMark Colorado Holdings, LLC",5,58.7,,name stem
+Meridian,adviser,801-69868,"ArrowMark Colorado Holdings, LLC",5,58.7,Meridian,
 Brinker,adviser,801-57265,"Brinker Capital Investments, LLC",8,58.6,,name stem
 Sanders,adviser,801-70661,"Sanders Capital, LLC",1,57.7,,name stem
-Massachusetts Financial,adviser,801-17352,Massachusetts Financial Services Company,46,57.3,,name stem
+Massachusetts,adviser,801-17352,Massachusetts Financial Services Company,46,57.3,,name stem
 Strategic,adviser,801-13243,Strategic Advisers LLC,12,57.1,,name stem
 Cullen,adviser,801-57576,"Cullen Capital Management, LLC",2,52.6,,name stem
 Acadian,adviser,801-28078,Acadian Asset Management LLC,1,52.3,,name stem
-Alps,adviser,801-67135,"ALPS Advisors, Inc.",12,52.0,,name stem
-Hsbc,adviser,801-25999,HSBC Global Asset Management (USA) Inc.,2,51.8,,name stem
-Bny Mellon,adviser,801-8147,"BNY Mellon Investment Adviser, Inc.",21,48.4,,name stem
+ALPS,adviser,801-67135,"ALPS Advisors, Inc.",12,52.0,,name stem
+HSBC,adviser,801-25999,HSBC Global Asset Management (USA) Inc.,2,51.8,,name stem
+BNY Mellon,adviser,801-8147,"BNY Mellon Investment Adviser, Inc.",21,48.4,BNY Mellon,
 Sierra Crest,adviser,801-114566,"Sierra Crest Investment Management, LLC",1,47.5,,name stem
-Caz Gp,adviser,801-134494,CAZ GP Stakes Adviser LLC,1,44.5,,name stem
+CAZ,adviser,801-134494,CAZ GP Stakes Adviser LLC,1,44.5,,name stem
 Matthews,adviser,801-52871,"Matthews International Capital Management, LLC",8,44.4,,name stem
 American Beacon,adviser,801-29198,"American Beacon Advisors, Inc.",8,43.3,,name stem
 Thirdline,adviser,801-121695,"THIRDLINE CAPITAL MANAGEMENT, LLC",1,43.3,,name stem
@@ -232,9 +232,9 @@ Osterweis,adviser,801-54360,"Osterweis Capital Management, LLC",2,42.7,,name ste
 Morningstar,adviser,801-56896,Morningstar Investment Management LLC,5,42.4,,name stem
 Charles Schwab,adviser,801-35905,"Charles Schwab Investment Management, Inc.",17,42.3,,name stem
 Pzena,adviser,801-50838,"Pzena Investment Management, LLC",3,42.0,,name stem
-Euro Pacific,adviser,801-71199,"EURO PACIFIC ASSET MANAGEMENT, LLC",4,41.4,,name stem
+EURO Pacific,adviser,801-71199,"EURO PACIFIC ASSET MANAGEMENT, LLC",4,41.4,,name stem
 Primecap,adviser,801-19765,PRIMECAP Management Company,5,40.9,,name stem
-Ubs Hedge,adviser,801-62960,UBS Hedge Fund Solutions LLC,1,40.4,,name stem
+UBS,adviser,801-62960,UBS Hedge Fund Solutions LLC,1,40.4,,name stem
 Natixis,adviser,801-48408,"Natixis Advisors, LLC",5,39.6,,name stem
 Aksia,adviser,801-67661,Aksia LLC,1,39.3,,name stem
 Wasatch Global Investors,adviser,801-11095,"Wasatch Advisors, LP",3,38.6,Wasatch Global Investors,
@@ -247,44 +247,44 @@ First Trust,adviser,801-78504,FIRST TRUST CAPITAL MANAGEMENT L.P.,3,36.0,,name s
 Ariel,adviser,801-18767,"Ariel Investments, LLC",2,35.9,,name stem
 Barings,adviser,801-241,Barings LLC,8,35.5,Barings,
 Yorktown,adviser,801-23441,"Yorktown Management and Research Company, Inc.",4,33.8,,name stem
-Ubs,adviser,801-120846,UBS Asset Managers of Puerto Rico,3,33.1,,name stem
-Connetic Ria,adviser,801-130512,Connetic RIA LLC,1,32.4,,name stem
+UBS,adviser,801-120846,UBS Asset Managers of Puerto Rico,3,33.1,,name stem
+Connetic RIA,adviser,801-130512,Connetic RIA LLC,1,32.4,,name stem
 C1,adviser,801-132089,C1 Advisors LLC,1,32.4,,name stem
 Willow,adviser,801-107574,"Willow Asset Management, LLC",1,32.0,,name stem
 Ninety One,adviser,801-80153,"Ninety One North America, Inc.",5,31.9,,name stem
 Smead,adviser,801-67839,"Smead Capital Management, Inc.",1,31.4,,name stem
-Mml,adviser,801-78778,"MML Investment Advisers, LLC",22,30.8,,name stem
+MML,adviser,801-78778,"MML Investment Advisers, LLC",22,30.8,,name stem
 Focus,adviser,801-67641,"Focus Advisor Solutions, LLC",3,29.8,,name stem
 Christian Brothers,adviser,801-16639,"Christian Brothers Investment Services, Inc.",3,29.2,,name stem
-Ma,adviser,801-107811,"MA Asset Management, LLC",1,28.2,,name stem
-Fs Specialty,adviser,801-107359,"FS Specialty Lending Advisor, LLC",1,27.9,,name stem
-Cni Recf,adviser,801-107220,"CNI RECF Advisors, LLC",2,27.4,,name stem
-Oneascent,adviser,801-126729,OneAscent Capital LLC,1,27.2,,name stem
+MA,adviser,801-107811,"MA Asset Management, LLC",1,28.2,,name stem
+FS Specialty,adviser,801-107359,"FS Specialty Lending Advisor, LLC",1,27.9,,name stem
+CNI RECF,adviser,801-107220,"CNI RECF Advisors, LLC",2,27.4,,name stem
+OneAscent,adviser,801-126729,OneAscent Capital LLC,1,27.2,,name stem
 Fairway,adviser,801-122662,"Fairway Capital Management, LLC",1,26.5,,name stem
 Timothy,adviser,801-45766,"Timothy Partners, Ltd.",5,26.2,,name stem
 USVC,adviser,801-129822,"AngelList Asset Management, LLC",1,25.0,USVC,
-Arga,adviser,801-77018,"ARGA Investment Management, LP",2,23.4,,name stem
+ARGA,adviser,801-77018,"ARGA Investment Management, LP",2,23.4,,name stem
 Impax,adviser,801-8517,Impax Asset Management LLC,7,23.3,,name stem
-Cim,adviser,801-115272,"CIM Capital IC Management, LLC",1,23.3,,name stem
+CIM,adviser,801-115272,"CIM Capital IC Management, LLC",1,23.3,,name stem
 Hood River,adviser,801-77537,Hood River Capital Management LLC,2,22.9,,name stem
 Venerable,adviser,801-130496,"Venerable Investment Advisers, LLC",5,22.7,,name stem
 Polar,adviser,801-64644,Polar Capital LLP,3,21.9,,name stem
 Vulcan Value,adviser,801-70739,"Vulcan Value Partners, LLC",2,20.0,,name stem
-Abrdn,adviser,801-75074,abrdn Investments Limited,3,19.7,,name stem
-Tcw,adviser,801-29075,TCW Investment Management Company LLC,14,19.1,,name stem
+abrdn,adviser,801-75074,abrdn Investments Limited,3,19.7,,name stem
+TCW,adviser,801-29075,TCW Investment Management Company LLC,14,19.1,,name stem
 Rondure,adviser,801-108903,"Rondure Global Advisors, LLC",3,18.8,,name stem
 Brigade,adviser,801-69965,"BRIGADE CAPITAL MANAGEMENT, LP",1,18.8,,name stem
 Salient,adviser,801-71482,"Salient Capital Advisors, LLC",2,18.2,,name stem
 Loomis Sayles,adviser,801-170,"Loomis, Sayles & Company",4,18.0,,name stem
-Bw,adviser,801-116666,BW Asset Management LTD,1,17.3,,name stem
+BW,adviser,801-116666,BW Asset Management LTD,1,17.3,,name stem
 Allianz,adviser,801-60167,Allianz Investment Management LLC,14,17.2,,name stem
-Metropolitan West,adviser,801-53332,METROPOLITAN WEST Asset Management LLC,9,17.1,,name stem
-Oha Private,adviser,801-126341,"OHA Private Credit Advisors II, L.P.",1,16.9,,name stem
-Pinestone,adviser,801-8948,PineStone Asset Management,1,16.9,,name stem
+Metropolitan WEST,adviser,801-53332,METROPOLITAN WEST Asset Management LLC,9,17.1,,name stem
+OHA,adviser,801-126341,"OHA Private Credit Advisors II, L.P.",1,16.9,,name stem
+PineStone,adviser,801-8948,PineStone Asset Management,1,16.9,,name stem
 Sweater Industries,adviser,801-122933,SWEATER INDUSTRIES LLC.,2,16.3,,name stem
 Bessemer,adviser,801-60185,Bessemer Investment Management LLC,1,15.9,,name stem
 Atlas,adviser,801-119872,Atlas Asset Management LLC,1,15.9,,name stem
-Financial Solutions,adviser,801-62917,"Financial Solutions, Inc.",1,15.9,,name stem
+Financial,adviser,801-62917,"Financial Solutions, Inc.",1,15.9,,name stem
 Fairholme,adviser,801-54831,"Fairholme Capital Management, LLC",1,15.7,,name stem
 Chiron,adviser,801-106527,"Chiron Investment Management, LLC",2,15.1,,name stem
 Phaeacian,adviser,801-118387,Phaeacian Partners LLC,2,14.7,,name stem
@@ -293,11 +293,11 @@ Holbrook Holdings,adviser,801-107682,"Holbrook Holdings, Inc.",1,14.5,,name stem
 Easterly,adviser,801-106805,Easterly Funds LLC,4,13.3,,name stem
 VanEck,adviser,801-21340,Van Eck Associates Corporation,8,13.3,VanEck,
 Apollo,adviser,801-108959,"Apollo Capital Credit Adviser, LLC",1,13.2,,name stem
-Sovereign Financial,adviser,801-114529,"Sovereign Financial Group, Inc.",1,13.0,,name stem
+Sovereign,adviser,801-114529,"Sovereign Financial Group, Inc.",1,13.0,,name stem
 First Trust,adviser,801-39950,First Trust Advisors L.P.,7,12.6,,name stem
 Eagle Point,adviser,801-129465,Eagle Point Defensive Income Management LLC,1,12.1,,name stem
 Sands,adviser,801-64820,"Sands Capital Management, LLC",1,11.8,,name stem
-Lsv,adviser,801-47689,LSV Asset Management,3,11.4,,name stem
+LSV,adviser,801-47689,LSV Asset Management,3,11.4,,name stem
 Cavalier,adviser,801-106545,"Cavalier Investments, LLC d/b/a Adaptive Investments",1,10.9,,name stem
 Accrued Equities,adviser,801-15504,"Accrued Equities, Inc.",1,10.7,,name stem
 John Hancock,adviser,801-28947,John Hancock Variable Trust Advisers LLC,15,10.6,,name stem
@@ -308,19 +308,19 @@ Praxis,adviser,801-36323,"Praxis Investment Management, Inc.",2,9.8,,name stem
 American Century,adviser,801-08174,"American Century Investment Management, Inc.",14,9.3,,name stem
 Crow Point,adviser,801-67184,"Crow Point Partners, LLC",1,9.3,,name stem
 Olive Street,adviser,801-77754,OLIVE STREET INVESTMENT ADVISERS LLC,7,9.0,,name stem
-Cwm,adviser,801-108947,"CWM Advisors, LLC",2,9.0,,name stem
-Fs Multi,adviser,801-113895,"FS Multi-Alternative Advisor, LLC",1,8.9,,name stem
+CWM,adviser,801-108947,"CWM Advisors, LLC",2,9.0,,name stem
+FS Multi-Alternative,adviser,801-113895,"FS Multi-Alternative Advisor, LLC",1,8.9,,name stem
 Proshare,adviser,801-64181,PROSHARE ADVISORS LLC,13,8.6,,name stem
-Acr Alpine,adviser,801-60694,"ACR ALPINE CAPITAL RESEARCH, LLC",2,8.5,,name stem
+ACR Alpine,adviser,801-60694,"ACR ALPINE CAPITAL RESEARCH, LLC",2,8.5,,name stem
 Sprucegrove,adviser,801-45884,Sprucegrove Investment Management Ltd,1,8.3,,name stem
 Altrinsic,adviser,801-63055,"Altrinsic Global Advisors, LLC",1,8.3,,name stem
 Saturna,adviser,801-35428,SATURNA CAPITAL CORPORATION,2,8.0,,name stem
-Tcw,adviser,801-131265,TCW Asset Backed Finance Management Company LLC,1,7.8,,name stem
+TCW,adviser,801-131265,TCW Asset Backed Finance Management Company LLC,1,7.8,,name stem
 Invenomic,adviser,801-110459,Invenomic Capital Management LP,1,7.8,,name stem
 Dunham Associates,adviser,801-25803,"Dunham & Associates Investment Counsel, Inc.",4,7.6,,name stem
 Lyrical,adviser,801-71099,Lyrical Asset Management LP,1,7.4,,name stem
-Crossingbridge,adviser,801-110043,"CrossingBridge Advisors, LLC",4,7.1,,name stem
-U S,adviser,801-4868,"U.S. Global Investors, Inc.",5,6.8,,name stem
+CrossingBridge,adviser,801-110043,"CrossingBridge Advisors, LLC",4,7.1,,name stem
+U.S.,adviser,801-4868,"U.S. Global Investors, Inc.",5,6.8,,name stem
 13D,adviser,801-72869,13D Management LLC,1,6.8,,name stem
 Centerstone Investors,adviser,801-107361,"Centerstone Investors, LLC",4,6.7,,name stem
 Pichardo,adviser,801-62108,Pichardo Asset Management SA de CV,1,6.5,,name stem
@@ -336,72 +336,72 @@ Horizon,adviser,801-60142,Horizon Advisers,2,6.0,,name stem
 Easterly,adviser,801-114563,Easterly Investment Partners LLC,2,5.9,,name stem
 Ironhorse,adviser,801-78730,"Ironhorse Capital, LLC",2,5.9,,name stem
 Horizon Kinetics,adviser,801-47515,Horizon Kinetics Asset Management LLC,3,5.8,,name stem
-Rwc,adviser,801-77698,RWC ASSET ADVISORS (US) LLC,1,5.7,,name stem
-Oneascent,adviser,801-110054,"OneAscent Investment Solutions, LLC",2,5.6,,name stem
+RWC,adviser,801-77698,RWC ASSET ADVISORS (US) LLC,1,5.7,,name stem
+OneAscent,adviser,801-110054,"OneAscent Investment Solutions, LLC",2,5.6,,name stem
 Intrepid,adviser,801-47894,"Intrepid Capital Management, Inc.",2,5.5,,name stem
 Aperture Investors,adviser,801-113983,"APERTURE INVESTORS, LLC",2,5.4,,name stem
 Principal Street,adviser,801-108508,Principal Street Partners. LLC.,2,5.4,,name stem
-Capital,adviser,801-32104,"Capital International, Inc.",1,5.4,,name stem
-Goldentree,adviser,801-111061,GoldenTree Asset Management Credit Advisor LLC,1,5.3,,name stem
-Sei,adviser,811-24593,SEI Investments Management Corporation,1,5.3,,name stem
-Bmo,adviser,801-35533,BMO Asset Management Corp.,4,5.3,,name stem
+Capital Group (American Funds),adviser,801-32104,"Capital International, Inc.",1,5.4,,name stem
+GoldenTree,adviser,801-111061,GoldenTree Asset Management Credit Advisor LLC,1,5.3,,name stem
+SEI,adviser,811-24593,SEI Investments Management Corporation,1,5.3,,name stem
+BMO,adviser,801-35533,BMO Asset Management Corp.,4,5.3,,name stem
 First Sentier,adviser,801-93167,First Sentier Investors (US) LLC,1,5.1,,name stem
 City National,adviser,801-60150,"City National Rochdale, LLC",1,5.0,,name stem
 Eagle,adviser,801-53294,"Eagle Global Advisors, LLC",1,5.0,,name stem
 Brookfield Public,adviser,801-34605,Brookfield Public Securities Group LLC,1,4.5,,name stem
 Polen,adviser,801-55001,"Polen Capital Credit, LLC",3,4.5,,name stem
-Concorde Financial,adviser,801-16625,Concorde Financial Corp.,1,4.5,,name stem
+Concorde,adviser,801-16625,Concorde Financial Corp.,1,4.5,,name stem
 Kensington,adviser,801-119080,"Kensington Asset Management, LLC",1,4.5,,name stem
 Goehring Rozencwajg,adviser,801-107891,"Goehring & Rozencwajg Associates, LLC",1,4.4,,name stem
 Federated,adviser,801-34612,Federated Investment Management Company,10,4.2,,name stem
 Eagle Point,adviser,801-114251,Eagle Point Income Management LLC,1,4.2,,name stem
 Tema,adviser,801-131126,Tema ETFs LLC,1,4.0,Tema,
 Trillium,adviser,801-17958,"Trillium Asset Management, LLC",1,4.0,,name stem
-Blackstone Liquid,adviser,801-68243,Blackstone Liquid Credit Strategies LLC,3,4.0,,name stem
+Blackstone,adviser,801-68243,Blackstone Liquid Credit Strategies LLC,3,4.0,,name stem
 Corbin,adviser,801-63358,"Corbin Capital Partners, LP",1,3.8,,name stem
 Shelton,adviser,801-25205,Shelton Capital Management,7,3.8,,name stem
 Amundi,adviser,801-08255,"Amundi Asset Management US, Inc.",10,3.7,,name stem
 M Financial,adviser,801-50553,"M Financial Investment Advisers, Inc.",1,3.5,,name stem
 Intelligence Driven,adviser,801-114418,"Intelligence Driven Advisers, LLC",1,3.5,,name stem
 Sterling,adviser,801-64257,Sterling Capital Management LLC,1,3.4,,name stem
-Ellington Credit,adviser,801-78637,Ellington Credit Company Management LLC,1,3.3,,name stem
+Ellington,adviser,801-78637,Ellington Credit Company Management LLC,1,3.3,,name stem
 Callan,adviser,801-9219,Callan LLC,3,3.2,,name stem
 Schwartz,adviser,801-32773,"Schwartz Investment Counsel, Inc.",1,3.1,,name stem
 Redwood,adviser,801-78563,"REDWOOD INVESTMENT MANAGEMENT, LLC",1,3.0,,name stem
 1WS,adviser,801-114286,"1WS Capital Advisors, LLC",1,3.0,,name stem
-Riverpark,adviser,801-70321,"RiverPark Advisors, LLC",2,3.0,,name stem
-Southernsun,adviser,801-71849,"SouthernSun Asset Management, LLC",1,2.8,,name stem
-Jpmorgan,adviser,801-114775,JPMorgan Asset Management (Asia Pacific) Limited,1,2.8,,name stem
-Vela,adviser,801-119022,"VELA Investment Management, LLC",1,2.8,,name stem
+RiverPark,adviser,801-70321,"RiverPark Advisors, LLC",2,3.0,,name stem
+SouthernSun,adviser,801-71849,"SouthernSun Asset Management, LLC",1,2.8,,name stem
+J.P. Morgan,adviser,801-114775,JPMorgan Asset Management (Asia Pacific) Limited,1,2.8,,name stem
+VELA,adviser,801-119022,"VELA Investment Management, LLC",1,2.8,,name stem
 Mason Street,adviser,801-60721,"Mason Street Advisors, LLC",6,2.7,,name stem
 Rayliant,adviser,801-118201,Rayliant Investment Research,1,2.7,,name stem
 Gladstone,adviser,801-61440,Gladstone Management Corporation,1,2.6,,name stem
 Miller Value,adviser,801-56989,"Miller Value Partners, LLC",2,2.6,,name stem
 Sunbridge,adviser,801-120375,Sunbridge Capital Partners LLC,1,2.5,,name stem
 Empower,adviser,801-52309,"Empower Capital Management, LLC",4,2.3,,name stem
-Feg Investors,adviser,801-68915,"FEG Investors, LLC",2,2.2,,name stem
+FEG Investors,adviser,801-68915,"FEG Investors, LLC",2,2.2,,name stem
 Ramsey Quantitative,adviser,801-97337,"Ramsey Quantitative Systems, Inc",1,2.1,,name stem
 Leader,adviser,801-56684,Leader Capital Corp.,1,2.1,,name stem
-Skyrock,adviser,801-117333,"SkyRock Investment Management, LLC",1,2.1,,name stem
+SkyRock,adviser,801-117333,"SkyRock Investment Management, LLC",1,2.1,,name stem
 North Square,adviser,801-115238,"North Square Investments, LLC",1,2.0,,name stem
-Apollo Credit,adviser,801-72098,"Apollo Credit Management, LLC",2,2.0,,name stem
+Apollo,adviser,801-72098,"Apollo Credit Management, LLC",2,2.0,,name stem
 Altegris,adviser,801-71496,"Altegris Advisors, LLC",1,2.0,,name stem
-Im,adviser,801-52710,"IM Global Partner Fund Management, LLC",6,2.0,,name stem
+IM,adviser,801-52710,"IM Global Partner Fund Management, LLC",6,2.0,,name stem
 Auxier,adviser,801-55757,AUXIER ASSET MANAGEMENT LLC,1,2.0,,name stem
 Gabelli,adviser,801-37706,"Gabelli Funds, LLC",16,2.0,,name stem
 Cove Street,adviser,801-72231,"Cove Street Capital, LLC",1,1.9,,name stem
 Brookmont,adviser,801-68533,"Brookmont Capital Management, LLC",2,1.9,,name stem
 Morgan Creek,adviser,801-65690,"Morgan Creek Capital Management, LLC",1,1.9,,name stem
-Arrowmark,adviser,801-118052,"ArrowMark Asset Management, LLC",1,1.8,,name stem
+ArrowMark,adviser,801-118052,"ArrowMark Asset Management, LLC",1,1.8,,name stem
 Glenmede,adviser,801-57826,Glenmede Investment Management LP,1,1.8,,name stem
 Morgan Stanley,adviser,801-70103,Morgan Stanley Smith Barney LLC,1,1.7,,name stem
-Wcm,adviser,801-11916,"WCM INVESTMENT MANAGEMENT, LLC",1,1.7,,name stem
-Doubleline,adviser,801-70942,DoubleLine Capital LP,6,1.7,,name stem
+WCM,adviser,801-11916,"WCM INVESTMENT MANAGEMENT, LLC",1,1.7,,name stem
+DoubleLine,adviser,801-70942,DoubleLine Capital LP,6,1.7,,name stem
 Onefund,adviser,801-117228,"ONEFUND, LLC",2,1.7,,name stem
 Hatteras,adviser,801-79326,Hatteras Funds LP,5,1.6,,name stem
 Perpetual,adviser,801-122747,PERPETUAL US SERVICES LLC,4,1.6,,name stem
 Bulldog Investors,adviser,801-70596,"Bulldog Investors, LLP",3,1.6,,name stem
-Usa Mutuals,adviser,801-63216,"USA Mutuals Advisors, Inc.",1,1.5,,name stem
+USA Mutuals,adviser,801-63216,"USA Mutuals Advisors, Inc.",1,1.5,,name stem
 Franklin Templeton,adviser,801-60684,"Franklin Templeton Institutional, LLC",1,1.5,,name stem
 Vaughan Nelson,adviser,801-51795,"VAUGHAN NELSON INVESTMENT MANAGEMENT, L.P.",1,1.5,,name stem
 Smithbridge,adviser,801-53667,"Smithbridge Asset Management, Inc.",2,1.4,,name stem
@@ -415,56 +415,56 @@ Ivy Invest,adviser,801-129430,Ivy Invest,1,1.1,,name stem
 Tanaka,adviser,801-28990,"Tanaka Capital Management, Inc.",1,1.0,,name stem
 Rayliant,adviser,801-70495,"Rayliant Asset Management, LLC",1,1.0,,name stem
 Cerity,adviser,801-70888,Cerity Partners OCIO LLC,1,1.0,,name stem
-Icon,adviser,801-38868,ICON ADVISERS,1,1.0,,name stem
+ICON,adviser,801-38868,ICON ADVISERS,1,1.0,,name stem
 Brown,adviser,801-38826,Brown Advisory LLC,2,1.0,,name stem
 Carosa Stanton,adviser,801-53311,"Carosa, Stanton Asset Management, LCC",2,1.0,,name stem
 Madison,adviser,801-62992,"Madison Asset Management, LLC",2,1.0,,name stem
 Seven Canyons,adviser,801-112404,"Seven Canyons Advisors, LLC",2,0.9,,name stem
-Weiss Multi,adviser,801-71151,Weiss Multi-Strategy Advisers LLC,2,0.9,,name stem
-Americafirst Wealth,adviser,801-121671,"AmericaFirst Wealth Management, Inc.",3,0.8,,name stem
+Weiss Multi-Strategy,adviser,801-71151,Weiss Multi-Strategy Advisers LLC,2,0.9,,name stem
+AmericaFirst,adviser,801-121671,"AmericaFirst Wealth Management, Inc.",3,0.8,,name stem
 Esoterica,adviser,801-117617,Esoterica Capital LLC,1,0.8,,name stem
 Symmetry,adviser,801-61342,"Symmetry Partners, LLC",3,0.8,,name stem
 Zacks,adviser,801-40592,"Zacks Investment Management, Inc.",1,0.8,,name stem
 Amplfy,adviser,801-80692,Amplfy Investments LLC,1,0.8,,name stem
 Regents Park,adviser,801-108885,"Regents Park Funds, LLC",2,0.8,,name stem
-Aegis Financial,adviser,801-46901,AEGIS FINANCIAL CORPORATION,1,0.7,,name stem
+Aegis,adviser,801-46901,AEGIS FINANCIAL CORPORATION,1,0.7,,name stem
 Centre,adviser,801-66295,"Centre Asset Management, LLC",1,0.7,,name stem
 Mercer,adviser,801-63730,Mercer Investments LLC,2,0.7,,name stem
 Equitable,adviser,801-126365,"Equitable Investment Management, LLC",2,0.6,,name stem
 Manning Napier,adviser,801-10733,"Manning & Napier Advisors, LLC",2,0.6,,name stem
 Allianz,adviser,801-69803,Allianz Global Investors U.S. LLC,5,0.6,,name stem
-Emerald Research,adviser,801-60455,Emerald Research Corporation,1,0.6,,name stem
-Fs Credit,adviser,801-111674,"FS Credit Income Advisor, LLC",1,0.6,,name stem
+Emerald,adviser,801-60455,Emerald Research Corporation,1,0.6,,name stem
+FS,adviser,801-111674,"FS Credit Income Advisor, LLC",1,0.6,,name stem
 Rafferty,adviser,801-54679,"RAFFERTY ASSET MANAGEMENT, LLC",3,0.6,,name stem
 Silk Invest,adviser,801-77104,Silk Invest Limited,1,0.5,,name stem
-Pinebridge,adviser,801-108522,PineBridge Investments Holdings US LLC,1,0.5,,name stem
+PineBridge,adviser,801-108522,PineBridge Investments Holdings US LLC,1,0.5,,name stem
 New Age,adviser,801-116789,"New Age Alpha Advisors, LLC",2,0.5,,name stem
-Rbc Rochdale,adviser,801-27265,"RBC Rochdale, LLC",3,0.5,,name stem
-Lmcg,adviser,801-70357,"LMCG INVESTMENTS, LLC",1,0.4,,name stem
+RBC Rochdale,adviser,801-27265,"RBC Rochdale, LLC",3,0.5,,name stem
+LMCG,adviser,801-70357,"LMCG INVESTMENTS, LLC",1,0.4,,name stem
 Pinnacle,adviser,801-53493,"Pinnacle Advisors, LLC",1,0.4,,name stem
 Scharf,adviser,801-18799,Scharf Investments LLC,1,0.4,,name stem
 Viking,adviser,801-56605,"Viking Fund Management, LLC",1,0.4,,name stem
-Federated Equity,adviser,801-62501,Federated Equity Management Company of Pennsylvania,3,0.4,,name stem
-Axs,adviser,801-117457,AXS Investments LLC,2,0.4,,name stem
+Federated,adviser,801-62501,Federated Equity Management Company of Pennsylvania,3,0.4,,name stem
+AXS,adviser,801-117457,AXS Investments LLC,2,0.4,,name stem
 Caravan,adviser,801-110208,"Caravan Capital Management, LLC",1,0.4,,name stem
-Metlife,adviser,801-67314,"MetLife Investment Management, LLC",1,0.4,,name stem
+MetLife,adviser,801-67314,"MetLife Investment Management, LLC",1,0.4,,name stem
 Champlain,adviser,801-63424,"Champlain Investment Partners, LLC",1,0.4,,name stem
-Cibc Private,adviser,801-57986,"CIBC Private Wealth Advisors, Inc.",1,0.4,,name stem
+CIBC,adviser,801-57986,"CIBC Private Wealth Advisors, Inc.",1,0.4,,name stem
 Themes,adviser,801-128358,"Themes Management Company, LLC",1,0.4,,name stem
 Lord Abbett,adviser,801-131229,Lord Abbett FIF Advisor LLC,1,0.4,,name stem
 Columbia Wanger,adviser,801-41391,"Columbia Wanger Asset Management, LLC",1,0.3,,name stem
 Parnassus,adviser,801-122618,"Parnassus Investments, LLC",1,0.3,,name stem
 Cambiar Investors,adviser,801-60541,"Cambiar Investors, LLC",1,0.3,,name stem
-Rice Hall,adviser,801-30441,RICE HALL JAMES,1,0.3,,name stem
+RICE HALL,adviser,801-30441,RICE HALL JAMES,1,0.3,,name stem
 ERShares,adviser,801-71628,"Seaport Global Advisors, LLC",1,0.3,ERShares,
 Templeton,adviser,801-46997,Templeton Asset Management Ltd.,5,0.3,,name stem
 Teton,adviser,801-47568,"Teton Advisors, LLC",1,0.3,,name stem
 Palmer Square,adviser,801-72047,Palmer Square Capital Management LLC,1,0.3,,name stem
-Dbx,adviser,801-71808,DBX Advisors LLC,10,0.3,,name stem
-Truemark,adviser,801-117961,"TrueMark Investments, LLC",1,0.3,,name stem
-Fidelity Diversifying,adviser,801-122572,Fidelity Diversifying Solutions LLC,3,0.3,,name stem
+DBX,adviser,801-71808,DBX Advisors LLC,10,0.3,,name stem
+TrueMark,adviser,801-117961,"TrueMark Investments, LLC",1,0.3,,name stem
+Fidelity,adviser,801-122572,Fidelity Diversifying Solutions LLC,3,0.3,,name stem
 Jennison Associates,adviser,801-5608,JENNISON ASSOCIATES LLC,1,0.2,,name stem
-Xa,adviser,801-110653,XA Investments LLC,1,0.2,,name stem
+XA,adviser,801-110653,XA Investments LLC,1,0.2,,name stem
 Boston,adviser,801-61786,"Boston Partners Global Investors, Inc.",3,0.2,,name stem
 New York,adviser,028-06325-1,New York Life Investment Management LLC,1,0.2,,name stem
 Saratoga,adviser,801-46534,"Saratoga Capital Management, LLC",1,0.2,,name stem
@@ -472,62 +472,62 @@ Mutual,adviser,801-43897,MUTUAL OF AMERICA CAPITAL MANAGEMENT LLC,3,0.2,,name st
 Payden Rygel,adviser,801-19762,Payden & Rygel,3,0.2,,name stem
 Western,adviser,801-08162,"Western Asset Management Company, LLC",1,0.2,,name stem
 Clifford,adviser,801-78911,"Clifford Capital Partners, LLC",1,0.1,,name stem
-Virtus Alternative,adviser,801-67924,"Virtus Alternative Investment Advisers, LLC",2,0.1,,name stem
+Virtus,adviser,801-67924,"Virtus Alternative Investment Advisers, LLC",2,0.1,,name stem
 Fiera,adviser,801-08948,Fiera Capital Inc.,1,0.1,,name stem
 River Canyon,adviser,801-78722,River Canyon Fund Management LLC,1,0.1,,name stem
 Orrell,adviser,801-38997,"ORRELL CAPITAL MANAGEMENT, INC.",1,0.1,,name stem
-Fca,adviser,801-20514,FCA Corp,1,0.1,,name stem
-Etf Managers,adviser,801-107165,ETF Managers Group LLC,2,0.1,,name stem
+FCA,adviser,801-20514,FCA Corp,1,0.1,,name stem
+ETF Managers,adviser,801-107165,ETF Managers Group LLC,2,0.1,,name stem
 Catalyst,adviser,801-66886,"Catalyst Capital Advisors, LLC",1,0.1,,name stem
-21shares,adviser,801-128769,21Shares US LLC,1,0.1,,name stem
+21Shares,adviser,801-128769,21Shares US LLC,1,0.1,,name stem
 Calamos Antetokounmpo,adviser,801-126711,Calamos Antetokounmpo Asset Management LLC,1,0.1,,name stem
 Homestead,adviser,801-37391,Homestead Advisers Corp.,1,0.1,,name stem
 Rivernorth,adviser,801-61533,"Rivernorth Capital Management, LLC",4,0.1,,name stem
 Foresters,adviser,801-07885,"Foresters Investment Management Company, Inc.",1,0.1,,name stem
 Magnetar,adviser,801-108902,"Magnetar Asset Management, LLC",1,0.1,,name stem
 Legal General,adviser,801-69862,LEGAL & GENERAL Investment Management America Inc.,1,0.1,,name stem
-K2 D,adviser,801-61852,"K2/D&S Management Co., L.L.C.",1,0.1,,name stem
+K2/D&S,adviser,801-61852,"K2/D&S Management Co., L.L.C.",1,0.1,,name stem
 Royce Associates,adviser,801-8268,"Royce & Associates, LP",1,0.1,,name stem
-Lattice Strategies,adviser,801-63451,Lattice Strategies LLC,1,0.1,,name stem
+Lattice,adviser,801-63451,Lattice Strategies LLC,1,0.1,,name stem
 Cambria,adviser,801-71786,"Cambria Investment Management, L.P.",3,0.1,,name stem
 Emles,adviser,801-119123,Emles Advisors LLC,1,0.1,,name stem
-Dodge Cox,adviser,801-1895,DODGE & COX,1,0.1,,name stem
+Dodge COX,adviser,801-1895,DODGE & COX,1,0.1,,name stem
 Quantum,adviser,801-70375,Quantum Advisors Private Limited,1,0.1,,name stem
 Shenkman,adviser,801-25180,Shenkman Capital Management Inc,1,0.1,,name stem
-Fs,adviser,801-110117,"FS Fund Advisor, LLC",1,0.1,,name stem
+FS,adviser,801-110117,"FS Fund Advisor, LLC",1,0.1,,name stem
 Callodine,adviser,801-113867,"Callodine Capital Management, LP",1,0.1,,name stem
 Stonebridge,adviser,801-53760,"Stonebridge Capital Advisors, LLC",1,0.1,,name stem
 Constellation,adviser,801-51396,CONSTELLATION INVESTMENTS INC,7,0.1,,name stem
 Bridgeway,adviser,801-44394,"Bridgeway Capital Management, LLC",3,0.1,,name stem
-Doubleline Etf,adviser,801-122996,DoubleLine ETF Adviser LP,4,0.1,,name stem
+DoubleLine,adviser,801-122996,DoubleLine ETF Adviser LP,4,0.1,,name stem
 Humankind Benefit,adviser,811-23602,Humankind Benefit Corp,1,0.0,,name stem
 Third Avenue,adviser,801-27792,Third Avenue Management LLC,1,0.0,,name stem
 Templeton,adviser,801-15125,"Templeton Investment Counsel, LLC",1,0.0,,name stem
 Sound,adviser,801-129056,"Sound Capital Solutions, LLC",1,0.0,,name stem
 Park Avenue,adviser,801-81084,Park Avenue Institutional Advisers LLC,1,0.0,,name stem
 Vert,adviser,801-110846,Vert Asset Management LLC,1,0.0,,name stem
-Franklin,adviser,801-51967,"Franklin Advisory Services, LLC",5,0.0,,name stem
-Thomas J,adviser,801-20866,"Thomas J. Herzfeld Advisors, Inc.",1,0.0,,name stem
+Franklin Templeton,adviser,801-51967,"Franklin Advisory Services, LLC",5,0.0,,name stem
+Herzfeld,adviser,801-20866,"Thomas J. Herzfeld Advisors, Inc.",1,0.0,Herzfeld,
 Harbor,adviser,801-60367,"Harbor Capital Advisors, Inc.",5,0.0,,name stem
 Acuitas,adviser,801-79447,"Acuitas Investments, LLC",1,0.0,,name stem
 Wilmington,adviser,801-22071,Wilmington Funds Management Corporation,1,0.0,,name stem
 Motley Fool,adviser,801-69975,Motley Fool Asset Management,2,0.0,,name stem
 Stephens,adviser,801-64675,"STEPHENS INVESTMENT MANAGEMENT GROUP, LLC",1,0.0,,name stem
-Clearbridge,adviser,801-64710,"ClearBridge Investments, LLC",1,0.0,,name stem
+ClearBridge,adviser,801-64710,"ClearBridge Investments, LLC",1,0.0,,name stem
 Democracy,adviser,801-120193,Democracy Investment Management LLC,1,0.0,,name stem
 Impact Shares,adviser,801-112391,"Impact Shares, Corp.",1,0.0,,name stem
 Innealta,adviser,801-112421,"Innealta Capital, LLC",2,0.0,,name stem
 Fulcrum,adviser,801-72206,Fulcrum Asset Management LLP,1,0.0,,name stem
-U S,adviser,801-60125,"U.S. Bancorp Asset Management, Inc.",1,0.0,,name stem
-Profund,adviser,801-54760,ProFund Advisors LLC,2,0.0,,name stem
-Assetmark,adviser,801-56323,AssetMark Inc.,1,0.0,,name stem
-Rbc,adviser,801-20303,RBC Global Asset Management (U.S.) Inc.,4,0.0,,name stem
+U.S. Bancorp,adviser,801-60125,"U.S. Bancorp Asset Management, Inc.",1,0.0,,name stem
+ProFund,adviser,801-54760,ProFund Advisors LLC,2,0.0,,name stem
+AssetMark,adviser,801-56323,AssetMark Inc.,1,0.0,,name stem
+RBC,adviser,801-20303,RBC Global Asset Management (U.S.) Inc.,4,0.0,,name stem
 Matthew 25,adviser,801-49550,Matthew 25 Management Corp.,1,0.0,,name stem
 Pacific Income,adviser,801-27828,Pacific Income Advisers Inc,2,0.0,,name stem
 Jacob,adviser,801-56730,Jacob Asset Management of New York LLC,1,0.0,,name stem
 Envestnet,adviser,801-57260,"Envestnet Asset Management, Inc.",2,0.0,,name stem
 Los Angeles,adviser,801-60934,Los Angeles Capital Management LLC,1,0.0,,name stem
-D E,adviser,801-64222,"D. E. Shaw Investment Management, L.L.C.",1,0.0,,name stem
+D. E. Shaw,adviser,801-64222,"D. E. Shaw Investment Management, L.L.C.",1,0.0,,name stem
 Adler,adviser,801-113287,"Adler Asset Management, Inc.",1,0.0,,name stem
 Community,adviser,801-56201,"Community Capital Management, LLC",2,0.0,,name stem
 Franklin Templeton,adviser,801-55170,Franklin Templeton Investment Management Limited,1,0.0,,name stem
@@ -535,86 +535,86 @@ Global Atlantic,adviser,801-78132,"Global Atlantic Investment Advisors, LLC",4,0
 Midwood,adviser,801-78736,Midwood Capital Management LLC,1,0.0,,name stem
 Templeton,adviser,801-42343,Templeton Global Advisors Limited,1,0.0,,name stem
 Penn,adviser,801-31452,Penn Capital Management Company LLC,1,0.0,,name stem
-Camelot Event,adviser,801-112328,"Camelot Event-Driven Advisors, LLC",1,0.0,,name stem
+Camelot Event-Driven,adviser,801-112328,"Camelot Event-Driven Advisors, LLC",1,0.0,,name stem
 Kornitzer,adviser,801-34933,"Kornitzer Capital Management, Inc.",2,0.0,,name stem
 James,adviser,801-12359,"James Investment Research, Inc.",1,0.0,,name stem
 Innovator,adviser,801-110111,"Innovator Capital Management, LLC",3,0.0,,name stem
-Ppm,adviser,801-40783,"PPM America, Inc.",1,0.0,,name stem
-Counterpoint Mutual,adviser,801-80197,"Counterpoint Mutual Funds, LLC",1,0.0,,name stem
+PPM,adviser,801-40783,"PPM America, Inc.",1,0.0,,name stem
+Counterpoint,adviser,801-80197,"Counterpoint Mutual Funds, LLC",1,0.0,,name stem
 Moerus,adviser,801-107225,Moerus Capital Management LLC,1,0.0,,name stem
-Universal Financial,adviser,801-121280,"Universal Financial Services, Inc.",5,0.0,,name stem
+Universal,adviser,801-121280,"Universal Financial Services, Inc.",5,0.0,,name stem
 Geneva,adviser,801-28444,GENEVA CAPITAL MANAGEMENT LLC,1,0.0,,name stem
 Pekin Hardy,adviser,801-35684,Pekin Hardy Strauss Inc,1,0.0,,name stem
 Gotham,adviser,801-69960,"Gotham Asset Management, LLC",3,0.0,,name stem
 Domini Impact,adviser,801-54701,Domini Impact Investments LLC,1,0.0,,name stem
 Stone Harbor,adviser,801-65397,STONE HARBOR INVESTMENT Partners LP,1,0.0,,name stem
-Virtus Systematic,adviser,801-78585,"Virtus Systematic, a division of Virtus Advisers, LLC",1,0.0,,name stem
-Defiance Etfs,adviser,801-113321,Defiance ETFs LLC,2,0.0,,name stem
+Virtus,adviser,801-78585,"Virtus Systematic, a division of Virtus Advisers, LLC",1,0.0,,name stem
+Defiance ETFs,adviser,801-113321,Defiance ETFs LLC,2,0.0,,name stem
 Altair,adviser,801-61138,Altair Advisers LLC,1,0.0,,name stem
-Agf,adviser,801-68681,AGF Investments America Inc.,1,0.0,,name stem
+AGF,adviser,801-68681,AGF Investments America Inc.,1,0.0,,name stem
 Marsico,adviser,801-54914,"MARSICO CAPITAL MANAGEMENT, LLC",2,0.0,,name stem
 Weitz,adviser,801-18819,"Weitz Investment Management, Inc.",1,0.0,,name stem
 Wahed Invest,adviser,801-106499,Wahed Invest LLC,1,0.0,,name stem
-Blackrock,registrant,893818,BlackRock Funds III,2,5158.9,,no N-CEN adviser
-Blackrock Large,registrant,1097077,"BLACKROCK LARGE CAP SERIES FUNDS, INC.",1,963.5,,no N-CEN adviser
-Powerlaw,registrant,2052053,Powerlaw Corp.,1,555.1,,no N-CEN adviser
+BlackRock,registrant,893818,BlackRock Funds III,2,5158.9,,no N-CEN adviser
+BlackRock,registrant,1097077,"BLACKROCK LARGE CAP SERIES FUNDS, INC.",1,963.5,BlackRock,no N-CEN adviser
+Powerlaw,registrant,2052053,Powerlaw Corp.,1,555.1,Powerlaw,no N-CEN adviser
 Central Securities,registrant,18748,CENTRAL SECURITIES CORPORATION,1,407.4,,no N-CEN adviser
 Adams Street,registrant,2092050,Adams Street Venture & Growth Fund,1,254.4,,no N-CEN adviser
-Ea Series,registrant,1592900,EA Series Trust,16,234.3,,no N-CEN adviser
-Afa,registrant,1843499,AFA Asset Based Lending Fund,1,232.3,,no N-CEN adviser
+EA Series,registrant,1592900,EA Series Trust,16,234.3,,no N-CEN adviser
+AFA,registrant,1843499,AFA Asset Based Lending Fund,1,232.3,,no N-CEN adviser
 Tema,registrant,1944285,Tema ETF Trust,1,171.5,Tema,no N-CEN adviser
-Robostrategy,registrant,2081119,"RoboStrategy, Inc.",1,142.5,,no N-CEN adviser
+RoboStrategy,registrant,2081119,"RoboStrategy, Inc.",1,142.5,,no N-CEN adviser
 Kayne Anderson,registrant,1293613,"Kayne Anderson Energy Infrastructure Fund, Inc.",1,95.1,,no N-CEN adviser
 Innovation Access,registrant,1905379,Innovation Access Fund,1,73.4,,no N-CEN adviser
-Origin Real,registrant,2066993,Origin Real Estate Credit Fund,1,44.5,,no N-CEN adviser
-One Ascent,registrant,2020928,One Ascent Capital Opportunities Fund,1,30.8,,no N-CEN adviser
-Oaktree,registrant,2051512,Oaktree Asset-Backed Income Private Placement Fund Inc.,1,26.5,,no N-CEN adviser
+Origin,registrant,2066993,Origin Real Estate Credit Fund,1,44.5,,no N-CEN adviser
+OneAscent,registrant,2020928,One Ascent Capital Opportunities Fund,1,30.8,,no N-CEN adviser
+Oaktree Asset-Backed,registrant,2051512,Oaktree Asset-Backed Income Private Placement Fund Inc.,1,26.5,,no N-CEN adviser
 Kayne Anderson,registrant,1500096,"Kayne Anderson NextGen Energy & Infrastructure, Inc.",1,24.4,,no N-CEN adviser
-Sei Exchange,registrant,1888997,SEI EXCHANGE TRADED FUNDS,1,23.8,,no N-CEN adviser
-Bmc,registrant,351786,BMC FUND INC,1,17.0,,no N-CEN adviser
+SEI Exchange,registrant,1888997,SEI EXCHANGE TRADED FUNDS,1,23.8,,no N-CEN adviser
+BMC,registrant,351786,BMC FUND INC,1,17.0,,no N-CEN adviser
 Northeast Investors,registrant,72760,NORTHEAST INVESTORS TRUST,1,13.1,,no N-CEN adviser
-Thrivent Etf,registrant,1896670,Thrivent ETF Trust,2,8.4,,no N-CEN adviser
-2023 Etf,registrant,1969674,2023 ETF Series Trust,3,5.5,,no N-CEN adviser
+Thrivent,registrant,1896670,Thrivent ETF Trust,2,8.4,,no N-CEN adviser
+2023,registrant,1969674,2023 ETF Series Trust,3,5.5,,no N-CEN adviser
 Harding Loevner,registrant,1018170,HARDING LOEVNER FUNDS INC,1,5.2,,no N-CEN adviser
-Vanguard World,registrant,52848,VANGUARD WORLD FUND,3,4.8,,no N-CEN adviser
+Vanguard,registrant,52848,VANGUARD WORLD FUND,3,4.8,,no N-CEN adviser
 Northern Lights,registrant,1518042,NORTHERN LIGHTS FUND TRUST II,1,4.8,,no N-CEN adviser
 Advanced Series,registrant,814679,Advanced Series Trust,1,4.7,,no N-CEN adviser
 Diameter Dynamic,registrant,2067955,Diameter Dynamic Credit Fund,1,3.7,,no N-CEN adviser
-Venerable Variable,registrant,1995745,Venerable Variable Insurance Trust,1,3.7,,no N-CEN adviser
+Venerable,registrant,1995745,Venerable Variable Insurance Trust,1,3.7,,no N-CEN adviser
 Impax,registrant,76721,IMPAX FUNDS SERIES TRUST I,1,3.6,,no N-CEN adviser
 Listed,registrant,1683471,Listed Funds Trust,1,2.8,,no N-CEN adviser
-Amg Bbh,registrant,2097545,"AMG BBH Asset-Backed Credit Fund, LLC",1,2.8,,no N-CEN adviser
+AMG BBH,registrant,2097545,"AMG BBH Asset-Backed Credit Fund, LLC",1,2.8,,no N-CEN adviser
 Forum,registrant,1576367,FORUM FUNDS II,1,2.0,,no N-CEN adviser
-Allianz Variable,registrant,1091439,Allianz Variable Insurance Products Trust,1,1.9,,no N-CEN adviser
-Putnam Target,registrant,1295293,Putnam Target Date Funds,1,1.1,,no N-CEN adviser
-Alps Etf,registrant,1414040,ALPS ETF TRUST,1,0.8,,no N-CEN adviser
-Afl Cio,registrant,225030,AFL CIO Housing Investment Trust,1,0.7,,no N-CEN adviser
-J,registrant,1485894,J.P. Morgan Exchange-Traded Fund Trust,1,0.6,,no N-CEN adviser
+Allianz,registrant,1091439,Allianz Variable Insurance Products Trust,1,1.9,,no N-CEN adviser
+Putnam,registrant,1295293,Putnam Target Date Funds,1,1.1,,no N-CEN adviser
+ALPS,registrant,1414040,ALPS ETF TRUST,1,0.8,,no N-CEN adviser
+AFL CIO,registrant,225030,AFL CIO Housing Investment Trust,1,0.7,,no N-CEN adviser
+J.P. Morgan,registrant,1485894,J.P. Morgan Exchange-Traded Fund Trust,1,0.6,,no N-CEN adviser
 Cyber Hornet,registrant,1345125,Cyber Hornet Trust,3,0.6,,no N-CEN adviser
-Baron Etf,registrant,2081199,Baron ETF Trust,1,0.6,,no N-CEN adviser
+Baron Capital,registrant,2081199,Baron ETF Trust,1,0.6,,no N-CEN adviser
 Adams Diversified,registrant,2230,"Adams Diversified Equity Fund, Inc.",1,0.5,,no N-CEN adviser
 Zell,registrant,1809051,Zell Capital,1,0.4,,no N-CEN adviser
-Invesco Exchange,registrant,1378872,Invesco Exchange-Traded Fund Trust II,1,0.3,,no N-CEN adviser
+Invesco,registrant,1378872,Invesco Exchange-Traded Fund Trust II,1,0.3,,no N-CEN adviser
 180 Degree,registrant,893739,180 DEGREE CAPITAL CORP. /NY/,1,0.2,,no N-CEN adviser
-Manulife Ga,registrant,2094982,Manulife GA Trust,1,0.2,,no N-CEN adviser
-Valkyrie Etf,registrant,1877493,Valkyrie ETF Trust II,1,0.1,,no N-CEN adviser
-Cc Real,registrant,1706589,CC Real Estate Income Fund-ADV,1,0.1,,no N-CEN adviser
-Cc Real,registrant,1721129,CC Real Estate Income Fund-C,1,0.1,,no N-CEN adviser
+Manulife,registrant,2094982,Manulife GA Trust,1,0.2,,no N-CEN adviser
+Valkyrie,registrant,1877493,Valkyrie ETF Trust II,1,0.1,,no N-CEN adviser
+CC,registrant,1706589,CC Real Estate Income Fund-ADV,1,0.1,,no N-CEN adviser
+CC,registrant,1721129,CC Real Estate Income Fund-C,1,0.1,,no N-CEN adviser
 Datum One,registrant,1806095,Datum One Series Trust,1,0.1,,no N-CEN adviser
 Rayliant,registrant,2061770,Rayliant Funds Trust,1,0.1,,no N-CEN adviser
 Simplify Exchange,registrant,1810747,Simplify Exchange Traded Funds,2,0.1,,no N-CEN adviser
 Champion,registrant,2051024,The Champion Fund,1,0.1,,no N-CEN adviser
 Franklin Templeton,registrant,837274,Franklin Templeton Variable Insurance Products Trust,1,0.1,,no N-CEN adviser
 Copeland Trust,registrant,1502745,Copeland Trust,1,0.1,,no N-CEN adviser
-Federated Hermes,registrant,1849998,Federated Hermes ETF Trust,1,0.0,,no N-CEN adviser
-Wisdomtree Trust,registrant,1350487,WisdomTree Trust,1,0.0,,no N-CEN adviser
+Federated,registrant,1849998,Federated Hermes ETF Trust,1,0.0,,no N-CEN adviser
+WisdomTree Trust,registrant,1350487,WisdomTree Trust,1,0.0,,no N-CEN adviser
 Global X,registrant,1432353,GLOBAL X FUNDS,1,0.0,,no N-CEN adviser
-Blackrock,registrant,1398078,BlackRock Funds II,1,0.0,,no N-CEN adviser
+BlackRock,registrant,1398078,BlackRock Funds II,1,0.0,,no N-CEN adviser
 Russell,registrant,2042513,Russell Investments Exchange Traded Funds,1,0.0,,no N-CEN adviser
 Impact Shares,registrant,1722388,Impact Shares Trust I,1,0.0,,no N-CEN adviser
-Innovator Etfs,registrant,1415726,Innovator ETFs Trust,2,0.0,,no N-CEN adviser
+Innovator ETFs,registrant,1415726,Innovator ETFs Trust,2,0.0,,no N-CEN adviser
 Goldman Sachs,registrant,1479026,Goldman Sachs ETF Trust,1,0.0,,no N-CEN adviser
-Mfs Active,registrant,2018846,MFS Active Exchange Traded Funds Trust,1,0.0,,no N-CEN adviser
+MFS Active,registrant,2018846,MFS Active Exchange Traded Funds Trust,1,0.0,,no N-CEN adviser
 Northern Lights,registrant,1644419,Northern Lights Fund Trust IV,1,0.0,,no N-CEN adviser
 VanEck,registrant,1137360,VanEck ETF Trust,1,0.0,VanEck,no N-CEN adviser
-Putnam Etf,registrant,1845809,Putnam ETF Trust,1,0.0,,no N-CEN adviser
+Putnam,registrant,1845809,Putnam ETF Trust,1,0.0,,no N-CEN adviser

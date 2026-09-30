@@ -21,11 +21,17 @@ function main() {
     const asOf = db
       .prepare('SELECT MAX(report_date) d FROM canonical_filings WHERE report_date <= ?')
       .get(new Date().toISOString().slice(0, 10)).d;
+    const curation = seed.loadCuration();
     const rows = seed.companyRows(db);
     const { clusters, since } = seed.buildClusters(rows, { asOf });
-    const { groups, candidates } = seed.suggestCompanies(clusters, { listing: seed.latestListingEvidence(db) });
+    const { groups, candidates, issues } = seed.suggestCompanies(clusters, {
+      listing: seed.latestListingEvidence(db),
+      curation,
+    });
+    if (issues.length) throw new Error(`curation.json: ${issues.length} problem(s):\n  ${issues.join('\n  ')}`);
     const aliases = seed.aliasRows(groups);
-    const managers = seed.suggestManagers(db);
+    const { _about, ...managerNames } = curation.managerNames || {};
+    const managers = seed.suggestManagers(db, { managerNames });
     fs.mkdirSync(OUT, { recursive: true });
     const targets = ['aliases.csv', 'managers.csv'].map(f => path.join(OUT, f));
     const existing = targets.filter(f => fs.existsSync(f));

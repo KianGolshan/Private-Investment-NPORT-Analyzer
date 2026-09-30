@@ -1,8 +1,8 @@
 fund_key,report_date,filing_name,company,basis,source_accession
 CIK1867090,2026-06-30,Anthropic PBC,Anthropic,Greater than 20% of net assets (all or a portion held indirectly),0001867090-26-000109
-CIK1867090,2026-06-30,OpenAI Group PBC,Openai,10-20% of net assets (all or a portion held indirectly),0001867090-26-000109
+CIK1867090,2026-06-30,OpenAI Group PBC,OpenAI,10-20% of net assets (all or a portion held indirectly),0001867090-26-000109
 CIK1867090,2026-06-30,"Databricks, Inc.",Databricks,10-20% of net assets (all or a portion held indirectly),0001867090-26-000109
-CIK1867090,2026-06-30,Ramp Business Corp.,Ramp Business,2-5% of net assets,0001867090-26-000109
+CIK1867090,2026-06-30,Ramp Business Corp.,Ramp,2-5% of net assets,0001867090-26-000109
 CIK1867090,2026-06-30,Space Exploration Technologies Corp.,Space Exploration Technologies,2-5% of net assets (all or a portion held indirectly),0001867090-26-000109
 CIK1867090,2026-06-30,"Anduril Industries, Inc.",Anduril Industries,2-5% of net assets (all or a portion held indirectly),0001867090-26-000109
 CIK1867090,2026-06-30,"Flock Group, Inc.",Flock,2-5% of net assets,0001867090-26-000109
@@ -11,6 +11,6 @@ CIK1867090,2026-06-30,"Epic Games, Inc.",Epic Games,2-5% of net assets,000186709
 CIK1867090,2026-06-30,"Fivetran, Inc.",,1-2% of net assets,0001867090-26-000109
 CIK1867090,2026-06-30,Prometheus,,1-2% of net assets (all or a portion held indirectly),0001867090-26-000109
 CIK1867090,2026-06-30,"Vanta, Inc.",,1-2% of net assets,0001867090-26-000109
-CIK1867090,2026-06-30,"Figure AI, Inc.",Figure Ai,1-2% of net assets,0001867090-26-000109
+CIK1867090,2026-06-30,"Figure AI, Inc.",Figure AI,1-2% of net assets,0001867090-26-000109
 CIK1867090,2026-06-30,"Loyal Animal Health, Inc.",,1-2% of net assets,0001867090-26-000109
 CIK1867090,2026-06-30,"Canva, Inc.",Canva,1-2% of net assets,0001867090-26-000109

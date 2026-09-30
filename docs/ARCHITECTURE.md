@@ -202,6 +202,7 @@ lib/entities/managers.js           fund_advisers from the latest N-CEN
 lib/entities/upkeep.js             fund advisers + company resolution after any ingest
 scripts/ingest-bulk.js, ingest-delta.js, refresh.js, ingest-ncen.js
 scripts/seed-entities.js, review-aliases.js, backfill-leis.js, backfill-listing-evidence.js
+data/review/{aliases,managers,disclosed_exposure}.csv, curation.json   reviewed entity decisions (imported)
 ```
 
 Planned:

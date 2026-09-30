@@ -98,3 +98,49 @@ test('LIVE: as-of golden aggregates A1-A6 on the full warehouse', { skip: !LIVE 
     db.close();
   }
 });
+
+// Phase 4 entities on the full warehouse after `npm run review:aliases`
+// (the reviewed data/review/*.csv). Skips when no entities are imported.
+test(
+  'LIVE: reviewed entities resolve the roadmap cases and reproduce the goldens by company',
+  { skip: !LIVE || !fs.existsSync(DB_PATH) },
+  t => {
+    const { exposureAsOf } = require('../lib/analytics/asof');
+    const db = openWarehouse(DB_PATH);
+    try {
+      if (!db.prepare('SELECT COUNT(*) n FROM companies').get().n) return t.skip('no entities imported');
+      const id = name => db.prepare('SELECT id FROM companies WHERE name = ?').get(name).id;
+      const one = sql =>
+        db
+          .prepare(sql)
+          .all()
+          .map(r => Object.values(r)[0]);
+      assert.deepEqual(
+        one(`SELECT DISTINCT company_id FROM holdings WHERE (issuer_name LIKE '%databricks%' OR title LIKE '%databricks%')
+           AND value_usd > 0 AND instrument_type <> 'debt'`),
+        [id('Databricks')]
+      );
+      assert.deepEqual(
+        one("SELECT DISTINCT company_id FROM holdings WHERE issuer_name IN ('STRIPE INC', 'STRIPE LLC')"),
+        [id('Stripe')]
+      );
+      assert.deepEqual(one("SELECT DISTINCT company_id FROM holdings WHERE issuer_name = 'DOUYIN CO LTD'"), [
+        id('ByteDance'),
+      ]);
+      assert.equal(
+        db.prepare("SELECT status FROM companies WHERE name = 'Space Exploration Technologies'").get().status,
+        'public'
+      );
+      const by = (name, date) => {
+        const r = exposureAsOf(db, { companyId: id(name), date });
+        return [r.funds, Math.round(r.total / 1e7) / 100];
+      };
+      assert.deepEqual(by('Anthropic', '2026-06-30'), [117, 17.26]);
+      assert.deepEqual(by('Stripe', '2025-12-31'), [35, 1.31]);
+      // Includes Project Debussy Series J, Databricks under a codename (GOLDEN-NUMBERS F25).
+      assert.deepEqual(by('Databricks', '2026-06-30'), [120, 6.23]);
+    } finally {
+      db.close();
+    }
+  }
+);
