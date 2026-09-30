@@ -1,10 +1,13 @@
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
 const xml2js = require('xml2js');
 const cheerio = require('cheerio');
 const rateLimit = require('express-rate-limit');
 const cache = require('./cache');
 const { fetchWithRetry } = require('./lib/edgar');
+const { openWarehouseReadOnly } = require('./lib/warehouse/db');
+const { warehouseRouter } = require('./lib/api/warehouse');
 const {
   extractHoldings,
   extractCreditHoldings,
@@ -47,6 +50,8 @@ app.use((_req, res, next) => {
   next();
 });
 app.use(express.static('public'));
+// Permalinks (ADR 0008): the page itself; app.js reads the path.
+app.get(['/company/:ref', '/name/:key'], (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 const USER_AGENT = process.env.SEC_USER_AGENT || '';
 const EFFECTIVE_USER_AGENT = USER_AGENT || 'Vantage internal-tool@localhost';
@@ -121,6 +126,13 @@ app.use(
     message: { error: 'Too many forced refreshes — cached results are still available without refresh.' },
   })
 );
+
+// Warehouse routes (Phase 5a, ADR 0008): search, companies and unreviewed
+// names, answered from warehouse.db opened read-only on first use (missing or
+// behind: those routes answer 503, the live routes below keep working). They
+// never call the SEC.
+const warehouseApi = warehouseRouter(() => openWarehouseReadOnly());
+app.use('/api', warehouseApi);
 
 // EDGAR identifiers go straight into sec.gov archive URLs, so they are
 // validated, not just URL-encoded: a CIK is up to 10 digits, an accession
@@ -1112,6 +1124,11 @@ if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`\n✅ Vantage running at http://localhost:${PORT}`);
     console.log(`   User-Agent: ${EFFECTIVE_USER_AGENT}\n`);
+    warehouseApi.warm().then(w => {
+      console.log(
+        w.error ? `   Warehouse: ${w.error}` : `   Warehouse warmed: ${w.companies} tracked companies in ${w.ms} ms`
+      );
+    });
   });
 }
 

@@ -21,7 +21,8 @@
     "ingest:ncen": "node scripts/ingest-ncen.js",
     "seed:entities": "node scripts/seed-entities.js",
     "review:aliases": "node scripts/review-aliases.js",
-    "entities:report": "node scripts/entities-report.js"
+    "entities:report": "node scripts/entities-report.js",
+    "bench": "node scripts/bench.js"
   },
   "dependencies": {
     "axios": "^1.6.7",

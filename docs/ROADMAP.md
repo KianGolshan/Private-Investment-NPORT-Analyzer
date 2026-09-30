@@ -575,6 +575,28 @@ issuer_key, display_name, category, status, funds, value_usd, last_mark_date)`, 
 **Out of scope for 5a:** Fund X-Ray, Batch, Watchlist and exports (5b); new analysis (P6); the private-credit
 tab (unchanged); any change to the keep rule.
 
+**Checkpoint (built 2026-09-30; awaiting sign-off)**
+
+- Built, in task order: migration 0012 (`filings_source` dropped, `company_redirects`) and the id ledger
+  `data/review/company_ids.csv`; migrations 0013–0014 (`holdings.entity_id`, `unreviewed_entities`, the FTS5
+  `search_names` index, `company_stats`) rebuilt by `lib/entities/entities.js` in every refresh and review import;
+  `lib/services/{search,company}.js`; `lib/api/warehouse.js` (read-only, mounted in `server.js`); `npm run bench`;
+  the company page in `public/app.js`.
+- Results on the live warehouse: 806 ids unchanged by the ledger; 71,831 unreviewed entities, 846,385 rows tagged,
+  106k search rows; every review-queue component equals its entity; `company_stats` equals `exposureAsOf`.
+  All search cases pass with their match reasons; history starts 2023-04-28 / 2019-12-31 / 2019-10-31; the goldens
+  through the API and on screen (A1, A2, A4, A5, A6, F2, F8/F9, F11, F13, F22, F29, F31).
+- p95 under 200 ms on every warehouse route, fresh process and warm, quiet and loaded (STATUS "Phase 5a results");
+  no precomputed tables were needed. Size 503–505 MB after `VACUUM`.
+- Found on real data and fixed: balance-0 positions dropped by `exposureAsOf` (trap 43, F35, ADR 0004 amended);
+  the review queue's "current" rows counted exited positions (trap 44, $2.26B); a stale-304 ETag after a code
+  change; mid-word substring matches.
+- Deviations: task 7 needed no precompute (a warm-up at server start instead); migration numbers 0012–0014 (the plan
+  said 0012–0014 "or" fewer); unreviewed entities are addressed by issuer key as planned, and `/api/entities/:key`
+  replaces `/api/entities/by-key/:issuerKey`; the "similar spelling" rule also never joins a spelling that extends
+  another (OPENAIR/OPENAI, STRIPES/STRIPE, ANTHROPICS/ANTHROPIC), which replaces the `curation.separate` check
+  (similar only runs when nothing else matched).
+
 ### Phase 5b: funds, lists, exports, and retiring the per-filing flows
 
 **Entry gate:** 5a signed off.

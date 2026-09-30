@@ -136,3 +136,18 @@ this file is about **how we work**.
     restricted rows alone, "update fixtures, not assertions" would have kept v1's amendment double-count,
     and "stable ids" were stable only inside one warehouse file. Each sentence of a plan that names a
     behavior gets one query or one code read before sign-off.
+
+## Added in Phase 5a (2026-09-30)
+
+32. **Two answers to one question must share one definition, and a test must hold them equal.** The review queue
+    took "each fund's latest filing" from its rows, the as-of engine from its filings; they agreed on every golden
+    and disagreed by $2.26B elsewhere (trap 44). `company_stats` is now tested against `exposureAsOf` and every
+    review-queue component against its entity.
+33. **A cache key covers everything the answer depends on.** An ETag of the refresh id alone served a stale body
+    after a code change (304 on the same data). It is now the refresh id plus the build. The browser check caught
+    it, not the tests: look at the running app, not only the suite.
+34. **Edit scripts must not put untrusted text in a `String.replace` replacement.** `$\``, `$&`and`$'` are
+    patterns there; one corrupted a test file. Use a function replacer or slice-and-join (LESSONS 16, again).
+35. **Record the machine's load with every latency number.** The same code measured p95 7 ms and 44 ms an hour apart
+    (load average ~4 from other processes). Compare runs only on the same conditions, and check a "regression"
+    against the previous commit before chasing it.

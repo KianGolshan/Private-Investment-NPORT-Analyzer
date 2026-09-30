@@ -1,9 +1,8 @@
 # Vantage v2 Status
 
-**Current phase:** Phase 5 **planned, awaiting sign-off**. The plan (ROADMAP §Phase 5, split into 5a and 5b; ADR 0008) was decided with the user 2026-09-30; 5a starts after the user signs off the written plan. Read
-[LESSONS.md](LESSONS.md) first.
-**Branch:** `v2-phase5-plan` (off `v2-plan-and-phase0`, local, not pushed) holds the plan. `v2-plan-and-phase0`
-is pushed with PR #2 open to `main` (CI green on lint and tests 22.x/24.x, 2026-09-30), not merged.
+**Current phase:** Phase 5b **next** (P5a signed off 2026-09-30, merged to `main`). Previously: Phase 5a (services, search over every issuer, the company page on the
+read-only warehouse). 5b follows the sign-off. Read [LESSONS.md](LESSONS.md) first.
+**Branch:** `v2-phase5a` (off `main` after PR #2 merged as e3164f6, 2026-09-30). No PR yet.
 **Last updated:** 2026-09-30
 
 ## Phase tracker
@@ -14,12 +13,64 @@ is pushed with PR #2 open to `main` (CI green on lint and tests 22.x/24.x, 2026-
 - [x] P3: canonical views and as-of engine (signed off 2026-09-28)
 - [x] P4: entities (companies, aliases, SPVs, managers, tracked list) (finalized 2026-09-29)
 - [x] P4.5: evidence-based company identity + unresolved-value report (signed off 2026-09-30)
-- [ ] P5a: services, search over every issuer, company page on the warehouse (planned 2026-09-30)
+- [x] P5a: services, search over every issuer, company page on the warehouse (signed off 2026-09-30)
 - [ ] P5b: fund pages, lists, exports, per-filing flows retired
 - [ ] P6: new analysis and UI
 - [ ] P7: MCP server (may start after P5a)
 - [ ] P8: operations hardening
 - [ ] P9: public deployment (live site; hosting choice to confirm with the user as ADR 0006)
+
+## Phase 5a results (built 2026-09-30, awaiting sign-off)
+
+- **Step 0:** refresh #8 `ok` (no 2026Q3 bulk, nothing to catch up), `ingest_errors` empty, 513.0 MB; LIVE goldens
+  pass. PR #2 merged to `main` (e3164f6) at the user's request; 5a is on `v2-phase5a`.
+- **Built (ROADMAP §5a tasks 1–8, one commit each):**
+  1. Migration 0012 drops `filings_source` (job queries only; 35 ms as a scan) and adds `company_redirects`.
+  2. Stable ids: `data/review/company_ids.csv` (806 ids, bootstrapped unchanged; 0 holdings re-resolved); the import
+     keeps renames on their id, retires removed ids with a redirect (chains collapse), never reuses one.
+  3. Migrations 0013–0014: `holdings.entity_id`, `unreviewed_entities` (71,831; 846,385 rows tagged),
+     `search_names` (FTS5 trigram, 106k rows), `company_stats`; rebuilt by every refresh and review import
+     (~20–28 s). `exposureAsOf` selects by `entityId`.
+  4. `lib/services/search.js`: exact / normalized / prefix / word-start substring / similar, each result with its
+     match reason and evidence.
+  5. `lib/services/company.js` (exposure with labels, history, stable-id lookup, routing) and `companyHistory`
+     (one query per company; identical to `instrumentHistory` per fund).
+  6. `lib/api/warehouse.js` in `server.js` (read-only, lazy `openWarehouseReadOnly`; 503 when missing or behind;
+     `source` + `refreshId`; ETag = refresh id + build; 301 merged / 410 dropped ids).
+  7. `npm run bench` and a warm-up at server start; no precomputed tables needed.
+  8. The company page (search with typeahead and candidates, holders as of a date with every label, history
+     through v1's sections and exports, permalinks `/company/<id>-<slug>` and `/name/<key>`, debt from live EDGAR on
+     request, listed and unknown names on the labeled live path).
+- **Results (live warehouse):**
+  - Search: Chobani (brand), FHU (prefix), FHUS (normalized), "fhu us holdings" (exact) → FHU US Holdings; "Open AI" →
+    OpenAI; "OpenAir" → OpenAI only through the curated alias (F32), never by spelling; "Databrick" (prefix) and
+    "Databriks" (similar) → Databricks; "Hub International" → Hockey Parent Holdings by brand HUB INTL; 0.1–40 ms.
+  - History starts: Anthropic 2023-04-28, Stripe 2019-12-31, Databricks 2019-10-31.
+  - On screen in the browser: FHU US Holdings 13 / $359.0M at 2026-06-30 (F29); Anthropic 117 / $17.29B (F31);
+    Vercel as unreviewed; Pfizer on the live path. No console errors.
+  - `company_stats` equals `exposureAsOf` at the newest report date (Anthropic 123 / $18.1639B at 2026-07-31,
+    Databricks 120 / $6.6230B, Stripe 38 / $2.4969B, OpenAI 87 / $5.4914B, FHU 13 / $0.3619B).
+- **Speed (`npm run bench`, 774 real requests, p95 fresh process / second pass):** quiet machine: search 2.8 / 1.2
+  ms, exposure 44 / 8.8, history 7.5 / 7.5, all 15.9 / 5.6. Under load (load average ~3.5 from other processes):
+  exposure 70 / 40, history 37 / 35, all 35 / 28; single requests up to 0.4–0.6 s. Under 200 ms p95 everywhere.
+- **Size:** 574 MB right after the first full tagging (fragmented pages), **503.0 MB after `VACUUM`**, 504.8 MB after
+  refresh #10. Under 600 MB with ~95 MB of room (about 3–4 bulk quarters).
+- **Found on real data and fixed:**
+  - Trap 43 / F35 (verified on raw EDGAR): 21,942 rows ($233.2B) report balance 0 with a real value ("Investment does
+    not issue shares"); `exposureAsOf` dropped them. They now count like NULL balances (the P3 decision), with no
+    per-share price. No golden changes (A1–A6 and by-company pass live). **Decided by Claude under the P3 precedent;
+    the user can overrule.** Tracked impact: 19 rows, $273.7M over the history (Hockey Parent via AMG Pantheon
+    $45.4M at 2026-06-30; AmSurg).
+  - Trap 44: the review queue's "current" rows came from each fund's latest private row, not its latest filing,
+    counting exited positions ($2.26B of Janus cash-collateral lines in 24 funds). Fixed; 39 components left the queue,
+    55 changed; nothing over the threshold; tracked unresolved still 0.21%.
+  - A stale 304 after a code change (ETag lacked the build); mid-word substring matches ("Stri" in INDUSTRIES).
+- **For the next curation pass (not changed in 5a):** SpaceX rows filed as "SPACEX …" (incl. an "SPACEX, SPV" line)
+  are linked by identity but not aliased to the public company; Vercel ($46.5M, 2 funds) sits just under the $50M bar;
+  AMG Pantheon's "Hub International" co-investment line ($41.3M, last 2025-03-31) stays apart from Hockey Parent
+  (no filing links them).
+- **Suite:** 425 tests, 395 pass, 0 fail, 30 skipped (LIVE); LIVE goldens pass; lint and format clean. One v1 server
+  test ("retries a 429 with backoff") failed once under load and passed 3/3 alone and on every rerun (timing).
 
 ## Phase 5 planning (2026-09-30)
 
@@ -340,10 +391,10 @@ The evidence as presented:
 | Metric                                  | Budget                      | Measured                                                                                         |
 | --------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------ |
 | Full bulk backfill, 27 quarters         | ≤45 min                     | **13.6 min** (2026-09-28)                                                                        |
-| Warehouse size                          | ≤600 MB (raised 2026-09-30) | 364 MB (P1); 472 MB (P4); **513 MB / 489 MiB** (P4.5)                                            |
+| Warehouse size                          | ≤600 MB (raised 2026-09-30) | 364 MB (P1); 472 MB (P4); 513 MB (P4.5); **503–505 MB after VACUUM (P5a)**                       |
 | First catch-up                          | ≤90 min                     | **26.9 min** for 11,822 filings (about 9/s)                                                      |
 | Nightly refresh                         | ≤5 min                      | 1.1 s (P2, nothing new); **20–160 s** with N-CEN, entity upkeep and the review queue (runs #2–6) |
-| API p95                                 | <200 ms                     | n/a (P5a); pre-P5 by company: 7 ms warm p95, 230–570 ms cold                                     |
+| API p95                                 | <200 ms                     | **P5a: all routes 15.9 ms first pass / 5.6 ms warm (quiet); 35 / 28 ms under load**              |
 | Single Security search (P0, live EDGAR) | n/a                         | 15–32 s per name for 100 filings                                                                 |
 
 ## Open decisions
@@ -351,10 +402,13 @@ The evidence as presented:
 - **Nightly refresh scheduling:** not installed. A ready-to-use launchd job is in ARCHITECTURE
   §Refresh lifecycle. Install only with the user's yes. Until then, run `npm run refresh` at the start of
   each session.
-- **Branch:** `v2-plan-and-phase0` is pushed with PR #2 open to `main` (CI green), not merged. The Phase 5
-  plan is on `v2-phase5-plan`, local. Ask before pushing, merging, opening PRs, renaming branches or deleting
-  `audit-fixes` (already contained in this branch).
-- **Phase 5 plan sign-off:** the written plan (ROADMAP §Phase 5, ADR 0008) awaits the user's sign-off.
+- **Branch:** PR #2 (`v2-plan-and-phase0`, with the Phase 5 plan) merged to `main` on 2026-09-30 at the user's
+  request. P5a is on `v2-phase5a`. Ask before merging to `main`, opening PRs, renaming or deleting branches
+  (`audit-fixes`, `v2-plan-and-phase0`, `v2-phase5-plan` are all contained in `main`).
+- ~~Phase 5 plan sign-off~~ Signed off 2026-09-30.
+- ~~5a sign-off~~ Signed off by the user 2026-09-30; `v2-phase5a` merged to `main` by PR.
+- **Balance-0 rows (trap 43):** counted under the P3 NULL-balance precedent; the user can overrule (then
+  `nullBalance` would need a separate flag for 0).
 - ~~Manager mapping source~~ Decided in P4: N-CEN advisers + reviewed `managers.csv` (ADR 0007).
 - ~~Entity review~~ Done 2026-09-29 (Claude, at the user's direction; `data/review/curation.json`). The
   user can still edit the CSVs or curation file; re-import with `npm run review:aliases`.
@@ -374,19 +428,24 @@ The evidence as presented:
   analyzable by name pattern even if not in `companies`; P5 search must fall back to the pattern path
   and offer to add the company. The on-demand EDGAR keyword search stays.
 
-## Warehouse state (2026-09-30, after the pre-P5 review)
+## Warehouse state (2026-09-30, after Phase 5a)
 
-- Schema at migration 0011; refresh #6 `ok`; `ingest_errors` empty.
-- 354,997 N-PORT filings (bulk 2019Q4–2026Q2 plus EDGAR catch-up through filings of 2026-09-29) and
-  1,165,239 private-candidate holdings; 806 companies (304 private), 180 tracked; 318,751 rows resolved.
-- N-CEN: 17,841 of 18,828 funds have an adviser.
-- `listing_evidence` covers the latest 4 bulk quarters. **Don't backfill all 27** (+60–70 MB) without
-  pruning or asking.
-- 513 MB on disk (489 MiB). Largest: holdings ~215 MB (+54 MB key index), filings ~89 MB, N-CEN adviser rows
-  ~38 MB.
+- Schema at migration 0014; refresh #10 `ok`; `ingest_errors` empty.
+- 354,997 N-PORT filings (bulk 2019Q4–2026Q2 plus EDGAR catch-up through filings of 2026-09-29) and 1,165,239
+  private-candidate holdings; 806 companies (304 private), 180 tracked, ids in `data/review/company_ids.csv`;
+  318,751 rows resolved; 71,831 unreviewed entities (846,385 rows tagged); 106k search rows.
+- N-CEN: 17,841 of 18,852 funds have an adviser.
+- `listing_evidence` covers the latest 4 bulk quarters. **Don't backfill all 27** (+60–70 MB) without pruning or
+  asking.
+- 503–505 MB on disk after `VACUUM`. A refresh that re-tags many rows leaves free pages; `VACUUM` (10 s) returns them.
 - The SEC 2026Q3 bulk file (expected after 2026-09-30) loads on the next `npm run refresh`.
 
 ## Log
+
+- **2026-09-30:** User signed off P5a (incl. the balance-0 rule, trap 43); PR opened and merged to `main`. Next: Phase 5b.
+
+- **2026-09-30:** Phase 5a built (tasks 1–8, one commit each) on `v2-phase5a` after PR #2 merged. Traps 43–44, F35,
+  ADR 0004 amended, LESSONS 32–35. Stopped for the 5a sign-off.
 
 - **2026-09-30:** Phase 5 planning. Refresh #7 `ok` (nothing new). The first P5 plan was checked against the
   code and the warehouse (8 findings confirmed, 4 new). The user decided all 8 recommendations and the 2

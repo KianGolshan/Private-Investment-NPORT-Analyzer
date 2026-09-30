@@ -43,6 +43,8 @@ history back to 2019Q4, automatic refresh, as-of exposure, and firm/fund/class m
   exit on success _and_ on failure. A leftover `until …; sleep` loop once ran for 5.5 hours.
 - Provenance: every stored row traces to `accession` + holding row (+ bulk quarter or `source='edgar'`).
 - Schema changes go in numbered migrations (`db/migrations/NNNN_*.sql`). No ORM.
+- Company ids are stable (ADR 0008): `data/review/company_ids.csv` is the ledger; the review import reads and
+  rewrites it. Never renumber or reuse an id.
 - Keep the warehouse (`warehouse.db`) separate from the request cache (`cache.db`). Readers (web server,
   MCP server) open it with `openWarehouseReadOnly`; only jobs migrate or write.
 - Match the surrounding code style: Prettier config, ESLint flat config, Node ≥22, CommonJS.
@@ -64,6 +66,7 @@ npm run ingest:ncen                # N-CEN adviser data sets + EDGAR top-up (man
 npm run seed:entities              # write data/review/{aliases,managers}.csv suggestions (--force to overwrite)
 npm run review:aliases             # import the reviewed CSVs, re-resolve holdings (human in the loop)
 npm run entities:report            # review queue: unresolved value by component, conflicts (reports/entities/)
+npm run bench                      # p50/p95 per warehouse route on the live warehouse (note the load average)
 ```
 
 ## Scope

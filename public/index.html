@@ -178,6 +178,22 @@
     .input-group.narrow { flex: 0 0 175px; }
     label { display: block; margin-bottom: 5px; font-size: 13px; font-weight: 500; color: var(--gray-700); }
     .hint { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+    /* Company page (Phase 5a) */
+    .input-group { position: relative; }
+    .suggest { display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 20; background: white; border: 1px solid var(--gray-200); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,.08); max-height: 360px; overflow-y: auto; }
+    .candidate { display: block; width: 100%; text-align: left; background: white; border: 0; border-bottom: 1px solid var(--gray-100); padding: 8px 10px; cursor: pointer; font: inherit; }
+    .candidate:hover, .candidate:focus { background: var(--gray-100); }
+    .candidate-name { font-weight: 600; color: var(--gray-900); }
+    .candidates { border: 1px solid var(--gray-200); border-radius: 4px; margin: 8px 0; }
+    .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 3px; margin-left: 4px; background: var(--navy-pale); color: var(--navy); vertical-align: middle; }
+    .badge-ok { background: var(--green-pale); color: #0f5c2b; }
+    .badge-warn { background: var(--amber-pale); color: #7c3a0a; }
+    .badge-muted { background: var(--gray-100); color: var(--gray-500); }
+    .company-head h2 { margin: 4px 0; }
+    .company-page h3 { margin: 16px 0 6px; font-size: 14px; }
+    .company-page .check { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+    .table-wrap { overflow-x: auto; }
+    .company-page td:nth-child(2), .company-page td:last-child a { white-space: nowrap; }
 
     input[type="text"],
     input[type="date"],
@@ -538,8 +554,10 @@
     <div class="search-row">
       <div class="input-group">
         <label for="securityInput">Security Ticker or Name</label>
-        <input type="text" id="securityInput" placeholder="e.g., Anthropic, Patreon, OpenAI"
-               onkeydown="if(event.key==='Enter') searchNPORT()">
+        <input type="text" id="securityInput" placeholder="e.g., Anthropic, Chobani, OpenAI"
+               autocomplete="off" oninput="onSecurityInput()"
+               onkeydown="if(event.key==='Enter') searchNPORT(); if(event.key==='Escape') hideSuggestions()">
+        <div id="searchSuggest" class="suggest" role="listbox"></div>
       </div>
       <div class="input-group narrow">
         <label for="filingLimit">Max Filings</label>
@@ -553,6 +571,9 @@
       <button class="btn btn-primary" id="searchBtn" onclick="searchNPORT()">Search NPORT Filings</button>
       <button class="btn btn-secondary" onclick="quickAddToWatchlist('securityInput')" title="Save this issuer to your watchlist for one-click re-runs later">+ Watchlist</button>
     </div>
+
+    <!-- Company page (Phase 5a): above v1's history filters and sections -->
+    <div id="companyContainer"></div>
 
     <div class="date-filter-panel" id="dateFilterPanel">
       <div class="search-row">
@@ -749,8 +770,8 @@
 
 </div>
 
-  <script src="splits.js"></script>
-  <script src="fund-groups.js"></script>
-  <script src="app.js"></script>
+  <script src="/splits.js"></script>
+  <script src="/fund-groups.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>

@@ -1,3 +1,10 @@
+**Amended 2026-09-30 (Phase 5a):**
+
+- A row with a positive value and a balance of 0 counts like a NULL balance: filers write 0 for interests
+  that "do not issue shares" (AMG Pantheon's Hockey Parent Holdings L.P., GOLDEN F35, trap 43). It has no
+  per-share or per-unit price. No golden aggregate changes (A1–A6 and the by-company goldens pass live).
+- `exposureAsOf` also selects by `entityId` (rows no company claims, grouped by identity component; ADR 0008).
+
 # 0004: As-of semantics for exposure and holder counts
 
 **Status:** accepted, 2026-09-27

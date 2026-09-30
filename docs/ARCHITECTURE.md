@@ -72,6 +72,11 @@ tracked_companies(company_id, added_at, note)
 company_brands(company_id, brand, source_accession)                            -- 'Chobani' for FHU US Holdings (P4.5)
 identity_edges(a, b, kind, accession, confidence, detail, applied, conflict)    -- evidence graph, rebuilt after every refresh
 identity_nodes(key, component, vehicle_target)                                  -- keys in multi-name components
+company_redirects(old_id, old_name, new_id, reason, retired_at)                 -- retired ids (merged | dropped), P5a
+unreviewed_entities(id, key, display_name, category, keys, names, ..., active)  -- every unclaimed component, P5a
+-- holdings.entity_id: the unreviewed entity of a row no company claims (P5a)
+search_names (FTS5 trigram: compact variants, name, kind, ref, detail)          -- search index, P5a
+company_stats(company_id, current_funds, current_value_usd, as_of, funds_ever, first/last_mark_date)  -- P5a
 -- views
 canonical_filings        -- one per (fund_key, report_date); latest filing_date wins
 fund_filing_timeline     -- all canonical filings per fund
@@ -133,7 +138,8 @@ Fund calendars are staggered, so "as of D" mixes mark dates. The UI always shows
      - Filings already stored are skipped.
      - Earlier failures in `ingest_errors` are retried.
   4. Entity upkeep (fund advisers, company resolution), then the identity graph and the review queue
-     (`reports/entities/unresolved.csv`, `conflicts.csv`; P4.5).
+     (`reports/entities/unresolved.csv`, `conflicts.csv`; P4.5), then unreviewed entities, their row tags,
+     `company_stats` and the search index (`lib/entities/entities.js`, P5a).
   5. Write a `refresh_runs` row. A catch-up filing that predates bulk coverage but isn't in bulk (expected 0)
      fails the run, as do catch-up and N-CEN failures.
   6. Exit non-zero on any failure, so the scheduler can alert.
@@ -237,16 +243,23 @@ data/review/{aliases,managers,disclosed_exposure}.csv, curation.json   reviewed 
 public/splits.js, public/fund-groups.js   shared by the browser and Node (split detection; v1's firm list)
 ```
 
+Built in P5a:
+
+```
+lib/entities/entities.js           unreviewed entities, holdings.entity_id, company_stats, the search index
+lib/services/search.js             ranked search with match reasons (exact, normalized, prefix, substring, similar)
+lib/services/company.js            exposure with display labels, history, stable-id lookup, routing (sourceFor)
+lib/api/warehouse.js               read-only warehouse routes (/api/search, /api/companies, /api/entities, /api/freshness)
+lib/warehouse/keep-rule.js         + classifyStored: classifyInstrument over stored fields (ingest and services)
+scripts/bench.js                   npm run bench
+data/review/company_ids.csv        the stable company id ledger
+```
+
 Planned:
 
 ```
-lib/services/search.js    P5a: FTS5 trigram index over names, aliases, brands and issuer keys; ranked
-                          candidates with match reason and evidence (ADR 0008)
-lib/services/company.js   P5a: exposure as of a date, full history (warehouse)
-lib/services/source.js    P5a: routing by company status (private -> warehouse; listed, debt -> live, labeled)
 lib/services/fund.js      P5b: fund page / X-Ray on the warehouse (+ filing_totals)
 lib/analytics/peer.js     P5b: velocity, outliers, leaderboard (from public/app.js, shared with the browser)
 lib/services/{manager,marks,feed}.js   P6: firm pages, mark series, what's-new feed
-scripts/bench.js          P5a: p50/p95 per route on the live warehouse, cold and warm
 mcp-server.js             P7 (after P5a)
 ```
