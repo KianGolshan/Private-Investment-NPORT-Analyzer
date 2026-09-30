@@ -13,7 +13,7 @@
    searchFundXray, runFundXray, doXrayExportCSV, doXrayExportExcel, doXrayExportPDF, selectXrayComparison,
    onXrayCompareSelectChange, runFundXrayCompare, doXrayCompareExportCSV, doXrayCompareExportExcel,
    doXrayCompareExportPDF, selectIndexedFund, sortBasketLeaderboard, runXrayReturns, onXraySeriesChange,
-   openCandidate, onSecurityInput, applyAsOf, loadLiveDebt */
+   openCandidate, onSecurityInput, applyAsOf, loadLiveDebt, confirmWatchlistMatch */
 /* global VantageSplits, VantageFundGroups */
 
 // ── State ──────────────────────────────────────────────────────────────────
