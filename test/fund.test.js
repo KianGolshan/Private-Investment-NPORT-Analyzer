@@ -160,3 +160,20 @@ test('API: /api/funds routes answer from the warehouse, with 404, 409 and 400, a
   await api(`/api/funds/${GFA}/xray?accession=bad`).expect(400);
   await api('/api/funds').expect(400);
 });
+
+test('fund lists are cut to the largest rows for the wire; totals and math keep every row', () => {
+  const x = fund.xray(db, GFA, F2);
+  const small = fund.forDisplay(x, 5);
+  assert.equal(small.privateHoldings.length, 5);
+  assert.deepEqual(
+    small.privateHoldings.map(h => h.rowKey),
+    x.privateHoldings.slice(0, 5).map(h => h.rowKey)
+  );
+  assert.equal(small.privateValueUSD, x.privateValueUSD);
+  assert.deepEqual(small.truncated, {
+    shown: 5,
+    privateHoldings: x.privateHoldings.length,
+    notPrivate: x.notPrivate.length,
+  });
+  assert.equal(fund.forDisplay(x).truncated, null);
+});

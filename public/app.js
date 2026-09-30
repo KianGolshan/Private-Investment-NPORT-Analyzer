@@ -3777,6 +3777,8 @@ function buildXraySnapshotHTML(xray, filing, opts) {
   }
 
   html += `<div class="results-header"><h2>Private Equity Holdings (${xray.privateHoldingsCount})</h2></div>`;
+  if (xray.truncated)
+    html += `<div class="hint">Showing the ${fmtNum(xray.truncated.shown)} largest of ${fmtNum(xray.truncated.privateHoldings)} rows; every total above covers all of them.</div>`;
   if (xray.privateHoldings.length) {
     html += `<table><thead><tr>
       <th>Company</th><th>Instrument</th><th>Country</th><th class="right">Fair Value Level</th>
@@ -4378,7 +4380,9 @@ function renderFundXrayComparison(cmp, currentFiling, priorFiling) {
   );
   html += '</div>';
 
-  html += `<div class="results-header"><h2>Full Position-Level Detail (${cmp.positions.length})</h2></div>`;
+  html += `<div class="results-header"><h2>Full Position-Level Detail (${cmp.positionsTotal || cmp.positions.length})</h2></div>`;
+  if (cmp.positionsTotal > cmp.positions.length)
+    html += `<div class="hint">Showing the ${fmtNum(cmp.positions.length)} largest of ${fmtNum(cmp.positionsTotal)} positions; the totals above cover all of them.</div>`;
   if (cmp.positions.length) {
     html += `<table><thead><tr>
       <th>Status</th><th>Company</th><th>Instrument</th>

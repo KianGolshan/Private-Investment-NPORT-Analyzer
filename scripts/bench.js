@@ -10,8 +10,11 @@
 //
 // Requests: every tracked company (info, exposure at the newest date, history),
 // the ROADMAP search cases plus each tracked company's name, and the 20 largest
-// unreviewed names (info, exposure).
+// unreviewed names (info, exposure); P5b: v1's Top Funds names through the fund
+// search, and the 60 funds with the largest stored book in their newest filing
+// (info, X-Ray, compare with the prior filing, returns over 8 filings).
 const { openWarehouseReadOnly } = require('../lib/warehouse/db');
+const { TOP_FUND_GROUPS } = require('../public/fund-groups');
 
 const SEARCHES = ['Chobani', 'FHU', 'FHUS', 'fhu us holdings', 'Open AI', 'OpenAir', 'Databrick', 'Databriks'];
 SEARCHES.push('Hub International', 'Vercel', 'Stripe', 'Pfizer', 'SpaceX', 'Anthropic');
@@ -24,6 +27,12 @@ function requests() {
   const unreviewed = db
     .prepare('SELECT key FROM unreviewed_entities WHERE active = 1 ORDER BY current_value_usd DESC LIMIT 20')
     .all();
+  const funds = db
+    .prepare(
+      `SELECT n.fund_key, (SELECT COUNT(*) FROM holdings h WHERE h.accession = n.last_accession) rows
+       FROM fund_names n WHERE n.filings >= 2 ORDER BY rows DESC, n.fund_key LIMIT 60`
+    )
+    .all();
   db.close();
   const enc = encodeURIComponent;
   return [
@@ -33,6 +42,13 @@ function requests() {
     ...tracked.map(c => ['history', `/api/companies/${c.id}/history`]),
     ...unreviewed.map(e => ['entity', `/api/entities/${enc(e.key)}`]),
     ...unreviewed.map(e => ['entity exposure', `/api/entities/${enc(e.key)}/exposure`]),
+    ...Object.values(TOP_FUND_GROUPS)
+      .flat()
+      .map(q => ['fund search', `/api/funds?q=${enc(q)}&limit=25`]),
+    ...funds.map(f => ['fund', `/api/funds/${enc(f.fund_key)}`]),
+    ...funds.map(f => ['fund xray', `/api/funds/${enc(f.fund_key)}/xray`]),
+    ...funds.map(f => ['fund compare', `/api/funds/${enc(f.fund_key)}/compare`]),
+    ...funds.map(f => ['fund returns', `/api/funds/${enc(f.fund_key)}/returns`]),
   ];
 }
 
@@ -45,7 +61,9 @@ async function pass(base, list) {
     const res = await fetch(base + url);
     const body = await res.arrayBuffer();
     const ms = Number(process.hrtime.bigint() - t) / 1e6;
-    if (res.status !== 200) throw new Error(`${url}: HTTP ${res.status}`);
+    // 422: returns refused for a filing over the position limit (lib/services/fund.js).
+    const expected = res.status === 200 || (route === 'fund returns' && res.status === 422);
+    if (!expected) throw new Error(`${url}: HTTP ${res.status}`);
     if (!byRoute.has(route)) byRoute.set(route, { ms: [], bytes: [] });
     byRoute.get(route).ms.push(ms);
     byRoute.get(route).bytes.push(body.byteLength);
