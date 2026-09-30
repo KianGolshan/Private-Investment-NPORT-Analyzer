@@ -193,7 +193,7 @@ Check health with `sqlite3 warehouse.db "select * from refresh_runs order by id 
 - First catch-up: ≤90 min.
 - Nightly: ≤5 min.
 - API and MCP p95: <200 ms.
-- Warehouse size: ≤500 MB (measured 364 MB for 2019Q4–2026Q2).
+- Warehouse size: ≤600 MB (raised from 500 MB on 2026-09-30; measured 364 MB at P1, 513 MB after P4.5).
 
 ## Module map
 

@@ -418,7 +418,7 @@ cases; resolve identity from evidence and measure what is missed by dollars (DAT
 - Tracked-company unresolved exposure stays under 1%.
 - Every edge and every curated decision cites an accession.
 
-**Checkpoint (built 2026-09-30, awaiting sign-off)**
+**Checkpoint (signed off 2026-09-30)**
 
 - Built: `lib/entities/identity.js` (edges + guarded components), `lib/entities/report.js` and
   `npm run entities:report` (review queue, also run by every refresh), migration 0011 (`identity_edges`,

@@ -1,7 +1,7 @@
 # Vantage v2 Status
 
-**Current phase:** Phase 4.5 (evidence-based company identity + unresolved-value report), **built; awaiting
-the user's sign-off**. Phase 5 starts only after it. Next-session prompt: SESSION-PROMPTS "Next session: Phase 5
+**Current phase:** Phase 5 (service layer, parity, search over every issuer), **not started**. P4.5 signed
+off 2026-09-30. Next-session prompt: SESSION-PROMPTS "Next session: Phase 5
 (written 2026-09-30)"; read [LESSONS.md](LESSONS.md) first.
 **Branch:** `v2-plan-and-phase0` (P4.5 committed locally, not pushed)
 **Last updated:** 2026-09-30
@@ -13,14 +13,14 @@ the user's sign-off**. Phase 5 starts only after it. Next-session prompt: SESSIO
 - [x] P2: daily catch-up and refresh (signed off 2026-09-28)
 - [x] P3: canonical views and as-of engine (signed off 2026-09-28)
 - [x] P4: entities (companies, aliases, SPVs, managers, tracked list) (finalized 2026-09-29)
-- [x] P4.5: evidence-based company identity + unresolved-value report (built 2026-09-30; sign-off pending)
+- [x] P4.5: evidence-based company identity + unresolved-value report (signed off 2026-09-30)
 - [ ] P5: service layer and parity migration (+ search over every issuer)
 - [ ] P6: new analysis and UI
 - [ ] P7: MCP server
 - [ ] P8: operations hardening
 - [ ] P9: public deployment (live site; hosting choice to confirm with the user as ADR 0006)
 
-## Phase 4.5 results (built 2026-09-30, awaiting sign-off)
+## Phase 4.5 results (signed off 2026-09-30)
 
 - **Refresh at session start:** #5 ok, no 2026Q3 bulk file yet; 777 catch-up filings loaded, 0 failed;
   `ingest_errors` empty. Goldens A1–A6 and the P4 by-company goldens reproduced before any change.
@@ -244,14 +244,14 @@ The evidence as presented:
 
 ## Measurements to record (fill in as phases complete)
 
-| Metric                                  | Budget  | Measured                                              |
-| --------------------------------------- | ------- | ----------------------------------------------------- |
-| Full bulk backfill, 27 quarters         | ≤45 min | **13.6 min** (2026-09-28)                             |
-| Warehouse size                          | ≤500 MB | 364 MB (P1); 472 MB (P4); **513 MB / 489 MiB** (P4.5) |
-| First catch-up                          | ≤90 min | **26.9 min** for 11,822 filings (about 9/s)           |
-| Nightly refresh                         | ≤5 min  | **1.1 s** with nothing new (run #1, 2026-09-28)       |
-| API p95                                 | <200 ms | n/a                                                   |
-| Single Security search (P0, live EDGAR) | n/a     | 15–32 s per name for 100 filings                      |
+| Metric                                  | Budget                      | Measured                                              |
+| --------------------------------------- | --------------------------- | ----------------------------------------------------- |
+| Full bulk backfill, 27 quarters         | ≤45 min                     | **13.6 min** (2026-09-28)                             |
+| Warehouse size                          | ≤600 MB (raised 2026-09-30) | 364 MB (P1); 472 MB (P4); **513 MB / 489 MiB** (P4.5) |
+| First catch-up                          | ≤90 min                     | **26.9 min** for 11,822 filings (about 9/s)           |
+| Nightly refresh                         | ≤5 min                      | **1.1 s** with nothing new (run #1, 2026-09-28)       |
+| API p95                                 | <200 ms                     | n/a                                                   |
+| Single Security search (P0, live EDGAR) | n/a                         | 15–32 s per name for 100 filings                      |
 
 ## Open decisions
 
@@ -266,8 +266,8 @@ The evidence as presented:
 - **Tracked list (user, 2026-09-29):** size is the user's choice (100–200 likely); the 242 in the draft
   are a suggestion. The user may send their own names to resolve against the warehouse.
 - ~~P4.5 threshold~~ Decided 2026-09-30: >= $50M held by >= 2 funds.
-- **P4.5 sign-off** (user): review the checkpoint above, the OpenAir/Anthropics merges and the review queue.
-- **Size budget (user):** `warehouse.db` is **513 MB on disk (489 MiB)** after P4.5 (P4.5 tables ~1.4 MB; the
+- ~~P4.5 sign-off~~ Signed off by the user 2026-09-30.
+- ~~Size budget~~ Raised to **600 MB** by the user (2026-09-30). `warehouse.db` is **513 MB on disk (489 MiB)** after P4.5 (P4.5 tables ~1.4 MB; the
   rest is catch-up growth). The 2026Q3 bulk file replaces catch-up rows (about neutral) and adds ~2.5 MB of
   listing evidence. Raise the budget, or prune (e.g. unused indexes, old listing evidence) before it grows.
 - **Fidelity opaque vehicles:** ~$0.6B across VETERINARY, AB, TC, TB, TRB, TB2 and THRIVE HOLDINGS LLCs. No
@@ -296,6 +296,8 @@ The evidence as presented:
   loads on the next `npm run refresh`, replacing matching catch-up rows and adding listing evidence.
 
 ## Log
+
+- **2026-09-30:** User signed off P4.5 and raised the warehouse size budget to 600 MB. Next: Phase 5.
 
 - **2026-09-30:** Phase 4.5 built: identity graph, review queue (also in refresh), migration 0011, re-seed with evidence, curation (Anthropics, OpenAir, Ramp, SpaceX SPVs), threshold agreed (2 funds / $50M) and met; F31–F33, C21, traps 35–39, lessons 24–27. Stopped for sign-off.
 

@@ -204,13 +204,12 @@ Paste one of these at the start of a session. Each prompt tells Claude what to r
 ### Next session: Phase 5 (written 2026-09-30, after P4.5 sign-off)
 
 > Resume Vantage v2 at Phase 5 (service layer, parity, search over every issuer). P0–P4.5 are complete
-> (P4.5 built 2026-09-30; confirm the user signed it off). Read CLAUDE.md, docs/STATUS.md (Phase 4.5
+> (P4.5 signed off 2026-09-30). Read CLAUDE.md, docs/STATUS.md (Phase 4.5
 > results, Open decisions), docs/LESSONS.md (all 27), docs/ROADMAP.md §Phase 5 and the P6/P8 items,
 > docs/DATA-QUALITY.md (traps 1–39), docs/GOLDEN-NUMBERS.md (F29–F33), docs/ARCHITECTURE.md §Company identity.
 >
 > Step 0: `npm run refresh` in the foreground (it loads 2026Q3 bulk if posted and rewrites the review queue
-> in reports/entities/); check `ingest_errors`, the size budget (513 MB after P4.5: ask the user before it
-> grows), and that the queue shows nothing over the threshold (>= $50M, 2+ funds) except the 3 opaque Fidelity
+> in reports/entities/); check `ingest_errors`, the size budget (600 MB; 513 MB after P4.5), and that the queue shows nothing over the threshold (>= $50M, 2+ funds) except the 3 opaque Fidelity
 > vehicles. Run `npm test`, lint, format and the LIVE golden + entities tests. Expected by company at 6/30:
 > Anthropic 117 / $17.29B, Databricks 120 / $6.23B, FHU US Holdings 13 / $0.36B, OpenAI 87 / $5.49B; Stripe
 > 35 / $1.31B at 12/31/25. Pattern goldens A1–A6 unchanged.
