@@ -1,4 +1,5 @@
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
 const xml2js = require('xml2js');
 const cheerio = require('cheerio');
@@ -49,6 +50,8 @@ app.use((_req, res, next) => {
   next();
 });
 app.use(express.static('public'));
+// Permalinks (ADR 0008): the page itself; app.js reads the path.
+app.get(['/company/:ref', '/name/:key'], (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 const USER_AGENT = process.env.SEC_USER_AGENT || '';
 const EFFECTIVE_USER_AGENT = USER_AGENT || 'Vantage internal-tool@localhost';

@@ -11,33 +11,11 @@ const express = require('express');
 const request = require('supertest');
 const nock = require('nock');
 
-const { importAliases, importDisclosedExposure } = require('../lib/entities/review');
-const { resolveCompanies } = require('../lib/entities/resolve');
-const { parseCsv } = require('../lib/entities/csv');
-const { identityUpkeep } = require('../lib/entities/report');
-const { rebuildEntities } = require('../lib/entities/entities');
 const { warehouseRouter } = require('../lib/api/warehouse');
 const { openWarehouse } = require('../lib/warehouse/db');
-const { openFixtureWarehouse } = require('./helpers/warehouseFixture');
+const { goldenWarehouse } = require('./helpers/warehouseApp');
 
-const REVIEW = path.join(__dirname, '..', 'data', 'review');
-const read = f => parseCsv(fs.readFileSync(path.join(REVIEW, f), 'utf8'));
-
-const { db } = openFixtureWarehouse();
-importAliases(db, read('aliases.csv'), { ids: read('company_ids.csv'), now: '2026-09-30T00:00:00Z' });
-importDisclosedExposure(db, read('disclosed_exposure.csv'));
-resolveCompanies(db);
-rebuildEntities(db, identityUpkeep(db));
-db.prepare(
-  "INSERT INTO refresh_runs (started_at, finished_at, status) VALUES ('2026-09-30T00:00:00Z', '2026-09-30T00:01:00Z', 'ok')"
-).run();
-
-const app = express();
-app.use(
-  '/api',
-  warehouseRouter(() => db)
-);
-const idOf = name => db.prepare('SELECT id FROM companies WHERE name = ?').get(name).id;
+const { db, app, idOf } = goldenWarehouse();
 const api = url => request(app).get(url);
 const billions = v => Math.round(v / 1e7) / 100;
 
@@ -143,10 +121,16 @@ test('API ids: a merged id redirects to its successor, a dropped id is gone, bad
   await api(`/api/companies/${anthropic}/exposure?date=06-30-2026`).expect(400);
 });
 
-test('API caching: the ETag is the refresh id; a matching If-None-Match gets 304', async () => {
+test('API caching: the ETag is the refresh id plus the build; a matching If-None-Match gets 304', async () => {
   const r = await api('/api/freshness').expect(200);
-  assert.equal(r.headers.etag, `W/"r${r.body.refreshId}"`);
+  assert.ok(r.headers.etag.startsWith('W/"r' + r.body.refreshId + '-'), r.headers.etag);
   await api('/api/freshness').set('If-None-Match', r.headers.etag).expect(304);
+  // A new build (a deploy, or a restart after a code change) never matches the old ETag.
+  const next = express().use(
+    '/api',
+    warehouseRouter(() => db, { build: 'next' })
+  );
+  await request(next).get('/api/freshness').set('If-None-Match', r.headers.etag).expect(200);
 });
 
 test('API read-only: a missing or behind warehouse gives 503, never a new file; the server opens it read-only', async () => {

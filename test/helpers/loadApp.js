@@ -24,9 +24,9 @@ const fundGroupsSource = fs.readFileSync(path.join(ROOT, 'public', 'fund-groups.
 
 const htmlWithoutScripts = rawHtml
   .replace(/<script src="https:\/\/[^"]*"><\/script>\s*/g, '')
-  .replace(/<script src="splits\.js"><\/script>\s*/g, '')
-  .replace(/<script src="fund-groups\.js"><\/script>\s*/g, '')
-  .replace(/<script src="app\.js"><\/script>\s*/g, '');
+  .replace(/<script src="\/?splits\.js"><\/script>\s*/g, '')
+  .replace(/<script src="\/?fund-groups\.js"><\/script>\s*/g, '')
+  .replace(/<script src="\/?app\.js"><\/script>\s*/g, '');
 
 // Builds a fresh window/document + evaluates app.js into it. `fetchImpl` is
 // installed as window.fetch before app.js runs its init IIFE (which calls
@@ -89,7 +89,7 @@ async function loadApp({ fetchImpl, url = 'http://localhost/' } = {}) {
     `Object.defineProperty(window, '__state', {
       configurable: true,
       get() {
-        return { TOP_FUND_GROUPS, xrayFilings, xraySnapshots, currentXrayCompare, xrayCompareMode };
+        return { TOP_FUND_GROUPS, xrayFilings, xraySnapshots, currentXrayCompare, xrayCompareMode, allResults, currentCompany };
       },
     });`,
     context,

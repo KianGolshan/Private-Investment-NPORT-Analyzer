@@ -12,7 +12,8 @@
    addWatchlistItem, removeWatchlistItem, quickAddToWatchlist, openAbout,
    searchFundXray, runFundXray, doXrayExportCSV, doXrayExportExcel, doXrayExportPDF, selectXrayComparison,
    onXrayCompareSelectChange, runFundXrayCompare, doXrayCompareExportCSV, doXrayCompareExportExcel,
-   doXrayCompareExportPDF, selectIndexedFund, sortBasketLeaderboard, runXrayReturns, onXraySeriesChange */
+   doXrayCompareExportPDF, selectIndexedFund, sortBasketLeaderboard, runXrayReturns, onXraySeriesChange,
+   openCandidate, onSecurityInput, applyAsOf, loadLiveDebt */
 /* global VantageSplits, VantageFundGroups */
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -194,6 +195,11 @@ function selectIndexedFund(name) {
 // copy-pasteable link without any extra step.
 function applyURLParams() {
   const params = new URLSearchParams(window.location.search);
+  // Permalinks (ADR 0008): /company/<id>-<slug> (the id decides) and /name/<issuer key>.
+  const company = window.location.pathname.match(/^\/company\/(\d+)/);
+  if (company) return openCompany(Number(company[1]), { date: params.get('date') || undefined });
+  const named = window.location.pathname.match(/^\/name\/(.+)$/);
+  if (named) return openEntity(decodeURIComponent(named[1]), { date: params.get('date') || undefined });
   const tab = params.get('tab');
   const limit = params.get('limit');
   const issuer = params.get('issuer');
@@ -217,6 +223,7 @@ function applyURLParams() {
 }
 function updateURLParams(params) {
   const url = new URL(window.location.href);
+  url.pathname = '/'; // leaving a /company/ or /name/ permalink
   url.search = '';
   Object.entries(params).forEach(([k, v]) => {
     if (v) url.searchParams.set(k, v);
@@ -278,17 +285,369 @@ function switchTab(tab, { skipUrlReset } = {}) {
   clearResults();
   // Skipped when applyURLParams() is driving the tab switch on page load —
   // it still has incoming ?security=/?issuer= params to read and act on.
-  if (!skipUrlReset) window.history.replaceState({}, '', window.location.pathname);
+  if (!skipUrlReset) window.history.replaceState({}, '', '/');
   if (tab === 'watchlist') renderWatchlist();
 }
 
-// ── Single search ──────────────────────────────────────────────────────────
+// ── Company page on the warehouse (Phase 5a, ADR 0008) ─────────────────────
+// Single Security asks the warehouse first (/api/search): a strong match opens
+// the company page (holders as of a date, with every fund's mark date and
+// accession, and the full history since the first filing); otherwise the
+// candidates are listed with their evidence and how they matched. Listed
+// companies, debt, and names the warehouse has never seen run v1's live
+// EDGAR flow (searchNPORTLive), labeled "live, not warehoused".
+const STRONG_MATCH = ['exact', 'normalized'];
+const EDGAR_ARCHIVE = 'https://www.sec.gov/Archives/edgar/data/';
+let currentCompany = null; // { kind: 'company' | 'unreviewed', ref, name, head }
+let suggestTimer = null;
+let suggestGeneration = 0;
+
+const slugOf = name =>
+  String(name || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+const companyPath = c => (c.kind === 'company' ? `/company/${c.ref}-${slugOf(c.name)}` : `/name/${enc(c.ref)}`);
+const accessionLink = (cik, accession) =>
+  cik && accession
+    ? `<a href="${EDGAR_ARCHIVE}${enc(String(cik).replace(/^0+/, ''))}/${enc(accession.replace(/-/g, ''))}/" target="_blank" rel="noopener">${esc(accession)}</a>`
+    : esc(accession || '—');
+const badge = (text, cls = '') => `<span class="badge ${cls}">${esc(text)}</span>`;
+const MATCH_TEXT = {
+  exact: 'exact',
+  normalized: 'same name, different spelling',
+  prefix: 'starts with',
+  substring: 'contains',
+  similar: 'similar spelling',
+};
+const matchText = m => `${MATCH_TEXT[m.how] || m.how}: ${m.via} “${m.text}”`;
+
+function setCompanyHTML(html) {
+  document.getElementById('companyContainer').innerHTML = html;
+}
+function showSourceNotice(text) {
+  setCompanyHTML(`<div class="alert alert-info"><strong>Live, not warehoused</strong>${esc(text)}</div>`);
+}
+
 async function searchNPORT() {
   const security = document.getElementById('securityInput').value.trim();
   if (!security) return showMsg('Please enter a security name or ticker.', 'error');
-
+  hideSuggestions();
   const mySearchGen = ++searchGeneration;
   clearResults();
+  showLoading('Searching the warehouse...');
+  let results;
+  try {
+    results = (await fetchJSON('/api/search?q=' + enc(security) + '&limit=8')).results;
+  } catch {
+    results = null; // warehouse unavailable: the live path answers
+  }
+  if (mySearchGen !== searchGeneration) return;
+  hideLoading();
+  if (!results || !results.length)
+    return searchNPORTLive(
+      security,
+      results
+        ? `No company or reported name in the warehouse matches "${security}"; searching live EDGAR filings instead.`
+        : ''
+    );
+  const [top] = results;
+  if (STRONG_MATCH.includes(top.match.how) || results.length === 1) return openSearchResult(top, results.slice(1));
+  renderCandidates(security, results);
+}
+
+function candidateHTML(r, i) {
+  const ev = r.evidence || {};
+  const kind =
+    r.type === 'company'
+      ? badge(r.status === 'public' ? 'Listed' : 'Private', r.status === 'public' ? 'badge-muted' : 'badge-ok') +
+        (r.tracked ? badge('Tracked') : '')
+      : badge('Unreviewed', 'badge-warn') + badge(r.category, 'badge-muted');
+  return `<button class="candidate" onclick="openCandidate(${i})">
+    <span class="candidate-name">${esc(r.name)}</span> ${kind}
+    <span class="fund-meta">${esc(matchText(r.match))} · ${fmtNum(ev.currentFunds)} fund(s), ${fmtCompactCurrency(ev.currentValueUsd)} as of ${esc(ev.asOf || '—')} · reported ${esc(ev.firstMarkDate || '—')} to ${esc(ev.lastMarkDate || '—')}</span>
+  </button>`;
+}
+
+let lastCandidates = [];
+function renderCandidates(query, results) {
+  lastCandidates = results;
+  setCompanyHTML(`<div class="results-section">
+    <div class="alert alert-info"><strong>Several names match "${esc(query)}"</strong>Pick one. Each shows how it matched and what the filings hold; look-alikes are separate companies unless a filing links them.</div>
+    <div class="candidates">${results.map(candidateHTML).join('')}</div>
+    <div class="hint">Not here? <a href="#" onclick="searchNPORTLive(${esc(JSON.stringify(query))}, 'Searching live EDGAR filings for the words as typed.');return false;">Search live EDGAR filings</a> (not warehoused).</div>
+  </div>`);
+}
+function openCandidate(i) {
+  const r = lastCandidates[i];
+  return r
+    ? openSearchResult(
+        r,
+        lastCandidates.filter((_, j) => j !== i)
+      )
+    : undefined;
+}
+function openSearchResult(r, others = []) {
+  return r.type === 'company' ? openCompany(r.id, { others }) : openEntity(r.key, { others });
+}
+
+// Typeahead: the same search, debounced, as a list under the input.
+function onSecurityInput() {
+  clearTimeout(suggestTimer);
+  const q = document.getElementById('securityInput').value.trim();
+  if (q.length < 3) return hideSuggestions();
+  suggestTimer = setTimeout(async () => {
+    const gen = ++suggestGeneration;
+    try {
+      const { results } = await fetchJSON('/api/search?q=' + enc(q) + '&limit=6');
+      if (gen !== suggestGeneration) return;
+      lastCandidates = results;
+      const box = document.getElementById('searchSuggest');
+      box.innerHTML = results.map(candidateHTML).join('');
+      box.style.display = results.length ? 'block' : 'none';
+    } catch {
+      hideSuggestions();
+    }
+  }, 150);
+}
+function hideSuggestions() {
+  clearTimeout(suggestTimer);
+  suggestGeneration++;
+  const box = document.getElementById('searchSuggest');
+  if (box) box.style.display = 'none';
+}
+
+async function openCompany(id, { others = [], date, knownAsOf } = {}) {
+  hideSuggestions();
+  const mySearchGen = ++searchGeneration;
+  clearResults();
+  showLoading('Loading from the warehouse...');
+  try {
+    const head = await fetchJSON(`/api/companies/${enc(id)}`);
+    if (mySearchGen !== searchGeneration) return;
+    if (head.answeredBy.source === 'live') {
+      hideLoading();
+      document.getElementById('securityInput').value = head.company.name;
+      return searchNPORTLive(head.company.name, `${head.company.name} is ${head.answeredBy.reason}.`);
+    }
+    currentCompany = { kind: 'company', ref: head.company.id, name: head.company.name, head, others };
+    await loadCompanyPage(mySearchGen, { date, knownAsOf });
+  } catch (err) {
+    hideLoading();
+    showMsg('Error: ' + esc(err.message), 'error');
+  }
+}
+
+async function openEntity(key, { others = [], date, knownAsOf } = {}) {
+  hideSuggestions();
+  const mySearchGen = ++searchGeneration;
+  clearResults();
+  showLoading('Loading from the warehouse...');
+  try {
+    const head = await fetchJSON(`/api/entities/${enc(key)}`);
+    if (mySearchGen !== searchGeneration) return;
+    if (head.answeredBy.source === 'live') {
+      hideLoading();
+      return searchNPORTLive(head.entity.name, `"${head.entity.name}" looks ${head.answeredBy.reason}.`);
+    }
+    currentCompany = { kind: 'unreviewed', ref: head.entity.key, name: head.entity.name, head, others };
+    await loadCompanyPage(mySearchGen, { date, knownAsOf });
+  } catch (err) {
+    hideLoading();
+    showMsg('Error: ' + esc(err.message), 'error');
+  }
+}
+
+const apiBase = c => (c.kind === 'company' ? `/api/companies/${enc(c.ref)}` : `/api/entities/${enc(c.ref)}`);
+
+async function loadCompanyPage(mySearchGen, { date, knownAsOf } = {}) {
+  const c = currentCompany;
+  const q = new URLSearchParams();
+  if (date) q.set('date', date);
+  if (knownAsOf) q.set('knownAsOf', knownAsOf);
+  const [exposure, history] = await Promise.all([
+    fetchJSON(`${apiBase(c)}/exposure?${q}`),
+    fetchJSON(`${apiBase(c)}/history`),
+  ]);
+  if (mySearchGen !== searchGeneration) return;
+  hideLoading();
+  c.exposure = exposure;
+  c.history = history;
+  document.getElementById('securityInput').value = c.name;
+  window.history.replaceState({}, '', companyPath(c) + (date ? `?date=${enc(date)}` : ''));
+  renderCompanyPage();
+  const buckets = historyToBuckets(history);
+  allResults = { mode: 'single', single: buckets };
+  if (nonEmptyBuckets(buckets).length) {
+    document.getElementById('dateFilterPanel').style.display = 'block';
+    document.getElementById('referencePanel').style.display =
+      buckets.equity && Object.keys(buckets.equity).length ? 'block' : 'none';
+    renderSingleResults(buckets);
+  }
+}
+
+// Warehouse history -> v1's buckets ({ equity: { fund: holdings[] }, ... }), so
+// v1's charts, tables, peer stats and exports run on canonical rows. A per-share
+// price only for share rows (DATA-QUALITY trap 40).
+function historyToBuckets(history) {
+  const buckets = { equity: {}, debt: {}, derivative: {}, indirect: {} };
+  for (const f of history.funds || []) {
+    const fund = f.seriesName || f.registrant || f.fundKey;
+    for (const s of f.series) {
+      const type = buckets[s.instrumentType] ? s.instrumentType : 'equity';
+      for (const p of s.points) {
+        (buckets[type][fund] ||= []).push({
+          name: s.issuerName,
+          issuer: s.issuerName,
+          title: s.title,
+          seriesName: f.seriesName,
+          shares: p.balance,
+          marketValue: p.valueUsd,
+          pricePerShare: p.pricePerShare,
+          currency: 'USD',
+          exchangeRate: 1,
+          reportDate: p.markDate,
+          cusip: '',
+          ticker: '',
+          instrumentType: type,
+          instrumentLabel: s.instrumentLabel,
+          instrumentKey: s.instrumentKey,
+          chartValue: p.chartValue,
+          chartUnit: s.chartUnit,
+          company: fund,
+          registrant: f.registrant,
+          cik: f.cik,
+          accession: p.accession,
+          viaSpv: p.viaSpv,
+        });
+      }
+    }
+  }
+  Object.values(buckets).forEach(map =>
+    Object.values(map).forEach(list => list.sort((a, b) => dateCmp(a.reportDate, b.reportDate)))
+  );
+  return buckets;
+}
+
+function positionText(p) {
+  const qty = p.balance
+    ? `${fmtNum(p.balance)} ${p.unit === 'NS' ? 'sh' : p.unit === 'OU' ? 'units' : esc(p.unit || '')}`
+    : 'no share count';
+  const price =
+    p.pricePerShare != null
+      ? `${fmtCurrency(p.pricePerShare)}/sh`
+      : p.pricePerUnit != null
+        ? `${fmtCurrency(p.pricePerUnit)}/unit`
+        : '';
+  return `${esc(p.instrumentLabel || p.title || '')} · ${qty}${price ? ' @ ' + price : ''}${p.viaSpv ? ' ' + badge('indirect', 'badge-muted') : ''}`;
+}
+
+function holdersTableHTML(rows, { showValue = true, lastHeld = false } = {}) {
+  if (!rows.length) return '';
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>Fund</th><th>Mark date</th>${showValue ? '<th class="right">Value</th><th>Positions</th>' : ''}${lastHeld ? '<th>Last reported</th>' : ''}<th>Filing</th></tr></thead>
+    <tbody>${rows
+      .map(
+        h => `<tr>
+      <td>${esc(h.seriesName || h.registrant || h.fundKey)}<div class="fund-meta">${esc(h.registrant || '')}</div></td>
+      <td>${esc(h.markDate)}</td>
+      ${showValue ? `<td class="right">${fmtCompactCurrency(h.value ?? 0)}</td><td>${(h.positions || []).map(positionText).join('<br>')}${h.label && h.label !== 'indirect' ? ' ' + badge(h.label, 'badge-muted') : ''}</td>` : ''}
+      ${lastHeld ? `<td>${esc(h.lastHeldDate || '—')} ${accessionLink(h.cik, h.lastHeldAccession)}</td>` : ''}
+      <td>${accessionLink(h.cik, h.accession)}</td>
+    </tr>`
+      )
+      .join('')}</tbody></table></div>`;
+}
+
+function renderCompanyPage() {
+  const c = currentCompany;
+  const x = c.exposure;
+  const head = c.head;
+  const isCompany = c.kind === 'company';
+  const status = isCompany
+    ? badge(head.company.status === 'public' ? 'Listed' : 'Private', 'badge-ok') +
+      (head.company.tracked ? badge('Tracked') : '')
+    : badge('Unreviewed', 'badge-warn') + badge(head.entity.category, 'badge-muted');
+  const brands =
+    isCompany && head.brands.length ? `Also filed as ${head.brands.map(b => esc(b.brand)).join(', ')}. ` : '';
+  const unreviewedNote = isCompany
+    ? ''
+    : `<div class="alert alert-warning"><strong>Unreviewed</strong>These rows name no reviewed company. They are grouped by the filers' own evidence (names, ids, marks) and shown as filed; a reviewer has not confirmed what they are.${head.entity.linkedCompanyIds.length ? ' Filing evidence links them to a reviewed company.' : ''}</div>`;
+  const others = c.others.length
+    ? `<div class="hint">Other matches: ${c.others
+        .map(
+          (o, i) =>
+            `<a href="#" onclick="openSearchResult(currentCompany.others[${i}], []);return false;">${esc(o.name)}</a> (${esc(o.type === 'company' ? (o.status === 'public' ? 'listed' : 'private') : 'unreviewed ' + o.category)})`
+        )
+        .join(' · ')}</div>`
+    : '';
+  const hist = c.history;
+  setCompanyHTML(`<div class="results-section company-page">
+    <div class="company-head">
+      <h2>${esc(c.name)} ${status}</h2>
+      <div class="fund-meta">${brands}Reported by funds from ${esc(hist.firstMarkDate || '—')} to ${esc(hist.lastMarkDate || '—')}. Source: SEC N-PORT warehouse, refresh #${esc(x.refreshId)}.</div>
+      ${others}
+    </div>
+    ${unreviewedNote}
+    <div class="search-row">
+      <div class="input-group narrow"><label for="asOfDate">Holders as of</label><input type="date" id="asOfDate" value="${esc(x.date)}"></div>
+      <label class="check"><input type="checkbox" id="knownAsOf" ${x.knownAsOf ? 'checked' : ''}> Only what was public on that date</label>
+      <button class="btn btn-primary" onclick="applyAsOf()">Update</button>
+      <button class="btn btn-secondary" onclick="loadLiveDebt()" title="Debt is not in the warehouse; this reads live EDGAR filings">Debt (live EDGAR)</button>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Funds holding</div><div class="stat-value">${fmtNum(x.funds)}</div></div>
+      <div class="stat-card"><div class="stat-label">Value</div><div class="stat-value highlight">${fmtCompactCurrency(x.total)}</div></div>
+      <div class="stat-card"><div class="stat-label">As of</div><div class="stat-value sm">${esc(x.date)}${x.knownAsOf ? ' (as known then)' : ''}</div></div>
+    </div>
+    <div class="hint">Funds report on staggered calendars: each fund's value is its latest filing on or before ${esc(x.date)}, at its own mark date.</div>
+    ${holdersTableHTML(x.holdings)}
+    ${x.disclosedExposure.length ? `<h3>Disclosed without naming vehicles</h3><div class="table-wrap"><table><thead><tr><th>Fund</th><th>Report date</th><th>What the filing says</th><th>Filing</th></tr></thead><tbody>${x.disclosedExposure.map(d => `<tr><td>${esc(d.seriesName || d.registrant || d.fundKey)}</td><td>${esc(d.markDate)}</td><td>${esc(d.basis)}</td><td>${esc(d.accession)}</td></tr>`).join('')}</tbody></table></div>` : ''}
+    ${x.zeroValue.length ? `<h3>Reported at $0</h3>${holdersTableHTML(x.zeroValue)}` : ''}
+    ${x.exited.length ? `<h3>No longer reported</h3><div class="hint">The fund's latest filing on or before ${esc(x.date)} no longer lists the company.</div>${holdersTableHTML(x.exited, { showValue: false, lastHeld: true })}` : ''}
+    <div id="liveDebtContainer"></div>
+    <h3>History</h3>
+  </div>`);
+}
+
+function applyAsOf() {
+  const c = currentCompany;
+  if (!c) return;
+  const date = document.getElementById('asOfDate').value;
+  const knownAsOf = document.getElementById('knownAsOf').checked ? date : undefined;
+  const open = c.kind === 'company' ? openCompany : openEntity;
+  return open(c.ref, { others: c.others, date, knownAsOf });
+}
+
+// Debt stays on live EDGAR (ADR 0008): v1's per-filing flow, debt rows only.
+async function loadLiveDebt() {
+  const c = currentCompany;
+  if (!c) return;
+  const box = document.getElementById('liveDebtContainer');
+  box.innerHTML = '<div class="hint">Reading live EDGAR filings for debt…</div>';
+  try {
+    const data = await fetchJSON('/api/search-nport?security=' + enc(c.name));
+    const filings = sortFilings([...(data.hits?.hits || [])]).slice(0, +document.getElementById('filingLimit').value);
+    const { holdings } = await parseFilings(filings, c.name);
+    hideProgress();
+    const debt = groupAndDedupe(holdings).debt;
+    box.innerHTML = Object.keys(debt).length
+      ? `<div class="alert alert-info"><strong>Live, not warehoused</strong>Debt rows from the newest ${filings.length} filings naming "${esc(c.name)}".</div>` +
+        renderInstrumentSectionHTML(debt, 'debt', 'liveDebtChart', 'live_debt', true, {})
+      : `<div class="hint">No debt rows in the newest ${filings.length} filings naming "${esc(c.name)}" (live EDGAR).</div>`;
+    if (Object.keys(debt).length) buildChart(bucketCanvasId('liveDebtChart', 'debt'), debt, 'debt', true);
+  } catch (err) {
+    box.innerHTML = `<div class="alert alert-error">Live debt search failed: ${esc(err.message)}</div>`;
+  }
+}
+
+// ── Single search, live EDGAR (v1) ─────────────────────────────────────────
+// Listed companies, debt and names the warehouse has never seen. notice: why
+// the live path is answering (shown as "Live, not warehoused").
+async function searchNPORTLive(security, notice) {
+  const mySearchGen = ++searchGeneration;
+  clearResults();
+  if (notice) showSourceNotice(notice);
   showLoading('Searching SEC EDGAR...');
 
   try {
@@ -2130,6 +2489,8 @@ function showMsg(msg, type) {
 }
 function clearResults() {
   document.getElementById('msgBox').innerHTML = '';
+  document.getElementById('companyContainer').innerHTML = '';
+  currentCompany = null;
   document.getElementById('resultsContainer').innerHTML = '';
   document.getElementById('dateFilterPanel').style.display = 'none';
   document.getElementById('batchDateFilterPanel').style.display = 'none';
