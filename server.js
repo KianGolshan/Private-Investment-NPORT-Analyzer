@@ -5,6 +5,8 @@ const cheerio = require('cheerio');
 const rateLimit = require('express-rate-limit');
 const cache = require('./cache');
 const { fetchWithRetry } = require('./lib/edgar');
+const { openWarehouseReadOnly } = require('./lib/warehouse/db');
+const { warehouseRouter } = require('./lib/api/warehouse');
 const {
   extractHoldings,
   extractCreditHoldings,
@@ -120,6 +122,15 @@ app.use(
     legacyHeaders: false,
     message: { error: 'Too many forced refreshes — cached results are still available without refresh.' },
   })
+);
+
+// Warehouse routes (Phase 5a, ADR 0008): search, companies and unreviewed
+// names, answered from warehouse.db opened read-only on first use (missing or
+// behind: those routes answer 503, the live routes below keep working). They
+// never call the SEC.
+app.use(
+  '/api',
+  warehouseRouter(() => openWarehouseReadOnly())
 );
 
 // EDGAR identifiers go straight into sec.gov archive URLs, so they are
