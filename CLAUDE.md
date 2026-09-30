@@ -47,6 +47,8 @@ history back to 2019Q4, automatic refresh, as-of exposure, and firm/fund/class m
   rewrites it. Never renumber or reuse an id.
 - Keep the warehouse (`warehouse.db`) separate from the request cache (`cache.db`). Readers (web server,
   MCP server) open it with `openWarehouseReadOnly`; only jobs migrate or write.
+- The app answers private companies and funds from the warehouse (`lib/services`); v1's per-filing routes are a
+  compatibility layer for the live path only. Admin actions are local, behind `VANTAGE_ADMIN=1`, and run as jobs.
 - Match the surrounding code style: Prettier config, ESLint flat config, Node ≥22, CommonJS.
 
 ## Commands
@@ -67,6 +69,8 @@ npm run seed:entities              # write data/review/{aliases,managers}.csv su
 npm run review:aliases             # import the reviewed CSVs, re-resolve holdings (human in the loop)
 npm run entities:report            # review queue: unresolved value by component, conflicts (reports/entities/)
 npm run bench                      # p50/p95 per warehouse route on the live warehouse (note the load average)
+node scripts/backfill-filing-totals.js --status   # one-off P5b backfill of filing_totals + capital rows (--bulk, --edgar, --max-minutes)
+node scripts/make-company.js --key KEY --name NAME  # admin: make an unreviewed name a company (writes data/review, runs the import)
 ```
 
 ## Scope

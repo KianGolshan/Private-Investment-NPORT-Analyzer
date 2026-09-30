@@ -89,6 +89,23 @@ Paste one of these at the start of a session. Each prompt tells Claude what to r
 > company" job under the refresh lock, and the per-filing flows kept only as a compatibility layer. Stop for the 5b
 > sign-off; no push to main, PR or launchd without an explicit yes.
 
+### Next session: Phase 6 (written 2026-09-30, after the 5b checkpoint; use once the user signs off 5b)
+
+> Resume Vantage v2 at Phase 6 (new analysis and UI). P5b is built on `v2-phase5b` (STATUS "Phase 5b results"); if the
+> user signed it off, it may already be merged. Read CLAUDE.md, docs/STATUS.md, docs/LESSONS.md (all, especially
+> 36–41), docs/ROADMAP.md §Phase 6, ADR 0008, docs/ARCHITECTURE.md (Mark series, As-of, module map),
+> docs/DATA-QUALITY.md (traps 1–46, Display rules) and docs/GOLDEN-NUMBERS.md.
+>
+> Step 0: confirm CI is green on the branch you start from; `npm run refresh` in the foreground (2026Q3 bulk loads if
+> posted; report what it loaded, `ingest_errors`, and the size against 600 MB, about 57 MB left after P5b); npm test,
+> lint, format, **the whole `npm run test:live`** (not only the goldens) and `npm run bench` with the load average.
+> Ask about the open decisions in STATUS (trap 45's loan rows, `npm audit`) before touching them.
+>
+> Then ROADMAP §6 in order, checking every new metric on real filings first and recording new numbers in
+> GOLDEN-NUMBERS with accessions. Reuse lib/services (company, fund) and lib/analytics/peer.js; compare across funds
+> as filed (LESSONS 39); look at worst cases as well as p95 (LESSONS 40). Stop for the P6 sign-off; no merge to main,
+> PR or launchd without an explicit yes.
+
 ### Phase 6: new analysis and UI
 
 > Vantage v2 Phase 6. Read CLAUDE.md, docs/ARCHITECTURE.md (Mark series, As-of), ADR 0008 and

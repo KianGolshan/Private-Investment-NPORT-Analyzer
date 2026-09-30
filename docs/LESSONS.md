@@ -151,3 +151,21 @@ this file is about **how we work**.
 35. **Record the machine's load with every latency number.** The same code measured p95 7 ms and 44 ms an hour apart
     (load average ~4 from other processes). Compare runs only on the same conditions, and check a "regression"
     against the previous commit before chasing it.
+
+## Added in Phase 5b (2026-09-30)
+
+36. **A stub hides the bug the real library would throw.** Every Excel export with a debt section had thrown in the
+    browser ("Debt / Loans" is not a valid sheet name) while the tests passed against `XLSX = {}`. The export tests
+    now load the page's own SheetJS and jsPDF versions and read the files back.
+37. **Check each gate on its own before committing.** `node --test … | grep … && git commit` committed a broken module:
+    the pipe's status was grep's, not the tests'. Run the suite, read the result, then commit.
+38. **Run the whole LIVE suite at a checkpoint, not only the goldens.** Five LIVE UI tests had failed since P5a; one hid a
+    real bug (outlier badges against split-restated peers). They were only run in 5b.
+39. **A restatement that is right within a series is wrong across series.** Split-restating a fund's own marks onto its
+    latest basis is what velocity needs; comparing that restated peer with another fund's older, as-filed mark
+    invented a +200% outlier. Compare across funds as filed, at the same date.
+40. **Measure the worst case, not only p95.** Every fund route had p95 under 50 ms while one real fund (26,219 loan rows
+    in one filing, trap 45) returned 25 MB and took 67 s for returns. Look at max and payload size too, and bound
+    answers by what the page shows.
+41. **Reconcile a measurement before building on it.** The 2026q2 capital-row estimate (1,855) and the stored count
+    (1,788) differed by 67; the difference was term loans the keep rule already stores. Explain every gap first.

@@ -1,8 +1,8 @@
 # Vantage v2 Status
 
-**Current phase:** Phase 5b **next** (P5a signed off 2026-09-30, merged to `main`). Previously: Phase 5a (services, search over every issuer, the company page on the
-read-only warehouse). 5b follows the sign-off. Read [LESSONS.md](LESSONS.md) first.
-**Branch:** `v2-phase5a` (off `main` after PR #2 merged as e3164f6, 2026-09-30). No PR yet.
+**Current phase:** Phase 5b **built, awaiting sign-off** (2026-09-30). P5a signed off and merged to `main` (PR #3,
+bed52f8). Next after sign-off: P6 (P7 may start any time). Read [LESSONS.md](LESSONS.md) first.
+**Branch:** `v2-phase5b` (off `main` at bed52f8), pushed. No PR, no merge to `main` without the user's yes.
 **Last updated:** 2026-09-30
 
 ## Phase tracker
@@ -14,13 +14,70 @@ read-only warehouse). 5b follows the sign-off. Read [LESSONS.md](LESSONS.md) fir
 - [x] P4: entities (companies, aliases, SPVs, managers, tracked list) (finalized 2026-09-29)
 - [x] P4.5: evidence-based company identity + unresolved-value report (signed off 2026-09-30)
 - [x] P5a: services, search over every issuer, company page on the warehouse (signed off 2026-09-30)
-- [ ] P5b: fund pages, lists, exports, per-filing flows retired
+- [ ] P5b: fund pages, lists, exports, per-filing flows retired (built 2026-09-30; awaiting sign-off)
 - [ ] P6: new analysis and UI
 - [ ] P7: MCP server (may start after P5a)
 - [ ] P8: operations hardening
 - [ ] P9: public deployment (live site; hosting choice to confirm with the user as ADR 0006)
 
-## Phase 5a results (built 2026-09-30, awaiting sign-off)
+## Phase 5b results (built 2026-09-30, awaiting sign-off)
+
+- **Step 0:** CI green on `main` for the P5a merge (bed52f8). Refresh #11 `ok`: no 2026Q3 bulk file yet, nothing new to
+  catch up, `ingest_errors` empty, 504.8 MB with 364 free pages (no VACUUM needed). Suite 425 / 395 pass / 0 fail;
+  lint and format clean; LIVE warehouse goldens pass; bench p95 all routes 6.8 ms fresh / 5.5 warm (load ~3.0).
+- **Built (ROADMAP §5b tasks 1–8, one or more commits each on `v2-phase5b`):**
+  1. `filing_totals` (migration 0015): every row of every filing before the keep rule (total, listed equity, debt,
+     v1's Level-3 non-debt), one collector for both ingest paths. Identical on the 8 real fixture filings and equal
+     to v1's `buildFundXRay` on the same XML, and on 3 full EDGAR filings (LIVE). Backfill
+     (`scripts/backfill-filing-totals.js`, resumable, timed batches): 341,049 bulk filings in ~11.5 min, 13,948
+     catch-up filings in ~26 min at 8.4–8.8/s, 0 failed, 0 kept-row mismatches.
+  2. Capital-structure debt rows, measured first on 2026q2 (1,855 of 3.02M debt rows, $7.88B, 420 filings; ~0.46
+     MB/quarter); **the user chose a separate table** (ADR 0003 amended): `capital_structure_rows` (migration 0016),
+     never in `holdings`. Stored 2026q2: 1,788 (the other 67 are term loans the keep rule already stores, trap 5).
+     Full history: 35,824 rows, $205.2B; backfilled with the totals (bulk ~19 min, catch-up ~27 min, 0 failed).
+  3. The fund page on the warehouse: `lib/services/fund.js` + `/api/funds`, `/api/funds/:key`, `/xray`, `/compare`,
+     `/returns`; `fund_names` + a word index (migration 0017; a LIKE over filings took 350–970 ms). Canonical
+     filings only (an amended filing answers 409 with its replacement, F16). Private book by company status;
+     unreviewed private candidates labeled with their category; listed and looks-listed rows shown apart with the
+     reason; totals from `filing_totals` beside v1's Level-3 figure; v1's compare/returns math unchanged; `/fund/<key>`
+     permalinks; all 85 v1 Top Funds resolve (47 open directly, 38 trusts list their own funds).
+  4. Batch and Watchlist on the company services: one search per name (strong match, as the company page);
+     warehouse history for private and unreviewed names, the live path for listed and unmatched names, each
+     section labeled. Watchlist entries are `{ name, kind, ref }`; v1 names resolve once; weak or no match stays
+     "unmatched" with candidates until confirmed.
+  5. Peer analytics in `lib/analytics/peer.js` (UMD like `public/splits.js`, served as `/peer.js`); the v1 UI tests run
+     it through same-named wrappers.
+  6. Exports: every v1 column kept, plus Mark Date, Accession and Source (and "Private By" on X-Ray); the X-Ray PDF
+     prints them once in its header; the comparison export names both filings.
+  7. Per-filing routes kept as a compatibility layer (live path, warehouse unavailable, old links);
+     `test/app-retired.test.js` pins that private companies and funds never reach them in any view.
+  8. "Make this a company" (admin only): `lib/entities/make-company.js` writes the component's issuer keys to
+     `data/review/aliases.csv` and runs the review import under the refresh lock (`refresh_runs.kind = 'curation'`,
+     migration 0018); restores both review files on failure; `POST /api/admin/companies` runs it as a child process
+     and refuses without `VANTAGE_ADMIN=1`, from a non-local or proxied address, or without `X-Vantage-Admin`.
+- **Found on real data and fixed:**
+  - Blue Owl Alternative Credit Fund stores 26,219 merchant-cash-advance rows in one filing (trap 45): its X-Ray was
+    25 MB and its returns took 67 s. Totals and math still cover every row; the wire carries the 2,000 largest rows
+    and multi-tranche issuers only; returns refuse a filing over 5,000 private rows (422 with the reason).
+  - Excel export threw on any Single Security result with a debt section ("Debt / Loans" is not a valid sheet
+    name); hidden by a stub, found by running the real SheetJS in jsdom. Sheet names are sanitized.
+  - Outlier badges compared an old mark with peers restated for later splits: a Databricks series that stopped
+    before the 2022 3:1 split read +200%. Peers are compared as filed.
+  - T. Rowe files OpenAI as "OpenAI Group PCB" beside "OpenAI Group PBC" (F36, trap 46); the fund page's capital
+    structure now groups by the reviewed company.
+  - 5 LIVE tests in `live-popular.test.js` had failed since P5a (only the warehouse goldens were run then): one real
+    bug (outliers, above), three test assumptions the warehouse's full history broke. `npm run test:live` 31/31.
+- **Speed (`npm run bench`, 1,099 real requests, load ~2.3–2.9, p95 fresh / second pass):** fund search 19.8 / 20.1
+  ms, fund 2.3 / 1.4, X-Ray 8.7 / 8.7, compare 13.6 / 12.0, returns 46.1 / 46.5; all routes 19.7 / 17.2. Worst single
+  request 376 ms (the 26k-row fund's compare).
+- **Size:** 504.8 → 525.5 MB (totals) → 534.5 (capital rows) → **542.7 MB** (fund names, refresh #13); ~57 MB left under
+  600, about two bulk quarters.
+- **Suite:** 465 tests, 434 pass, 0 fail, 31 skipped (LIVE); `npm run test:live` 31 / 31; lint and format clean.
+- **For the user (not changed):** trap 45's loan rows still count as "indirect" equity (a rule by `other_asset`
+  wording is yours to decide); `npm audit` reports high/moderate advisories in brace-expansion (via ESLint) and
+  ip-address (via express-rate-limit), both present before this phase.
+
+## Phase 5a results (signed off 2026-09-30)
 
 - **Step 0:** refresh #8 `ok` (no 2026Q3 bulk, nothing to catch up), `ingest_errors` empty, 513.0 MB; LIVE goldens
   pass. PR #2 merged to `main` (e3164f6) at the user's request; 5a is on `v2-phase5a`.
@@ -388,25 +445,32 @@ The evidence as presented:
 
 ## Measurements to record (fill in as phases complete)
 
-| Metric                                  | Budget                      | Measured                                                                                         |
-| --------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------ |
-| Full bulk backfill, 27 quarters         | ≤45 min                     | **13.6 min** (2026-09-28)                                                                        |
-| Warehouse size                          | ≤600 MB (raised 2026-09-30) | 364 MB (P1); 472 MB (P4); 513 MB (P4.5); **503–505 MB after VACUUM (P5a)**                       |
-| First catch-up                          | ≤90 min                     | **26.9 min** for 11,822 filings (about 9/s)                                                      |
-| Nightly refresh                         | ≤5 min                      | 1.1 s (P2, nothing new); **20–160 s** with N-CEN, entity upkeep and the review queue (runs #2–6) |
-| API p95                                 | <200 ms                     | **P5a: all routes 15.9 ms first pass / 5.6 ms warm (quiet); 35 / 28 ms under load**              |
-| Single Security search (P0, live EDGAR) | n/a                         | 15–32 s per name for 100 filings                                                                 |
+| Metric                                  | Budget                      | Measured                                                                                          |
+| --------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------- |
+| Full bulk backfill, 27 quarters         | ≤45 min                     | **13.6 min** (2026-09-28)                                                                         |
+| Warehouse size                          | ≤600 MB (raised 2026-09-30) | 364 MB (P1); 472 MB (P4); 513 MB (P4.5); 503–505 MB (P5a); **542.7 MB (P5b)**                     |
+| First catch-up                          | ≤90 min                     | **26.9 min** for 11,822 filings (about 9/s)                                                       |
+| Nightly refresh                         | ≤5 min                      | 1.1 s (P2, nothing new); **20–160 s** with N-CEN, entity upkeep and the review queue (runs #2–6)  |
+| API p95                                 | <200 ms                     | P5a: 15.9 / 5.6 ms (quiet); **P5b: all routes 19.7 / 17.2 ms, fund routes ≤ 46.5 ms (load ~2.5)** |
+| Single Security search (P0, live EDGAR) | n/a                         | 15–32 s per name for 100 filings                                                                  |
+| `filing_totals` backfill (P5b)          | ~40 min planned             | bulk 11.5 min (341,049), catch-up ~26 min (13,948, 8.4–8.8/s); capital rows again ~42 min         |
 
 ## Open decisions
 
 - **Nightly refresh scheduling:** not installed. A ready-to-use launchd job is in ARCHITECTURE
   §Refresh lifecycle. Install only with the user's yes. Until then, run `npm run refresh` at the start of
   each session.
-- **Branch:** PR #2 (`v2-plan-and-phase0`, with the Phase 5 plan) merged to `main` on 2026-09-30 at the user's
-  request. P5a is on `v2-phase5a`. Ask before merging to `main`, opening PRs, renaming or deleting branches
-  (`audit-fixes`, `v2-plan-and-phase0`, `v2-phase5-plan` are all contained in `main`).
+- **Branch:** P5b is on `v2-phase5b` (pushed). Ask before merging to `main`, opening PRs, renaming or deleting branches
+  (`audit-fixes`, `v2-plan-and-phase0`, `v2-phase5-plan`, `v2-phase5a` are all contained in `main`).
+- **5b sign-off** (2026-09-30): built; the user signs off, then a PR to `main` only with a yes.
+- **Trap 45 (loans filed as `OTHER`):** 81,995 indirect rows in principal ($265.3B) mix real fund interests with
+  merchant cash advances, personal loans, HEIs and promissory notes. A rule by `other_asset` wording would move the
+  loans to debt; not changed without the user's yes. No tracked company is affected.
+- **`npm audit`:** high/moderate advisories in brace-expansion (ESLint's dependency) and ip-address
+  (express-rate-limit's), present before P5b; `npm audit fix` not run.
 - ~~Phase 5 plan sign-off~~ Signed off 2026-09-30.
-- ~~5a sign-off~~ Signed off by the user 2026-09-30; `v2-phase5a` merged to `main` by PR.
+- ~~5a sign-off~~ Signed off by the user 2026-09-30; `v2-phase5a` merged to `main` by PR #3.
+- ~~Capital-structure rows~~ Decided 2026-09-30 (user): adopt into a separate table (ADR 0003 amended).
 - **Balance-0 rows (trap 43):** counted under the P3 NULL-balance precedent; the user can overrule (then
   `nullBalance` would need a separate flag for 0).
 - ~~Manager mapping source~~ Decided in P4: N-CEN advisers + reviewed `managers.csv` (ADR 0007).
@@ -428,19 +492,24 @@ The evidence as presented:
   analyzable by name pattern even if not in `companies`; P5 search must fall back to the pattern path
   and offer to add the company. The on-demand EDGAR keyword search stays.
 
-## Warehouse state (2026-09-30, after Phase 5a)
+## Warehouse state (2026-09-30, after Phase 5b)
 
-- Schema at migration 0014; refresh #10 `ok`; `ingest_errors` empty.
+- Schema at migration 0018; refresh #13 `ok`; `ingest_errors` empty. Every filing has `filing_totals` and its
+  capital-structure rows (35,824, $205.2B); 18,852 funds in `fund_names`.
 - 354,997 N-PORT filings (bulk 2019Q4–2026Q2 plus EDGAR catch-up through filings of 2026-09-29) and 1,165,239
   private-candidate holdings; 806 companies (304 private), 180 tracked, ids in `data/review/company_ids.csv`;
   318,751 rows resolved; 71,831 unreviewed entities (846,385 rows tagged); 106k search rows.
 - N-CEN: 17,841 of 18,852 funds have an adviser.
 - `listing_evidence` covers the latest 4 bulk quarters. **Don't backfill all 27** (+60–70 MB) without pruning or
   asking.
-- 503–505 MB on disk after `VACUUM`. A refresh that re-tags many rows leaves free pages; `VACUUM` (10 s) returns them.
+- 542.7 MB on disk (71 free pages). A refresh that re-tags many rows leaves free pages; `VACUUM` (10 s) returns them.
 - The SEC 2026Q3 bulk file (expected after 2026-09-30) loads on the next `npm run refresh`.
 
 ## Log
+
+- **2026-09-30:** Phase 5b built on `v2-phase5b` (tasks 1–8; `filing_totals` and capital rows backfilled, the fund page,
+  lists, peer module, exports, compatibility layer, admin job). Traps 45–46, F36, C23–C25, ADR 0003 amended, LESSONS
+  36–41. Stopped for the 5b sign-off.
 
 - **2026-09-30:** User signed off P5a (incl. the balance-0 rule, trap 43); PR opened and merged to `main`. Next: Phase 5b.
 

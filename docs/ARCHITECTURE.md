@@ -77,6 +77,12 @@ unreviewed_entities(id, key, display_name, category, keys, names, ..., active)  
 -- holdings.entity_id: the unreviewed entity of a row no company claims (P5a)
 search_names (FTS5 trigram: compact variants, name, kind, ref, detail)          -- search index, P5a
 company_stats(company_id, current_funds, current_value_usd, as_of, funds_ever, first/last_mark_date)  -- P5a
+filing_totals(accession, rows, value_usd, rows_listed, value_listed, rows_debt, value_debt,
+              rows_l3_equity, value_l3_equity, rows_capital)   -- every row of the filing, before the keep rule (P5b)
+capital_structure_rows(accession, row_key, issuer_key, …holdings columns)  -- debt beside a kept row of the same issuer (P5b)
+fund_names(fund_key, cik, series_id, series_name, registrant, first/last_report_date, last_accession, filings)
+fund_search (FTS5 words: every series and registrant name a fund filed under)  -- P5b
+-- refresh_runs.kind: refresh | curation (the admin job takes the refresh lock, P5b)
 -- views
 canonical_filings        -- one per (fund_key, report_date); latest filing_date wins
 fund_filing_timeline     -- all canonical filings per fund
@@ -139,7 +145,9 @@ Fund calendars are staggered, so "as of D" mixes mark dates. The UI always shows
      - Earlier failures in `ingest_errors` are retried.
   4. Entity upkeep (fund advisers, company resolution), then the identity graph and the review queue
      (`reports/entities/unresolved.csv`, `conflicts.csv`; P4.5), then unreviewed entities, their row tags,
-     `company_stats` and the search index (`lib/entities/entities.js`, P5a).
+     `company_stats` and the search index (`lib/entities/entities.js`, P5a), then the fund list and fund-name
+     index (`lib/warehouse/fund-names.js`, P5b). Both ingest paths also write `filing_totals` and the
+     capital-structure rows for every filing they load.
   5. Write a `refresh_runs` row. A catch-up filing that predates bulk coverage but isn't in bulk (expected 0)
      fails the run, as do catch-up and N-CEN failures.
   6. Exit non-zero on any failure, so the scheduler can alert.
@@ -188,13 +196,14 @@ Check health with `sqlite3 warehouse.db "select * from refresh_runs order by id 
 
 ## Configuration
 
-| Env var               | Default          | Purpose                      |
-| --------------------- | ---------------- | ---------------------------- |
-| `SEC_USER_AGENT`      | required         | SEC fair-access identity     |
-| `WAREHOUSE_DB_PATH`   | `./warehouse.db` | Warehouse file (git-ignored) |
-| `CACHE_DB_PATH`       | `./cache.db`     | Existing request cache       |
-| `SEC_MIN_INTERVAL_MS` | 110              | Outbound pacing (≤10 req/s)  |
-| `LIVE_SEC`            | unset            | Enables network tests        |
+| Env var               | Default          | Purpose                                                        |
+| --------------------- | ---------------- | -------------------------------------------------------------- |
+| `SEC_USER_AGENT`      | required         | SEC fair-access identity                                       |
+| `WAREHOUSE_DB_PATH`   | `./warehouse.db` | Warehouse file (git-ignored)                                   |
+| `CACHE_DB_PATH`       | `./cache.db`     | Existing request cache                                         |
+| `SEC_MIN_INTERVAL_MS` | 110              | Outbound pacing (≤10 req/s)                                    |
+| `LIVE_SEC`            | unset            | Enables network tests                                          |
+| `VANTAGE_ADMIN`       | unset            | `1` enables the local admin action "make this a company" (P5b) |
 
 ## Performance budgets
 
@@ -203,7 +212,7 @@ Check health with `sqlite3 warehouse.db "select * from refresh_runs order by id 
 - First catch-up: ≤90 min.
 - Nightly: ≤5 min.
 - API and MCP p95: <200 ms.
-- Warehouse size: ≤600 MB (raised from 500 MB on 2026-09-30; measured 364 MB at P1, 513 MB after P4.5).
+- Warehouse size: ≤600 MB (raised from 500 MB on 2026-09-30; measured 364 MB at P1, 513 MB after P4.5, 542.7 MB after P5b).
 
 ## Module map
 
@@ -250,16 +259,29 @@ lib/entities/entities.js           unreviewed entities, holdings.entity_id, comp
 lib/services/search.js             ranked search with match reasons (exact, normalized, prefix, substring, similar)
 lib/services/company.js            exposure with display labels, history, stable-id lookup, routing (sourceFor)
 lib/api/warehouse.js               read-only warehouse routes (/api/search, /api/companies, /api/entities, /api/freshness)
+                                   (+ /api/funds in P5b)
 lib/warehouse/keep-rule.js         + classifyStored: classifyInstrument over stored fields (ingest and services)
 scripts/bench.js                   npm run bench
 data/review/company_ids.csv        the stable company id ledger
 ```
 
+Built in P5b:
+
+```
+lib/warehouse/filing-totals.js     per-filing totals over every row (one collector, both ingest paths)
+lib/warehouse/capital-structure.js debt rows kept beside a private-candidate row of the same issuer
+lib/warehouse/totals-backfill.js   one-off backfill of both (scripts/backfill-filing-totals.js)
+lib/warehouse/fund-names.js        fund list + word index, rebuilt by refresh and the ingest scripts
+lib/services/fund.js               fund search, canonical filings, X-Ray / compare / returns on the warehouse
+lib/analytics/peer.js              velocity, outliers, ledger, leaderboard (UMD; the browser loads /peer.js)
+lib/entities/review-import.js      the review import (npm run review:aliases and the admin job)
+lib/entities/make-company.js       "make this a company": review files + import under the refresh lock
+lib/api/admin.js                   POST /api/admin/companies (VANTAGE_ADMIN=1, local only; runs scripts/make-company.js)
+```
+
 Planned:
 
 ```
-lib/services/fund.js      P5b: fund page / X-Ray on the warehouse (+ filing_totals)
-lib/analytics/peer.js     P5b: velocity, outliers, leaderboard (from public/app.js, shared with the browser)
 lib/services/{manager,marks,feed}.js   P6: firm pages, mark series, what's-new feed
 mcp-server.js             P7 (after P5a)
 ```

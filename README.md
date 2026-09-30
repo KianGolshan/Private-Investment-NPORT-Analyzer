@@ -5,9 +5,10 @@ An internal tool for analyzing SEC NPORT-P filings to track and compare private 
 > **Vantage v2 is in progress.** The data layer is built (Phases 0–4.5): an SEC-verified local warehouse
 > with complete N-PORT history since 2019Q4, a nightly refresh from EDGAR, an as-of engine (amendments,
 > exits and dead funds handled), companies resolved from filing evidence, parent firms from Form N-CEN, and
-> a tracked list of 180 private companies. **The app does not read the warehouse yet**: Phase 5 switches it
-> over; Phase 6 adds the new analysis views, Phase 7 an MCP server. The features below describe the app as
-> it works today.
+> a tracked list of 180 private companies. **Since Phase 5 the app reads the warehouse**: Single Security,
+> Batch, Watchlist and Fund X-Ray answer private companies and funds from every filing since 2019Q4, with mark
+> dates, accessions and amendments handled; listed companies and debt still come from live EDGAR, labeled.
+> Phase 6 adds the new analysis views, Phase 7 an MCP server. Some sections below still describe v1's live flow.
 > - Plan and phase checkpoints: [docs/ROADMAP.md](docs/ROADMAP.md)
 > - Progress: [docs/STATUS.md](docs/STATUS.md)
 > - Design: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
@@ -19,8 +20,8 @@ An internal tool for analyzing SEC NPORT-P filings to track and compare private 
 > - Rules for contributors and AI sessions: [CLAUDE.md](CLAUDE.md)
 >
 > **Known limits of today's app, measured on real data** (details in [docs/DATA-QUALITY.md](docs/DATA-QUALITY.md)):
-> - Single Security parses at most the 100 newest matching filings, which for heavily held names (e.g. Databricks) is about one month of history. The warehouse removes this limit.
-> - Fund X-Ray's Level-3-only filter misses private holdings that some filers label Level 1 or 2.
+> - The live path (listed companies, debt, names the warehouse cannot match) still parses at most the 100 newest matching filings. Private companies and funds come from the warehouse, with no such limit (Phase 5).
+> - Fund X-Ray now counts a holding as private by the company's reviewed status, not its fair-value level (v1's Level-3 figure is shown beside it).
 > - Fixed in Phase 0: duplicate filings (about 21% of hits), look-alike name matches ("Revolut" matching Revolution Medicines), relevance-ranked instead of newest filings on popular names, and filings that mention a name only in a trust-wide attachment. Search now matches whole words or an exact ticker.
 
 ---
@@ -126,8 +127,8 @@ npm run dev
 ### Build and refresh the data warehouse (Vantage v2)
 
 The v2 warehouse loads the SEC's quarterly N-PORT bulk datasets (2019Q4 onward) into a local
-`warehouse.db`. It's a separate file from `cache.db`, and git-ignored. The app does not read it yet; the
-routes switch over in Phase 5 (see [docs/ROADMAP.md](docs/ROADMAP.md)).
+`warehouse.db`. It's a separate file from `cache.db`, and git-ignored. The app reads it read-only (Phase 5,
+see [docs/ROADMAP.md](docs/ROADMAP.md)).
 
 ```bash
 npm run ingest:bulk -- --all
