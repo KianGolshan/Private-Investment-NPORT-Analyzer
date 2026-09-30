@@ -275,8 +275,10 @@ test('row rules: equity-type = everything but debt (as v1); NULL-balance SPV row
 
 test('failure paths: bad input fails loudly', () => {
   const bad = [
-    [{ date: '2026-06-30' }, /exactly one of pattern or companyId/],
-    [{ pattern: 'x', companyId: 1, date: '2026-06-30' }, /exactly one of pattern or companyId/],
+    [{ date: '2026-06-30' }, /exactly one of pattern, companyId or entityId/],
+    [{ pattern: 'x', companyId: 1, date: '2026-06-30' }, /exactly one of pattern, companyId or entityId/],
+    [{ companyId: 1, entityId: 1, date: '2026-06-30' }, /exactly one of pattern, companyId or entityId/],
+    [{ entityId: '1', date: '2026-06-30' }, /entityId must be an integer/],
     [{ pattern: 'x' }, /date must be an ISO date/],
     [{ pattern: 'x', date: '06/30/2026' }, /date must be an ISO date/],
     [{ pattern: 'x', date: '2026-13-45' }, /date must be an ISO date/],

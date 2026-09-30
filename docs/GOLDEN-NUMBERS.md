@@ -1,4 +1,4 @@
-# Golden Numbers
+| F35 | AMG Pantheon Master Fund: **Hockey Parent Holdings, L.P.**, `<balance>0</balance>`, units OU ("Investment does not issue shares"), `valUSD` **$45,443,907.60** (0.67% of NAV), `assetConditional` OTHER / "Private fund", Level 3. The position has no share count; it counts toward Hockey Parent exposure with no per-share price (DATA-QUALITY trap 43). Raw EDGAR, 2026-09-30 | 0001193125-26-376088 | 1609212 | 2026-06-30 |# Golden Numbers
 
 Every figure here was verified against real SEC data on 2026-09-27. They become regression tests in
 Phase 3 onward. When a number changes (e.g. an amendment is filed), re-verify it against EDGAR and update

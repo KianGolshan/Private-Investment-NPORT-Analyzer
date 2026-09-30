@@ -19,6 +19,8 @@ const {
   COMPANY_ID_COLUMNS,
 } = require('../lib/entities/review');
 const { entityUpkeep } = require('../lib/entities/upkeep');
+const { identityUpkeep } = require('../lib/entities/report');
+const { rebuildEntities } = require('../lib/entities/entities');
 
 function main() {
   const args = process.argv.slice(2);
@@ -43,6 +45,7 @@ function main() {
     const e = entityUpkeep(db);
     console.log('fund advisers:', e.advisers);
     console.log('holdings resolved:', e.companies);
+    console.log('unreviewed entities and search:', rebuildEntities(db, identityUpkeep(db)));
   } finally {
     db.pragma('wal_checkpoint(TRUNCATE)');
     db.close();

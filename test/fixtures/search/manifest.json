@@ -1,0 +1,23 @@
+{
+  "builtAt": "2026-09-30T15:56:27.862Z",
+  "source": "warehouse.db",
+  "sourceNewestFilingDate": "2026-09-29",
+  "sourceRefreshRun": {
+    "id": 9,
+    "finished_at": "2026-09-30T15:53:49.540Z"
+  },
+  "names": [
+    "\\bhockey parent\\b|\\bhub intl\\b",
+    "\\bopen ?ai\\b|\\bopenair\\b",
+    "\\bfhu ?u?s\\b|\\bchobani\\b",
+    "\\bpfizer\\b",
+    "\\bvercel\\b",
+    "\\bstripes\\b"
+  ],
+  "ids": [],
+  "leis": [],
+  "funds": 147,
+  "filings": 3645,
+  "holdings": 1005,
+  "listingEvidence": 4
+}

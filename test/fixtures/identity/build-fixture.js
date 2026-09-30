@@ -33,10 +33,10 @@ const NAMES = [
 const IDS = ['BYDXGRZL8', 'BYJ0U3DG6', 'BRTGP5LH5', '956KCS006'];
 const LEIS = ['549300ISVDMZ91KNTR38', '984500B6DEB8CEBC4Z70', '984500FEDAC7FBD96273'];
 
-function main() {
-  const src = process.argv[2] || defaultWarehousePath();
+// Also used by test/fixtures/search/build-fixture.js with its own names.
+function buildFixture({ src = defaultWarehousePath(), out = OUT, names = NAMES, ids = IDS, leis = LEIS } = {}) {
   const db = new Database(src, { readonly: true, fileMustExist: true });
-  const any = new RegExp(NAMES.join('|'), 'i');
+  const any = new RegExp(names.join('|'), 'i');
   db.function('fixture_match', { deterministic: true }, t => (t != null && any.test(t) ? 1 : 0));
   const inList = xs => `(${xs.map(() => '?').join(',')})`;
 
@@ -52,11 +52,11 @@ function main() {
   const holdings = db
     .prepare(
       `SELECT * FROM holdings WHERE fixture_match(issuer_name) OR fixture_match(title)
-         OR other_id IN ${inList(IDS)} OR lei IN ${inList(LEIS)}
+         OR other_id IN ${inList(ids)} OR lei IN ${inList(leis)}
          OR (accession IN ${inList(debussy)} AND (UPPER(issuer_name) LIKE '%DATABRICKS%' OR UPPER(title) LIKE '%DATABRICKS%'))
        ORDER BY accession, row_key`
     )
-    .all(...IDS, ...LEIS, ...debussy);
+    .all(...ids, ...leis, ...debussy);
   const accessions = [...new Set([...holdings.map(h => h.accession), ...named])];
   const fundOf = db.prepare('SELECT fund_key FROM filings WHERE accession = ?');
   const fundKeys = [...new Set(accessions.map(a => fundOf.get(a).fund_key))].sort();
@@ -84,9 +84,9 @@ function main() {
     source: path.basename(src),
     sourceNewestFilingDate: db.prepare('SELECT MAX(filing_date) d FROM filings').get().d,
     sourceRefreshRun: lastRefresh.get() || null,
-    names: NAMES,
-    ids: IDS,
-    leis: LEIS,
+    names,
+    ids,
+    leis,
     funds: fundKeys.length,
     filings: filings.length,
     holdings: holdings.length,
@@ -102,9 +102,11 @@ function main() {
     fund_advisers: table(fundAdvisers),
     listing_evidence: table(listing),
   });
-  fs.writeFileSync(path.join(OUT, 'warehouse.json.gz'), zlib.gzipSync(payload, { level: 9 }));
-  fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+  fs.writeFileSync(path.join(out, 'warehouse.json.gz'), zlib.gzipSync(payload, { level: 9 }));
+  fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
   console.log(`fixture: ${manifest.funds} funds, ${manifest.filings} filings, ${manifest.holdings} rows`);
 }
 
-main();
+if (require.main === module) buildFixture({ src: process.argv[2] || defaultWarehousePath() });
+
+module.exports = { buildFixture };
