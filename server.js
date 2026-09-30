@@ -8,6 +8,7 @@ const cache = require('./cache');
 const { fetchWithRetry } = require('./lib/edgar');
 const { openWarehouseReadOnly } = require('./lib/warehouse/db');
 const { warehouseRouter } = require('./lib/api/warehouse');
+const { adminRouter, adminEnabled, isLocalRequest } = require('./lib/api/admin');
 const {
   extractHoldings,
   extractCreditHoldings,
@@ -137,6 +138,9 @@ app.use(
 // never call the SEC.
 const warehouseApi = warehouseRouter(() => openWarehouseReadOnly());
 app.use('/api', warehouseApi);
+// Admin actions ("make this a company"): local, admin-only, run as a job
+// (lib/api/admin.js); refused unless VANTAGE_ADMIN=1 and the request is local.
+app.use('/api/admin', adminRouter());
 
 // EDGAR identifiers go straight into sec.gov archive URLs, so they are
 // validated, not just URL-encoded: a CIK is up to 10 digits, an accession
@@ -357,8 +361,9 @@ function eftsPhrase(term) {
 }
 
 // Config endpoint — lets the frontend show a warning if user-agent isn't set
-app.get('/api/config', (_req, res) => {
-  res.json({ userAgentConfigured: !!USER_AGENT });
+app.get('/api/config', (req, res) => {
+  // admin: the "make this a company" action is available to this viewer (lib/api/admin.js).
+  res.json({ userAgentConfigured: !!USER_AGENT, admin: adminEnabled() && isLocalRequest(req) });
 });
 
 // Search for NPORT-P filings matching a security name/ticker

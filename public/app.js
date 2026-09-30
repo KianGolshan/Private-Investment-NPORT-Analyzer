@@ -13,7 +13,7 @@
    searchFundXray, runFundXray, doXrayExportCSV, doXrayExportExcel, doXrayExportPDF, selectXrayComparison,
    onXrayCompareSelectChange, runFundXrayCompare, doXrayCompareExportCSV, doXrayCompareExportExcel,
    doXrayCompareExportPDF, selectIndexedFund, sortBasketLeaderboard, runXrayReturns, onXraySeriesChange,
-   openCandidate, onSecurityInput, applyAsOf, loadLiveDebt, confirmWatchlistMatch */
+   openCandidate, onSecurityInput, applyAsOf, loadLiveDebt, confirmWatchlistMatch, makeThisACompany */
 /* global VantageFundGroups, VantagePeer */
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -154,6 +154,7 @@ const getColor = i => COLORS[i % COLORS.length];
 (async () => {
   try {
     const cfg = await fetchJSON('/api/config');
+    adminMode = cfg.admin === true;
     if (!cfg.userAgentConfigured) {
       document.getElementById('configWarning').style.display = 'block';
     }
@@ -307,6 +308,7 @@ function switchTab(tab, { skipUrlReset } = {}) {
 // EDGAR flow (searchNPORTLive), labeled "live, not warehoused".
 const STRONG_MATCH = ['exact', 'normalized'];
 const EDGAR_ARCHIVE = 'https://www.sec.gov/Archives/edgar/data/';
+let adminMode = false; // /api/config: this viewer may run admin actions (local, VANTAGE_ADMIN=1)
 let currentCompany = null; // { kind: 'company' | 'unreviewed', ref, name, head }
 let suggestTimer = null;
 let suggestGeneration = 0;
@@ -467,6 +469,56 @@ async function openEntity(key, { others = [], date, knownAsOf } = {}) {
   }
 }
 
+// ── Admin: "make this a company" (ROADMAP §5b task 8) ─────────────────────
+// Shown on an unreviewed name's page only to a local admin (/api/config). The
+// server runs the review import as a job under the refresh lock, then this
+// page opens the new company by its id.
+function makeCompanyFormHTML(entity) {
+  return `<div class="date-filter-panel" id="makeCompanyPanel" style="display:block;">
+    <div class="search-row">
+      <div class="input-group"><label for="makeCompanyName">Company name</label><input type="text" id="makeCompanyName" value="${esc(entity.name)}"></div>
+      <div class="input-group narrow"><label for="makeCompanyStatus">Status</label><select id="makeCompanyStatus"><option value="private">private</option><option value="public">listed</option></select></div>
+      <label class="check"><input type="checkbox" id="makeCompanyTrack"> Track</label>
+      <button class="btn btn-primary" id="makeCompanyBtn" onclick="makeThisACompany()">Make this a company</button>
+    </div>
+    <div class="hint">Admin: writes ${entity.keys.length} issuer key(s) to data/review/aliases.csv and runs the review import (about half a minute; refused while a refresh runs).</div>
+  </div>`;
+}
+
+async function makeThisACompany() {
+  const c = currentCompany;
+  if (!c || c.kind !== 'unreviewed') return;
+  const name = document.getElementById('makeCompanyName').value.trim();
+  if (!name) return showMsg('Enter a company name.', 'error');
+  const btn = document.getElementById('makeCompanyBtn');
+  btn.disabled = true;
+  showLoading(`Making "${esc(name)}" a company and re-running the review import...`);
+  try {
+    const r = await fetch('/api/admin/companies', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Vantage-Admin': '1' },
+      body: JSON.stringify({
+        key: c.ref,
+        name,
+        status: document.getElementById('makeCompanyStatus').value,
+        track: document.getElementById('makeCompanyTrack').checked ? 'Y' : 'N',
+      }),
+    });
+    const body = await r.json();
+    hideLoading();
+    if (!r.ok) {
+      btn.disabled = false;
+      return showMsg('Not done: ' + esc(body.error || `HTTP ${r.status}`), 'error');
+    }
+    await openCompany(body.company.id);
+    showMsg(`"${esc(body.company.name)}" is now company #${body.company.id} (${body.company.rows} rows).`, 'success');
+  } catch (err) {
+    hideLoading();
+    btn.disabled = false;
+    showMsg('Error: ' + esc(err.message), 'error');
+  }
+}
+
 const apiBase = c => (c.kind === 'company' ? `/api/companies/${enc(c.ref)}` : `/api/entities/${enc(c.ref)}`);
 
 async function loadCompanyPage(mySearchGen, { date, knownAsOf } = {}) {
@@ -599,6 +651,7 @@ function renderCompanyPage() {
       ${others}
     </div>
     ${unreviewedNote}
+    ${!isCompany && adminMode ? makeCompanyFormHTML(head.entity) : ''}
     <div class="search-row">
       <div class="input-group narrow"><label for="asOfDate">Holders as of</label><input type="date" id="asOfDate" value="${esc(x.date)}"></div>
       <label class="check"><input type="checkbox" id="knownAsOf" ${x.knownAsOf ? 'checked' : ''}> Only what was public on that date</label>
