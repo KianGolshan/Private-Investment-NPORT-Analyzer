@@ -1,4 +1,4 @@
-# Lessons Learned (P0–P4.5, 2026-09-27/30)
+# Lessons Learned (P0–P4.5 and the pre-P5 review, 2026-09-27/30)
 
 These are the mistakes and surprises from building the warehouse, each with the rule that now prevents it.
 Read this before starting a phase. Data traps with real examples live in [DATA-QUALITY.md](DATA-QUALITY.md);
@@ -58,8 +58,8 @@ this file is about **how we work**.
      and no background waiters without an exit on failure.
 10. **The SEC rate limit is the throughput ceiling:** about 9 filings/s through `fetchWithRetry`. Plan
     from the arithmetic: 11.8k filings ≈ 22 min, plus stragglers.
-11. **The auto-mode safety classifier sometimes fails transiently.** After two consecutive no-verdicts, stop
-    and report the exact resume point instead of burning retries. Resumable jobs make this painless.
+11. **When a tool or command fails the same way twice, stop and report the exact resume point** instead of
+    burning retries. Resumable jobs make this painless.
 
 ## Working with the user
 
@@ -115,3 +115,16 @@ this file is about **how we work**.
 27. **A threshold must be measured before it is agreed.** "No unresolved component above $50M" over all
     holdings meant $300B+ of feeder-fund and PE-fund interests and ~140 single-fund positions. The ranked
     report by category turned it into a decision the user could make (2+ funds, 2026-09-30).
+
+## Added in the pre-P5 review (2026-09-30)
+
+28. **A result that depends on row order is not reproducible.** The identity graph read its rows without an
+    `ORDER BY`, and its guarded unions keep the first edge that wins; a later run could join a vehicle group
+    differently with no change in data (63 of 38,224 review-queue rows moved once it was ordered). Order
+    every query that feeds a first-wins or guarded step.
+29. **Test the edges of a row rule, not only the goldens.** "Value > 0" was right for exposure but made a
+    fund that still reports a $0 position look like an exit (F34), and "value / balance" made a per-unit
+    vehicle value look like a share price. Golden companies had neither case; the tracked list did.
+30. **A shared constant or helper lives in one module.** Two different `VEHICLE_WORDS` and three copies of
+    the same name helpers drifted apart silently; `lib/entities/names.js`, `keep-rule.js` and `values.js`
+    now hold them.

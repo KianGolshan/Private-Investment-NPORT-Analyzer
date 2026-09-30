@@ -15,7 +15,7 @@ const nock = require('nock');
 const { openWarehouse } = require('../lib/warehouse/db');
 const { ingestBulkZip } = require('../lib/warehouse/bulk-ingest');
 const { ingestDelta, parseFormIndex, indexQuarters, defaultSince } = require('../lib/warehouse/delta');
-const { refresh } = require('../lib/warehouse/refresh');
+const { refresh, claimRun, STALE_RUN_MS } = require('../lib/warehouse/refresh');
 
 const SEC = 'https://www.sec.gov';
 const BULK = path.join(__dirname, 'fixtures', 'bulk');
@@ -253,12 +253,58 @@ test('refresh: loads a newly published bulk quarter, then catches up from its ne
   assert.equal(first.loaded, 0, 'the one filing listed on/after 2026-06-26 is already in bulk');
   assert.equal(first.uncovered, 0);
 
+  // The second run checks the loaded quarter is unchanged on the SEC (HEAD).
+  nock(SEC)
+    .head('/files/dera/data/form-n-port-data-sets/2026q2_nport.zip')
+    .reply(200, '', { 'Content-Length': String(zipBytes.length) });
   const second = await refresh(db, { until: '2026-06-30', ncen: false });
   assert.deepEqual(second.bulkQuartersAdded, [], 'nothing new published');
   const runs = db.prepare('SELECT status, bulk_quarters_added, delta_since FROM refresh_runs ORDER BY id').all();
   assert.deepEqual(runs, [
     { status: 'ok', bulk_quarters_added: '2026q2', delta_since: '2026-06-26' },
     { status: 'ok', bulk_quarters_added: '', delta_since: '2026-06-26' },
+  ]);
+  db.close();
+});
+
+test('refresh: a quarter the SEC re-posts at a different size is reloaded (trap 41)', async () => {
+  const db = openWarehouse(':memory:');
+  const page = '<a href="/files/dera/data/form-n-port-data-sets/2026q2_nport.zip">2026 Q2</a>';
+  const zipBytes = fs.readFileSync(ZIP);
+  const zipPath = '/files/dera/data/form-n-port-data-sets/2026q2_nport.zip';
+  nock(SEC).get('/data-research/sec-markets-data/form-n-port-data-sets').times(2).reply(200, page);
+  nock(SEC)
+    .get(zipPath)
+    .times(2)
+    .reply(200, zipBytes, { 'Content-Length': String(zipBytes.length) });
+  mockIndex(2);
+  await refresh(db, { until: '2026-06-30', ncen: false, checkRepublished: false });
+  // Stored as loaded 1 byte smaller than the SEC now serves it: re-posted.
+  db.prepare("UPDATE ingest_log SET zip_bytes = zip_bytes - 1 WHERE kind = 'bulk'").run();
+  nock(SEC)
+    .head(zipPath)
+    .reply(200, '', { 'Content-Length': String(zipBytes.length) });
+  const r = await refresh(db, { until: '2026-06-30', ncen: false });
+  assert.equal(r.status, 'ok');
+  assert.deepEqual(r.bulkQuartersAdded, ['2026q2']);
+  const loads = db.prepare("SELECT zip_bytes FROM ingest_log WHERE kind = 'bulk' AND status = 'ok' ORDER BY id").all();
+  assert.deepEqual(
+    loads.map(l => l.zip_bytes),
+    [zipBytes.length - 1, zipBytes.length]
+  );
+  db.close();
+});
+
+test('refresh: one run at a time; a run left "running" for over 2 hours is closed as abandoned', () => {
+  const db = openWarehouse(':memory:');
+  const t0 = new Date('2026-09-30T06:15:00Z');
+  const first = claimRun(db, t0);
+  assert.throws(() => claimRun(db, new Date(t0.getTime() + 60 * 1000)), /refresh #1 is already running/);
+  const later = claimRun(db, new Date(t0.getTime() + STALE_RUN_MS + 1000));
+  const runs = db.prepare('SELECT id, status, error FROM refresh_runs ORDER BY id').all();
+  assert.deepEqual(runs, [
+    { id: first, status: 'failed', error: 'abandoned: the process ended without finishing' },
+    { id: later, status: 'running', error: null },
   ]);
   db.close();
 });

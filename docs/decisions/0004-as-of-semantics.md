@@ -38,6 +38,14 @@ Funds report on staggered fiscal calendars, so no single date lines everyone up.
 - `knownAsOf` limits every step, amendments included, to filings made on or before that date: "what was
   public then". Anthropic as of 2026-06-30 is 117 funds / $17.26B, but 82 / $6.23B as known on 2026-06-30.
 
+**Amended 2026-09-30 (pre-Phase 5 review):**
+
+- A fund whose latest canonical filing reports the company only at $0 (a write-down) has not exited. It is
+  returned under `zeroValue` with its mark date and accession, and is not counted in `funds` or `total`
+  (GOLDEN F34, DATA-QUALITY trap 42).
+- `pricePerShare` is set only for share rows (`unit = 'NS'`); every row carries `pricePerUnit`. Splits are
+  detected on per-unit values (trap 40).
+
 ## Consequences
 
 - Numbers are reproducible and auditable. The UI must show mark dates, since "as of D" mixes them.

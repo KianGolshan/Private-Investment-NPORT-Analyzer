@@ -1,5 +1,11 @@
 {
   "_about": "Reviewed entity decisions applied on top of the seed rules (lib/entities/seed.js). Keys are issuer keys (parsers.issuerKeyOf). Merges require filing evidence: the same fund reporting the same filer instrument id or the same share count under both names (accession = the filing showing the new name). Reviewed 2026-09-29; P4.5 identity decisions 2026-09-30 (filing evidence, verified on EDGAR).",
+  "status": {
+    "SPACE EXPLORATION TECHNOLOGIES": {
+      "status": "public",
+      "note": "IPO completed June 2026 (Fundrise Innovation Fund report, 0001867090-26-000109); funds report 180-day lock-up Class A shares from 2026-06-30 (0000035402-26-005373)."
+    }
+  },
   "merge": [
     {
       "into": "OURA HEALTH OY",

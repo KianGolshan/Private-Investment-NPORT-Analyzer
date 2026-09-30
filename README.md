@@ -2,15 +2,12 @@
 
 An internal tool for analyzing SEC NPORT-P filings to track and compare private investment valuations across institutional funds. Search by company name or ticker to see how different funds mark the same asset over time.
 
-> **Vantage v2 is planned.** Vantage v2 adds an SEC-verified local data warehouse:
-> - complete N-PORT history since 2019Q4, from the SEC's bulk datasets
-> - nightly refresh from EDGAR's daily filing index
-> - as-of exposure by company, parent firm, fund and share class
-> - mark charts at every reporting month
-> - a tracked list of about 250 major private companies
-> - an MCP server
->
-> **None of this is built yet.** The features below describe the app as it works today.
+> **Vantage v2 is in progress.** The data layer is built (Phases 0–4.5): an SEC-verified local warehouse
+> with complete N-PORT history since 2019Q4, a nightly refresh from EDGAR, an as-of engine (amendments,
+> exits and dead funds handled), companies resolved from filing evidence, parent firms from Form N-CEN, and
+> a tracked list of 180 private companies. **The app does not read the warehouse yet**: Phase 5 switches it
+> over; Phase 6 adds the new analysis views, Phase 7 an MCP server. The features below describe the app as
+> it works today.
 > - Plan and phase checkpoints: [docs/ROADMAP.md](docs/ROADMAP.md)
 > - Progress: [docs/STATUS.md](docs/STATUS.md)
 > - Design: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
@@ -136,22 +133,31 @@ routes switch over in Phase 5 (see [docs/ROADMAP.md](docs/ROADMAP.md)).
 npm run ingest:bulk -- --all
 ```
 
-That loads every quarter, which took about 14 minutes and produced about 365 MB on 2026-09-28. After that,
-`--missing` loads only quarters not yet loaded, and `--quarter 2026q2` reloads a single quarter. Each
-quarter loads in one transaction and is logged in `ingest_log`. A failed run exits non-zero and changes
-nothing for that quarter.
+That loads every quarter, which took about 14 minutes on 2026-09-28. After that, `--missing` loads only
+quarters not yet loaded, and `--quarter 2026q2` reloads a single quarter. Each quarter loads in one
+transaction and is logged in `ingest_log`. A failed run exits non-zero and changes nothing for that quarter.
 
 Bulk data ends at the last quarter-end, so recent filings come from EDGAR directly:
 
 ```bash
 npm run ingest:delta   # every N-PORT filed after the newest bulk quarter
-npm run refresh        # nightly job: loads any newly published bulk quarter, then catches up
+npm run refresh        # nightly job: new or re-posted bulk quarters, catch-up, N-CEN, entity upkeep
 ```
 
 The first catch-up after a full backfill took 27 minutes (11,822 filings at the SEC's rate limit). A
-refresh with nothing new takes about a second. Both commands can be interrupted and resumed. Filings that
-fail are listed in `ingest_errors` and retried on the next run. To run the refresh nightly, use the launchd
-or cron entry in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#refresh-lifecycle).
+routine refresh takes 20 seconds to 2 minutes, and only one runs at a time. Both commands can be
+interrupted and resumed. Filings that fail are listed in `ingest_errors` and retried on the next run. To
+run the refresh nightly, use the launchd or cron entry in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#refresh-lifecycle).
+
+Companies, aliases and parent firms are human-reviewed files in `data/review/`:
+
+```bash
+npm run ingest:ncen       # N-CEN advisers (parent firms)
+npm run seed:entities     # suggest data/review/{aliases,managers}.csv (--force to overwrite)
+npm run review:aliases    # import the reviewed files and re-resolve holdings
+npm run entities:report   # the review queue: unresolved value by company, conflicts (reports/entities/)
+```
 
 ### Tests
 

@@ -1,10 +1,10 @@
 name: Test
 
+# Every branch: v2 work lives on feature branches, and CI must run on them
+# before anything reaches main.
 on:
   push:
-    branches: [main]
   pull_request:
-    branches: [main]
 
 jobs:
   test:

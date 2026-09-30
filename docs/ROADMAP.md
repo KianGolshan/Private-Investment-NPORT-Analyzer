@@ -2,8 +2,8 @@
 
 **Goal:** the same app, with far more capability. SEC-verified, refreshable, historically accurate
 private-investment exposure and marks, sliced by **company → parent firm → fund → share class** over any
-time horizon. Covers any private company you look up, plus a curated tracked list (178 private operating
-companies at P4; the user decides its size). Evidence for every design choice is in [ARCHITECTURE.md](ARCHITECTURE.md),
+time horizon. Covers any private company you look up, plus a curated tracked list (180 private operating
+companies after P4.5; the user decides its size). Evidence for every design choice is in [ARCHITECTURE.md](ARCHITECTURE.md),
 [DATA-QUALITY.md](DATA-QUALITY.md) and [GOLDEN-NUMBERS.md](GOLDEN-NUMBERS.md).
 
 ## How phases work
@@ -300,7 +300,7 @@ DATA-QUALITY trap 20.
 
 **Tasks**
 
-- Migration 0004:
+- Migration 0004 (_built as 0008–0010; 0004 became the placeholder-series fix in P3_):
   - `companies(id, name, status, public_since, notes)`
   - `company_aliases(company_id, pattern, kind: exact|issuer_key|regex)`
   - `spv_map(fund_key, holding_match, company_id, basis, source_accession)`
@@ -313,7 +313,7 @@ DATA-QUALITY trap 20.
   - Filters noise: sanctioned Russian issuers written to zero, `CONTRA …` CVRs, zero-value rows.
   - Emits `data/review/aliases.csv`.
 - `scripts/review-aliases.js`: imports the reviewed CSV (human in the loop).
-- Managers: curated `data/managers.csv` mapping registrant CIK → parent firm, seeded from registrant
+- Managers: curated `data/review/managers.csv` mapping registrant CIK → parent firm, seeded from registrant
   name/address.
   - **Investigate N-CEN adviser data with real filings first** ([DATA-QUALITY.md](DATA-QUALITY.md#open-questions)).
     Adopt it only if verified.
@@ -490,7 +490,7 @@ cases; resolve identity from evidence and measure what is missed by dollars (DAT
   the firm's funds per report month. Show family lead/lag. Example: Capital Group Stripe marks in 8 of 12
   months.
 - **Holder changes:** entered and "no longer reported" per period, never a guessed cause.
-- **Tracked-list dashboard:** the tracked list (178 at P4), sortable by exposure, holder change, mark velocity, dispersion and
+- **Tracked-list dashboard:** the tracked list (180 after P4.5), sortable by exposure, holder change, mark velocity, dispersion and
   staleness. Add or remove companies.
 - **Top private companies** for any date.
 - **Class mark comparison:** normalized class labels (starting from v1's `parseEquityLabel`), then per
@@ -576,13 +576,13 @@ LinkedIn, a personal website and a resume. It refreshes itself nightly from the 
   - The existing Node + SQLite code runs unchanged.
   - The web app and the nightly job share one `warehouse.db`. WAL mode lets visitors read while the
     refresh writes.
-- **Not serverless** (e.g. Vercel functions). There's no writable persistent disk for a 385 MB+ SQLite
+- **Not serverless** (e.g. Vercel functions). There's no writable persistent disk for a 500 MB+ SQLite
   file.
 - **Hosted database** (Postgres, Neon, Turso) only if multi-user scale demands it. ADR 0002 notes the
   schema ports cleanly.
 - Sizing from measured numbers:
   - 1–2 GB RAM: loading a bulk quarter peaked at 670 MB RSS.
-  - A volume of at least 5 GB: the warehouse is 385 MB and growing about 20 MB per quarter, plus WAL and
+  - A volume of at least 5 GB: the warehouse is 513 MB (2026-09-30) and growing about 25 MB per quarter, plus WAL and
     temporary zips of about 700 MB each.
 - Verify current pricing and limits at decision time; don't rely on remembered prices.
 

@@ -104,7 +104,8 @@ is still unresolved by component and category.
    that filing contains.
 2. No row for the company in that filing means the fund has **exited** (0).
 3. No filing within 123 days before D means the fund is **inactive** (excluded).
-4. Return the value, the per-fund **mark date** and the accession.
+4. Return the value, the per-fund **mark date** and the accession. A fund whose latest filing reports the
+   company only at $0 is listed as `zeroValue`, not as an exit (trap 42).
 
 Fund calendars are staggered, so "as of D" mixes mark dates. The UI always shows them.
 
@@ -121,17 +122,20 @@ Fund calendars are staggered, so "as of D" mixes mark dates. The UI always shows
 ## Refresh lifecycle
 
 - **Nightly** (`npm run refresh`, `lib/warehouse/refresh.js`):
-  1. List the SEC's published bulk quarters and load any not yet loaded.
+  1. Claim the run: refuse to start while another refresh is `running` (under 2 h old); close older
+     `running` rows as abandoned.
+  2. List the SEC's published bulk quarters and load any not yet loaded, plus any loaded quarter the SEC now
+     serves at a different size (re-posted, trap 41; one HEAD per quarter).
      - Loading a quarter replaces the catch-up rows for every filing it covers (`INSERT OR REPLACE` on
        the accession cascades to holdings).
-  2. Catch up on every NPORT-P / NPORT-P/A filed on or after the newest bulk filing date.
+  3. Catch up on every NPORT-P / NPORT-P/A filed on or after the newest bulk filing date.
      - Filings already stored are skipped.
      - Earlier failures in `ingest_errors` are retried.
-  3. Entity upkeep (fund advisers, company resolution), then the identity graph and the review queue
+  4. Entity upkeep (fund advisers, company resolution), then the identity graph and the review queue
      (`reports/entities/unresolved.csv`, `conflicts.csv`; P4.5).
-  4. Write a `refresh_runs` row, with a warning if any catch-up filing predates bulk coverage but isn't
-     in bulk (expected 0).
-  5. Exit non-zero on any failure, so the scheduler can alert.
+  5. Write a `refresh_runs` row. A catch-up filing that predates bulk coverage but isn't in bulk (expected 0)
+     fails the run, as do catch-up and N-CEN failures.
+  6. Exit non-zero on any failure, so the scheduler can alert.
 - Catch-up safeguards, each added after a real failure (DATA-QUALITY traps 17–19):
   - 60 s timeout, with network errors retried twice.
   - Truncated `primary_doc.xml` falls back to the full submission `.txt`.
@@ -177,14 +181,13 @@ Check health with `sqlite3 warehouse.db "select * from refresh_runs order by id 
 
 ## Configuration
 
-| Env var                 | Default          | Purpose                                     |
-| ----------------------- | ---------------- | ------------------------------------------- |
-| `SEC_USER_AGENT`        | required         | SEC fair-access identity                    |
-| `WAREHOUSE_DB_PATH`     | `./warehouse.db` | Warehouse file (git-ignored)                |
-| `CACHE_DB_PATH`         | `./cache.db`     | Existing request cache                      |
-| `SEC_MIN_INTERVAL_MS`   | 110              | Outbound pacing (≤10 req/s)                 |
-| `REFRESH_INACTIVE_DAYS` | 123              | Inactive-fund threshold for as-of (planned) |
-| `LIVE_SEC`              | unset            | Enables network tests                       |
+| Env var               | Default          | Purpose                      |
+| --------------------- | ---------------- | ---------------------------- |
+| `SEC_USER_AGENT`      | required         | SEC fair-access identity     |
+| `WAREHOUSE_DB_PATH`   | `./warehouse.db` | Warehouse file (git-ignored) |
+| `CACHE_DB_PATH`       | `./cache.db`     | Existing request cache       |
+| `SEC_MIN_INTERVAL_MS` | 110              | Outbound pacing (≤10 req/s)  |
+| `LIVE_SEC`            | unset            | Enables network tests        |
 
 ## Performance budgets
 
@@ -201,12 +204,15 @@ Built so far (P1–P4.5):
 
 ```
 lib/edgar.js                       fetchWithRetry, pace (moved from server.js; shared by server and jobs)
-lib/warehouse/db.js                connection, migrations
+lib/warehouse/db.js                connection, migrations; openWarehouseReadOnly for readers (no create, no
+                                   migrate, fails if the schema is behind)
 lib/warehouse/bulk-source.js       published-quarter list, verified zip download
 lib/warehouse/bulk-ingest.js       one bulk quarter -> filings + private-candidate holdings (keep rule)
 lib/warehouse/listing-evidence.js  per issuer: filings pricing it at Level 1 with a valid ISIN/CUSIP (dropped rows)
 lib/warehouse/tsv-zip.js           streaming TSV reader over the DERA zip
 lib/warehouse/identifiers.js       ISIN / CUSIP check digits, fundKeyOf
+lib/warehouse/keep-rule.js         the ingest keep rule (isEquityType, isPrivateCandidate), both paths
+lib/warehouse/values.js            field cleaning (text, num), both paths
 lib/warehouse/fund-keys.js         fund-identity rules after each ingest (overrides, series LEI)
 lib/warehouse/lei-backfill.js      one-off series/registrant LEI backfill
 lib/warehouse/edgar-rows.js        one primary_doc.xml -> the same rows, via the app's parser
@@ -219,12 +225,15 @@ lib/entities/review.js, csv.js     import of the reviewed CSVs (transactional, f
 lib/entities/resolve.js            holdings.company_id / via_spv from the aliases
 lib/entities/managers.js           fund_advisers from the latest N-CEN
 lib/entities/upkeep.js             fund advisers + company resolution after any ingest
+lib/entities/names.js              shared name helpers (rawName, issuer key, generic and fund-like names)
 lib/entities/identity.js           P4.5 identity graph: evidence edges (LEI, instrument id, share count, same mark,
                                    title/dba, normalized names, per-fund vehicles) -> guarded components
 lib/entities/report.js             stores the graph; unresolved private value ranked by component (review queue)
 scripts/ingest-bulk.js, ingest-delta.js, refresh.js, ingest-ncen.js
 scripts/seed-entities.js, review-aliases.js, entities-report.js, backfill-leis.js, backfill-listing-evidence.js
-data/review/{aliases,managers,disclosed_exposure}.csv, curation.json   reviewed entity decisions (imported)
+data/review/{aliases,managers,disclosed_exposure}.csv, curation.json   reviewed entity decisions (imported;
+                                   curation.json also holds curated statuses, e.g. SpaceX public)
+public/splits.js, public/fund-groups.js   shared by the browser and Node (split detection; v1's firm list)
 ```
 
 Planned:

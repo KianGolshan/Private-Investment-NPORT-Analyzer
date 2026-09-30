@@ -14,7 +14,7 @@ const { openWarehouse } = require('../lib/warehouse/db');
 const { downloadQuarter } = require('../lib/warehouse/bulk-source');
 const { openZip, readTable } = require('../lib/warehouse/tsv-zip');
 const { isValidIsin } = require('../lib/warehouse/identifiers');
-const { isPrivateCandidate } = require('../lib/warehouse/bulk-ingest');
+const { isPrivateCandidate } = require('../lib/warehouse/keep-rule');
 const { listingEvidenceCollector } = require('../lib/warehouse/listing-evidence');
 
 async function scan(zipPath) {

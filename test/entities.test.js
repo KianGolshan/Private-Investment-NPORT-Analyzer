@@ -12,6 +12,7 @@ const { openWarehouse } = require('../lib/warehouse/db');
 const { ingestNcenDataset, ncenRowsFromXml, adviserKey } = require('../lib/warehouse/ncen');
 const { refreshFundAdvisers } = require('../lib/entities/managers');
 const seed = require('../lib/entities/seed');
+const { identityRows } = require('../lib/entities/identity');
 const { importAliases, importManagers, importDisclosedExposure } = require('../lib/entities/review');
 const { resolveCompanies } = require('../lib/entities/resolve');
 const { toCsv, parseCsv } = require('../lib/entities/csv');
@@ -108,8 +109,9 @@ test('fund advisers: series match, registrant without series (Coatue), and the l
 
 const { db: fx } = openFixtureWarehouse();
 const asOf = fx.prepare('SELECT MAX(report_date) d FROM canonical_filings').get().d;
-const { clusters } = seed.buildClusters(seed.companyRows(fx), { asOf });
-const { groups } = seed.suggestCompanies(clusters);
+const { clusters } = seed.buildClusters(identityRows(fx), { asOf });
+// The committed curated status decisions (curation.json "status": SpaceX is public).
+const { groups } = seed.suggestCompanies(clusters, { curation: { status: seed.loadCuration().status } });
 const groupOf = key => groups.find(g => g.aliases.some(a => a.cluster.key === key));
 const aliasKeys = g => g.aliases.map(a => a.cluster.key);
 const spvNames = g => g.spvs.map(s => s.raw);
@@ -365,18 +367,35 @@ test('review import fails loudly on bad rows and leaves the previous import inta
   assert.throws(() => importAliases(db, [good[0], { ...good[1], status: 'public' }]), /conflicting status\/track/);
   assert.throws(() => importAliases(db, [good[0], { ...good[0], company: 'Other' }]), /claimed by "Acme" too/);
   assert.equal(db.prepare('SELECT COUNT(*) n FROM company_aliases').get().n, 2, 'previous import intact');
-  // Renaming a company replaces it; the old name does not linger.
+  const before = db
+    .prepare('SELECT c.id, t.added_at FROM companies c JOIN tracked_companies t ON t.company_id = c.id')
+    .get();
+  // Renaming a company keeps its id and tracked date; the old name does not linger.
   importAliases(
     db,
-    good.map(r => ({ ...r, company: r.company && 'Acme Corp' }))
+    good.map(r => ({ ...r, company: r.company && 'Acme Corp' })),
+    { now: '2030-01-01T00:00:00Z' }
   );
   assert.deepEqual(
     db
-      .prepare('SELECT name FROM companies')
-      .all()
-      .map(r => r.name),
-    ['Acme Corp']
+      .prepare('SELECT c.id, c.name, t.added_at FROM companies c JOIN tracked_companies t ON t.company_id = c.id')
+      .all(),
+    [{ id: before.id, name: 'Acme Corp', added_at: before.added_at }]
   );
+  // A split: the first new name reached through the old aliases keeps the id, the other is new.
+  importAliases(db, [
+    { ...good[0], company: 'Acme East' },
+    { ...good[1], company: 'Acme West', track: 'N' },
+  ]);
+  const rows = db.prepare('SELECT id, name FROM companies ORDER BY name').all();
+  assert.deepEqual(
+    rows.map(r => r.name),
+    ['Acme East', 'Acme West']
+  );
+  assert.equal(rows.find(r => r.name === 'Acme East').id, before.id, 'one side keeps the id');
+  // Untracking removes the row; tracking again records the new date.
+  importAliases(db, [{ ...good[0], company: 'Acme East', track: 'N' }]);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM tracked_companies').get().n, 0);
   assert.throws(() => importManagers(db, [{ manager: 'X', kind: 'fund', key: '1' }]), /adviser or registrant/);
   assert.throws(() => importManagers(db, [{ manager: 'X', kind: 'registrant', key: 'abc' }]), /must be a CIK/);
 });
@@ -386,4 +405,37 @@ test('CSV round trip keeps commas, quotes and newlines; a ragged row fails', () 
   assert.deepEqual(parseCsv(toCsv(['a', 'b', 'c'], rows)), rows);
   assert.throws(() => parseCsv('a,b\n1,2,3\n'), /3 fields, header has 2/);
   assert.throws(() => parseCsv('a\n"open\n'), /unterminated/);
+});
+
+// ---- The committed review files (data/review/) ----
+
+test('the committed review files import cleanly, and every issuer_key alias is a key issuerKeyOf produces', () => {
+  const { issuerKeyOf } = require('../parsers');
+  const dir = path.join(__dirname, '..', 'data', 'review');
+  const read = f => parseCsv(fs.readFileSync(path.join(dir, f), 'utf8'));
+  const db = openWarehouse(':memory:');
+  const aliases = read('aliases.csv');
+  const a = importAliases(db, aliases);
+  assert.ok(a.companies > 700 && a.tracked > 100, JSON.stringify(a));
+  assert.ok(importManagers(db, read('managers.csv')).managers > 100);
+  assert.ok(importDisclosedExposure(db, read('disclosed_exposure.csv')).rows > 0);
+  // Holdings resolve by issuerKeyOf(row) === alias; a change to the name
+  // normalization that moves a reviewed key would silently unresolve rows.
+  const moved = aliases
+    .filter(r => r.company && r.kind === 'issuer_key')
+    .filter(r => issuerKeyOf({ issuer: r.alias }) !== r.alias);
+  assert.deepEqual(
+    moved.map(r => r.alias),
+    []
+  );
+  // SpaceX is public (CLAUDE.md); curated statuses cite SEC evidence.
+  const spacex = db
+    .prepare("SELECT status FROM companies WHERE name LIKE 'SpaceX%' OR name LIKE 'Space Exploration%'")
+    .all();
+  assert.ok(spacex.length && spacex.every(c => c.status === 'public'));
+  for (const [key, s] of Object.entries(seed.loadCuration().status || {})) {
+    assert.ok(['public', 'private'].includes(s.status), key);
+    assert.match(s.note, /\d{10}-\d{2}-\d{6}/, key);
+  }
+  db.close();
 });

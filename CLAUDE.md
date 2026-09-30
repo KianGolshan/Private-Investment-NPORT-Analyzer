@@ -43,7 +43,8 @@ history back to 2019Q4, automatic refresh, as-of exposure, and firm/fund/class m
   exit on success _and_ on failure. A leftover `until …; sleep` loop once ran for 5.5 hours.
 - Provenance: every stored row traces to `accession` + holding row (+ bulk quarter or `source='edgar'`).
 - Schema changes go in numbered migrations (`db/migrations/NNNN_*.sql`). No ORM.
-- Keep the warehouse (`warehouse.db`) separate from the request cache (`cache.db`).
+- Keep the warehouse (`warehouse.db`) separate from the request cache (`cache.db`). Readers (web server,
+  MCP server) open it with `openWarehouseReadOnly`; only jobs migrate or write.
 - Match the surrounding code style: Prettier config, ESLint flat config, Node ≥22, CommonJS.
 
 ## Commands
@@ -58,10 +59,11 @@ npm run test:live        # LIVE_SEC=1 end-to-end against real EDGAR (minutes)
 ```bash
 npm run ingest:bulk -- --missing   # load SEC bulk quarters not yet in warehouse.db (--all, --quarter 2026q2)
 npm run ingest:delta               # catch up on filings made after the newest bulk quarter (--since/--until)
-npm run refresh                    # nightly: new bulk quarter(s), catch-up, N-CEN, entity upkeep
+npm run refresh                    # nightly: new/re-posted bulk quarter(s), catch-up, N-CEN, entity upkeep
 npm run ingest:ncen                # N-CEN adviser data sets + EDGAR top-up (managers, ADR 0007)
 npm run seed:entities              # write data/review/{aliases,managers}.csv suggestions (--force to overwrite)
 npm run review:aliases             # import the reviewed CSVs, re-resolve holdings (human in the loop)
+npm run entities:report            # review queue: unresolved value by component, conflicts (reports/entities/)
 ```
 
 ## Scope

@@ -2,6 +2,7 @@
 // Golden tests run offline against test/fixtures/warehouse/, real rows
 // exported from warehouse.db (every filing of every fund that ever held
 // Anthropic, Databricks or Stripe). Numbers and accessions: GOLDEN-NUMBERS.md.
+const path = require('path');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
@@ -303,4 +304,35 @@ test('failure paths: bad input fails loudly', () => {
 test('an empty answer is an answer, not an error', () => {
   const r = exposureAsOf(db, { pattern: 'no such company zzz', date: '2026-06-30' });
   assert.deepEqual([r.funds, r.total, r.holdings, r.exited, r.inactive], [0, 0, [], [], []]);
+});
+
+test('F34: a fund still reporting the company at $0 is listed under zeroValue, not as an exit', () => {
+  const zero = openFixtureWarehouse(path.join(__dirname, 'fixtures', 'asof-zero', 'warehouse.json.gz'));
+  const pattern = zero.manifest.pattern;
+  // American High Income Trust: 17,787.23 Mesquite Energy shares at $1,113,836.60 on 2026-03-31, and the
+  // same shares at $0.00 on 2026-06-30 (0001193125-26-371280, raw EDGAR).
+  const march = exposureAsOf(zero.db, { pattern, date: '2026-03-31' });
+  assert.deepEqual([march.funds, mm(march.total), march.zeroValue.length], [1, 1.1, 0]);
+  const june = exposureAsOf(zero.db, { pattern, date: '2026-06-30' });
+  assert.deepEqual([june.funds, june.total, june.exited, june.inactive], [0, 0, [], []]);
+  assert.equal(june.zeroValue.length, 1);
+  const [z] = june.zeroValue;
+  assert.deepEqual([z.fundKey, z.accession, z.markDate], ['S000008787', '0001193125-26-371280', '2026-06-30']);
+  assert.deepEqual(
+    z.positions.map(p => [p.balance, p.valueUsd]),
+    [[17787.23, 0]]
+  );
+  // A $0 point is not a mark: it never enters a price or split series.
+  const series = instrumentHistory(zero.db, { pattern, fundKey: 'S000008787' });
+  assert.ok(series.every(s => s.points.every(p => p.valueUsd > 0)));
+});
+
+test('pricePerShare is a share price only for share rows; other units carry pricePerUnit (trap 40)', () => {
+  const r = exposureAsOf(db, { pattern: PATTERN.anthropic, date: '2026-06-30' });
+  const positions = r.holdings.flatMap(h => h.positions);
+  const units = positions.filter(p => p.balance > 0 && p.unit !== 'NS');
+  assert.ok(units.length > 0, 'the fixture has vehicle-unit rows');
+  for (const p of units) assert.deepEqual([p.pricePerShare, p.pricePerUnit > 0], [null, true], p.issuerName);
+  for (const p of positions.filter(p => p.balance > 0 && p.unit === 'NS'))
+    assert.equal(p.pricePerShare, p.pricePerUnit);
 });

@@ -1,9 +1,9 @@
 # Vantage v2 Status
 
-**Current phase:** Phase 5 (service layer, parity, search over every issuer), **not started**. P4.5 signed
-off 2026-09-30. Next-session prompt: SESSION-PROMPTS "Next session: Phase 5
-(written 2026-09-30)"; read [LESSONS.md](LESSONS.md) first.
-**Branch:** `v2-plan-and-phase0` (P4.5 committed locally, not pushed)
+**Current phase:** Phase 5 (service layer, parity, search over every issuer), **not started: plan under
+revision** after the pre-P5 review (below). P4.5 signed off 2026-09-30. Read [LESSONS.md](LESSONS.md) first.
+**Branch:** `v2-plan-and-phase0`: P0–P4 pushed; P4.5, its sign-off and the pre-P5 review fixes are committed
+locally, not pushed. Not merged to `main`; no PR.
 **Last updated:** 2026-09-30
 
 ## Phase tracker
@@ -19,6 +19,50 @@ off 2026-09-30. Next-session prompt: SESSION-PROMPTS "Next session: Phase 5
 - [ ] P7: MCP server
 - [ ] P8: operations hardening
 - [ ] P9: public deployment (live site; hosting choice to confirm with the user as ADR 0006)
+
+## Pre-Phase 5 review (2026-09-30)
+
+A full review of the v2 build (bugs, code, docs, git, alignment with the goal) before Phase 5. Everything
+it found in the code and docs is fixed; the Phase 5 plan questions go to the planning session.
+
+- **Bugs fixed:**
+  - A fund still reporting a company at $0 was counted as an exit ("no longer reported"). `exposureAsOf`
+    now returns it under `zeroValue` (F34, trap 42, ADR 0004 amended). At 2026-06-30: 4 funds in Altice
+    France, Incora and Mesquite Energy; 140 canonical filings over the full history.
+  - `pricePerShare` was value / balance for any unit. Now share rows only; every row has `pricePerUnit`,
+    and splits are detected on it (trap 40).
+  - Company ids changed on every rename (the import matched by name). A renamed company now keeps its id
+    and its tracked date; untracking still removes it.
+  - The identity graph read rows in no fixed order, so guarded unions could differ between runs (63 of
+    38,224 review-queue rows moved once ordered; totals, threshold and tracked 0.21% unchanged). Two runs
+    now give identical files.
+  - Refresh: one run at a time (a `running` row under 2 h blocks; older ones close as abandoned); a
+    catch-up filing uncovered by bulk now fails the run (it only set the exit code); a loaded quarter the
+    SEC re-posts at a different size is reloaded (trap 41: all 2019q4–2024q2 zips were re-posted in
+    July 2024; all 27 sizes still match ours, C22).
+  - Readers get `openWarehouseReadOnly` (never creates the file, never migrates, refuses a schema that is
+    behind). The P5 server must use it.
+- **Clean code:** shared helpers in one place (`lib/entities/names.js`, `lib/warehouse/keep-rule.js`,
+  `lib/warehouse/values.js`, the placeholder-series rule in `identifiers.js`, `INACTIVE_DAYS` from
+  `asof.js`); the two different `VEHICLE_WORDS` renamed for what they mean; the seed↔identity require
+  cycle and the listing-evidence lazy require removed; SpaceX's curated status moved from code to
+  `curation.json` (`status`); v1's firm list moved to `public/fund-groups.js` (shared by the UI and the
+  seed, which no longer evaluates a slice of `app.js`); a stale comment removed.
+- **Tests (+6):** $0 positions on a new real fixture (`test/fixtures/asof-zero/`, verified on EDGAR), units,
+  stable ids, read-only open, refresh lock, re-posted quarters, and the committed `data/review/` files
+  import cleanly with every issuer-key alias a fixed point of `issuerKeyOf` (guards P5's name changes).
+- **CI:** the workflow ran only on `main`, so it had never run on v2. It now runs on every push and PR.
+- **Docs:** README (v2 status, entity commands), CLAUDE.md (`entities:report`, read-only readers),
+  ROADMAP (migration numbers, paths, sizes), ARCHITECTURE (refresh steps, module map), DATA-QUALITY (traps
+  40–42, trap 8, SPV look-through answered: 0.9% of tracked exposure is held through named SPVs),
+  GOLDEN-NUMBERS (F34, C22, C5 order), LESSONS 28–30, SESSION-PROMPTS (obsolete P4.5 prompt removed).
+- **Suite:** 394 tests, 364 pass, 0 fail, 30 skipped (LIVE). LIVE goldens A1–A6 and LIVE entities pass. Lint
+  and format clean.
+- **For Phase 5 planning (not decided):** parity scope (the warehouse holds no debt and no public
+  securities, both of which v1's Single Security shows); API shape (v1 aggregates in the browser, filing by
+  filing, without amendment handling); company ids in URLs and MCP; one or several tracked lists;
+  precomputed tracked as-of (all 180 take 1.1 s) and a search index (a name pattern takes 1.3 s); where
+  "make this a company" writes in a deployed app; human review as the only path for new names.
 
 ## Phase 4.5 results (signed off 2026-09-30)
 
@@ -244,22 +288,23 @@ The evidence as presented:
 
 ## Measurements to record (fill in as phases complete)
 
-| Metric                                  | Budget                      | Measured                                              |
-| --------------------------------------- | --------------------------- | ----------------------------------------------------- |
-| Full bulk backfill, 27 quarters         | ≤45 min                     | **13.6 min** (2026-09-28)                             |
-| Warehouse size                          | ≤600 MB (raised 2026-09-30) | 364 MB (P1); 472 MB (P4); **513 MB / 489 MiB** (P4.5) |
-| First catch-up                          | ≤90 min                     | **26.9 min** for 11,822 filings (about 9/s)           |
-| Nightly refresh                         | ≤5 min                      | **1.1 s** with nothing new (run #1, 2026-09-28)       |
-| API p95                                 | <200 ms                     | n/a                                                   |
-| Single Security search (P0, live EDGAR) | n/a                         | 15–32 s per name for 100 filings                      |
+| Metric                                  | Budget                      | Measured                                                                                         |
+| --------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------ |
+| Full bulk backfill, 27 quarters         | ≤45 min                     | **13.6 min** (2026-09-28)                                                                        |
+| Warehouse size                          | ≤600 MB (raised 2026-09-30) | 364 MB (P1); 472 MB (P4); **513 MB / 489 MiB** (P4.5)                                            |
+| First catch-up                          | ≤90 min                     | **26.9 min** for 11,822 filings (about 9/s)                                                      |
+| Nightly refresh                         | ≤5 min                      | 1.1 s (P2, nothing new); **20–160 s** with N-CEN, entity upkeep and the review queue (runs #2–6) |
+| API p95                                 | <200 ms                     | n/a                                                                                              |
+| Single Security search (P0, live EDGAR) | n/a                         | 15–32 s per name for 100 filings                                                                 |
 
 ## Open decisions
 
 - **Nightly refresh scheduling:** not installed. A ready-to-use launchd job is in ARCHITECTURE
   §Refresh lifecycle. Install only with the user's yes. Until then, run `npm run refresh` at the start of
   each session.
-- **Branch:** all work is on `v2-plan-and-phase0`, pushed to origin (P0–P4 review, 2026-09-29). No PR
-  is open and it is not merged to `main`. Ask before opening a PR.
+- **Branch:** all work is on `v2-plan-and-phase0` (P0–P4 pushed; P4.5 and the pre-P5 review local). No PR
+  is open and it is not merged to `main`. Ask before pushing, opening a PR, renaming the branch or deleting
+  `audit-fixes` (already contained in this branch).
 - ~~Manager mapping source~~ Decided in P4: N-CEN advisers + reviewed `managers.csv` (ADR 0007).
 - ~~Entity review~~ Done 2026-09-29 (Claude, at the user's direction; `data/review/curation.json`). The
   user can still edit the CSVs or curation file; re-import with `npm run review:aliases`.
@@ -267,9 +312,9 @@ The evidence as presented:
   are a suggestion. The user may send their own names to resolve against the warehouse.
 - ~~P4.5 threshold~~ Decided 2026-09-30: >= $50M held by >= 2 funds.
 - ~~P4.5 sign-off~~ Signed off by the user 2026-09-30.
-- ~~Size budget~~ Raised to **600 MB** by the user (2026-09-30). `warehouse.db` is **513 MB on disk (489 MiB)** after P4.5 (P4.5 tables ~1.4 MB; the
-  rest is catch-up growth). The 2026Q3 bulk file replaces catch-up rows (about neutral) and adds ~2.5 MB of
-  listing evidence. Raise the budget, or prune (e.g. unused indexes, old listing evidence) before it grows.
+- ~~Size budget~~ Raised to **600 MB** by the user (2026-09-30). `warehouse.db` is **513 MB on disk (489 MiB)**
+  after P4.5, growing about 25 MB per bulk quarter. Raise the budget, or prune (e.g. unused indexes, old
+  listing evidence), before it passes 600 MB.
 - **Fidelity opaque vehicles:** ~$0.6B across VETERINARY, AB, TC, TB, TRB, TB2 and THRIVE HOLDINGS LLCs. No
   filing names their targets; they stay on the review list (search again if Fidelity's N-CSR text becomes
   searchable).
@@ -279,23 +324,22 @@ The evidence as presented:
   analyzable by name pattern even if not in `companies`; P5 search must fall back to the pattern path
   and offer to add the company. The on-demand EDGAR keyword search stays.
 
-## Warehouse state at hand-off (2026-09-29, after the Phase 4 review)
+## Warehouse state (2026-09-30, after the pre-P5 review)
 
-- **After P4.5 (2026-09-30):** refresh #6 ok; schema at migration 0011; 354,997 filings, 1,165,239 holdings;
-  806 companies, 180 tracked; 513 MB on disk (489 MiB).
-- `warehouse.db` (git-ignored, **472 MB of the 500 MB budget**), schema at migration 0010. Largest: holdings
-  215 MB (+54 MB key index), filings 89 MB, N-CEN adviser rows 38 MB, listing evidence ~10 MB per 4 quarters.
-  - 354,220 N-PORT filings (341,049 bulk 2019Q4–2026Q2; 13,171 EDGAR catch-up through filings of
-    2026-09-28), all with registrant LEIs; 1,163,910 private-candidate holdings.
-  - N-CEN: 29,124 filings (28,590 data sets + 534 EDGAR); 17,841 of 18,828 funds have an adviser.
-  - `listing_evidence` for 2025q3–2026q2. Status needs only the latest quarter. **Don't backfill all 27
-    quarters** (+60–70 MB, over budget) without first pruning old quarters or raising the budget with the
-    user.
-  - Entities imported (2026-09-29): 739 companies, 178 tracked, 529 firms; 305,914 holdings resolved.
-- `ingest_errors` empty; `refresh_runs` #4 ok. The SEC 2026Q3 N-PORT bulk file (expected after 2026-09-30)
-  loads on the next `npm run refresh`, replacing matching catch-up rows and adding listing evidence.
+- Schema at migration 0011; refresh #6 `ok`; `ingest_errors` empty.
+- 354,997 N-PORT filings (bulk 2019Q4–2026Q2 plus EDGAR catch-up through filings of 2026-09-29) and
+  1,165,239 private-candidate holdings; 806 companies (304 private), 180 tracked; 318,751 rows resolved.
+- N-CEN: 17,841 of 18,828 funds have an adviser.
+- `listing_evidence` covers the latest 4 bulk quarters. **Don't backfill all 27** (+60–70 MB) without
+  pruning or asking.
+- 513 MB on disk (489 MiB). Largest: holdings ~215 MB (+54 MB key index), filings ~89 MB, N-CEN adviser rows
+  ~38 MB.
+- The SEC 2026Q3 bulk file (expected after 2026-09-30) loads on the next `npm run refresh`.
 
 ## Log
+
+- **2026-09-30:** Pre-P5 review of the whole v2 build, and every code and doc finding fixed (see "Pre-Phase 5
+  review"). Next: Phase 5 planning with the user.
 
 - **2026-09-30:** User signed off P4.5 and raised the warehouse size budget to 600 MB. Next: Phase 5.
 

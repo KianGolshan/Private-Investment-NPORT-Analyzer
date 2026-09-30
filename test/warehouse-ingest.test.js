@@ -6,11 +6,14 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
+const Database = require('better-sqlite3');
 const xml2js = require('xml2js');
 
-const { openWarehouse, migrate } = require('../lib/warehouse/db');
-const { ingestBulkZip, bulkDateToIso, isPrivateCandidate } = require('../lib/warehouse/bulk-ingest');
+const { openWarehouse, openWarehouseReadOnly, migrate } = require('../lib/warehouse/db');
+const { ingestBulkZip, bulkDateToIso } = require('../lib/warehouse/bulk-ingest');
+const { isPrivateCandidate } = require('../lib/warehouse/keep-rule');
 const { isValidCusip, isValidIsin, fundKeyOf } = require('../lib/warehouse/identifiers');
 const { extractAllHoldings } = require('../parsers');
 
@@ -122,6 +125,27 @@ test('migrations apply once and are recorded', () => {
   assert.deepEqual(files.slice(0, 2), [1, 2]);
   assert.deepEqual(migrate(db), [], 'nothing left to apply');
   db.close();
+});
+
+test('readers open the warehouse read-only: no file is created, an unmigrated file is refused, nothing is written', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vantage-ro-'));
+  try {
+    const file = path.join(dir, 'warehouse.db');
+    assert.throws(() => openWarehouseReadOnly(file));
+    assert.equal(fs.existsSync(file), false, 'a missing warehouse is never created');
+    new Database(file).close(); // an empty SQLite file: no schema
+    assert.throws(() => openWarehouseReadOnly(file), /missing migration\(s\) 1, 2/);
+    openWarehouse(file).close();
+    const db = openWarehouseReadOnly(file);
+    assert.equal(db.prepare('SELECT COUNT(*) n FROM filings').get().n, 0);
+    assert.throws(
+      () => db.prepare("INSERT INTO refresh_runs (started_at, status) VALUES ('x', 'ok')").run(),
+      /readonly/
+    );
+    db.close();
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 // ── ingest vs. the real XML ─────────────────────────────────────────────────

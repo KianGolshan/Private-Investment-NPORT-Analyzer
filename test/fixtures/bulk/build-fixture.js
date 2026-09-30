@@ -16,7 +16,7 @@ const axios = require('axios');
 const yazl = require('yazl');
 const { openZip, readTable } = require('../../../lib/warehouse/tsv-zip');
 const { isValidIsin } = require('../../../lib/warehouse/identifiers');
-const { isPrivateCandidate, isEquityType } = require('../../../lib/warehouse/bulk-ingest');
+const { isPrivateCandidate, isEquityType } = require('../../../lib/warehouse/keep-rule');
 
 const OUT = __dirname;
 const ACCESSIONS = {
