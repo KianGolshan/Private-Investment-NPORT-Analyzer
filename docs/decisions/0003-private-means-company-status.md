@@ -34,3 +34,13 @@ Fund X-Ray treats fair-value Level 3 as "private." Real filings break that:
 - A private company that a filer reports at Level 1/2 **with** a valid ISIN/CUSIP and no restriction flag
   would be missed. None of the 1,613 tracked-company rows did this. Re-check this in P4 with the full
   alias table.
+
+**Amended 2026-09-30 (Phase 5b, user's yes after measurement):**
+
+- Fund X-Ray's capital structure needs the debt of issuers a fund holds privately. A debt row the keep rule
+  drops is stored in `capital_structure_rows` (migration 0016, never in `holdings`) when its issuer key
+  (`issuerKeyOf`) equals that of a kept, non-debt row in the same filing: v1's `buildIssuerCapitalStructure`
+  grouping. Measured on 2026q2 before adopting: 1,855 of 3.02M debt rows, $7.88B, 420 filings (anchor: private
+  company 508 rows / $3.51B, listed 157 / $1.43B, unreviewed only 1,190 / $2.94B), ~0.46 MB per quarter.
+- Every filing also stores totals over all its rows (`filing_totals`, migration 0015): total, listed equity,
+  debt, and v1's Level-3 non-debt figure, so the fund page has its denominators without the dropped rows.
