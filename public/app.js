@@ -200,6 +200,12 @@ function applyURLParams() {
   if (company) return openCompany(Number(company[1]), { date: params.get('date') || undefined });
   const named = window.location.pathname.match(/^\/name\/(.+)$/);
   if (named) return openEntity(decodeURIComponent(named[1]), { date: params.get('date') || undefined });
+  // /fund/<fund key>[?accession=…]: the fund page on the warehouse (P5b).
+  const fundLink = window.location.pathname.match(/^\/fund\/(.+)$/);
+  if (fundLink) {
+    switchTab('xray', { skipUrlReset: true });
+    return openFund(decodeURIComponent(fundLink[1]), { accession: params.get('accession') || undefined });
+  }
   const tab = params.get('tab');
   const limit = params.get('limit');
   const issuer = params.get('issuer');
@@ -223,7 +229,7 @@ function applyURLParams() {
 }
 function updateURLParams(params) {
   const url = new URL(window.location.href);
-  url.pathname = '/'; // leaving a /company/ or /name/ permalink
+  url.pathname = '/'; // leaving a /company/, /name/ or /fund/ permalink
   url.search = '';
   Object.entries(params).forEach(([k, v]) => {
     if (v) url.searchParams.set(k, v);
@@ -3433,6 +3439,7 @@ async function onXraySeriesChange() {
     return;
   }
   const opt = xraySeriesOptions[+idx];
+  if (opt.fundKey) return openFund(opt.fundKey);
   const myGen = ++xrayRunGeneration;
   showLoading('Loading this fund’s filings...');
   try {
@@ -3459,13 +3466,96 @@ async function onXraySeriesChange() {
   }
 }
 
+// ── Fund page on the warehouse (ROADMAP §5b, ADR 0008) ─────────────────────
+// A fund is its fund key; its canonical filings (an amendment replaces the
+// filing it amends) come from /api/funds. The v1 per-filing routes below stay
+// as the live fallback when the warehouse is unavailable or has no match.
+const normName = t =>
+  String(t || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/ (inc|llc|corp|corporation|ltd|co|lp)$/, '');
+const fundLabel = f =>
+  `${f.seriesName || f.registrant}${f.seriesName && f.registrant && f.registrant !== f.seriesName ? ' — ' + f.registrant : ''} (last report ${f.lastReportDate}${f.inactive ? ', no longer filing' : ''})`;
+const fundApi = filing => `/api/funds/${enc(filing.fundKey)}`;
+
 async function searchFundXray() {
   const fund = document.getElementById('xrayFundInput').value.trim();
   if (!fund) return showMsg('Please enter a fund or registrant name.', 'error');
-
   const mySearchGen = ++searchGeneration;
   clearResults();
+  showLoading('Searching the warehouse...');
+  let results;
+  try {
+    results = (await fetchJSON('/api/funds?q=' + enc(fund) + '&limit=25')).results;
+  } catch {
+    results = null; // warehouse unavailable: the live path answers
+  }
+  if (mySearchGen !== searchGeneration) return;
+  hideLoading();
+  if (!results || !results.length)
+    return searchFundXrayLive(
+      fund,
+      mySearchGen,
+      results ? `No fund in the warehouse matches "${fund}"; searching live EDGAR filings instead.` : ''
+    );
+  const q = normName(fund);
+  const exact = results.filter(f => normName(f.seriesName) === q || f.fundKey === fund.toUpperCase());
+  // A registrant (trust) name picks its own funds; one fund opens directly.
+  const trust = results.filter(f => normName(f.registrant) === q);
+  const only = exact.length === 1 ? exact[0] : trust.length === 1 ? trust[0] : results.length === 1 ? results[0] : null;
+  if (only) {
+    document.getElementById('xraySeriesGroup').style.display = 'none';
+    return openFund(only.fundKey);
+  }
+  xraySeriesOptions = (trust.length ? trust : results).map(f => ({ fundKey: f.fundKey, name: fundLabel(f) }));
+  document.getElementById('xraySeriesSelect').innerHTML =
+    '<option value="">— choose a fund —</option>' +
+    xraySeriesOptions.map((o, i) => `<option value="${i}">${esc(o.name)}</option>`).join('');
+  document.getElementById('xraySeriesGroup').style.display = 'flex';
+  document.getElementById('xraySelectorPanel').style.display = 'block';
+  applyXrayFilings([]);
+  showMsg(
+    trust.length
+      ? `"${esc(fund)}" is a trust that files separately for ${trust.length} funds — choose one from the Fund list so periods and comparisons stay within a single fund.`
+      : `"${esc(fund)}" matches ${results.length} funds in the warehouse — choose one from the Fund list.`,
+    'info'
+  );
+}
+
+async function openFund(fundKey, { accession } = {}) {
+  const myGen = ++xrayRunGeneration;
+  showLoading('Loading this fund from the warehouse...');
+  try {
+    const data = await fetchJSON(`/api/funds/${enc(fundKey)}`);
+    if (myGen !== xrayRunGeneration) return;
+    hideLoading();
+    const name = data.fund.seriesName || data.fund.registrant || fundKey;
+    const filings = data.filings.map(f => ({
+      fundKey: data.fund.fundKey,
+      cik: data.fund.cik,
+      accession: f.accession,
+      company: name,
+      period: f.reportDate,
+      fileDate: f.filingDate,
+      form: f.form,
+      versions: f.versions,
+    }));
+    if (!filings.length) return showMsg('No NPORT-P filings found for this fund.', 'error');
+    applyXrayFilings(filings);
+    const i = accession ? xrayFilings.findIndex(f => f.accession === accession) : 0;
+    if (i > 0) document.getElementById('xrayFilingSelect').value = String(i);
+    await runFundXray();
+  } catch (err) {
+    hideLoading();
+    showMsg('Error: ' + esc(err.message), 'error');
+  }
+}
+
+async function searchFundXrayLive(fund, mySearchGen, notice) {
   showLoading('Looking up this fund on SEC EDGAR...');
+  if (notice) showMsg(esc(notice), 'info');
 
   try {
     const data = await fetchJSON('/api/search-fund?fund=' + enc(fund));
@@ -3565,11 +3655,23 @@ async function runFundXray() {
   const myXrayGen = ++xrayRunGeneration;
   showLoading('Pulling this filing and classifying every holding...');
   try {
-    const data = await fetchJSON(`/api/fund-xray?cik=${enc(filing.cik)}&accession=${enc(filing.accession)}`);
+    const data = await fetchJSON(
+      filing.fundKey
+        ? `${fundApi(filing)}/xray?accession=${enc(filing.accession)}`
+        : `/api/fund-xray?cik=${enc(filing.cik)}&accession=${enc(filing.accession)}`
+    );
     if (myXrayGen !== xrayRunGeneration) return;
     hideLoading();
-    if (!data.success || !data.xray) {
+    if (!data.xray || (!filing.fundKey && !data.success)) {
       return showMsg('Error: ' + esc(data.error || 'Could not parse this filing.'), 'error');
+    }
+    if (filing.fundKey) {
+      const first = filing === xrayFilings[0];
+      window.history.replaceState(
+        {},
+        '',
+        `/fund/${enc(filing.fundKey)}${first ? '' : '?accession=' + enc(filing.accession)}`
+      );
     }
     renderFundXray(data.xray, filing);
 
@@ -3605,6 +3707,11 @@ function buildXraySnapshotHTML(xray, filing, opts) {
     html += `<div class="hint">Report period: ${esc(xray.fund?.reportDate || filing.period || '—')} &bull; ${sourceLinkHTML(filing.cik, filing.accession, 'View source filing')}</div>`;
   }
 
+  const wh = !!xray.v1Level3; // answered from the warehouse (/api/funds)
+  if (wh) {
+    html += `<div class="hint">Source: warehouse &bull; mark date ${esc(xray.markDate)} &bull; accession ${esc(xray.accession)}${filing.versions > 1 ? ' (an amendment; it replaces the original filing)' : ''}</div>`;
+  }
+
   html += `
     <div class="stats-grid">
       <div class="stat-box">
@@ -3627,11 +3734,24 @@ function buildXraySnapshotHTML(xray, filing, opts) {
       <div class="stat-box">
         <div class="stat-label">Fund Net Assets</div>
         <div class="stat-value sm">${xray.fund?.netAssets ? fmtCompactCurrency(xray.fund.netAssets) : '—'}</div>
-      </div>
+      </div>${
+        wh
+          ? `
+      <div class="stat-box">
+        <div class="stat-label">v1 Figure (Level 3)</div>
+        <div class="stat-value sm">${fmtCompactCurrency(xray.v1Level3.valueUSD)}</div>
+        <div class="stat-sub">${xray.v1Level3.rows} holdings at fair-value Level 3, not debt</div>
+      </div>`
+          : ''
+      }
     </div>`;
 
-  html +=
-    '<div class="alert alert-info">Private equity = an equity-type interest (common/preferred stock, a warrant, or an indirect/SPV vehicle) that this filing marks at SEC fair-value hierarchy Level 3 — valued with unobservable inputs, meaning there\'s no real market for it — not an external judgment call. Bonds/loans are excluded even at Level 3, since they\'re creditor claims, not equity. A "restricted" flag alone does NOT qualify a holding here: a foreign-ownership-restricted but still publicly-traded stock (Level 2) is excluded, since it trades in an observable market and simply isn\'t privately held. A publicly-traded wrapper around a private company (e.g. a listed vehicle tracking it) will also show as public here, since the fund itself marks it at a quoted price.</div>';
+  if (wh)
+    html +=
+      '<div class="alert alert-info">Private equity = an equity-type holding (common or preferred stock, a warrant, or an SPV / fund vehicle) in a company whose status is private, from the reviewed company list, not from the fair-value level: filers mark real private companies at Level 1 or 2 too. Names not reviewed yet count when they look private and are labeled "unreviewed"; listed companies\' restricted rows and names that look listed are shown apart below with the reason. Bonds and loans are never private equity; they appear in the capital structure. v1\'s Level-3 figure for the same filing is shown for comparison. Totals and % of holdings value cover every row of the filing.</div>';
+  else
+    html +=
+      '<div class="alert alert-info">Private equity = an equity-type interest (common/preferred stock, a warrant, or an indirect/SPV vehicle) that this filing marks at SEC fair-value hierarchy Level 3 — valued with unobservable inputs, meaning there\'s no real market for it — not an external judgment call. Bonds/loans are excluded even at Level 3, since they\'re creditor claims, not equity. A "restricted" flag alone does NOT qualify a holding here: a foreign-ownership-restricted but still publicly-traded stock (Level 2) is excluded, since it trades in an observable market and simply isn\'t privately held. A publicly-traded wrapper around a private company (e.g. a listed vehicle tracking it) will also show as public here, since the fund itself marks it at a quoted price.</div>';
 
   const typeEntries = Object.entries(xray.byInstrumentType).sort((a, b) => b[1] - a[1]);
   const countryEntries = Object.entries(xray.byCountry).sort((a, b) => b[1] - a[1]);
@@ -3665,9 +3785,12 @@ function buildXraySnapshotHTML(xray, filing, opts) {
     </tr></thead><tbody>`;
     xray.privateHoldings.forEach(h => {
       const shares = h.shares != null && !isNaN(h.shares) ? fmtNum(h.shares) : '—';
-      const pps = h.pricePerShare != null && !isNaN(h.pricePerShare) ? fmtCurrency(h.pricePerShare) : '—';
+      const pps =
+        h.pricePerShare != null && !isNaN(h.pricePerShare)
+          ? fmtCurrency(h.pricePerShare) + (h.perShare === false ? ' /unit' : '')
+          : '—';
       html += `<tr>
-        <td class="title-cell">${esc(h.name || h.title || '—')}</td>
+        <td class="title-cell">${holdingNameHTML(h)}</td>
         <td>${esc(h.instrumentLabel || '—')}</td>
         <td>${esc(h.country || '—')}</td>
         <td class="right">${esc(h.fairValLevel || '—')}</td>
@@ -3678,9 +3801,22 @@ function buildXraySnapshotHTML(xray, filing, opts) {
       </tr>`;
     });
     html += '</tbody></table>';
+  } else if (wh) {
+    html += '<div class="alert alert-info">No private equity holdings found in this filing.</div>';
   } else {
     html +=
       '<div class="alert alert-info">No private equity holdings (Level-3 equity, warrants, or SPV vehicles) found in this filing — this fund’s book appears to hold no private equity as of this report date. (It may still hold Level-3 bonds/loans or Level-2 restricted stock, which this view intentionally excludes.)</div>';
+  }
+
+  if (wh && xray.notPrivate.length) {
+    html += `<div class="results-header"><h2>Not Counted as Private (${xray.notPrivate.length})</h2></div>`;
+    html +=
+      '<div class="hint">Stored private-candidate rows (Level 3, restricted, or no valid ISIN/CUSIP) whose company is listed or looks listed.</div>';
+    html += `<table><thead><tr><th>Company</th><th>Instrument</th><th>Why not private</th><th class="right">Fair Value Level</th><th class="right">$ Value</th></tr></thead><tbody>`;
+    xray.notPrivate.forEach(h => {
+      html += `<tr><td class="title-cell">${holdingNameHTML(h)}</td><td>${esc(h.instrumentLabel || '—')}</td><td>${esc(h.reason || '—')}</td><td class="right">${esc(h.fairValLevel || '—')}</td><td class="right">${fmtCompactCurrency(h.marketValue)}</td></tr>`;
+    });
+    html += '</tbody></table>';
   }
 
   html += capitalStructureHTML(xray);
@@ -3693,6 +3829,17 @@ function buildXraySnapshotHTML(xray, filing, opts) {
   </div>`;
   html += '</div>';
   return html;
+}
+
+// A holding's name on the fund page: linked to its company page (curated) or
+// its unreviewed-name page, with its display labels (DATA-QUALITY Display rules).
+function holdingNameHTML(h) {
+  const name = esc(h.name || h.title || '—');
+  let html = name;
+  if (h.company) html = `<a href="/company/${enc(h.company.id)}-${slugOf(h.company.name)}">${name}</a>`;
+  else if (h.unreviewed?.key) html = `<a href="/name/${enc(h.unreviewed.key)}">${name}</a>`;
+  const labels = (h.labels || []).map(l => `<span class="status-pill">${esc(l)}</span>`).join(' ');
+  return labels ? `${html} ${labels}` : html;
 }
 
 // ── Fund X-Ray: per-issuer capital structure ──────────────────────────────
@@ -3748,11 +3895,14 @@ async function runXrayReturns() {
   out.innerHTML = `<div class="hint">Fetching ${filings.length} filings…</div>`;
   const myGen = xrayRunGeneration;
   try {
+    const list = enc(filings.map(f => f.accession).join(','));
     const data = await fetchJSON(
-      `/api/fund-xray-returns?cik=${enc(filings[0].cik)}&accessions=${enc(filings.map(f => f.accession).join(','))}`
+      filings[0].fundKey
+        ? `${fundApi(filings[0])}/returns?accessions=${list}`
+        : `/api/fund-xray-returns?cik=${enc(filings[0].cik)}&accessions=${list}`
     );
     if (myGen !== xrayRunGeneration) return;
-    if (!data.success) throw new Error(data.error || 'Request failed');
+    if (!filings[0].fundKey && !data.success) throw new Error(data.error || 'Request failed');
     out.innerHTML = returnsResultHTML(data.returns);
   } catch (e) {
     if (myGen === xrayRunGeneration) out.innerHTML = `<div class="alert alert-error">${esc(e.message)}</div>`;
@@ -4018,10 +4168,12 @@ async function runFundXrayCompare() {
   showLoading('Comparing periods...');
   try {
     const data = await fetchJSON(
-      `/api/fund-xray-compare?cik=${enc(currentFiling.cik)}&currentAccession=${enc(currentFiling.accession)}&priorAccession=${enc(priorFiling.accession)}`
+      currentFiling.fundKey
+        ? `${fundApi(currentFiling)}/compare?current=${enc(currentFiling.accession)}&prior=${enc(priorFiling.accession)}`
+        : `/api/fund-xray-compare?cik=${enc(currentFiling.cik)}&currentAccession=${enc(currentFiling.accession)}&priorAccession=${enc(priorFiling.accession)}`
     );
     hideLoading();
-    if (!data.success || !data.comparison) {
+    if (!data.comparison || (!currentFiling.fundKey && !data.success)) {
       return showMsg('Error: ' + esc(data.error || 'Could not build this comparison.'), 'error');
     }
     currentXrayCompare = data.comparison;
@@ -4056,8 +4208,12 @@ function relabelCurrentXraySnapshot() {
 // supplementary "see that period's own report" convenience.
 async function renderPriorXraySnapshot(priorFiling) {
   try {
-    const data = await fetchJSON(`/api/fund-xray?cik=${enc(priorFiling.cik)}&accession=${enc(priorFiling.accession)}`);
-    if (!data.success || !data.xray) return;
+    const data = await fetchJSON(
+      priorFiling.fundKey
+        ? `${fundApi(priorFiling)}/xray?accession=${enc(priorFiling.accession)}`
+        : `/api/fund-xray?cik=${enc(priorFiling.cik)}&accession=${enc(priorFiling.accession)}`
+    );
+    if (!data.xray || (!priorFiling.fundKey && !data.success)) return;
     xraySnapshots.prior = { xray: data.xray, filing: priorFiling };
     const html = buildXraySnapshotHTML(data.xray, priorFiling, {
       periodRole: 'Prior Period',
@@ -4081,7 +4237,7 @@ async function renderPriorXraySnapshot(priorFiling) {
 function fmtXrayDeltaPair(block, fmt) {
   if (block.current == null && block.prior == null) return '—';
   if (block.prior == null) return `${fmt(block.current)} <span style="color:var(--green)">(new)</span>`;
-  if (block.current == null) return `${fmt(block.prior)} <span style="color:var(--red)">(exited)</span>`;
+  if (block.current == null) return `${fmt(block.prior)} <span style="color:var(--red)">(no longer reported)</span>`;
   let pctLabel = '';
   if (block.deltaPct != null && !isNaN(block.deltaPct)) {
     const color = block.deltaPct > 0 ? 'var(--green)' : block.deltaPct < 0 ? 'var(--red)' : 'var(--gray-500)';
@@ -4238,7 +4394,7 @@ function renderFundXrayComparison(cmp, currentFiling, priorFiling) {
           ? `${p.pctOfNetAssets.delta > 0 ? '+' : ''}${p.pctOfNetAssets.delta.toFixed(2)}pp`
           : '—';
       html += `<tr class="${rowClass}">
-        <td><span class="status-pill ${p.status}">${p.status}</span>${p.splitRatio ? `<div class="hint" style="margin:2px 0 0;">${p.splitRatio >= 1 ? p.splitRatio + '-for-1' : '1-for-' + Math.round(1 / p.splitRatio)} split — adjusted</div>` : ''}</td>
+        <td><span class="status-pill ${p.status}">${p.status === 'exited' ? 'no longer reported' : p.status}</span>${p.splitRatio ? `<div class="hint" style="margin:2px 0 0;">${p.splitRatio >= 1 ? p.splitRatio + '-for-1' : '1-for-' + Math.round(1 / p.splitRatio)} split — adjusted</div>` : ''}</td>
         <td class="title-cell">${esc(p.name || p.title || '—')}</td>
         <td>${esc(p.instrumentLabel || '—')}</td>
         <td class="right">${fmtXrayDeltaPair(p.shares, fmtNum)}</td>
