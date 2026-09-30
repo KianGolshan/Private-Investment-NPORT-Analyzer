@@ -355,8 +355,8 @@ DATA-QUALITY trap 20.
   - `listing_evidence` exists because listed companies look private in the warehouse (trap 25).
   - Migrations run to 0010 (0004 was used in P3).
 - After the review: run `npm run review:aliases` on the live warehouse, then re-measure unresolved exposure.
-  Backfill `listing_evidence` for older quarters if `public_since` dates are wanted
-  (`scripts/backfill-listing-evidence.js --max 27`).
+  Listing evidence exists for the latest 4 quarters. A full 27-quarter backfill (for `public_since`) would
+  push the warehouse (472 MB) past its 500 MB budget: prune or ask first.
 
 ---
 

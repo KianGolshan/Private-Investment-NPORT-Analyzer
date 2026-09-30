@@ -47,8 +47,9 @@ P0–P3 are signed off. Read [LESSONS.md](LESSONS.md) first.
   - `companyId` reproduces A1–A6.
   - Keep-rule re-check: no private company is dropped (C20).
 - **Suite:** 369 tests: 340 pass, 0 fail, 29 skipped (LIVE). Lint and format are clean. The LIVE goldens pass.
-- **Next:** the user reviews the CSVs, then Phase 4b (SESSION-PROMPTS). `warehouse.db` has no reviewed
-  entities yet, so every `company_id` is NULL until the import.
+- **Next:** start the next session with the SESSION-PROMPTS prompt "Next session (written 2026-09-29)":
+  refresh, ask about the entity review, import, sign off P4, then Phase 5. `warehouse.db` has no reviewed
+  entities yet, so every `holdings.company_id` is NULL until the import.
 
 ## Phase 3 checkpoint results
 
@@ -210,37 +211,51 @@ The evidence as presented:
 
 ## Measurements to record (fill in as phases complete)
 
-| Metric                                  | Budget  | Measured                                              |
-| --------------------------------------- | ------- | ----------------------------------------------------- |
-| Full bulk backfill, 27 quarters         | ≤45 min | **13.6 min** (2026-09-28)                             |
-| Warehouse size                          | ≤500 MB | **364 MB** (budget revised from 300 MB, see ADR 0003) |
-| First catch-up                          | ≤90 min | **26.9 min** for 11,822 filings (about 9/s)           |
-| Nightly refresh                         | ≤5 min  | **1.1 s** with nothing new (run #1, 2026-09-28)       |
-| API p95                                 | <200 ms | n/a                                                   |
-| Single Security search (P0, live EDGAR) | n/a     | 15–32 s per name for 100 filings                      |
+| Metric                                  | Budget  | Measured                                        |
+| --------------------------------------- | ------- | ----------------------------------------------- |
+| Full bulk backfill, 27 quarters         | ≤45 min | **13.6 min** (2026-09-28)                       |
+| Warehouse size                          | ≤500 MB | 364 MB (P1); **472 MB** after P4 (2026-09-29)   |
+| First catch-up                          | ≤90 min | **26.9 min** for 11,822 filings (about 9/s)     |
+| Nightly refresh                         | ≤5 min  | **1.1 s** with nothing new (run #1, 2026-09-28) |
+| API p95                                 | <200 ms | n/a                                             |
+| Single Security search (P0, live EDGAR) | n/a     | 15–32 s per name for 100 filings                |
 
 ## Open decisions
 
 - **Nightly refresh scheduling:** not installed. A ready-to-use launchd job is in ARCHITECTURE
   §Refresh lifecycle. Install only with the user's yes. Until then, run `npm run refresh` at the start of
   each session.
-- **Branch:** all work is on `v2-plan-and-phase0`, pushed to origin. No PR is open and it is not merged
-  to `main`. Ask before opening a PR.
-- Manager (parent firm) mapping source: curated CSV vs. N-CEN. Investigate in P4.
-- Size of the tracked list: ~250 default. Confirm after the P4 review CSV.
+- **Branch:** all work is on `v2-plan-and-phase0`, pushed to origin (P0–P4 review, 2026-09-29). No PR
+  is open and it is not merged to `main`. Ask before opening a PR.
+- ~~Manager mapping source~~ Decided in P4: N-CEN advisers + reviewed `managers.csv` (ADR 0007).
+- **Entity review (gates P4 sign-off):** the user has not yet reviewed `data/review/aliases.csv`,
+  `managers.csv`, `disclosed_exposure.csv`. Ask whether they reviewed, want the draft imported as-is, or
+  want to supply their own tracked list. Check with `git diff 6178f6e -- data/review/`.
+- **Tracked list (user, 2026-09-29):** size is the user's choice (100–200 likely); the 242 in the draft
+  are a suggestion. The user may send their own names to resolve against the warehouse.
+- **Open for the user:** one tracked list or several named lists (a schema change best made before P5), and
+  whether alerts on new marks belong in P6. Not decided; don't build either without a yes.
+- **Search outside the list must keep working (user, 2026-09-29):** any company in the warehouse is
+  analyzable by name pattern even if not in `companies`; P5 search must fall back to the pattern path
+  and offer to add the company. The on-demand EDGAR keyword search stays.
 
-## Warehouse state at hand-off (2026-09-28, after Phase 3)
+## Warehouse state at hand-off (2026-09-29, after the Phase 4 review)
 
-- `warehouse.db` (git-ignored, 384 MB), schema at migration 0003:
-  - 354,220 filings: 341,049 from bulk 2019Q4–2026Q2, 13,171 from the EDGAR catch-up through filings made
-    2026-09-28.
-  - 1,163,910 private-candidate holdings.
-- `ingest_errors` is empty. `refresh_runs` #2 is `ok`.
-- The SEC should post the 2026Q3 bulk file shortly after 2026-09-30. `npm run refresh` loads it and
-  replaces the matching catch-up rows.
+- `warehouse.db` (git-ignored, **472 MB of the 500 MB budget**), schema at migration 0010. Largest: holdings
+  215 MB (+54 MB key index), filings 89 MB, N-CEN adviser rows 38 MB, listing evidence ~10 MB per 4 quarters.
+  - 354,220 N-PORT filings (341,049 bulk 2019Q4–2026Q2; 13,171 EDGAR catch-up through filings of
+    2026-09-28), all with registrant LEIs; 1,163,910 private-candidate holdings.
+  - N-CEN: 29,124 filings (28,590 data sets + 534 EDGAR); 17,841 of 18,828 funds have an adviser.
+  - `listing_evidence` for 2025q3–2026q2. Status needs only the latest quarter. **Don't backfill all 27
+    quarters** (+60–70 MB, over budget) without first pruning old quarters or raising the budget with the
+    user.
+  - Entity tables are **empty** (no reviewed import yet): every `holdings.company_id` is NULL.
+- `ingest_errors` empty; `refresh_runs` #4 ok. The SEC 2026Q3 N-PORT bulk file (expected after 2026-09-30)
+  loads on the next `npm run refresh`, replacing matching catch-up rows and adding listing evidence.
 
 ## Log
 
+- **2026-09-29:** Answered the user's questions (aliases, search outside the list, custom tracked list); recorded them under Open decisions. Wrote the next-session handoff prompt. Pushed.
 - **2026-09-29:** Full P3–P4 review. Fixed six issues (listed companies seeded as private, among others); docs brought current (ADR 0007, traps 20–26, F21–F24, C16–C20).
 
 - **2026-09-28:** P3 signed off; branch pushed; Phase 4 started.
