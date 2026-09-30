@@ -41,6 +41,7 @@ let singleReferenceValue = null; // optional user-entered $ price to overlay/dif
 // companies, different price scales), so each security gets its own.
 let batchReferenceValues = {};
 let creditReferenceValue = null; // optional user-entered mark (%) to overlay/diff against peers
+let batchSources = {}; // security -> { source: 'warehouse' | 'live', kind, ref } for the section labels
 let xrayFilings = []; // filings returned by the current Fund X-Ray search, sorted newest-first
 let xraySnapshots = { current: null, prior: null }; // { xray, filing } per rendered period-detail section, for CSV export/re-render
 let currentXrayCompare = null; // most recently rendered QoQ/YoY comparison, for CSV export
@@ -157,6 +158,7 @@ const getColor = i => COLORS[i % COLORS.length];
     }
   } catch (_) {}
   renderWatchlist();
+  resolveWatchlist(); // v1 name entries -> ids, once (ADR 0008)
   populateTopFundsDropdown();
   applyURLParams();
 })();
@@ -738,23 +740,63 @@ async function runWatchlist() {
   await runBatchPipeline(securities, limit);
 }
 
+// A name resolved through the warehouse search, only on a strong match (the
+// company page's rule): { kind: 'company' | 'unreviewed', ref, name }, else null.
+// null too when the warehouse is unavailable.
+async function resolveName(name) {
+  try {
+    const { results } = await fetchJSON('/api/search?q=' + enc(name) + '&limit=5');
+    const top = results?.[0];
+    if (!top || !(STRONG_MATCH.includes(top.match?.how) || results.length === 1)) return null;
+    return top.type === 'company'
+      ? { kind: 'company', ref: top.id, name: top.name }
+      : { kind: 'unreviewed', ref: top.key, name: top.name };
+  } catch {
+    return null;
+  }
+}
+
 // ── Shared batch pipeline (used by both Batch Search and Watchlist) ───────
-async function runBatchPipeline(securities, limit) {
+// P5b (ADR 0008): each entry (a typed name, or a Watchlist entry with its
+// company id) answers from the warehouse's full history when it resolves to a
+// private company or an unreviewed name; a listed company, or a name the
+// warehouse cannot match, runs v1's live per-filing search, labeled.
+async function runBatchPipeline(entries, limit) {
   clearResults();
-  showLoading(`Starting search across ${securities.length} issuer(s)...`);
+  showLoading(`Starting search across ${entries.length} issuer(s)...`);
 
   const batchResults = {};
+  batchSources = {};
   let totalFailures = 0;
   // Securities whose EDGAR matches ran past the per-security cap — reported so
   // a capped run is never mistaken for full coverage.
   let cappedCount = 0;
 
-  for (let i = 0; i < securities.length; i++) {
-    const security = securities[i];
-    showProgress(`Searching ${i + 1}/${securities.length}: ${esc(security)}`, (i / securities.length) * 100);
+  for (let i = 0; i < entries.length; i++) {
+    const entry = typeof entries[i] === 'string' ? { name: entries[i] } : entries[i];
+    const security = entry.name;
+    showProgress(`Searching ${i + 1}/${entries.length}: ${esc(security)}`, (i / entries.length) * 100);
+
+    let liveName = security;
+    try {
+      const target = entry.ref != null ? entry : entry.unmatched ? null : await resolveName(security);
+      if (target) {
+        const history = await fetchJSON(`${apiBase(target)}/history`);
+        if (history.source === 'live') liveName = history.liveQuery || security;
+        else {
+          if (history.funds?.length) {
+            batchResults[security] = historyToBuckets(history);
+            batchSources[security] = { source: 'warehouse', ...target };
+          }
+          continue;
+        }
+      }
+    } catch (err) {
+      console.error('Warehouse error for', security, err); // falls through to the live path
+    }
 
     try {
-      const data = await fetchJSON('/api/search-nport?security=' + enc(security));
+      const data = await fetchJSON('/api/search-nport?security=' + enc(liveName));
       if (!data.hits?.hits?.length) continue;
 
       // Sort before cutting — see searchNPORT().
@@ -764,6 +806,7 @@ async function runBatchPipeline(securities, limit) {
       totalFailures += failures.length;
       if (holdings.length) {
         batchResults[security] = groupAndDedupe(holdings);
+        batchSources[security] = { source: 'live' };
       }
     } catch (err) {
       console.error('Batch error for', security, err);
@@ -782,10 +825,14 @@ async function runBatchPipeline(securities, limit) {
   }
 
   const found = Object.keys(batchResults).length;
+  const live = Object.values(batchSources).filter(x => x.source === 'live').length;
   showMsg(
-    `Found holdings for ${found} of ${securities.length} securities.` +
+    `Found holdings for ${found} of ${entries.length} securities` +
+      (found - live ? `, ${found - live} from the warehouse (every filing since 2019Q4)` : '') +
+      (live ? `, ${live} live from EDGAR (not warehoused)` : '') +
+      '.' +
       (cappedCount
-        ? ` ${cappedCount} of them matched more filings than the ${limit}-per-security cap — only the most recent ${limit} were parsed.`
+        ? ` ${cappedCount} of the live searches matched more filings than the ${limit}-per-security cap — only the most recent ${limit} were parsed.`
         : '') +
       (totalFailures
         ? ` ${totalFailures} filing(s) failed to parse across all searches — data may be incomplete.`
@@ -1556,7 +1603,14 @@ function renderBatchResults(batchResults) {
     const secId = cleanId(security);
 
     html += `<div class="security-section" id="secsection_${secId}">`;
-    html += `<div class="security-section-header">${esc(security)}</div>`;
+    const src = batchSources[security];
+    const srcLabel =
+      src?.source === 'warehouse'
+        ? ` <a class="badge" href="${esc(companyPath(src))}">${src.kind === 'company' ? 'warehouse' : 'warehouse · unreviewed'}</a>`
+        : src?.source === 'live'
+          ? ` <span class="badge">live, not warehoused</span>`
+          : '';
+    html += `<div class="security-section-header">${esc(security)}${srcLabel}</div>`;
     if (multi) {
       const names = types.map(t => INSTRUMENT_META[t].sectionTitle.toLowerCase()).join(', ');
       html += `<div class="alert alert-info">Holdings span ${esc(names)} — shown in separate sections below since they aren't directly comparable on one chart.</div>`;
@@ -3329,10 +3383,20 @@ function downloadBlob(content, type, filename) {
 }
 
 // ── Watchlist: persisted issuer list (localStorage — this browser only) ───
+// Watchlist entries (ADR 0008 decision 4): { name, kind, ref } once matched to
+// a company id (kind 'company') or an unreviewed name (kind 'unreviewed', its
+// issuer key); { name, unmatched: true, candidates } when the warehouse search
+// has no strong match, kept and shown as "unmatched" until the user confirms
+// one (it runs on the live path meanwhile); { name } not looked up yet. v1
+// stored plain names: those are read as { name } and resolved once, through
+// the same search, by resolveWatchlist().
 function getWatchlist() {
   try {
-    const raw = localStorage.getItem(WATCHLIST_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const raw = JSON.parse(localStorage.getItem(WATCHLIST_KEY) || '[]');
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .map(e => (typeof e === 'string' ? { name: e } : e))
+      .filter(e => e && typeof e.name === 'string' && e.name);
   } catch {
     return [];
   }
@@ -3342,36 +3406,98 @@ function saveWatchlist(list) {
     localStorage.setItem(WATCHLIST_KEY, JSON.stringify(list));
   } catch (_) {}
 }
+const sameEntry = (a, b) =>
+  a.ref != null && b.ref != null
+    ? a.kind === b.kind && String(a.ref) === String(b.ref)
+    : a.name.toLowerCase() === b.name.toLowerCase();
+
+function addToWatchlist(name) {
+  const list = getWatchlist();
+  if (list.some(e => sameEntry(e, { name }))) return false;
+  list.push({ name });
+  saveWatchlist(list);
+  renderWatchlist();
+  resolveWatchlist();
+  return true;
+}
 function addWatchlistItem() {
   const input = document.getElementById('watchlistInput');
   const name = input.value.trim();
   if (!name) return;
-  const list = getWatchlist();
-  if (list.some(n => n.toLowerCase() === name.toLowerCase())) {
-    input.value = '';
-    return showMsg(`"${esc(name)}" is already on your watchlist.`, 'info');
-  }
-  list.push(name);
-  saveWatchlist(list);
   input.value = '';
-  renderWatchlist();
+  if (!addToWatchlist(name)) return showMsg(`"${esc(name)}" is already on your watchlist.`, 'info');
 }
 function removeWatchlistItem(name) {
-  saveWatchlist(getWatchlist().filter(n => n !== name));
+  saveWatchlist(getWatchlist().filter(e => e.name !== name));
   renderWatchlist();
 }
 function quickAddToWatchlist(inputId) {
   const name = document.getElementById(inputId).value.trim();
   if (!name) return showMsg('Enter a security or issuer name first.', 'error');
-  const list = getWatchlist();
-  if (list.some(n => n.toLowerCase() === name.toLowerCase())) {
-    return showMsg(`"${esc(name)}" is already on your watchlist.`, 'info');
-  }
-  list.push(name);
-  saveWatchlist(list);
-  renderWatchlist();
+  if (!addToWatchlist(name)) return showMsg(`"${esc(name)}" is already on your watchlist.`, 'info');
   showMsg(`Added "${esc(name)}" to your watchlist.`, 'success');
 }
+
+// Looks up every entry not looked up yet, once: a strong match stores its id;
+// anything else is kept as "unmatched" with the top candidates. Entries stay
+// as they are when the warehouse is unavailable (tried again next time).
+let watchlistResolving = null;
+function resolveWatchlist() {
+  if (watchlistResolving) return watchlistResolving.then(() => resolveWatchlist());
+  watchlistResolving = (async () => {
+    const pending = getWatchlist().filter(e => e.ref == null && !e.unmatched);
+    for (const e of pending) {
+      let found;
+      try {
+        const { results } = await fetchJSON('/api/search?q=' + enc(e.name) + '&limit=3');
+        if (!Array.isArray(results)) continue;
+        const top = results[0];
+        found =
+          top && (STRONG_MATCH.includes(top.match?.how) || results.length === 1)
+            ? top.type === 'company'
+              ? { kind: 'company', ref: top.id, matched: top.name }
+              : { kind: 'unreviewed', ref: top.key, matched: top.name }
+            : {
+                unmatched: true,
+                candidates: results.map(r => ({
+                  kind: r.type === 'company' ? 'company' : 'unreviewed',
+                  ref: r.type === 'company' ? r.id : r.key,
+                  name: r.name,
+                  how: r.match?.how || '',
+                })),
+              };
+      } catch {
+        continue; // warehouse unavailable: try again later
+      }
+      const list = getWatchlist();
+      const i = list.findIndex(x => x.name === e.name && x.ref == null);
+      if (i < 0) continue;
+      const next = { ...list[i], ...found };
+      if (next.ref != null && list.some((x, j) => j !== i && sameEntry(x, next))) list.splice(i, 1);
+      else list[i] = next;
+      saveWatchlist(list);
+    }
+  })().finally(() => {
+    watchlistResolving = null;
+    renderWatchlist();
+  });
+  return watchlistResolving;
+}
+
+// The user picks one of an unmatched entry's candidates.
+function confirmWatchlistMatch(name, selectId) {
+  const pick = +document.getElementById(selectId).value;
+  const list = getWatchlist();
+  const i = list.findIndex(e => e.name === name);
+  const c = list[i]?.candidates?.[pick];
+  if (!c) return;
+  const next = { name: list[i].name, kind: c.kind, ref: c.ref, matched: c.name };
+  if (list.some((x, j) => j !== i && sameEntry(x, next))) list.splice(i, 1);
+  else list[i] = next;
+  saveWatchlist(list);
+  renderWatchlist();
+}
+
 function renderWatchlist() {
   const list = getWatchlist();
   const container = document.getElementById('watchlistItems');
@@ -3388,14 +3514,25 @@ function renderWatchlist() {
     return;
   }
   container.innerHTML = list
-    .map(
-      name => `
+    .map((e, i) => {
+      let body = esc(e.name);
+      if (e.ref != null) {
+        const label = e.matched && e.matched !== e.name ? ` → ${esc(e.matched)}` : '';
+        body = `<a href="${esc(companyPath({ kind: e.kind, ref: e.ref, name: e.matched || e.name }))}">${esc(e.name)}</a>${label} ${badge(e.kind === 'company' ? 'company #' + e.ref : 'unreviewed')}`;
+      } else if (e.unmatched) {
+        const selectId = 'wlpick_' + i;
+        body += ` ${badge('unmatched')}`;
+        if (e.candidates?.length)
+          body += ` <select id="${selectId}">${e.candidates.map((c, j) => `<option value="${j}">${esc(c.name)}${c.how ? ' (' + esc(MATCH_TEXT[c.how] || c.how) + ')' : ''}</option>`).join('')}</select>
+          <button class="btn btn-sm" data-name="${esc(e.name)}" data-select="${selectId}" onclick="confirmWatchlistMatch(this.dataset.name, this.dataset.select)">Confirm</button>`;
+      }
+      return `
     <div class="watchlist-item">
-      <span>${esc(name)}</span>
-      <button class="btn btn-sm btn-red" data-name="${esc(name)}" onclick="removeWatchlistItem(this.dataset.name)">Remove</button>
+      <span>${body}</span>
+      <button class="btn btn-sm btn-red" data-name="${esc(e.name)}" onclick="removeWatchlistItem(this.dataset.name)">Remove</button>
     </div>
-  `
-    )
+  `;
+    })
     .join('');
 }
 

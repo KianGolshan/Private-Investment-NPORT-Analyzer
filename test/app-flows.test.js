@@ -360,7 +360,11 @@ test('watchlist: add, de-dupe (case-insensitive), persist, remove, and escape na
   input.value = '<b>Evil</b>';
   window.addWatchlistItem();
 
-  assert.deepEqual(JSON.parse(window.localStorage.getItem('nportWatchlist')), ['Anthropic', '<b>Evil</b>']);
+  // P5b (ADR 0008): entries are objects; with no warehouse answer they stay unlooked-up names.
+  assert.deepEqual(JSON.parse(window.localStorage.getItem('nportWatchlist')), [
+    { name: 'Anthropic' },
+    { name: '<b>Evil</b>' },
+  ]);
   assert.equal(document.getElementById('watchlistCount').textContent, '2');
   assert.equal(document.querySelectorAll('#watchlistItems b').length, 0, 'names are escaped');
   assert.equal(document.getElementById('watchlistRunBtn').disabled, false);
@@ -591,5 +595,6 @@ test('searchBatch: securities that matched more filings than the cap are reporte
   document.getElementById('batchFilingLimit').value = '25';
   await window.searchBatch();
   await tick(window);
-  assert.match(msg(document), /1 of them matched more filings than the 25-per-security cap/);
+  // P5b: the cap applies to the live path only (the warehouse has every filing).
+  assert.match(msg(document), /1 of the live searches matched more filings than the 25-per-security cap/);
 });
