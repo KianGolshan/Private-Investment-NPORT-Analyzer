@@ -362,6 +362,13 @@ app.get('/api/config', (_req, res) => {
 });
 
 // Search for NPORT-P filings matching a security name/ticker
+// ── v1 per-filing routes: a compatibility layer (ROADMAP §5b task 7, ADR 0008) ──
+// Since P5b the app answers private companies and funds from the warehouse
+// (/api/search, /api/companies, /api/entities, /api/funds). It calls the routes
+// below only for the live path: listed companies, debt, names the warehouse
+// cannot match, and when the warehouse is unavailable (labeled "live, not
+// warehoused"). They stay for that and for existing links and scripts
+// (test/app-retired.test.js pins which views may still reach them).
 app.get('/api/search-nport', async (req, res) => {
   const { security } = req.query;
   if (!security) return res.status(400).json({ error: 'security parameter required' });
@@ -752,6 +759,8 @@ async function fetchFundNportHistory(cik) {
   });
 }
 
+// Compatibility layer (see /api/search-nport above): the fund page reads
+// /api/funds; these answer only when the warehouse is unavailable.
 app.get('/api/search-fund', async (req, res) => {
   const { fund } = req.query;
   if (!fund) return res.status(400).json({ error: 'fund parameter required' });
