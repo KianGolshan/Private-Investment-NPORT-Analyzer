@@ -128,10 +128,8 @@ app.use(
 // names, answered from warehouse.db opened read-only on first use (missing or
 // behind: those routes answer 503, the live routes below keep working). They
 // never call the SEC.
-app.use(
-  '/api',
-  warehouseRouter(() => openWarehouseReadOnly())
-);
+const warehouseApi = warehouseRouter(() => openWarehouseReadOnly());
+app.use('/api', warehouseApi);
 
 // EDGAR identifiers go straight into sec.gov archive URLs, so they are
 // validated, not just URL-encoded: a CIK is up to 10 digits, an accession
@@ -1123,6 +1121,11 @@ if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`\n✅ Vantage running at http://localhost:${PORT}`);
     console.log(`   User-Agent: ${EFFECTIVE_USER_AGENT}\n`);
+    warehouseApi.warm().then(w => {
+      console.log(
+        w.error ? `   Warehouse: ${w.error}` : `   Warehouse warmed: ${w.companies} tracked companies in ${w.ms} ms`
+      );
+    });
   });
 }
 
