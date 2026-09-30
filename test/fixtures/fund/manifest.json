@@ -1,0 +1,20 @@
+{
+  "builtAt": "2026-09-30T19:44:53.492Z",
+  "source": "warehouse.db",
+  "sourceRefreshRun": {
+    "id": 12,
+    "finished_at": "2026-09-30T19:43:29.379Z"
+  },
+  "funds": {
+    "S000009228": "Growth Fund of America: Anthropic F1/F2, Stripe, Databricks, OpenAI",
+    "CIK2044519": "Coatue Innovative Strategies: an NPORT-P/A replaces its NPORT-P (F16)",
+    "S000007191": "Fidelity OTC Portfolio: holds Stripe 2025-10-31, no Stripe row 2026-01-31 (F8/F9)",
+    "S000008787": "American High Income (AFIS High-Income Bond Fund): Mesquite reported at $0 (F34)",
+    "S000011440": "Northeast Investors Trust: Westmoreland Mining equity and term loan (capital structure)"
+  },
+  "filings": 117,
+  "holdings": 1900,
+  "capitalRows": 213,
+  "companies": 45,
+  "unreviewedEntities": 76
+}

@@ -51,7 +51,9 @@ app.use((_req, res, next) => {
 });
 app.use(express.static('public'));
 // Permalinks (ADR 0008): the page itself; app.js reads the path.
-app.get(['/company/:ref', '/name/:key'], (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get(['/company/:ref', '/name/:key', '/fund/:key'], (_req, res) =>
+  res.sendFile(path.join(__dirname, 'public', 'index.html'))
+);
 
 const USER_AGENT = process.env.SEC_USER_AGENT || '';
 const EFFECTIVE_USER_AGENT = USER_AGENT || 'Vantage internal-tool@localhost';
