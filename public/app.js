@@ -42,6 +42,7 @@ let singleReferenceValue = null; // optional user-entered $ price to overlay/dif
 let batchReferenceValues = {};
 let creditReferenceValue = null; // optional user-entered mark (%) to overlay/diff against peers
 let batchSources = {}; // security -> { source: 'warehouse' | 'live', kind, ref } for the section labels
+let currentXrayCompareFilings = null; // { current, prior } filings behind currentXrayCompare, for its export
 let xrayFilings = []; // filings returned by the current Fund X-Ray search, sorted newest-first
 let xraySnapshots = { current: null, prior: null }; // { xray, filing } per rendered period-detail section, for CSV export/re-render
 let currentXrayCompare = null; // most recently rendered QoQ/YoY comparison, for CSV export
@@ -527,6 +528,7 @@ function historyToBuckets(history) {
           cik: f.cik,
           accession: p.accession,
           viaSpv: p.viaSpv,
+          source: 'warehouse',
         });
       }
     }
@@ -1914,6 +1916,10 @@ function flattenBucketRows(type, companiesMap, security) {
           value: h.chartValue,
           currency: h.currency || 'USD',
           url: edgarFilingUrl(h.cik, h.accession) || '',
+          // P5b: every row names its mark date, filing and source (ADR 0008).
+          markDate: h.reportDate,
+          accession: h.accession || '',
+          source: h.source === 'warehouse' ? 'warehouse' : 'live EDGAR',
         })
       );
     });
@@ -1936,6 +1942,9 @@ function doExportCSV() {
         'Value',
         'Currency',
         'Source Filing URL',
+        'Mark Date',
+        'Accession',
+        'Source',
       ]
     : [
         'Security',
@@ -1949,6 +1958,9 @@ function doExportCSV() {
         'Value',
         'Currency',
         'Source Filing URL',
+        'Mark Date',
+        'Accession',
+        'Source',
       ];
   const rows = [header];
 
@@ -1966,6 +1978,9 @@ function doExportCSV() {
           r.value.toFixed(4),
           r.currency,
           r.url,
+          r.markDate,
+          r.accession,
+          r.source,
         ])
       )
     );
@@ -1983,6 +1998,18 @@ function doExportCSV() {
 }
 
 // ── Export: Excel ──────────────────────────────────────────────────────────
+// A valid, unused sheet name: Excel refuses : \ / ? * [ ] and more than 31
+// characters, so "Debt / Loans" (a section title) or a typed security name
+// made the whole export throw (found in P5b once the tests ran real SheetJS).
+function sheetName(wb, name) {
+  const base =
+    String(name || 'Sheet')
+      .replace(/[:\\/?*[\]]/g, '-')
+      .slice(0, 31) || 'Sheet';
+  let out = base;
+  for (let i = 2; wb.SheetNames.includes(out); i++) out = `${base.slice(0, 28)} ${i}`;
+  return out;
+}
 function doExportExcel() {
   const wb = XLSX.utils.book_new();
   const bucketCols = [
@@ -1996,6 +2023,9 @@ function doExportExcel() {
     { wch: 14 },
     { wch: 10 },
     { wch: 50 },
+    { wch: 12 },
+    { wch: 22 },
+    { wch: 12 },
   ];
 
   if (allResults.mode === 'single') {
@@ -2016,6 +2046,9 @@ function doExportExcel() {
           'Value',
           'Currency',
           'Source Filing URL',
+          'Mark Date',
+          'Accession',
+          'Source',
         ],
       ];
       rows.forEach(r =>
@@ -2030,11 +2063,14 @@ function doExportExcel() {
           r.value,
           r.currency,
           r.url,
+          r.markDate,
+          r.accession,
+          r.source,
         ])
       );
       const ws = XLSX.utils.aoa_to_sheet(data);
       ws['!cols'] = bucketCols;
-      XLSX.utils.book_append_sheet(wb, ws, INSTRUMENT_META[type].sectionTitle.substring(0, 31));
+      XLSX.utils.book_append_sheet(wb, ws, sheetName(wb, INSTRUMENT_META[type].sectionTitle));
     });
   } else {
     const visibleBatch = visibleBatchBuckets();
@@ -2051,6 +2087,9 @@ function doExportExcel() {
         'Value',
         'Currency',
         'Source Filing URL',
+        'Mark Date',
+        'Accession',
+        'Source',
       ],
     ];
 
@@ -2069,6 +2108,9 @@ function doExportExcel() {
           'Value',
           'Currency',
           'Source Filing URL',
+          'Mark Date',
+          'Accession',
+          'Source',
         ],
       ];
       allRows.forEach(r => {
@@ -2083,6 +2125,9 @@ function doExportExcel() {
           r.value,
           r.currency,
           r.url,
+          r.markDate,
+          r.accession,
+          r.source,
         ]);
         combined.push([
           sec,
@@ -2096,11 +2141,14 @@ function doExportExcel() {
           r.value,
           r.currency,
           r.url,
+          r.markDate,
+          r.accession,
+          r.source,
         ]);
       });
       const ws = XLSX.utils.aoa_to_sheet(data);
       ws['!cols'] = bucketCols;
-      XLSX.utils.book_append_sheet(wb, ws, sec.substring(0, 31));
+      XLSX.utils.book_append_sheet(wb, ws, sheetName(wb, sec));
     });
 
     const ws2 = XLSX.utils.aoa_to_sheet(combined);
@@ -2177,6 +2225,8 @@ function doExportPDF() {
             fmtCurrency(h.marketValue),
             meta.fmt(h.chartValue),
             h.currency || 'USD',
+            h.accession || '',
+            h.source === 'warehouse' ? 'warehouse' : 'live',
           ])
         )
       )
@@ -2185,20 +2235,24 @@ function doExportPDF() {
     if (rows.length) {
       doc.autoTable({
         startY: y,
-        head: [['Fund', 'Class', 'Date', 'Title', 'Shares', 'Mkt Value', meta.valueLabel, 'CCY']],
+        head: [
+          ['Fund', 'Class', 'Mark Date', 'Title', 'Shares', 'Mkt Value', meta.valueLabel, 'CCY', 'Accession', 'Source'],
+        ],
         body: rows,
         margin: { left: margin, right: margin },
         styles: { fontSize: 7.5, cellPadding: 2.5 },
         headStyles: { fillColor: [37, 99, 235], fontStyle: 'bold', fontSize: 8 },
         columnStyles: {
-          0: { cellWidth: 46 },
-          1: { cellWidth: 34 },
-          2: { cellWidth: 20 },
-          3: { cellWidth: 46 },
-          4: { cellWidth: 22, halign: 'right' },
-          5: { cellWidth: 24, halign: 'right' },
-          6: { cellWidth: 24, halign: 'right' },
-          7: { cellWidth: 14, halign: 'center' },
+          0: { cellWidth: 36 },
+          1: { cellWidth: 26 },
+          2: { cellWidth: 19 },
+          3: { cellWidth: 34 },
+          4: { cellWidth: 20, halign: 'right' },
+          5: { cellWidth: 22, halign: 'right' },
+          6: { cellWidth: 22, halign: 'right' },
+          7: { cellWidth: 11, halign: 'center' },
+          8: { cellWidth: 40 },
+          9: { cellWidth: 20 },
         },
         alternateRowStyles: { fillColor: [249, 250, 251] },
       });
@@ -3835,7 +3889,20 @@ function xraySnapshotExportRows(key) {
     'Price / Share',
     '% of NAV',
     '$ Value',
+    'Mark Date',
+    'Accession',
+    'Source',
+    'Private By',
   ];
+  const wh = !!xray.v1Level3;
+  const source = wh ? 'warehouse' : 'live EDGAR';
+  const accession = xray.accession || snap.filing?.accession || '';
+  const privateBy = h =>
+    !wh
+      ? 'fair-value Level 3 (v1 rule)'
+      : h.company
+        ? `company status (${h.company.name})`
+        : (h.labels || [])[0] || 'unreviewed';
   const rows = xray.privateHoldings.map(h => [
     fundName,
     reportDate,
@@ -3848,8 +3915,12 @@ function xraySnapshotExportRows(key) {
     h.pricePerShare != null && !isNaN(h.pricePerShare) ? h.pricePerShare.toFixed(6) : '',
     h.pctOfNetAssets != null ? h.pctOfNetAssets.toFixed(4) : '',
     h.marketValue != null ? h.marketValue.toFixed(2) : '',
+    xray.markDate || reportDate,
+    accession,
+    source,
+    privateBy(h),
   ]);
-  return { header, rows, fundName, reportDate };
+  return { header, rows, fundName, reportDate, markDate: xray.markDate || reportDate, accession, source };
 }
 
 function doXrayExportCSV(key) {
@@ -3880,6 +3951,10 @@ function doXrayExportExcel(key) {
     { wch: 14 },
     { wch: 10 },
     { wch: 16 },
+    { wch: 12 },
+    { wch: 22 },
+    { wch: 12 },
+    { wch: 30 },
   ];
   XLSX.utils.book_append_sheet(wb, ws, 'Fund X-Ray');
   const datePart = data.reportDate ? `_${fileNamePart(data.reportDate)}` : '';
@@ -3901,15 +3976,23 @@ function doXrayExportPDF(key) {
   doc.setFontSize(8.5);
   doc.setFont(undefined, 'normal');
   doc.setTextColor(100);
-  doc.text('Report period: ' + (data.reportDate || '—') + ' · Generated: ' + new Date().toLocaleString(), margin, y);
+  // Mark date, accession and source are one filing's: printed once here, not
+  // as three more columns in an already dense table.
+  doc.text(
+    `Report period: ${data.reportDate || '—'} · Mark date: ${data.markDate || '—'} · Accession: ${data.accession || '—'} · Source: ${data.source} · Generated: ${new Date().toLocaleString()}`,
+    margin,
+    y
+  );
   y += 8;
   doc.setTextColor(0);
+  const once = new Set(['Mark Date', 'Accession', 'Source']);
+  const cols = data.header.map((h, i) => (once.has(h) ? -1 : i)).filter(i => i >= 0);
 
   if (data.rows.length) {
     doc.autoTable({
       startY: y,
-      head: [data.header],
-      body: data.rows,
+      head: [cols.map(i => data.header[i])],
+      body: data.rows.map(r => cols.map(i => r[i])),
       margin: { left: margin, right: margin },
       styles: { fontSize: 7.5, cellPadding: 2.5 },
       headStyles: { fillColor: [37, 99, 235], fontStyle: 'bold', fontSize: 8 },
@@ -4028,6 +4111,7 @@ async function runFundXrayCompare() {
       return showMsg('Error: ' + esc(data.error || 'Could not build this comparison.'), 'error');
     }
     currentXrayCompare = data.comparison;
+    currentXrayCompareFilings = { current: currentFiling, prior: priorFiling };
     // Order on the page: 1) analysis (prepended, see renderFundXrayComparison)
     // 2) the current snapshot already in #resultsContainer, now relabeled
     // "Most Recent Period" since it's no longer the only thing shown
@@ -4301,7 +4385,13 @@ function xrayCompareExportRows() {
     'Value Δ from Position Sizing ($)',
     '% of NAV (Prior)',
     '% of NAV (Current)',
+    'Mark Date (Prior)',
+    'Mark Date (Current)',
+    'Accession (Prior)',
+    'Accession (Current)',
+    'Source',
   ];
+  const f = currentXrayCompareFilings || {};
   const rows = cmp.positions.map(p => [
     p.status,
     p.name || p.title || '',
@@ -4319,6 +4409,11 @@ function xrayCompareExportRows() {
     p.shareEffectUSD != null ? p.shareEffectUSD.toFixed(2) : '',
     p.pctOfNetAssets.prior != null ? p.pctOfNetAssets.prior.toFixed(4) : '',
     p.pctOfNetAssets.current != null ? p.pctOfNetAssets.current.toFixed(4) : '',
+    cmp.prior.reportDate || f.prior?.period || '',
+    cmp.current.reportDate || f.current?.period || '',
+    f.prior?.accession || '',
+    f.current?.accession || '',
+    f.current?.fundKey ? 'warehouse' : 'live EDGAR',
   ]);
   const fundName = cmp.current.seriesName || cmp.current.registrantName || '';
   return { header, rows, fundName };

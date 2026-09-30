@@ -63,7 +63,16 @@ function makeFakeChart() {
   return FakeChart;
 }
 
-async function loadApp({ fetchImpl, url = 'http://localhost/' } = {}) {
+// The page's export libraries at the versions index.html loads (devDependencies),
+// for the export tests: exportLibs: true evaluates them in the window instead of
+// the stubs.
+const EXPORT_LIBS = [
+  'xlsx/dist/xlsx.full.min.js',
+  'jspdf/dist/jspdf.umd.min.js',
+  'jspdf-autotable/dist/jspdf.plugin.autotable.min.js',
+].map(f => [f, fs.readFileSync(path.join(ROOT, 'node_modules', f), 'utf8')]);
+
+async function loadApp({ fetchImpl, url = 'http://localhost/', exportLibs = false } = {}) {
   const dom = new JSDOM(htmlWithoutScripts, { url });
   const context = dom.window;
   vm.createContext(context);
@@ -75,6 +84,15 @@ async function loadApp({ fetchImpl, url = 'http://localhost/' } = {}) {
   context.HTMLCanvasElement.prototype.getContext = () => ({});
   context.Chart = makeFakeChart();
   context.XLSX = {};
+  if (exportLibs) {
+    // jsPDF's UMD attaches to the script's globalThis, which in this vm context
+    // is not the page's window (a browser has one object for both); the
+    // autoTable plugin then looks for window.jspdf, so copy it across first.
+    for (const [filename, source] of EXPORT_LIBS) {
+      vm.runInContext(source, context, { filename });
+      context.jspdf = context.jspdf || vm.runInContext('globalThis.jspdf', context);
+    }
+  }
 
   vm.runInContext(splitsSource, context, { filename: 'public/splits.js' });
   vm.runInContext(peerSource, context, { filename: 'lib/analytics/peer.js' });
