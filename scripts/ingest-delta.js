@@ -13,6 +13,7 @@ const { openWarehouse, defaultWarehousePath } = require('../lib/warehouse/db');
 const { ingestDelta, defaultSince } = require('../lib/warehouse/delta');
 const { entityUpkeep } = require('../lib/entities/upkeep');
 const { rebuildFundNames } = require('../lib/warehouse/fund-names');
+const { buildPositionFacts } = require('../lib/warehouse/position-facts');
 
 function parseArgs(argv) {
   const opts = { since: null, until: null, concurrency: 3 };
@@ -38,6 +39,7 @@ async function main() {
     const stats = await ingestDelta(db, { since, until: opts.until, concurrency: opts.concurrency, log: console.log });
     const e = entityUpkeep(db);
     rebuildFundNames(db);
+    buildPositionFacts(db, { log: console.log });
     console.log(
       `entities: ${e.advisers.mapped}/${e.advisers.funds} funds with an adviser, ${e.companies.resolved} rows resolved`
     );

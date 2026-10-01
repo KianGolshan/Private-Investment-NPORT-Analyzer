@@ -19,6 +19,7 @@ const { listAvailableQuarters } = require('../lib/warehouse/bulk-source');
 const { loadBulkQuarters, loadedBulkQuarters } = require('../lib/warehouse/refresh');
 const { entityUpkeep } = require('../lib/entities/upkeep');
 const { rebuildFundNames } = require('../lib/warehouse/fund-names');
+const { buildPositionFacts } = require('../lib/warehouse/position-facts');
 
 function parseArgs(argv) {
   const opts = { quarters: [], all: false, missing: false, file: null, keepZip: false };
@@ -68,6 +69,7 @@ async function main() {
     if (results.length) {
       const e = entityUpkeep(db);
       rebuildFundNames(db);
+      buildPositionFacts(db, { log: console.log });
       console.log(
         `entities: ${e.advisers.mapped}/${e.advisers.funds} funds with an adviser, ${e.companies.resolved} rows resolved`
       );

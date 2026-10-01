@@ -83,6 +83,12 @@ capital_structure_rows(accession, row_key, issuer_key, …holdings columns)  -- 
 fund_names(fund_key, cik, series_id, series_name, registrant, first/last_report_date, last_accession, filings)
 fund_search (FTS5 words: every series and registrant name a fund filed under)  -- P5b
 -- refresh_runs.kind: refresh | curation (the admin job takes the refresh lock, P5b)
+position_facts(fund_key, company_id, accession, report_date, filing_date, next_report_date, prev_accession,
+               prev_report_date, event, change, instrument_key, rekeyed_from, merged_keys, class_label, kind, unit,
+               balance, prev_balance, value, prev_value, price, prev_price, split, position_effect, mark_effect,
+               other_effect, pct_nav, …)   -- P6b W1 (0019): one row per activity leg of a fund in a private company;
+                                           -- as of D = SUM(value) where report_date <= D < next_report_date, within
+                                           -- 123 days; derived, rebuilt by every refresh and curation run
 -- views
 canonical_filings        -- one per (fund_key, report_date); latest filing_date wins
 fund_filing_timeline     -- all canonical filings per fund
@@ -147,7 +153,9 @@ Fund calendars are staggered, so "as of D" mixes mark dates. The UI always shows
      a no-op unless the rule changed). Entity upkeep (fund advisers, company resolution), then the identity graph and the review queue
      (`reports/entities/unresolved.csv`, `conflicts.csv`; P4.5), then unreviewed entities, their row tags,
      `company_stats` and the search index (`lib/entities/entities.js`, P5a), then the fund list and fund-name
-     index (`lib/warehouse/fund-names.js`, P5b). Both ingest paths also write `filing_totals` and the
+     index (`lib/warehouse/fund-names.js`, P5b), then the position facts (`lib/warehouse/position-facts.js`, P6b W1;
+     2.6 s, 68k legs, ~31 MB; logged to `ingest_log` as kind `position-facts`; the review import rebuilds them too).
+     Both ingest paths also write `filing_totals` and the
      capital-structure rows for every filing they load.
   5. Write a `refresh_runs` row. A catch-up filing that predates bulk coverage but isn't in bulk (expected 0)
      fails the run, as do catch-up and N-CEN failures.
@@ -215,7 +223,7 @@ Check health with `sqlite3 warehouse.db "select * from refresh_runs order by id 
 - API and MCP p95: <200 ms.
 - Warehouse size: ≤1 GB (raised from 600 MB on 2026-10-01 by Claude under the user's "fix everything"; growth is
   25–30 MB per bulk quarter and the only prunable tables were 9–34 MB; measured 364 MB at P1, 542.7 MB after P5b,
-  544.0 MB on 2026-10-01).
+  544.0 MB on 2026-10-01, 574.7 MB with the P6b W1 position facts).
 
 ## Module map
 
@@ -316,6 +324,20 @@ web/src/pages/                     Market, Company (overview, holders, changes, 
 web/src/styles/{tokens,base}.css   design tokens (light, dark, compact) and shared components
 ```
 
+Built in P6b W1 (2026-10-01), the analysis data layer:
+
+```
+lib/analytics/activity.js          + walkPosition (the one per-fund walk behind companyActivity and the facts),
+                                   movedWithinClass (trap 52), rekeyed across labels (trap 51)
+lib/warehouse/position-facts.js    builds position_facts from the walk (factsOf: also any one subject's rows on demand)
+lib/services/scope.js              firm / fund / class / kind filters: one predicate for rows, one for fact legs
+lib/services/analysis.js           bridge, pivot (firm|fund|company|class × month|quarter|year), timeline (firm|fund),
+                                   positionHistory; private companies from the table, other subjects and class/kind
+                                   filters by walking the subject's rows (same legs; a test holds them equal)
+lib/services/search.js             + unifiedSearch: companies, unreviewed names, firms, funds, share classes
+web/src/ui/CommandPalette.tsx      one call to the unified search
+```
+
 Planned: `mcp-server.js` (P7) over the same services.
 
 ## Warehouse API (read-only, `lib/api/warehouse.js`)
@@ -325,11 +347,19 @@ build. A listed company answers its views only with `?stored=1`, labeled (trap 4
 
 ```
 /api/freshness                                   bulk quarter, newest filing and report dates, refresh time
-/api/search?q=                                   ranked matches with match reason; `strong` on the one that may open
+/api/search?q=[&kinds=company,entity,firm,fund,class]   ranked matches with match reason; `strong` on the one that
+                                                 may open; with kinds, one list over all of them (P6b W1)
 /api/companies/:id[/exposure|/history|/activity|/trend|/classes|/marks|/stale|/feed.xml]
+/api/companies/:id/bridge?from=&to=              start, first reported, added, reduced, no longer reported, mark,
+                                                 value only, started / stopped filing, end; reconciled to the cent
+/api/companies/:id/positions/:fundKey[?instrument=]   one fund's legs at every filing
+  every company view takes ?firm=&fund=&class=&kind= (lists: repeated or comma-separated) and echoes `scope`
 /api/entities/:issuerKey[/…same views]           unreviewed names; a resolved key answers 301
 /api/market/top?date=&tracked=1                  private companies as of D
 /api/market/countries?date=   /api/market/tracked?date=   /api/feed?since=&until=&all=1
 /api/firms?date=&q=   /api/firms/:id?date=   /api/firms/:id/changes?since=   /api/firms/:id/marks/:companyId
 /api/funds?q=   /api/funds/:key[/xray|/compare|/returns|/changes]
+/api/analysis/bridge?from=&to=[&company=|&entity=][&firm=&fund=&class=&kind=]   (class, kind need a subject)
+/api/analysis/pivot?rows=firm|fund|company|class&period=month|quarter|year&from=&to=&limit=[&company=…&firm=…]
+/api/analysis/timeline?firm=|fund=               per company: spans held, value now, events by mark date
 ```

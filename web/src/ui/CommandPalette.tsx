@@ -1,15 +1,16 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
 import { getJSON, qs } from '../api/client';
-import type { Envelope, Firm, FundInfo, SearchHit } from '../api/types';
+import type { Envelope, SearchHit, UnifiedHit } from '../api/types';
 import { companyPath, entityPath, firmPath, fundPath, moneyC } from '../lib/format';
 
-// One search box for everything (⌘K or /): private companies and unreviewed
-// names (ranked by the warehouse search, with its match reason), funds and
-// firms. Enter opens the highlighted result.
+// One search box for everything (⌘K or /): one call to the unified search,
+// which ranks private companies, unreviewed names (with the match reason),
+// firms, funds and share classes ("Anthropic Series G"). Enter opens the
+// highlighted result.
 
 export interface PaletteItem {
-  kind: 'Company' | 'Name' | 'Fund' | 'Firm';
+  kind: 'Company' | 'Name' | 'Fund' | 'Firm' | 'Class';
   title: string;
   detail: string;
   href: string;
@@ -53,7 +54,7 @@ export function hitToItem(h: SearchHit): PaletteItem {
   return {
     kind: h.type === 'company' ? 'Company' : 'Name',
     title: h.name,
-    detail: [held, `${how}${via}`, h.status === 'public' ? 'listed' : '', h.type === 'entity' ? 'unreviewed' : '']
+    detail: [held, `${how}${via}`, h.status === 'public' ? 'listed' : '', h.type === 'unreviewed' ? 'unreviewed' : '']
       .filter(Boolean)
       .join(' · '),
     href: h.type === 'company' ? companyPath(h.id!, h.name) : entityPath(h.key!),
@@ -62,40 +63,51 @@ export function hitToItem(h: SearchHit): PaletteItem {
   };
 }
 
-export async function searchAll(q: string, signal?: AbortSignal): Promise<PaletteItem[]> {
-  const [names, funds, firms] = await Promise.all([
-    getJSON<Envelope & { results: SearchHit[] }>(`/api/search${qs({ q, limit: 8 })}`, signal).catch(() => null),
-    getJSON<Envelope & { results: FundInfo[] }>(`/api/funds${qs({ q })}`, signal).catch(() => null),
-    getJSON<Envelope & { results: Firm[] }>(`/api/firms${qs({ q })}`, signal).catch(() => null),
-  ]);
-  const items: PaletteItem[] = (names?.results ?? []).map(hitToItem);
-  const lq = q.trim().toLowerCase();
-  const tierOf = (name: string) => {
-    const n = name.toLowerCase();
-    return n === lq ? 0 : n.startsWith(lq) ? 1 : 2;
-  };
-  for (const f of (firms?.results ?? []).slice(0, 5)) {
-    items.push({
+const SEARCH_KINDS = 'company,entity,firm,fund,class';
+
+/** One ranked list from the server; tier keeps its order (byKind sorts by tier first). */
+export function unifiedToItem(h: UnifiedHit, rank: number): PaletteItem {
+  if (h.type === 'firm')
+    return {
       kind: 'Firm',
-      title: f.name,
-      tier: tierOf(f.name),
-      detail: `${f.fundsHolding} of ${f.fundsManaged} funds hold private companies · ${f.companies} companies · ${moneyC(f.value)}`,
-      href: firmPath(f.id),
-    });
-  }
-  for (const f of (funds?.results ?? []).slice(0, 6)) {
-    items.push({
+      title: h.name,
+      tier: rank,
+      strong: h.strong,
+      detail: `${h.evidence.fundsHolding} of ${h.evidence.fundsManaged} funds hold private companies · ${h.evidence.companies} companies · ${moneyC(h.evidence.value)}`,
+      href: firmPath(h.id),
+    };
+  if (h.type === 'fund') {
+    const f = h.fund;
+    return {
       kind: 'Fund',
-      title: f.seriesName || f.registrant,
-      tier: tierOf(f.seriesName || f.registrant),
+      title: h.name,
+      tier: rank,
+      strong: h.strong,
       detail: `${f.registrant !== f.seriesName ? f.registrant + ' · ' : ''}${f.firstReportDate} → ${f.lastReportDate}${f.inactive ? ' · inactive' : ''}`,
       href: fundPath(f.fundKey),
-    });
+    };
   }
-  return items;
+  if (h.type === 'class')
+    return {
+      kind: 'Class',
+      title: h.name,
+      tier: rank,
+      strong: h.strong,
+      detail: `${h.evidence.currentFunds} funds · ${moneyC(h.evidence.currentValueUsd)}${h.evidence.asOf ? ` as of ${h.evidence.asOf}` : ''}`,
+      href: `${companyPath(h.companyId, h.company)}${qs({ class: h.classLabel })}`,
+    };
+  return { ...hitToItem(h), tier: rank };
 }
 
-const KIND_ORDER: PaletteItem['kind'][] = ['Company', 'Firm', 'Name', 'Fund'];
+export async function searchAll(q: string, signal?: AbortSignal): Promise<PaletteItem[]> {
+  const r = await getJSON<Envelope & { results: UnifiedHit[] }>(
+    `/api/search${qs({ q, kinds: SEARCH_KINDS, limit: 20 })}`,
+    signal
+  ).catch(() => null);
+  return (r?.results ?? []).map(unifiedToItem);
+}
+
+const KIND_ORDER: PaletteItem['kind'][] = ['Company', 'Firm', 'Class', 'Name', 'Fund'];
 /** Best match first: how exactly it matched, then companies, firms, unreviewed names, funds. */
 export const byKind = (items: PaletteItem[]) =>
   [...items].sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0) || KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind));

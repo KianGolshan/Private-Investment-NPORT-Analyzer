@@ -58,3 +58,118 @@ test('a real exit still reads as one: an old key with no partner is "class no lo
   assert.equal(prefA.change, 'class no longer reported');
   assert.equal(ev.type, 'reduced');
 });
+
+// Trap 51, relabeled too: Coatue Innovative Strategies Fund's 433,333 Databricks
+// units ($82,333,270) under three ids and labels (verified on EDGAR 2026-10-01:
+// 0001410368-26-016645, -061868, -085820).
+const unit = (row_key, title, issuer_name, other_id, balance, value_usd) => ({
+  row_key,
+  issuer_name,
+  title,
+  other_id,
+  cusip: '000000000',
+  asset_cat: 'OTHER',
+  balance,
+  unit: 'OU',
+  value_usd,
+  instrument_type: 'indirect',
+  via_spv: 0,
+  counts: true,
+});
+const seriesL = r =>
+  unit(r, 'DATABRICKS SERIES L PREFERRED', 'DATABRICKS SERIES L PREFERRED', '957EGC901', 789473, 149999870);
+
+test('a re-key that also relabels the class pairs when units, shares and value carry over (Coatue)', () => {
+  const dec25 = [seriesL('1'), unit('2', 'DATABRICKS, INC.', 'DATABRICKS, INC.', '990AASZB6', 433333, 82333270)];
+  const mar26 = [
+    seriesL('3'),
+    unit('4', 'DATABRICKS INC. - SERIES K PREFERRED', 'Databricks, Inc.', 'EQT_268664', 433333, 82333270),
+  ];
+  const jun26 = [seriesL('5'), unit('6', 'DATABRICKS INC. - SERIES K PREFERRED', null, 'INTERNAL1', 433333, 82333270)];
+  for (const [a, b, from] of [
+    [dec25, mar26, '990AASZB6'],
+    [mar26, jun26, 'EQT_268664'],
+  ]) {
+    const ev = diffPosition(a, b);
+    assert.equal(ev.type, 'unchanged');
+    assert.equal(ev.instruments.length, 2);
+    assert.equal(ev.instruments.find(l => l.rekeyedFrom).rekeyedFrom, from);
+    assert.ok(ev.instruments.every(l => l.positionEffect === 0 && l.markEffect === 0));
+  }
+  // A different value is not the same holding: it stays a class change.
+  const sold = [seriesL('7'), unit('8', 'DATABRICKS INC. - SERIES K PREFERRED', null, 'INTERNAL1', 433333, 70000000)];
+  assert.equal(diffPosition(mar26, sold).type, 'mixed');
+});
+
+// Trap 52: Fidelity Select Technology Portfolio moved Databricks Series H-K into
+// "PC PP-SEGREGATED LINE" rows (0000035402-26-002676 -> 0000035402-26-004764,
+// verified on EDGAR 2026-10-01): every class kept its shares, the mark went
+// $179.70 -> $190.00. One mark move of 493,279 sh x $10.30, no position change.
+const fid = (row_key, title, other_id, balance, value_usd) => ({
+  row_key,
+  issuer_name: 'DATABRICKS INC',
+  title,
+  other_id,
+  cusip: '000000000',
+  asset_cat: 'EP',
+  balance,
+  unit: 'NS',
+  value_usd,
+  instrument_type: 'equity',
+  via_spv: 0,
+  counts: true,
+});
+const feb = [
+  fid('1', 'DATABRICKS INC SER G PC PP', 'HBE119000', 82812, 14881316.4),
+  fid('2', 'DATABRICKS INC SER H PC PP', 'IAD780000', 273804, 49202578.8),
+  fid('3', 'DATABRICKS INC SER I PC PP', 'JYA752000', 4234, 760849.8),
+  fid('4', 'DATABRICKS INC SER J PC PP', 'KWH825000', 130729, 23492001.3),
+  fid('5', 'DATABRICKS INC SER K PC PP', 'LOU862000', 1700, 305490.0),
+];
+const may = [
+  fid('6', 'DATABRICKS INC SER I PC PP-SEGREGATED LINE', 'MML448000', 4234, 804460.0),
+  fid('7', 'DATABRICKS INC SER H PC PP', 'IAD780000', 157694, 29961860.0),
+  fid('8', 'DATABRICKS INC SER K PC PP-SEGREGATED LINE', 'MML454000', 1700, 323000.0),
+  fid('9', 'DATABRICKS INC SER H PC PP-SEGREGATED LINE', 'MML443000', 116110, 22060900.0),
+  fid('10', 'DATABRICKS INC SER G PC PP', 'HBE119000', 82812, 15734280.0),
+  fid('11', 'DATABRICKS INC SER J PC PP-SEGREGATED LINE', 'MML451000', 130729, 24838510.0),
+];
+
+test('a class moved to segregated lines is one position per class: all mark, no position (trap 52)', () => {
+  const ev = diffPosition(feb, may);
+  assert.equal(ev.type, 'unchanged');
+  assert.equal(ev.instruments.length, 5);
+  const h = ev.instruments.find(l => l.instrumentKey === 'IAD780000');
+  assert.deepEqual([h.prevBalance, h.balance, h.mergedKeys], [273804, 273804, ['MML443000']]);
+  assert.equal(ev.instruments.find(l => l.instrumentKey === 'MML448000').mergedKeys[0], 'JYA752000');
+  const sum = k => ev.instruments.reduce((s, l) => s + l[k], 0);
+  assert.equal(Math.round(sum('positionEffect') * 100), 0);
+  assert.equal(sum('markEffect').toFixed(2), '5080773.70');
+  assert.equal((sum('value') - sum('prevValue')).toFixed(2), '5080773.70');
+});
+
+test('a class move is merged only when it is one security: a 60:1 exchange and a relabeled key stay per key', () => {
+  // Nscale Series B 17,700 sh at $1,290.35 -> 1,062,000 sh at $20.39 under a new
+  // issuer name (2026-05-31): beyond a 4x mark move, the keys stay apart.
+  const before = [fid('1', 'NSCALE GLOBAL HOLDINGS LTD SER B PC PP', 'LRC136000', 17700, 22839195)];
+  const after = [fid('2', 'NSCALE LIMITED SER B PC PP', 'MMJ769000', 1062000, 21654180)];
+  const ev = diffPosition(before, after);
+  assert.equal(ev.type, 'mixed');
+  assert.ok(!ev.instruments.some(l => l.mergedKeys));
+  assert.equal(Math.round(ev.instruments.reduce((s, l) => s + l.positionEffect, 0)), 21654180 - 22839195);
+  // Redwood Materials' key 8900108 is in both filings, relabeled Series C -> D
+  // at the same $47.74 (2023-12-31): neither class merges.
+  const c = (k, t, b) => ({ ...fid(k, t, k, b, b * 47.74), issuer_name: 'REDWOOD MATERIALS' });
+  const ev2 = diffPosition(
+    [
+      c('6382450', 'REDWOOD MATERIALS SER C CVT STOCK PP', 1538629),
+      c('8900108', 'REDWOOD MATERIALS INC PP SER C CVT PFD', 1065590),
+    ],
+    [
+      c('6382450', 'REDWOOD MATERIALS SER C CVT STOCK PP', 1538629),
+      c('8900108', 'REDWOOD MATERIALS INC PP SER D CVT PFD', 1065590),
+    ]
+  );
+  assert.equal(ev2.type, 'unchanged');
+  assert.ok(ev2.instruments.every(l => !l.mergedKeys && l.positionEffect === 0));
+});

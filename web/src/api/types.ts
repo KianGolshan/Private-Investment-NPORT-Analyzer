@@ -33,7 +33,8 @@ export interface CompanyStats {
 }
 
 export interface SearchHit {
-  type: 'company' | 'entity';
+  /** 'unreviewed' = an unreviewed name (opened by key). */
+  type: 'company' | 'unreviewed';
   id?: number;
   key?: string;
   name: string;
@@ -52,6 +53,27 @@ export interface SearchHit {
   match: { how: string; via: string; text: string };
   strong?: boolean;
 }
+
+/** /api/search?kinds=…: one ranked list (P6b W1); the server's order is the ranking. */
+export type UnifiedHit =
+  | SearchHit
+  | {
+      type: 'firm';
+      id: number;
+      name: string;
+      strong: boolean;
+      evidence: { fundsManaged: number; fundsHolding: number; companies: number; value: number };
+    }
+  | { type: 'fund'; fundKey: string; name: string; strong: boolean; fund: FundInfo }
+  | {
+      type: 'class';
+      companyId: number;
+      company: string;
+      classLabel: string;
+      name: string;
+      strong: boolean;
+      evidence: { currentFunds: number; currentValueUsd: number; asOf: string | null };
+    };
 
 export interface FundRef {
   fundKey: string;

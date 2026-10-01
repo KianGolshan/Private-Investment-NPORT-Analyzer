@@ -48,6 +48,9 @@ Data traps are in [DATA-QUALITY.md](DATA-QUALITY.md). Numbers are stable: code a
     years of private marks (trap 49). Check what a routing rule makes unreachable.
 35. **Review your own work as an adversary before sign-off.** Two full reviews found real bugs the suite missed; each
     became a test on real rows.
+36. **Diff a rule that merges identities against the previous build, warehouse-wide, before keeping it.** The
+    trap-52 class merge moved $2.9B from mark to position on one 60:1 share exchange (Nscale) and turned a filer's
+    relabel (Redwood) into a sale; the event-by-event diff against the old facts showed both in one query.
 
 ## Running jobs
 
