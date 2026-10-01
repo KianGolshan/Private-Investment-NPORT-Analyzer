@@ -193,3 +193,24 @@ test('capital structure groups by company: T. Rowe files OpenAI as "OpenAI Group
     issuerKeyOf({ name: 'OpenAI Group PBC SER C CVT PFD PP' })
   );
 });
+
+test('X-Ray: the private book splits into operating companies, fund interests and opaque vehicles, summing to the total', () => {
+  for (const fundKey of db
+    .prepare('SELECT DISTINCT fund_key FROM filings')
+    .all()
+    .map(r => r.fund_key)) {
+    const x = fund.xray(db, fundKey);
+    const parts = Object.values(x.privateByKind);
+    assert.deepEqual(Object.keys(x.privateByKind), ['company', 'fund', 'vehicle']);
+    assert.equal(
+      parts.reduce((n, p) => n + p.rows, 0),
+      x.privateHoldingsCount,
+      fundKey
+    );
+    assert.ok(Math.abs(parts.reduce((n, p) => n + p.valueUSD, 0) - x.privateValueUSD) < 0.01, fundKey);
+    for (const h of x.privateHoldings) assert.ok(['company', 'fund', 'vehicle'].includes(h.privateKind));
+  }
+  // Growth Fund of America's private book at F2 is operating companies only.
+  const gfa = fund.xray(db, GFA, F2);
+  assert.equal(gfa.privateByKind.company.valueUSD, gfa.privateValueUSD);
+});

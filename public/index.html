@@ -560,7 +560,7 @@
         <div id="searchSuggest" class="suggest" role="listbox"></div>
       </div>
       <div class="input-group narrow">
-        <label for="filingLimit">Max Filings</label>
+        <label for="filingLimit" title="Private companies answer from every stored filing; this limit applies only to live EDGAR searches (listed companies, debt, unknown names)">Live EDGAR filings</label>
         <select id="filingLimit">
           <option value="25">25 — Faster</option>
           <option value="50" selected>50 — Balanced</option>
@@ -568,7 +568,7 @@
           <option value="250">250 — Exhaustive (slow on first run)</option>
         </select>
       </div>
-      <button class="btn btn-primary" id="searchBtn" onclick="searchNPORT()">Search NPORT Filings</button>
+      <button class="btn btn-primary" id="searchBtn" onclick="searchNPORT()">Search</button>
       <button class="btn btn-secondary" onclick="quickAddToWatchlist('securityInput')" title="Save this issuer to your watchlist for one-click re-runs later">+ Watchlist</button>
     </div>
 
@@ -607,7 +607,7 @@
       </div>
       <div style="display:flex; flex-direction:column; gap:10px;">
         <div class="input-group narrow">
-          <label for="batchFilingLimit">Max Filings Each</label>
+          <label for="batchFilingLimit" title="Applies only to names answered live from EDGAR">Live EDGAR filings each</label>
           <select id="batchFilingLimit">
             <option value="25" selected>25 — Faster</option>
             <option value="50">50 — Balanced</option>
@@ -692,7 +692,7 @@
       <button class="btn btn-primary" id="xrayBtn" onclick="searchFundXray()">Search Fund</button>
     </div>
     <div class="alert alert-info" style="margin-top:4px; margin-bottom:0;">
-      Opens a fund's own NPORT-P filings from the warehouse (every filing since 2019Q4; an amendment replaces the filing it amends) and identifies its private EQUITY interests — common/preferred stock, warrants, and indirect/SPV vehicles — in companies whose status is private in the reviewed company list, whatever fair-value level the filer used. Names not reviewed yet are labeled "unreviewed"; bonds and loans appear only in the capital structure. v1's Level-3 figure is shown beside each filing for comparison. If the warehouse is unavailable, the fund is looked up live on EDGAR with v1's rules.
+      Opens a fund's own NPORT-P filings from the warehouse (every filing since 2019Q4; an amendment replaces the filing it amends) and identifies its private EQUITY interests — common/preferred stock, warrants, and indirect/SPV vehicles — in companies whose status is private in the reviewed company list, whatever fair-value level the filer used. Names not reviewed yet are labeled "unreviewed"; bonds and loans appear only in the capital structure. The older fair-value Level-3 figure is shown beside each filing for comparison. If the warehouse is unavailable, the fund is looked up live on EDGAR with the Level-3 rule.
     </div>
 
     <div class="date-filter-panel" id="xraySelectorPanel" style="display:none;">
@@ -740,7 +740,7 @@
 
     <div class="search-row" style="margin-top: 8px;">
       <div class="input-group narrow">
-        <label for="watchlistFilingLimit">Max Filings Each</label>
+        <label for="watchlistFilingLimit" title="Applies only to names answered live from EDGAR">Live EDGAR filings each</label>
         <select id="watchlistFilingLimit">
           <option value="25" selected>25 — Faster</option>
           <option value="50">50 — Balanced</option>

@@ -1,5 +1,5 @@
 {
-  "name": "nport-analyzer",
+  "name": "vantage",
   "version": "1.0.0",
   "description": "Vantage - private investment exposure and valuation marks extracted from SEC filings",
   "main": "server.js",

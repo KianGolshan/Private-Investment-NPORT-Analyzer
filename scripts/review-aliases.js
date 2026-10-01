@@ -10,15 +10,24 @@
 const path = require('path');
 const { openWarehouse } = require('../lib/warehouse/db');
 const { runReviewImport } = require('../lib/entities/review-import');
+const { claimRun } = require('../lib/warehouse/refresh');
 
+// Runs under the refresh lock (a 'curation' run), like the admin job: never
+// beside a refresh or another import.
 function main() {
   const args = process.argv.slice(2);
   const dirAt = args.indexOf('--dir');
   const dir = dirAt >= 0 ? path.resolve(args[dirAt + 1]) : path.join(__dirname, '..', 'data', 'review');
   const db = openWarehouse();
   const t = Date.now();
+  const runId = claimRun(db, new Date(), 'curation');
+  const finish = db.prepare('UPDATE refresh_runs SET finished_at = ?, status = ?, error = ? WHERE id = ?');
   try {
     runReviewImport(db, dir, { log: console.log });
+    finish.run(new Date().toISOString(), 'ok', null, runId);
+  } catch (err) {
+    finish.run(new Date().toISOString(), 'failed', String(err.message), runId);
+    throw err;
   } finally {
     db.pragma('wal_checkpoint(TRUNCATE)');
     db.close();

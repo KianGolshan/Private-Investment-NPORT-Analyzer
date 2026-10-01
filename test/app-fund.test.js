@@ -56,7 +56,7 @@ test('fund page: a search opens the fund from the warehouse; F2 on screen with i
   await tick(window);
   const t = text(document);
   assert.match(t, /Source: warehouse • mark date 2026-05-31 • accession 0001193125-26-323081/);
-  assert.match(t, /v1 Figure \(Level 3\)/);
+  assert.match(t, /Level-3 Figure/);
   assert.equal(window.location.pathname, '/fund/S000009228');
   assert.equal(window.location.search, ''); // F2 is the fund's newest filing: the bare permalink
   const anthropic = [...document.querySelectorAll('#resultsContainer a')].filter(

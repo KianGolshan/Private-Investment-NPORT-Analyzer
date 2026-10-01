@@ -6,6 +6,12 @@ on:
   push:
   pull_request:
 
+# A push to a branch with an open PR triggers both events; one run per branch
+# and commit is enough, so the second cancels the first.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
