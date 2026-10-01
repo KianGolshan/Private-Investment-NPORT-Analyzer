@@ -22,7 +22,11 @@
     "seed:entities": "node scripts/seed-entities.js",
     "review:aliases": "node scripts/review-aliases.js",
     "entities:report": "node scripts/entities-report.js",
-    "bench": "node scripts/bench.js"
+    "bench": "node scripts/bench.js",
+    "build:web": "npm --prefix web run build",
+    "test:web": "npm --prefix web run typecheck && npm --prefix web test",
+    "lint:web": "npm --prefix web run lint",
+    "dev:web": "npm --prefix web run dev"
   },
   "dependencies": {
     "axios": "^1.6.7",

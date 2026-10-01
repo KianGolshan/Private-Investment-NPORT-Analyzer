@@ -78,6 +78,45 @@ changes 138, top 118, feed 192).
 
 ---
 
+## Phase 6b: analyst workspace (branch `v2-p6b-workspace`)
+
+**Goal (user, 2026-10-01):** the best way to search, analyze and display the data.
+
+1. One private company in depth: consolidated across funds, with price per share, value and shares at a date or
+   over any range. Narrow it to a manager, fund or class. Show when each fund bought, added, reduced or exited, and
+   split each value change into **position (quantity) vs mark (price)**.
+2. Across funds and manager umbrellas: when each firm invested, and how its private book, marks and new positions
+   changed.
+
+The full plan is in [plans/P6b-analyst-workspace.md](plans/P6b-analyst-workspace.md).
+
+- **Decided with the user:** Vite + Preact + TypeScript in `web/`; v1 under `/legacy` until each tab is replaced;
+  power-analyst first, with shareable URLs.
+- **This section absorbs:** P6 remaining items 3 (one search box), 5 (split `app.js`) and 1 (mark leadership,
+  W2).
+
+**Entry gate:** the P6 core is built (signed off with W0).
+
+**Waves (each one ends at a checkpoint and the user's sign-off):**
+
+| Wave                   | Scope                                                                                                                                                                                         | Exit check                                                                                                          |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **W0 Foundations**     | `web/` scaffold, tokens and themes, shell, router, scope ⇄ URL, API client, DataTable, Chart, export, ⌘K, Express serving and `/legacy`, CI                                                   | **Built 2026-10-01** (see STATUS)                                                                                   |
+| **W1 Data**            | `legsOf` refactor, `position_facts` (migration 0019, built by refresh, measured), `analysis.js` (bridge, pivot, cube, timeline), scope filters, unified search, attribution research, goldens | Equal to `exposureAsOf` where they overlap; the bridge reconciles to the cent; p95 < 200 ms; within the size budget |
+| **W2 Company**         | Workbench: overview, holders, positions grid, changes + bridge, marks & classes + mark leadership, filings, position drawer                                                                   | Goldens on screen: A1, F30, the Capital Group Stripe path, the decomposition                                        |
+| **W3 Firm & Fund**     | Overview, investment timeline, book matrix, marks vs median, changes, bridge; X-Ray ported to the fund page                                                                                   | A3 on screen; the timeline matches `firmChanges`                                                                    |
+| **W4 Cross-cutting**   | Explore pivot, Market movers and newly reported, Activity, Tracked & Watchlist, Compare                                                                                                       | Pivot cells equal `exposureAsOf`; a drill lands on the right events                                                 |
+| **W5 Retire & polish** | Batch → Compare; only Private Credit stays in Legacy; a11y audit, perf, docs                                                                                                                  | Lighthouse ≥ 90 for perf and a11y; LIVE suite green                                                                 |
+
+**Period rule (it goes into DATA-QUALITY with W1):**
+
+- Levels are as of the period end (`exposureAsOf`).
+- Changes are dated by each fund's own mark date and summed over the window, labeled "changes in filings with mark
+  dates in …".
+- Mark dates are never relabeled to a quarter end.
+
+---
+
 ## Phase 7: MCP server
 
 **Entry gate:** P5a checkpoint (open now; every service it needs exists).

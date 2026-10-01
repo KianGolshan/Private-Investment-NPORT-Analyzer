@@ -52,11 +52,29 @@ app.use((_req, res, next) => {
 });
 // lib/analytics/peer.js is shared with the browser, like public/splits.js (P5b).
 app.get('/peer.js', (_req, res) => res.sendFile(path.join(__dirname, 'lib', 'analytics', 'peer.js')));
-app.use(express.static('public'));
-// Permalinks (ADR 0008): the page itself; app.js reads the path.
-app.get(['/company/:ref', '/name/:key', '/fund/:key', '/firm/:id'], (_req, res) =>
-  res.sendFile(path.join(__dirname, 'public', 'index.html'))
-);
+// The analyst workspace (web/, built into web/dist) is the app when it has been
+// built; v1's tabbed page stays at /legacy until each tab is replaced (P6b). An
+// unbuilt checkout (tests, CI before `npm run build:web`) serves v1 at / as before.
+const LEGACY_INDEX = path.join(__dirname, 'public', 'index.html');
+const WEB_DIST = path.join(__dirname, 'web', 'dist');
+const WEB_INDEX = path.join(WEB_DIST, 'index.html');
+const webBuilt = () => require('fs').existsSync(WEB_INDEX);
+const APP_ROUTES = [
+  '/',
+  '/company/:ref',
+  '/name/:key',
+  '/fund/:key',
+  '/firm/:id',
+  '/firms',
+  '/activity',
+  '/explore',
+  '/tracked',
+  '/compare',
+];
+app.get('/legacy', (_req, res) => res.sendFile(LEGACY_INDEX));
+app.get(APP_ROUTES, (_req, res) => res.sendFile(webBuilt() ? WEB_INDEX : LEGACY_INDEX));
+app.use('/assets', express.static(path.join(WEB_DIST, 'assets'), { immutable: true, maxAge: '1y', index: false }));
+app.use(express.static('public', { index: false }));
 
 const USER_AGENT = process.env.SEC_USER_AGENT || '';
 const EFFECTIVE_USER_AGENT = USER_AGENT || 'Vantage internal-tool@localhost';

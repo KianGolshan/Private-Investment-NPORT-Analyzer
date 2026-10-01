@@ -4,7 +4,7 @@ const eslintConfigPrettier = require('eslint-config-prettier');
 
 module.exports = [
   {
-    ignores: ['node_modules/**', 'public/index.html', 'cache.db*', 'warehouse.db*'],
+    ignores: ['node_modules/**', 'public/index.html', 'cache.db*', 'warehouse.db*', 'web/**'],
   },
   js.configs.recommended,
   eslintConfigPrettier,

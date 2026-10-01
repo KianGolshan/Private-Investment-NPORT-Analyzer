@@ -64,6 +64,8 @@ npm test                 # offline suite (real-data fixtures, no network)
 npm run lint             # ESLint
 npm run format:check     # Prettier
 npm run test:live        # LIVE_SEC=1 end-to-end against real EDGAR (minutes)
+npm run build:web        # the analyst workspace (web/, Vite + Preact + TS) -> web/dist, served at /
+npm run test:web         # workspace typecheck + Vitest; npm run lint:web; npm run dev:web (Vite, proxies /api)
 ```
 
 ```bash

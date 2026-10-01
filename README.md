@@ -100,6 +100,8 @@ down.
 git clone https://github.com/KianGolshan/Private-Investment-NPORT-Analyzer.git
 cd Private-Investment-NPORT-Analyzer
 npm install
+npm --prefix web install      # the analyst workspace (Vite + Preact + TypeScript)
+npm run build:web             # builds web/dist, which the server serves at /
 ```
 
 ### Configure
@@ -132,6 +134,11 @@ For development with auto-reload:
 ```bash
 npm run dev
 ```
+
+The analyst workspace (`web/`) is served at `/` once built (`npm run build:web`); v1's tabbed page stays at
+`/legacy`. Without a build, `/` serves v1 as before. To work on the workspace with hot reload, run the server and
+`npm run dev:web` (Vite on port 5173, proxying `/api` to the server; set `VANTAGE_API` if it is not on port 3000).
+Workspace checks: `npm run test:web` (typecheck and Vitest) and `npm run lint:web`.
 
 ### Build and refresh the data warehouse (Vantage v2)
 

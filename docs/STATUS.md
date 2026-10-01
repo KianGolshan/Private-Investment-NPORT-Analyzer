@@ -1,6 +1,7 @@
 # Vantage v2 Status
 
-**Phase:** P6 (analysis views) **built through the core views, awaiting sign-off**, on branch `v2-phase6`.
+**Phase:** P6b (analyst workspace) **W0 foundations built, awaiting sign-off**, on branch `v2-p6b-workspace` (from
+`v2-phase6`, whose P6 core also awaits sign-off).
 **Last updated:** 2026-10-01. Earlier phases' results: [archive/STATUS-history.md](archive/STATUS-history.md).
 
 ## Phase tracker
@@ -8,6 +9,7 @@
 - [x] P0–P5b: live fixes, warehouse, refresh, as-of, entities, identity, services, company and fund pages
       (signed off 2026-09-28..30; ROADMAP "Done")
 - [ ] **P6: analysis views** (core built 2026-10-01; remaining items in ROADMAP §6)
+- [ ] **P6b: analyst workspace** (plan approved 2026-10-01; W0 built; W1–W5 in ROADMAP §6b)
 - [ ] P7: MCP server (open now; the services exist)
 - [ ] P8: operations hardening (nightly job, backups, alerting, doctor)
 - [ ] P9: public deployment (hosting to decide as ADR 0006)
@@ -24,6 +26,44 @@
 | Manager                      | Firms tab, `/firm/<id>`        | book as of any date by company and fund, marks per class, 12 months of changes                         |
 | Market                       | Market & What's New tab        | top private companies as of any date, by country, tracked dashboard, feed of new filings               |
 | Exports                      | every view                     | CSV with mark date, accession and source (XLSX/PDF on the v1 views)                                    |
+
+## P6b W0: the analyst workspace foundations (2026-10-01)
+
+- **Plan approved by the user:** [plans/P6b-analyst-workspace.md](plans/P6b-analyst-workspace.md) (ROADMAP §6b).
+  Decisions: Vite + Preact + TS, v1 under `/legacy`, power analyst first.
+- **Built:**
+  - `web/` (module map in ARCHITECTURE) with design tokens (light, dark, compact) and a shell with sidebar, top bar,
+    freshness and a mobile bottom nav.
+  - The URL-only scope (as of / range / filters; Back and Forward verified).
+  - ⌘K search over companies, codenames and brands, firms and funds, ranked by match tier. "fidelity" opens the
+    firm; "project debussy" opens Databricks; "chobani" opens FHU US Holdings.
+  - Pages on today's routes: Market; Company (overview with a brush-to-range chart, holders, changes, marks and
+    classes); Firms; Firm (by company, by fund, changes); Fund (changes, filings); Activity.
+  - One DataTable (sort, filter, group, totals, virtualization, CSV/XLSX from the same columns) and one Chart
+    (ECharts, lazy, themed from tokens).
+- **Serving:**
+  - `server.js` serves `web/dist` at `/` and the app routes, v1 at `/legacy`, and `/assets` as immutable.
+  - An unbuilt checkout still serves v1 at `/`.
+  - CI gets a `web` job (typecheck, lint, Vitest, build).
+- **Deviation from the plan:** the table is our own component plus TanStack _virtual-core_, not TanStack Table. A
+  focused component covered sort, group, totals and export with less code. It can be revisited if pivoting needs
+  more.
+- **Verified in the browser (built app, live warehouse):**
+  - Anthropic as of 2026-03-31 = 72 funds / $5.94B (A1).
+  - Capital Group book: Anthropic 9 funds / $8.46B (A3).
+  - Stripe, Growth Fund of America changes 2025-11-30..2026-05-31: **+$212.4M mark moved** (all 7 classes $41.42 →
+    $63.00) and **+$150.0M added** (CL B 1,123,404 → 3,504,356 sh at a flat $63.00). That is the W1 decomposition
+    golden; it is still to be verified on raw EDGAR before it enters GOLDEN-NUMBERS.
+  - Dark and light themes; phone width (375 px) with no page overflow; no console errors.
+- **Bugs found while verifying and fixed:**
+  - A route param named `ref` collided with Preact's `ref` (blank company page on a direct load).
+  - Enter in ⌘K during a search opened a stale "recent" item (the handler read a lagging `q`).
+  - Keys typed right after ⌘K were lost.
+  - The fund filter applied on Changes was not shown as a chip.
+  - Date cells wrapped; the page overflowed at phone width.
+- **Tests:** `npm test` 497 / 466 pass / 0 fail / 31 skipped (new: workspace at `/`, v1 at `/legacy`); `web` Vitest
+  13 / 13 (scope ⇄ URL round trip, formatting, CSV, DataTable sort/filter/group, search ranking); lint, format and
+  typecheck clean. LIVE suite not rerun (no SEC-facing change).
 
 ## Post-P5 review and this session (2026-10-01)
 
@@ -67,7 +107,8 @@ refresh once it is).
 
 ## Open decisions (user)
 
-- **Sign off P6's core**, then the remaining P6 items (ROADMAP §6) or P7 (MCP) next.
+- **Sign off P6's core and P6b W0** (open the app at `/`, v1 at `/legacy`), then W1 (data: position facts, bridge,
+  pivot, scope filters).
 - **Install the nightly refresh** (launchd entry in ARCHITECTURE §Refresh lifecycle)? Not installed; until then run
   `npm run refresh` at session start. P8's 30-day unattended run cannot start before it.
 - **Overrule or keep** the two decisions above (trap 45 rule, 1 GB budget).
@@ -84,12 +125,16 @@ refresh once it is).
 
 ## Next session
 
-> Resume Vantage v2. Read CLAUDE.md, docs/STATUS.md, docs/ROADMAP.md §6–7, docs/DATA-QUALITY.md, docs/LESSONS.md.
-> `npm run refresh` first (2026Q3 bulk may load: report it, `ingest_errors`, size vs 1 GB). Run npm test (check the
-> exit code), lint, format, `npm run test:live`. Then the user's choice: the remaining P6 items in order, or P7.
+> Resume Vantage v2. Read CLAUDE.md, docs/STATUS.md, docs/ROADMAP.md §6b, docs/plans/P6b-analyst-workspace.md,
+> docs/DATA-QUALITY.md, docs/LESSONS.md. `npm run refresh` first (report the 2026Q3 bulk, `ingest_errors`, size vs
+> 1 GB). `npm --prefix web install` if needed. Gates: npm test (check the exit code), lint, format, `npm run
+test:web`, `npm run build:web`. Then P6b W1 after the user signs off W0: verify the Stripe decomposition on raw
+> EDGAR first, refactor `legsOf`, measure `position_facts` on the real warehouse before the migration.
 
 ## Log
 
+- **2026-10-01 (later):** P6b planned with the user and approved; W0 built and verified in the browser on branch
+  `v2-p6b-workspace`. Stopped for W0 sign-off.
 - **2026-10-01:** Post-P5 fixes, trap 45/47 rules, the P6 analysis views (issuer, security, fund, manager, market,
   feed, dashboard), docs archived and shortened, merged branches deleted. Stopped for P6 sign-off.
 - **2026-09-30:** Post-P5 review (findings), P5b signed off and merged (PR #4). Earlier: archive.

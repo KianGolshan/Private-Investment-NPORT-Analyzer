@@ -9,3 +9,5 @@ warehouse.db
 warehouse.db-wal
 warehouse.db-shm
 reports/
+web/node_modules/
+web/dist/

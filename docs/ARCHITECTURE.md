@@ -299,6 +299,23 @@ lib/services/dashboard.js          the tracked-list dashboard
 public/views.js                    company Activity / Trend / Share classes; Market & What's New; Firms
 ```
 
+Built in P6b W0 (2026-10-01), the analyst workspace (`web/`, Vite + Preact + TypeScript, ESM; its own
+`package.json`; built into `web/dist`, which `server.js` serves at `/` and the app routes, with v1 at `/legacy`):
+
+```
+web/src/app.tsx                    shell: sidebar, top bar (⌘K, freshness, theme, density), mobile nav, routes (preact-iso)
+web/src/api/{client,types}.ts      one fetch path: cache per refresh id, abort on change (useApi); response types
+web/src/scope/{scope.ts,ScopeBar}  the URL-only scope (asof | from..to, firm, fund, class, kind); Back/Forward work
+web/src/ui/DataTable.tsx           sort, filter, group, totals, row virtualization (TanStack virtual-core), CSV/XLSX
+                                   from the same column definitions
+web/src/ui/Chart.tsx, echarts.ts   ECharts (modular, lazy chunk), colors from the CSS tokens (theme.ts), redraws on theme
+web/src/ui/CommandPalette.tsx      one search: companies and unreviewed names (/api/search), firms, funds; ranked by match
+web/src/ui/ChangesTable.tsx        position changes worded as filed (first reported, added, reduced, no longer reported…)
+web/src/lib/{format,export,prefs}  formatting (one copy), exports (SheetJS lazy), theme/density preferences
+web/src/pages/                     Market, Company (overview, holders, changes, marks), Firms, Firm, Fund, Activity
+web/src/styles/{tokens,base}.css   design tokens (light, dark, compact) and shared components
+```
+
 Planned: `mcp-server.js` (P7) over the same services.
 
 ## Warehouse API (read-only, `lib/api/warehouse.js`)
