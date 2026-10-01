@@ -190,7 +190,7 @@ refresh once it is).
 - **Overrule or keep** the two decisions above (trap 45 rule, 1 GB budget).
 - **Global git identity** is "Test User <test@test.com>" (`git config --global`); this repo sets its own. Fix with
   `git config --global user.name …` if wanted (not changed: system config).
-- **Push and PR:** `v2-phase6` is committed locally; push it and open a PR when you say so.
+- **PR:** `v2-phase6` and `v2-p6b-workspace` are pushed (2026-10-01); no PR opened yet. Open one when you say so.
 - Balance-0 rows (trap 43) count under the P3 precedent; tracked-list size is yours to change.
 
 ## Known issues
@@ -201,14 +201,24 @@ refresh once it is).
 
 ## Next session
 
-> Resume Vantage v2. Read CLAUDE.md, docs/STATUS.md, docs/ROADMAP.md §6b, docs/plans/P6b-analyst-workspace.md,
-> docs/DATA-QUALITY.md, docs/LESSONS.md. `npm run refresh` first (report the 2026Q3 bulk, `ingest_errors`, size vs
-> 1 GB). `npm --prefix web install` if needed. Gates: npm test (check the exit code), lint, format, `npm run
-test:web`, `npm run build:web`. Then P6b W1 after the user signs off W0: verify the Stripe decomposition on raw
-> EDGAR first, refactor `legsOf`, measure `position_facts` on the real warehouse before the migration.
+> Resume Vantage v2 on branch `v2-p6b-workspace` (pushed). Read CLAUDE.md, docs/STATUS.md (the "Audit fixes and
+> the Canva audit" and "Anthropic end-to-end audit" sections first), docs/ROADMAP.md §6b,
+> docs/plans/P6b-analyst-workspace.md, docs/DATA-QUALITY.md (traps 50–51, display rules) and docs/LESSONS.md.
+>
+> Setup: `npm install`, `npm --prefix web install`, `npm run build:web`, then `npm run refresh` (report the 2026Q3
+> bulk, `ingest_errors`, size vs 1 GB). Gates: `npm test` (check the exit code), lint, format, `npm run test:web`.
+> Start the app with preview_start (`nport-analyzer` in .claude/launch.json): `/` is the workspace, `/legacy` is v1.
+>
+> The user is testing: continue the per-security audit, the same exercise as Anthropic and Canva (warehouse vs API vs
+> UI vs raw EDGAR, independent as-of at every quarter end, prices by mark date, changes and position/mark effects,
+> classes, stale marks, exits), fix what it finds, and record goldens and STATUS. Next after sign-off: P6b W1
+> (`position_facts`, bridge, pivot, firm and fund scope on every route).
 
 ## Log
 
+- **2026-10-01 (latest):** Anthropic and Canva audits; fixes for traps 50–51, one indirect kind, position/mark
+  effects, per-firm marks, % of fund, firm filters, stale marks; goldens F39–F42. Branches pushed for testing in a
+  new session.
 - **2026-10-01 (later):** P6b planned with the user and approved; W0 built and verified in the browser on branch
   `v2-p6b-workspace`. Stopped for W0 sign-off.
 - **2026-10-01:** Post-P5 fixes, trap 45/47 rules, the P6 analysis views (issuer, security, fund, manager, market,
