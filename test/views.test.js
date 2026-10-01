@@ -143,3 +143,17 @@ test('fund changes: Growth Fund of America reports its Stripe marks filing by fi
   const s = r.events.find(e => e.accession === '0001193125-26-182055' && e.company === 'Stripe');
   assert.ok(Math.abs(s.markChangePct - 52.1) < 0.1);
 });
+
+test('marks use canonical filings only: an amended filing replaces the original (F16 rule)', () => {
+  // S000002245 filed its 2025-10-31 report twice: 0002071691-25-009460, then 0002071691-26-013202.
+  const superseded = '0002071691-25-009460';
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM canonical_filings WHERE accession = ?').get(superseded).n, 0);
+  const owners = firm.fundFirms(db).byFund.get('S000002245') || [];
+  assert.ok(owners.length, 'the fund has a firm');
+  for (const { managerId } of owners) {
+    const m = firm.firmMarks(db, managerId, idOf('Anthropic'));
+    const used = m.series.flatMap(x => x.accessions);
+    assert.ok(used.includes('0002071691-26-013202'), 'the amendment is used');
+    assert.ok(!used.includes(superseded), 'the superseded filing is not');
+  }
+});
