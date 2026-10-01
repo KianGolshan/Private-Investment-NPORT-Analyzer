@@ -14,7 +14,7 @@
    onXrayCompareSelectChange, runFundXrayCompare, doXrayCompareExportCSV, doXrayCompareExportExcel,
    doXrayCompareExportPDF, selectIndexedFund, sortBasketLeaderboard, runXrayReturns, onXraySeriesChange,
    openCandidate, onSecurityInput, applyAsOf, loadLiveDebt, confirmWatchlistMatch, makeThisACompany */
-/* global VantageFundGroups, VantagePeer */
+/* global VantageFundGroups, VantagePeer, attachCompanyViews, loadMarket, loadFeed, loadFirms, openFirm */
 
 // ── State ──────────────────────────────────────────────────────────────────
 // Bumped at the start of searchNPORT/searchPrivateCredit/searchFundXray (the
@@ -204,6 +204,9 @@ function applyURLParams() {
   if (company) return openCompany(Number(company[1]), { date: params.get('date') || undefined });
   const named = window.location.pathname.match(/^\/name\/(.+)$/);
   if (named) return openEntity(decodeURIComponent(named[1]), { date: params.get('date') || undefined });
+  // /firm/<manager id>[?date=…]: a firm's private book (P6).
+  const firmPath = window.location.pathname.match(/^\/firm\/(\d+)/);
+  if (firmPath) return openFirm(Number(firmPath[1]), { date: params.get('date') || undefined });
   // /fund/<fund key>[?accession=…]: the fund page on the warehouse (P5b).
   const fundLink = window.location.pathname.match(/^\/fund\/(.+)$/);
   if (fundLink) {
@@ -224,7 +227,7 @@ function applyURLParams() {
     document.getElementById('securityInput').value = security;
     if (['25', '50', '100'].includes(limit)) document.getElementById('filingLimit').value = limit;
     searchNPORT();
-  } else if (['batch', 'credit', 'watchlist', 'xray'].includes(tab)) {
+  } else if (['batch', 'credit', 'watchlist', 'xray', 'market', 'firms'].includes(tab)) {
     // No search term to auto-run (e.g. ?tab=credit with no issuer) — still
     // switch to the tab the link named, rather than silently staying on
     // Single Security with no indication the link was incomplete.
@@ -280,23 +283,25 @@ function handleAboutTabTrap(e) {
 }
 
 // ── Tab management ─────────────────────────────────────────────────────────
+// Each tab button names its panel (aria-controls="<tab>Tab").
 function switchTab(tab, { skipUrlReset } = {}) {
-  const tabNames = ['single', 'batch', 'credit', 'watchlist', 'xray'];
-  document.querySelectorAll('.tab').forEach((el, i) => {
-    const active = tabNames[i] === tab;
+  document.querySelectorAll('.tab').forEach(el => {
+    const active = el.getAttribute('aria-controls') === `${tab}Tab`;
     el.classList.toggle('active', active);
     el.setAttribute('aria-selected', active ? 'true' : 'false');
   });
-  document.getElementById('singleTab').classList.toggle('active', tab === 'single');
-  document.getElementById('batchTab').classList.toggle('active', tab === 'batch');
-  document.getElementById('creditTab').classList.toggle('active', tab === 'credit');
-  document.getElementById('watchlistTab').classList.toggle('active', tab === 'watchlist');
-  document.getElementById('xrayTab').classList.toggle('active', tab === 'xray');
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.toggle('active', el.id === `${tab}Tab`));
   clearResults();
   // Skipped when applyURLParams() is driving the tab switch on page load —
   // it still has incoming ?security=/?issuer= params to read and act on.
-  if (!skipUrlReset) window.history.replaceState({}, '', '/');
+  if (!skipUrlReset) window.history.replaceState({}, '', tab === 'market' || tab === 'firms' ? `/?tab=${tab}` : '/');
   if (tab === 'watchlist') renderWatchlist();
+  // The analysis tabs load on first visit (public/views.js).
+  if (tab === 'market' && !document.getElementById('marketContainer').innerHTML.trim()) {
+    loadMarket();
+    loadFeed();
+  }
+  if (tab === 'firms' && !skipUrlReset && !document.getElementById('firmsContainer').innerHTML.trim()) loadFirms();
 }
 
 // ── Company page on the warehouse (Phase 5a, ADR 0008) ─────────────────────
@@ -552,6 +557,7 @@ async function loadCompanyPage(mySearchGen, { date, knownAsOf } = {}) {
   document.getElementById('securityInput').value = c.name;
   window.history.replaceState({}, '', companyPath(c) + (date ? `?date=${enc(date)}` : ''));
   renderCompanyPage();
+  if (typeof attachCompanyViews === 'function') attachCompanyViews(c);
   const buckets = historyToBuckets(history);
   allResults = { mode: 'single', single: buckets };
   if (nonEmptyBuckets(buckets).length) {
@@ -693,6 +699,7 @@ function renderCompanyPage() {
     ${x.zeroValue.length ? `<h3>Reported at $0</h3>${holdersTableHTML(x.zeroValue)}` : ''}
     ${x.exited.length ? `<h3>No longer reported</h3><div class="hint">The fund's latest filing on or before ${esc(x.date)} no longer lists the company.</div>${holdersTableHTML(x.exited, { showValue: false, lastHeld: true })}` : ''}
     <div id="liveDebtContainer"></div>
+    <div id="companyViewsSlot"></div>
     <h3>History</h3>
   </div>`);
 }
@@ -3804,6 +3811,8 @@ function buildXraySnapshotHTML(xray, filing, opts) {
 
   html += capitalStructureHTML(xray);
   if (opts.exportKey !== 'prior') html += xrayReturnsPanelHTML();
+  if (wh && opts.exportKey !== 'prior' && xray.fund?.fundKey)
+    html += `<div class="export-row"><button class="btn btn-secondary" onclick="loadFundChanges(${esc(JSON.stringify(xray.fund.fundKey))})">Private-company changes, filing by filing</button></div><div id="fundChangesBox"></div>`;
 
   html += `<div class="export-row">
     <button class="btn btn-green" onclick="doXrayExportCSV('${esc(opts.exportKey || 'current')}')">Export CSV</button>

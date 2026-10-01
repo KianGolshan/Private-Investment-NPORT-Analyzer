@@ -54,7 +54,7 @@ app.use((_req, res, next) => {
 app.get('/peer.js', (_req, res) => res.sendFile(path.join(__dirname, 'lib', 'analytics', 'peer.js')));
 app.use(express.static('public'));
 // Permalinks (ADR 0008): the page itself; app.js reads the path.
-app.get(['/company/:ref', '/name/:key', '/fund/:key'], (_req, res) =>
+app.get(['/company/:ref', '/name/:key', '/fund/:key', '/firm/:id'], (_req, res) =>
   res.sendFile(path.join(__dirname, 'public', 'index.html'))
 );
 

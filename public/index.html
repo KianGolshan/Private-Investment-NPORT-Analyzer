@@ -168,6 +168,10 @@
     .tab.active { color: var(--navy); border-bottom-color: var(--gold); background: var(--navy-pale); border-radius: 6px 6px 0 0; }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
+    .panel-block { margin: 14px 0 6px; }
+    .panel-block h2 { font-size: 18px; margin: 4px 0 10px; color: var(--navy); }
+    .view-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 8px; }
+    .chart-wrap { position: relative; margin: 10px 0 16px; }
     @media (max-width: 480px) {
       .tab { padding: 9px 14px; font-size: 13.5px; }
     }
@@ -543,6 +547,8 @@
   <!-- Tabs -->
   <div class="tabs" role="tablist">
     <button class="tab active" role="tab" aria-selected="true"  aria-controls="singleTab"    onclick="switchTab('single')">Single Security</button>
+    <button class="tab"        role="tab" aria-selected="false" aria-controls="marketTab"     onclick="switchTab('market')">Market &amp; What's New</button>
+    <button class="tab"        role="tab" aria-selected="false" aria-controls="firmsTab"      onclick="switchTab('firms')">Firms</button>
     <button class="tab"        role="tab" aria-selected="false" aria-controls="batchTab"      onclick="switchTab('batch')">Batch Search</button>
     <button class="tab"        role="tab" aria-selected="false" aria-controls="creditTab"     onclick="switchTab('credit')">Private Credit Analysis</button>
     <button class="tab"        role="tab" aria-selected="false" aria-controls="watchlistTab"  onclick="switchTab('watchlist')">Watchlist</button>
@@ -598,6 +604,39 @@
   </div>
 
   <!-- Batch tab -->
+  <div id="marketTab" class="tab-content" role="tabpanel">
+    <div class="panel-block">
+      <h2>Private companies held by funds</h2>
+      <div class="search-row">
+        <div class="input-group narrow"><label for="marketDate">As of</label><input type="date" id="marketDate"></div>
+        <label class="check"><input type="checkbox" id="marketTracked"> Tracked companies only</label>
+        <button class="btn btn-primary" onclick="loadMarket()">Update</button>
+      </div>
+    </div>
+    <div id="marketContainer"></div>
+    <div class="panel-block">
+      <h2>What's new</h2>
+      <div class="hint">Position changes and mark moves in the N-PORT filings made since a date: first reported, added, reduced, no longer reported, reported at $0.</div>
+      <div class="search-row">
+        <div class="input-group narrow"><label for="feedSince">Filed since</label><input type="date" id="feedSince"></div>
+        <label class="check"><input type="checkbox" id="feedAll"> All reviewed private companies (not only tracked)</label>
+        <button class="btn btn-primary" onclick="loadFeed()">Update</button>
+      </div>
+    </div>
+    <div id="feedContainer"></div>
+  </div>
+
+  <div id="firmsTab" class="tab-content" role="tabpanel">
+    <div class="panel-block">
+      <h2>Firms</h2>
+      <div class="search-row">
+        <div class="input-group"><label for="firmQuery">Firm name</label><input type="text" id="firmQuery" placeholder="e.g. Fidelity, Capital Group, T. Rowe" onkeydown="if (event.key === 'Enter') loadFirms()"></div>
+        <button class="btn btn-primary" onclick="loadFirms()">Search</button>
+      </div>
+    </div>
+    <div id="firmsContainer"></div>
+  </div>
+
   <div id="batchTab" class="tab-content" role="tabpanel">
     <div class="search-row" style="align-items: flex-start;">
       <div class="input-group">
@@ -774,5 +813,6 @@
   <script src="/peer.js"></script>
   <script src="/fund-groups.js"></script>
   <script src="/app.js"></script>
+  <script src="/views.js"></script>
 </body>
 </html>
