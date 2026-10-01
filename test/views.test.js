@@ -71,8 +71,8 @@ test('trend: the monthly series equals exposureAsOf at A1 and A2 (72 / $5.93B, 1
 test('classes: Fidelity marks Anthropic Series D 5.76% above Series E-H in one filing (F30)', async () => {
   const c = (await api(`/api/companies/${idOf('Anthropic')}/classes?date=2026-05-31`)).body;
   const fid = c.withinFiling.find(w => w.accession === '0000035402-26-004618');
-  const d = fid.classes.find(x => x.instrument === 'Preferred D');
-  const g = fid.classes.find(x => x.instrument === 'Preferred G');
+  const d = fid.classes.find(x => x.instrument === 'Series D');
+  const g = fid.classes.find(x => x.instrument === 'Series G');
   assert.equal(Math.round(d.pricePerShare * 100) / 100, 622.94);
   assert.equal(Math.round(g.pricePerShare * 100) / 100, 589.01);
   assert.equal(Math.round(d.vsLowPct * 100) / 100, 5.76);
@@ -80,7 +80,7 @@ test('classes: Fidelity marks Anthropic Series D 5.76% above Series E-H in one f
   // Capital Group marks every class alike at 5/31 (F30): no within-filing gap.
   assert.ok(!c.withinFiling.some(w => w.accession === '0001193125-26-323081'));
   const marks = (await api(`/api/companies/${idOf('Anthropic')}/marks`)).body;
-  assert.ok(marks.series.some(s => s.markDate === '2026-05-31' && s.instrument === 'Preferred D' && s.median > 622));
+  assert.ok(marks.series.some(s => s.markDate === '2026-05-31' && s.instrument === 'Series D' && s.median > 622));
 });
 
 test('firm: Capital Group holds Anthropic in 9 funds / $8.46B at 2026-06-30 (A3), equal to exposureAsOf', async () => {
@@ -104,11 +104,62 @@ test("company holders by firm: filtering Anthropic's holders to a firm equals th
   assert.equal(Math.round(mine.reduce((s, h) => s + h.value, 0)), Math.round(book.value));
   // positions carry the class the class views group by; pctNav stays the filed percent (0.83 = 0.83%)
   const gfa = x.holdings.find(h => h.accession === '0001193125-26-323081');
-  const g1 = gfa.positions.find(p => p.classLabel === 'Preferred G-1');
+  const g1 = gfa.positions.find(p => p.classLabel === 'Series G-1');
   assert.ok(g1 && g1.pctNav > 0.5 && g1.pctNav < 1, `G-1 is ${g1?.pctNav}% of the fund`);
   // changes carry the same firms
   const { events } = (await api(`/api/companies/${idOf('Anthropic')}/activity`)).body;
   assert.ok(events.filter(e => e.fundKey === gfa.fundKey).every(e => e.firms.some(f => f.id === id)));
+});
+
+test("trap 50: one series across filers' categories; a CLASS code with common wording stays common", () => {
+  const { classOfRow } = require('../lib/services/classes');
+  // Anthropic Series G: BlackRock files EC, Fidelity EP; Capital Group "CL G-1 PFD", NY Life "Series G-1" (EC)
+  assert.equal(classOfRow({ instrumentLabel: 'Common G', title: 'ANTHROPIC SERIES G' }), 'Series G');
+  assert.equal(classOfRow({ instrumentLabel: 'Preferred G', title: 'ANTHROPIC PBC SERIES G PC PP' }), 'Series G');
+  assert.equal(
+    classOfRow({ instrumentLabel: 'Preferred G-1', title: 'ANTHROPIC PBC CL G-1 PFD PP (PHYSICAL)' }),
+    'Series G-1'
+  );
+  assert.equal(classOfRow({ instrumentLabel: 'Common G-1', title: 'Anthropic PBC, Series G-1' }), 'Series G-1');
+  // Stripe Class B common stays common, by the filer's words (CL B, or explicit COMMON)
+  assert.equal(
+    classOfRow({ instrumentLabel: 'Common B', title: 'STRIPE INC CL B PP (DRS) (NOT LISTED OR TRADING)' }),
+    'Common B'
+  );
+  assert.equal(classOfRow({ instrumentLabel: 'Common B', title: 'STRIPE INC CL B COMMON PP' }), 'Common B');
+  assert.equal(
+    classOfRow({ instrumentLabel: 'Preferred I', title: 'STRIPE INC PFD SER I 6.00% NON-CUM PP' }),
+    'Series I'
+  );
+  // uncoded labels and vehicles are unchanged
+  assert.equal(classOfRow({ instrumentLabel: 'Preferred', title: 'Anthropic PBC' }), 'Preferred');
+  assert.equal(classOfRow({ instrumentLabel: 'Indirect via ANTHROPIC', title: 'ANTHROPIC' }), 'Indirect via ANTHROPIC');
+});
+
+test('kind: named SPVs and fund interests are both indirect, one definition (asof.kindOf)', async () => {
+  const x = (await api(`/api/companies/${idOf('Anthropic')}/exposure?date=2026-06-30`)).body;
+  const kinds = new Set(x.holdings.flatMap(h => h.positions.map(p => p.kind)));
+  assert.ok(kinds.has('direct'));
+  for (const h of x.holdings) for (const p of h.positions) assert.equal(p.kind === 'spv', p.viaSpv);
+  const top = (await api('/api/market/top?date=2026-06-30&limit=50')).body.results.find(r => r.name === 'Anthropic');
+  const indirect = x.holdings.flatMap(h => h.positions).filter(p => p.kind !== 'direct');
+  assert.equal(Math.round(top.indirectValue), Math.round(indirect.reduce((s, p) => s + p.valueUsd, 0)));
+});
+
+test('changes split into position and mark effects that sum to the value change (F39)', async () => {
+  const { events } = (await api(`/api/companies/${idOf('Anthropic')}/activity`)).body;
+  for (const e of events)
+    assert.ok(Math.abs(e.positionEffect + e.markEffect + e.otherEffect - e.valueChange) < 0.01, e.accession);
+  const gfa = events.find(e => e.accession === '0001193125-26-323081');
+  assert.equal(gfa.positionEffect.toFixed(2), '305781925.89');
+  assert.equal(gfa.markEffect.toFixed(2), '2617600776.30');
+});
+
+test('a 3:1 split is neither a position nor a mark change (F13)', async () => {
+  const { events } = (await api(`/api/companies/${idOf('Databricks')}/activity`)).body;
+  const legs = events.flatMap(e => e.instruments).filter(l => l.split === 3);
+  assert.ok(legs.length > 0);
+  for (const l of legs) assert.ok(Math.abs(l.positionEffect) < 1, `${l.title}: ${l.positionEffect}`);
 });
 
 test('firm: Capital Group marks Stripe in 8 of 12 months of 2025, at one price per date', async () => {

@@ -15,7 +15,19 @@ import type {
   Position,
   TrendPoint,
 } from '../api/types';
-import { firmPath, fundPath, longDate, money, moneyC, num, pct, pctOfNav, price } from '../lib/format';
+import {
+  firmPath,
+  fundPath,
+  longDate,
+  money,
+  moneyC,
+  moneyDelta,
+  num,
+  pct,
+  pctOfNav,
+  price,
+  tone,
+} from '../lib/format';
 import { ScopeBar } from '../scope/ScopeBar';
 import { isRange, useParam, useScope } from '../scope/scope';
 import { Badge, Card, Empty, ErrorBox, FilingRef, Kpi, Loading, Tabs } from '../ui/bits';
@@ -284,11 +296,41 @@ interface PosRow extends Position {
 const firmNames = (firms: FirmRef[] | undefined) => (firms?.length ? firms.map(f => f.name).join(' / ') : '—');
 const inFirms = (firms: FirmRef[] | undefined, ids: number[]) => !ids.length || !!firms?.some(f => ids.includes(f.id));
 
+const KIND_TEXT = { direct: 'directly', spv: 'through a named SPV', fund: 'as a fund interest' } as const;
+/** Indirect holdings, in the filing's terms: a named SPV, or a row the filer files as a fund interest. */
+function KindBadge({ kind }: { kind: Position['kind'] }) {
+  if (kind === 'spv')
+    return (
+      <Badge tone="info" title="Held through a named SPV">
+        through SPV
+      </Badge>
+    );
+  if (kind === 'fund')
+    return (
+      <Badge tone="info" title="The filer files this row as a fund interest (asset category OTHER)">
+        fund interest
+      </Badge>
+    );
+  return null;
+}
+
 /** Pickers that add a firm or class to the scope (the chips in the scope bar remove them). */
-function FilterPickers({ firms, classes }: { firms?: FirmRef[]; classes?: string[] }) {
+function FilterPickers({ firms, classes, kinds }: { firms?: FirmRef[]; classes?: string[]; kinds?: boolean }) {
   const [scope, setScope] = useScope();
   return (
     <>
+      {kinds && !scope.kind && (
+        <select
+          class="input"
+          aria-label="Filter by how it is held"
+          value=""
+          onChange={e => setScope({ kind: (e.target as HTMLSelectElement).value as 'direct' | 'indirect' })}
+        >
+          <option value="">+ Held</option>
+          <option value="direct">Directly</option>
+          <option value="indirect">Indirectly (SPV or fund interest)</option>
+        </select>
+      )}
       {firms && firms.length > 0 && (
         <select
           class="input"
@@ -350,7 +392,7 @@ function Holders({ base, sq, name, newest }: ViewProps) {
       all.filter(
         r =>
           (!scope.classes.length || scope.classes.includes(r.classLabel)) &&
-          (!scope.kind || (scope.kind === 'indirect') === r.viaSpv) &&
+          (!scope.kind || (scope.kind === 'indirect') === (r.kind !== 'direct')) &&
           (!scope.funds.length || scope.funds.includes(r.h.fundKey)) &&
           inFirms(r.h.firms, scope.firms)
       ),
@@ -407,14 +449,14 @@ function Holders({ base, sq, name, newest }: ViewProps) {
       value: r => r.classLabel,
       render: r => (
         <span title={r.title}>
-          {r.classLabel} {r.viaSpv && <Badge tone="info">through SPV</Badge>}
+          {r.classLabel} <KindBadge kind={r.kind} />
         </span>
       ),
       exportAs: [
         { header: 'Title', value: r => r.title },
         { header: 'Instrument key', value: r => r.instrumentKey },
         { header: 'Asset category', value: r => r.assetCat },
-        { header: 'Through a named SPV', value: r => r.viaSpv },
+        { header: 'Held', value: r => KIND_TEXT[r.kind] },
       ],
     },
     {
@@ -492,7 +534,7 @@ function Holders({ base, sq, name, newest }: ViewProps) {
           newest={newest}
           fundName={fundName}
         />
-        <FilterPickers firms={firmList} classes={classList} />
+        <FilterPickers firms={firmList} classes={classList} kinds={all.some(r => r.kind !== 'direct')} />
       </div>
       <ErrorBox error={exp.error} />
       {exp.loading && !d && <Loading rows={6} />}
@@ -564,6 +606,18 @@ function Changes({ base, sq, name, newest }: ViewProps) {
     return c;
   }, [events]);
   const firmList = useMemo(() => firmOptions((act.data?.events ?? []).map(e => e.firms)), [act.data]);
+  const effects = useMemo(
+    () =>
+      events.reduce(
+        (t, e) => ({
+          position: t.position + e.positionEffect + e.otherEffect,
+          mark: t.mark + e.markEffect,
+          total: t.total + e.valueChange,
+        }),
+        { position: 0, mark: 0, total: 0 }
+      ),
+    [events]
+  );
   const fundName = (k: string) => act.data?.events.find(e => e.fundKey === k)?.fundLabel;
   return (
     <div class="stack">
@@ -580,6 +634,23 @@ function Changes({ base, sq, name, newest }: ViewProps) {
       {act.loading && !act.data && <Loading rows={6} />}
       {act.data && (
         <>
+          <div class="kpis">
+            <Kpi
+              label="Value change"
+              value={<span class={tone(effects.total)}>{moneyDelta(effects.total)}</span>}
+              sub="sum over the changes shown"
+            />
+            <Kpi
+              label="From positions"
+              value={<span class={tone(effects.position)}>{moneyDelta(effects.position)}</span>}
+              sub="shares added or removed, at the prior mark"
+            />
+            <Kpi
+              label="From marks"
+              value={<span class={tone(effects.mark)}>{moneyDelta(effects.mark)}</span>}
+              sub="new marks on shares held"
+            />
+          </div>
           <div class="kpis">
             <Kpi label="First reported" value={num(counts.new ?? 0)} sub="funds’ first filing with it" />
             <Kpi label="Added" value={num(counts.added ?? 0)} sub="more shares or a new class" />
@@ -618,11 +689,66 @@ function Marks({ base, sq, name, newest }: ViewProps) {
     return [...all].sort((a, b) => (n.get(b) ?? 0) - (n.get(a) ?? 0)).slice(0, 6);
   }, [m, cls]);
 
+  // No class picked: each class's median across funds per mark date.
+  const medianSeries = (t: ChartTheme) =>
+    shownClasses.map((c, i) => ({
+      name: c,
+      type: 'line',
+      data: (m?.series ?? []).filter(s => s.instrument === c).map(s => [s.markDate, s.median]),
+      showSymbol: true,
+      symbolSize: 5,
+      itemStyle: { color: t.series[i % t.series.length] },
+    }));
+  // One class: every firm's own mark line (firms mark on their own dates, so a
+  // median across firms at nearby dates mixes them), over the low–high band.
+  const classSeries = (t: ChartTheme, c: string) => {
+    const pts = (m?.series ?? []).filter(s => s.instrument === c);
+    const fs = (m?.firmSeries ?? []).filter(s => s.instrument === c);
+    const count = new Map<number, number>();
+    for (const x of fs) count.set(x.firmId, (count.get(x.firmId) ?? 0) + x.funds);
+    const top = [...count.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+    return [
+      {
+        name: 'Low',
+        type: 'line',
+        stack: 'band',
+        data: pts.map(s => [s.markDate, s.low]),
+        lineStyle: { opacity: 0 },
+        symbol: 'none',
+        tooltip: { show: false },
+      },
+      {
+        name: 'Low–high across funds',
+        type: 'line',
+        stack: 'band',
+        data: pts.map(s => [s.markDate, (s.high ?? 0) - (s.low ?? 0)]),
+        lineStyle: { opacity: 0 },
+        symbol: 'none',
+        areaStyle: { color: t.border, opacity: 0.6 },
+        itemStyle: { color: t.text3 },
+        tooltip: { show: false },
+      },
+      ...top.map(([firmId], i) => {
+        const rows = fs.filter(x => x.firmId === firmId);
+        return {
+          name: rows[0]?.firm ?? `Firm ${firmId}`,
+          type: 'line',
+          data: rows.map(x => [x.markDate, x.median]),
+          showSymbol: true,
+          symbolSize: 6,
+          itemStyle: { color: t.series[i % t.series.length] },
+        };
+      }),
+    ];
+  };
+
   const build = useCallback(
     (t: ChartTheme) => {
       const b = baseOption(t);
+      const series = cls ? classSeries(t, cls) : medianSeries(t);
       return {
         ...b,
+        legend: { ...b.legend, data: series.map(x => x.name).filter(n => n !== 'Low') },
         grid: { ...b.grid, bottom: 48 },
         tooltip: { ...b.tooltip, valueFormatter: (v: number) => money(v) },
         xAxis: { type: 'time', ...b.xAxisDefaults },
@@ -633,38 +759,7 @@ function Marks({ base, sq, name, newest }: ViewProps) {
           axisLabel: { ...b.yAxisDefaults.axisLabel, formatter: (v: number) => `$${v}` },
         },
         dataZoom: [{ type: 'slider', height: 22, bottom: 6 }, { type: 'inside' }],
-        series: shownClasses.flatMap((c, i) => {
-          const pts = (m?.series ?? []).filter(s => s.instrument === c);
-          const color = t.series[i % t.series.length];
-          return [
-            {
-              name: c,
-              type: 'line',
-              data: pts.map(s => [s.markDate, s.median]),
-              showSymbol: true,
-              symbolSize: 5,
-              itemStyle: { color },
-            },
-            ...(cls
-              ? [
-                  {
-                    name: `${c} low–high`,
-                    type: 'scatter',
-                    data: pts.flatMap(s =>
-                      s.low != null && s.high != null && s.low !== s.high
-                        ? [
-                            [s.markDate, s.low],
-                            [s.markDate, s.high],
-                          ]
-                        : []
-                    ),
-                    symbolSize: 4,
-                    itemStyle: { color, opacity: 0.45 },
-                  },
-                ]
-              : []),
-          ];
-        }),
+        series,
       };
     },
     [m, shownClasses, cls]
@@ -704,7 +799,11 @@ function Marks({ base, sq, name, newest }: ViewProps) {
       {marks.loading && !m && <Loading rows={5} />}
       {m && (
         <Card
-          title="Per-share mark by class (median across funds at each mark date)"
+          title={
+            cls
+              ? `${cls}: each firm's per-share mark, over the low–high band across funds`
+              : 'Per-share mark by class (median across funds at each mark date)'
+          }
           actions={<span class="muted small">split-adjusted within each fund's series</span>}
         >
           {m.series.length ? (

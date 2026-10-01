@@ -69,6 +69,7 @@ export default function Market() {
     {
       id: 'indirect',
       header: 'Of which indirect',
+      title: 'Held through a named SPV or as a fund interest',
       value: r => r.indirectValue,
       num: true,
       render: r => (r.indirectValue ? moneyC(r.indirectValue) : <span class="muted">—</span>),

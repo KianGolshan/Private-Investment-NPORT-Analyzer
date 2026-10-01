@@ -50,7 +50,7 @@ test('company page: Share classes show Fidelity Series D 5.76% above its other c
   const { window, document } = await loadApp({ fetchImpl: backend() });
   await window.openCompany(idOf('Anthropic'), { date: '2026-05-31' });
   await window.showCompanyView('classes');
-  assert.match(text(document, 'companyViewBox'), /Preferred D \$622\.94 \(\+5\.76%\)/);
+  assert.match(text(document, 'companyViewBox'), /Series D \$622\.94 \(\+5\.76%\)/);
 });
 
 test('firm page: Capital Group holds Anthropic in 9 funds / $8.46B at 2026-06-30 (A3), each mark with its date', async () => {
@@ -59,7 +59,7 @@ test('firm page: Capital Group holds Anthropic in 9 funds / $8.46B at 2026-06-30
   await window.openFirm(firmIdOf('Capital Group (American Funds)'), { date: '2026-06-30' });
   const row = [...document.querySelectorAll('#firmsContainer tr')].find(tr => /^\s*Anthropic/.test(tr.textContent));
   assert.match(spaced(row), /Anthropic Tracked 9 \$8\.46B/);
-  assert.match(spaced(row), /Growth Fund of America · Preferred G-1 · 5,075,585 @ \$589\.01\/sh · 2026-05-31/);
+  assert.match(spaced(row), /Growth Fund of America · Series G-1 · 5,075,585 @ \$589\.01\/sh · 2026-05-31/);
 });
 
 test('market tab: Anthropic leads at 2026-06-30 with 117 funds / $17.26B (A2)', async () => {

@@ -79,6 +79,8 @@ export interface Position {
   classLabel: string;
   fvLevel: string | null;
   viaSpv: boolean;
+  /** How the fund holds it: directly, through a named SPV, or as a fund interest the filer files as one. */
+  kind: 'direct' | 'spv' | 'fund';
   /** Percent of the fund's net assets as filed (N-PORT pctVal): 0.83 means 0.83%. */
   pctNav: number | null;
 }
@@ -150,6 +152,10 @@ export interface Leg {
   priceChangePct?: number | null;
   balanceChange?: number | null;
   change: string;
+  /** value - prevValue = positionEffect + markEffect + otherEffect (lib/analytics/activity.js leg()). */
+  positionEffect: number;
+  markEffect: number;
+  otherEffect: number;
 }
 
 export interface ChangeEvent extends FundRef {
@@ -166,6 +172,12 @@ export interface ChangeEvent extends FundRef {
   value: number;
   prevValue: number;
   valueChange: number;
+  /** Shares changed, at the prior mark. */
+  positionEffect: number;
+  /** The new mark on the shares now held. */
+  markEffect: number;
+  /** Rows with no share count: the value changed, not split. */
+  otherEffect: number;
   markChangePct: number | null;
   instruments: Leg[];
   firms?: FirmRef[];
@@ -227,6 +239,17 @@ export interface ClassesAsOf extends Envelope {
 export interface MarkSeries extends Envelope {
   company: Company;
   classes: string[];
+  /** One firm's funds on one class at one mark date. */
+  firmSeries: {
+    markDate: string;
+    instrument: string;
+    firmId: number;
+    firm: string;
+    funds: number;
+    median: number;
+    low: number;
+    high: number;
+  }[];
   series: {
     markDate: string;
     instrument: string;

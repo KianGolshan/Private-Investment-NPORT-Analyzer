@@ -147,6 +147,31 @@ export function ChangesTable({
       render: e => <span class={tone(e.valueChange)}>{moneyDelta(e.valueChange)}</span>,
     },
     {
+      id: 'position',
+      header: 'Position Δ',
+      num: true,
+      value: e => e.positionEffect + e.otherEffect,
+      render: e => (
+        <span
+          class={tone(e.positionEffect)}
+          title={e.otherEffect ? `${moneyDelta(e.otherEffect)} from rows with no share count` : undefined}
+        >
+          {moneyDelta(e.positionEffect + e.otherEffect)}
+          {e.otherEffect !== 0 && <span class="muted">*</span>}
+        </span>
+      ),
+      title: 'Shares added or removed, valued at the prior mark (new and dropped classes at their value)',
+      exportAs: [{ header: 'No-share-count change', value: e => e.otherEffect }],
+    },
+    {
+      id: 'mark',
+      header: 'Mark Δ',
+      num: true,
+      value: e => e.markEffect,
+      render: e => <span class={tone(e.markEffect)}>{moneyDelta(e.markEffect)}</span>,
+      title: 'The change in mark on the shares held now',
+    },
+    {
       id: 'legs',
       header: 'Classes: shares · mark',
       value: e => e.instruments.map(legText).join(' | '),

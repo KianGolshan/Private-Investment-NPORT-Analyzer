@@ -22,6 +22,9 @@ const leg = (instrument: string, prevBalance: number, balance: number, change: s
   priceChangePct: 0,
   balanceChange: balance - prevBalance,
   change,
+  positionEffect: (balance - prevBalance) * 63,
+  markEffect: 0,
+  otherEffect: 0,
 });
 
 describe('change rows', () => {
