@@ -235,9 +235,12 @@ test('selectIndexedFund(name): fills the search box and runs the exact same sear
   await tick(window);
 
   assert.equal(document.getElementById('xrayFundInput').value, 'REX ETF Trust');
+  // P5b (ADR 0008): a manual search asks the warehouse first (/api/funds);
+  // with no warehouse match it runs the live /api/search-fund lookup.
+  assert.ok(calledUrls[0].startsWith('/api/funds?q='), 'must go through the same lookup as a manual search');
   assert.ok(
-    calledUrls[0].startsWith('/api/search-fund?fund='),
-    'must go through the same /api/search-fund lookup as a manual search'
+    calledUrls[1].startsWith('/api/search-fund?fund='),
+    'no warehouse match: the same live /api/search-fund lookup as a manual search'
   );
   assert.ok(
     calledUrls.some(u => u.startsWith('/api/fund-xray?')),

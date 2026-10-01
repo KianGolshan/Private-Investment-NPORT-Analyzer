@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="UTF-8"?><edgarSubmission xmlns="http://www.sec.gov/edgar/nport" xmlns:com="http://www.sec.gov/edgar/common" xmlns:ncom="http://www.sec.gov/edgar/nportcommon" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sec.gov/edgar/nport eis_NPORT_Filer.xsd">
+	<headerData>
+		<submissionType>NPORT-P</submissionType>
+		<isConfidential>false</isConfidential>
+		<filerInfo>
+
+			<filer>
+				<issuerCredentials>
+					<cik>0000072760</cik>
+					<ccc>XXXXXXXX</ccc>
+				</issuerCredentials>
+			</filer>
+
+			<seriesClassInfo>
+				<seriesId>S000011440</seriesId>
+				<classId>C000031645</classId>
+			</seriesClassInfo>
+
+
+		</filerInfo>
+	</headerData>
+	<formData>
+		<genInfo>
+			<regName>NORTHEAST INVESTORS TRUST</regName>
+			<regFileNumber>811-00576</regFileNumber>
+			<regCik>0000072760</regCik>
+			<regLei>254900TFW0QM0GDHQX67</regLei>
+			<regStreet1>125 HIGH ST</regStreet1>
+			<regStreet2>SUITE 1802</regStreet2>
+			<regCity>BOSTON</regCity>
+			<regStateConditional regCountry="US" regState="US-MA"/>
+			<regZipOrPostalCode>02110</regZipOrPostalCode>
+			<regPhone>800-225-6704</regPhone>
+			<seriesName>NORTHEAST INVESTORS TRUST</seriesName>
+			<seriesId>S000011440</seriesId>
+			<seriesLei>254900TFW0QM0GDHQX67</seriesLei>
+			<repPdEnd>2026-09-30</repPdEnd>
+			<repPdDate>2026-03-31</repPdDate>
+			<isFinalFiling>N</isFinalFiling>
+		</genInfo>
+		<fundInfo>
+			<totAssets>125025859.94</totAssets>
+			<totLiabs>436547.69</totLiabs>
+			<netAssets>124589312.25</netAssets>
+			<assetsAttrMiscSec>0</assetsAttrMiscSec>
+			<assetsInvested>0</assetsInvested>
+			<amtPayOneYrBanksBorr>0</amtPayOneYrBanksBorr>
+			<amtPayOneYrCtrldComp>0</amtPayOneYrCtrldComp>
+			<amtPayOneYrOthAffil>0</amtPayOneYrOthAffil>
+			<amtPayOneYrOther>0</amtPayOneYrOther>
+			<amtPayAftOneYrBanksBorr>0</amtPayAftOneYrBanksBorr>
+			<amtPayAftOneYrCtrldComp>0</amtPayAftOneYrCtrldComp>
+			<amtPayAftOneYrOthAffil>0</amtPayAftOneYrOthAffil>
+			<amtPayAftOneYrOther>0</amtPayAftOneYrOther>
+			<delayDeliv>0</delayDeliv>
+			<standByCommit>0</standByCommit>
+			<liquidPref>0</liquidPref>
+			<cshNotRptdInCorD>0</cshNotRptdInCorD>
+			<curMetrics>
+				<curMetric>
+					<curCd>USD</curCd>
+					<intrstRtRiskdv01 period10Yr="0" period1Yr="9275.75" period30Yr="0" period3Mon="921.61" period5Yr="7158.33"/>
+					<intrstRtRiskdv100 period10Yr="0" period1Yr="918788.3" period30Yr="0" period3Mon="31727.94" period5Yr="700703.06"/>
+				</curMetric>
+			</curMetrics>
+			<creditSprdRiskInvstGrade period10Yr="0" period1Yr="1972.07" period30Yr="0" period3Mon="0" period5Yr="1183.84"/>
+			<creditSprdRiskNonInvstGrade period10Yr="0" period1Yr="6093.81" period30Yr="0" period3Mon="297" period5Yr="5042.83"/>
+			<isNonCashCollateral>N</isNonCashCollateral>
+			<returnInfo>
+				<monthlyTotReturns>
+					<monthlyTotReturn classId="C000031645" rtn1="-0.52" rtn2="0" rtn3="0.52"/>
+				</monthlyTotReturns>
+				<monthlyReturnCats/>
+				<othMon1 netRealizedGain="-5219.11" netUnrealizedAppr="-1157146.57"/>
+				<othMon2 netRealizedGain="15429.09" netUnrealizedAppr="-325177.12"/>
+				<othMon3 netRealizedGain="-784.67" netUnrealizedAppr="425683.76"/>
+			</returnInfo>
+			<mon1Flow redemption="1492785.34" reinvestment="0" sales="178579.33"/>
+			<mon2Flow redemption="844086.51" reinvestment="949957.91" sales="76636.11"/>
+			<mon3Flow redemption="1573096.03" reinvestment="0" sales="238900.72"/>
+		</fundInfo>
+		<invstOrSecs>
+			<invstOrSec>
+				<name>ALTICE LUX 3</name>
+				<lei>5493001ZMCICV4N02J21</lei>
+				<title>COMMON STOCK</title>
+				<cusip>02090LUX3</cusip>
+				<identifiers>
+					<isin value="N/A"/>
+					<ticker value="LUX3"/>
+				</identifiers>
+				<balance>22638</balance>
+				<units>NS</units>
+				<currencyConditional curCd="EUR" exchangeRt="0.867905"/>
+				<valUSD>388549.5768</valUSD>
+				<pctVal>0.31</pctVal>
+				<payoffProfile>Long</payoffProfile>
+				<assetCat>EC</assetCat>
+				<issuerCat>CORP</issuerCat>
+				<invCountry>FR</invCountry>
+				<isRestrictedSec>Y</isRestrictedSec>
+
+				<fairValLevel>2</fairValLevel>
+				<securityLending>
+					<isCashCollateral>N</isCashCollateral>
+					<isNonCashCollateral>N</isNonCashCollateral>
+					<isLoanByFund>N</isLoanByFund>
+				</securityLending>
+			</invstOrSec>
+<invstOrSec>
+				<name>AMERICAN GILSONITE CO</name>
+				<lei>54930088Q5PLU37BHF34</lei>
+				<title>COMMON STOCK</title>
+				<cusip>02636P201</cusip>
+				<identifiers>
+					<isin value="N/A"/>
+				</identifiers>
+				<balance>1597765</balance>
+				<units>NS</units>
+				<curCd>USD</curCd>
+				<valUSD>2449373.745</valUSD>
+				<pctVal>1.97</pctVal>
+				<payoffProfile>Long</payoffProfile>
+				<assetCat>EC</assetCat>
+				<issuerCat>CORP</issuerCat>
+				<invCountry>US</invCountry>
+				<isRestrictedSec>Y</isRestrictedSec>
+
+				<fairValLevel>3</fairValLevel>
+				<securityLending>
+					<isCashCollateral>N</isCashCollateral>
+					<isNonCashCollateral>N</isNonCashCollateral>
+					<isLoanByFund>N</isLoanByFund>
+				</securityLending>
+			</invstOrSec>
+<invstOrSec>
+				<name>GETLINK SA</name>
+				<lei>9695007ZEQ7M0OE74G82</lei>
+				<title>GET FP</title>
+				<cusip>N/A</cusip>
+				<identifiers>
+					<isin value="N/A"/>
+					<other otherDesc="SEDOL" value="B292JQ90"/>
+				</identifiers>
+				<balance>7349</balance>
+				<units>NS</units>
+				<currencyConditional curCd="EUR" exchangeRt="0.867905"/>
+				<valUSD>157731.587</valUSD>
+				<pctVal>0.13</pctVal>
+				<payoffProfile>Long</payoffProfile>
+				<assetCat>EC</assetCat>
+				<issuerCat>CORP</issuerCat>
+				<invCountry>FR</invCountry>
+				<isRestrictedSec>N</isRestrictedSec>
+
+				<fairValLevel>2</fairValLevel>
+				<securityLending>
+					<isCashCollateral>N</isCashCollateral>
+					<isNonCashCollateral>N</isNonCashCollateral>
+					<isLoanByFund>N</isLoanByFund>
+				</securityLending>
+			</invstOrSec>
+<invstOrSec>
+				<name>HOMER CITY INTERESTS INC.</name>
+				<lei>549300WURUOM5UICZI86</lei>
+				<title>COMMON STOCK</title>
+				<cusip>N/A</cusip>
+				<identifiers>
+					<isin value="N/A"/>
+					<other otherDesc="INTERNAL CUSIP" value="962KMA907"/>
+				</identifiers>
+				<balance>196288</balance>
+				<units>NS</units>
+				<curCd>USD</curCd>
+				<valUSD>9814400</valUSD>
+				<pctVal>7.88</pctVal>
+				<payoffProfile>Long</payoffProfile>
+				<assetCat>EC</assetCat>
+				<issuerCat>CORP</issuerCat>
+				<invCountry>US</invCountry>
+				<isRestrictedSec>Y</isRestrictedSec>
+
+				<fairValLevel>3</fairValLevel>
+				<securityLending>
+					<isCashCollateral>N</isCashCollateral>
+					<isNonCashCollateral>N</isNonCashCollateral>
+					<isLoanByFund>N</isLoanByFund>
+				</securityLending>
+			</invstOrSec>
+<invstOrSec>
+				<name>INGEVITY CORP</name>
+				<lei>5493009UTFC4B5IMGF87</lei>
+				<title>COMMON STOCK</title>
+				<cusip>45688C107</cusip>
+				<identifiers>
+					<isin value="N/A"/>
+					<ticker value="NGVT"/>
+				</identifiers>
+				<balance>602</balance>
+				<units>NS</units>
+				<curCd>USD</curCd>
+				<valUSD>42880.46</valUSD>
+				<pctVal>0.03</pctVal>
+				<payoffProfile>Long</payoffProfile>
+				<assetCat>EC</assetCat>
+				<issuerCat>CORP</issuerCat>
+				<invCountry>US</invCountry>
+				<isRestrictedSec>N</isRestrictedSec>
+
+				<fairValLevel>1</fairValLevel>
+				<securityLending>
+					<isCashCollateral>N</isCashCollateral>
+					<isNonCashCollateral>N</isNonCashCollateral>
+					<isLoanByFund>N</isLoanByFund>
+				</securityLending>
+			</invstOrSec>
+<invstOrSec>
+				<name>KEY ENERGY SERVICES</name>
+				<lei>N/A</lei>
+				<title>COMMON STOCK</title>
+				<cusip>49309J202</cusip>
+				<identifiers>
+					<isin value="N/A"/>
+					<ticker value="KEGXD"/>
+				</identifiers>
+				<balance>129</balance>
+				<units>NS</units>
+				<curCd>USD</curCd>
+				<valUSD>309.6</valUSD>
+				<pctVal>0</pctVal>
+				<payoffProfile>Long</payoffProfile>
+				<assetCat>EC</assetCat>
+				<issuerCat>CORP</issuerCat>
+				<invCountry>US</invCountry>
+				<isRestrictedSec>N</isRestrictedSec>
+
+				<fairValLevel>1</fairValLevel>
+				<securityLending>
+					<isCashCollateral>N</isCashCollateral>
+					<isNonCashCollateral>N</isNonCashCollateral>
+					<isLoanByFund>N</isLoanByFund>
+				</securityLending>
+			</invstOrSec>
+<invstOrSec>
+				<name>LOUISIANA-PACIFIC CORP.</name>
+				<lei>549300C7E2UAO5BVRR75</lei>
+				<title>3.625% MTY 3/15/2029</title>
+				<cusip>546347AM7</cusip>
+				<identifiers>
+					<isin value="N/A"/>
+				</identifiers>
+				<balance>5000000</balance>
+				<units>PA</units>
+				<curCd>USD</curCd>
+				<valUSD>4794055</valUSD>
+				<pctVal>3.85</pctVal>
+				<payoffProfile>Long</payoffProfile>
+				<assetCat>DBT</assetCat>
+				<issuerCat>CORP</issuerCat>
+				<invCountry>US</invCountry>
+				<isRestrictedSec>Y</isRestrictedSec>
+
+				<fairValLevel>2</fairValLevel>
+				<debtSec>
+					<maturityDt>2029-03-15</maturityDt>
+					<couponKind>Fixed</couponKind>
+					<annualizedRt>3.625</annualizedRt>
+					<isDefault>N</isDefault>
+					<areIntrstPmntsInArrs>N</areIntrstPmntsInArrs>
+					<isPaidKind>N</isPaidKind>
+				</debtSec>
+				<securityLending>
+					<isCashCollateral>N</isCashCollateral>
+					<isNonCashCollateral>N</isNonCashCollateral>
+					<isLoanByFund>N</isLoanByFund>
+				</securityLending>
+			</invstOrSec>
+<invstOrSec>
+				<name>METALS RECOVERY HOLDINGS LLC</name>
+				<lei>5493003TN4GTBCPH6K85</lei>
+				<title>COMMON STOCK</title>
+				<cusip>N/A</cusip>
+				<identifiers>
+					<isin value="N/A"/>
+					<other otherDesc="INTERNAL CUSIP" value="933ETX900"/>
+				</identifiers>
+				<balance>21539.365</balance>
+				<units>NS</units>
+				<curCd>USD</curCd>
+				<valUSD>0</valUSD>
+				<pctVal>0</pctVal>
+				<payoffProfile>Long</payoffProfile>
+				<assetCat>EC</assetCat>
+				<issuerCat>CORP</issuerCat>
+				<invCountry>US</invCountry>
+				<isRestrictedSec>Y</isRestrictedSec>
+
+				<fairValLevel>3</fairValLevel>
+				<securityLending>
+					<isCashCollateral>N</isCashCollateral>
+					<isNonCashCollateral>N</isNonCashCollateral>
+					<isLoanByFund>N</isLoanByFund>
+				</securityLending>
+			</invstOrSec>
+<invstOrSec>
+				<name>UNDER ARMOUR, INC.</name>
+				<lei>549300D4549QKWETZ406</lei>
+				<title>3.25% MTY 6/15/2026</title>
+				<cusip>904311AA5</cusip>
+				<identifiers>
+					<isin value="N/A"/>
+				</identifiers>
+				<balance>5000000</balance>
+				<units>PA</units>
+				<curCd>USD</curCd>
+				<valUSD>4980950</valUSD>
+				<pctVal>4</pctVal>
+				<payoffProfile>Long</payoffProfile>
+				<assetCat>DBT</assetCat>
+				<issuerCat>CORP</issuerCat>
+				<invCountry>US</invCountry>
+				<isRestrictedSec>N</isRestrictedSec>
+
+				<fairValLevel>2</fairValLevel>
+				<debtSec>
+					<maturityDt>2026-06-15</maturityDt>
+					<couponKind>Fixed</couponKind>
+					<annualizedRt>3.25</annualizedRt>
+					<isDefault>N</isDefault>
+					<areIntrstPmntsInArrs>N</areIntrstPmntsInArrs>
+					<isPaidKind>N</isPaidKind>
+				</debtSec>
+				<securityLending>
+					<isCashCollateral>N</isCashCollateral>
+					<isNonCashCollateral>N</isNonCashCollateral>
+					<isLoanByFund>N</isLoanByFund>
+				</securityLending>
+			</invstOrSec>
+<invstOrSec>
+				<name>VISKASE HOLDINGS INC</name>
+				<lei>549300ST1VO2Z4YCSO49</lei>
+				<title>COMMON STOCK</title>
+				<cusip>293904801</cusip>
+				<identifiers>
+					<isin value="N/A"/>
+					<ticker value="ENZND"/>
+				</identifiers>
+				<balance>149939.33</balance>
+				<units>NS</units>
+				<curCd>USD</curCd>
+				<valUSD>1087060.1425</valUSD>
+				<pctVal>0.87</pctVal>
+				<payoffProfile>Long</payoffProfile>
+				<assetCat>EC</assetCat>
+				<issuerCat>CORP</issuerCat>
+				<invCountry>US</invCountry>
+				<isRestrictedSec>N</isRestrictedSec>
+
+				<fairValLevel>1</fairValLevel>
+				<securityLending>
+					<isCashCollateral>N</isCashCollateral>
+					<isNonCashCollateral>N</isNonCashCollateral>
+					<isLoanByFund>N</isLoanByFund>
+				</securityLending>
+			</invstOrSec>
+<invstOrSec>
+				<name>WESTMET GROUP HLDGS</name>
+				<lei>5493005KY5ANOTGMLS28</lei>
+				<title>COMMON STOCK</title>
+				<cusip>9608WMET9</cusip>
+				<identifiers>
+					<isin value="N/A"/>
+				</identifiers>
+				<balance>22614.16</balance>
+				<units>NS</units>
+				<curCd>USD</curCd>
+				<valUSD>45228.32</valUSD>
+				<pctVal>0.04</pctVal>
+				<payoffProfile>Long</payoffProfile>
+				<assetCat>EC</assetCat>
+				<issuerCat>CORP</issuerCat>
+				<invCountry>US</invCountry>
+				<isRestrictedSec>Y</isRestrictedSec>
+
+				<fairValLevel>2</fairValLevel>
+				<securityLending>
+					<isCashCollateral>N</isCashCollateral>
+					<isNonCashCollateral>N</isNonCashCollateral>
+					<isLoanByFund>N</isLoanByFund>
+				</securityLending>
+			</invstOrSec>
+<invstOrSec>
+				<name>WESTMORELAND MINING HOLDINGS LLC</name>
+				<lei>5493005KY5ANOTGMLS28</lei>
+				<title>COMMON STOCK</title>
+				<cusip>96087I112</cusip>
+				<identifiers>
+					<isin value="N/A"/>
+				</identifiers>
+				<balance>22416.74</balance>
+				<units>NS</units>
+				<curCd>USD</curCd>
+				<valUSD>11208.37</valUSD>
+				<pctVal>0.01</pctVal>
+				<payoffProfile>Long</payoffProfile>
+				<assetCat>EC</assetCat>
+				<issuerCat>CORP</issuerCat>
+				<invCountry>US</invCountry>
+				<isRestrictedSec>Y</isRestrictedSec>
+
+				<fairValLevel>2</fairValLevel>
+				<securityLending>
+					<isCashCollateral>N</isCashCollateral>
+					<isNonCashCollateral>N</isNonCashCollateral>
+					<isLoanByFund>N</isLoanByFund>
+				</securityLending>
+			</invstOrSec>
+<invstOrSec>
+				<name>WESTMORELAND MINING HOLDINGS LLC TL</name>
+				<lei>5493005KY5ANOTGMLS28</lei>
+				<title>8% MTY 11/4/2030</title>
+				<cusip>934NVF999</cusip>
+				<identifiers>
+					<isin value="N/A"/>
+				</identifiers>
+				<balance>633378.47</balance>
+				<units>PA</units>
+				<curCd>USD</curCd>
+				<valUSD>266018.9574</valUSD>
+				<pctVal>0.21</pctVal>
+				<payoffProfile>Long</payoffProfile>
+				<assetCat>DBT</assetCat>
+				<issuerCat>CORP</issuerCat>
+				<invCountry>US</invCountry>
+				<isRestrictedSec>Y</isRestrictedSec>
+
+				<fairValLevel>2</fairValLevel>
+				<debtSec>
+					<maturityDt>2030-11-04</maturityDt>
+					<couponKind>Fixed</couponKind>
+					<annualizedRt>8</annualizedRt>
+					<isDefault>N</isDefault>
+					<areIntrstPmntsInArrs>N</areIntrstPmntsInArrs>
+					<isPaidKind>N</isPaidKind>
+				</debtSec>
+				<securityLending>
+					<isCashCollateral>N</isCashCollateral>
+					<isNonCashCollateral>N</isNonCashCollateral>
+					<isLoanByFund>N</isLoanByFund>
+				</securityLending>
+			</invstOrSec>
+		</invstOrSecs>
+		<signature>
+			<ncom:dateSigned>2026-05-27</ncom:dateSigned>
+			<ncom:nameOfApplicant>NORTHEAST INVESTORS TRUST</ncom:nameOfApplicant>
+			<ncom:signature>/s/ Gordon Barrett</ncom:signature>
+			<ncom:signerName>Gordon Barrett</ncom:signerName>
+			<ncom:title>CFO</ncom:title>
+		</signature>
+	</formData>
+</edgarSubmission>

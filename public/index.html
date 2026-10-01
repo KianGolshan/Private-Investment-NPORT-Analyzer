@@ -692,7 +692,7 @@
       <button class="btn btn-primary" id="xrayBtn" onclick="searchFundXray()">Search Fund</button>
     </div>
     <div class="alert alert-info" style="margin-top:4px; margin-bottom:0;">
-      Pulls a fund's own NPORT-P filing in full (not filtered to one security) and identifies its private EQUITY interests — common/preferred stock, warrants, and indirect/SPV vehicles in privately-held companies — using the filing's own SEC fair-value hierarchy: Level 3 only (valued with unobservable inputs, i.e. no real market for it). Bonds/loans are excluded even if Level 3, and Level 2 "restricted" securities (e.g. foreign-ownership-restricted but still publicly-traded stock) are excluded too, since neither is a privately-held equity stake.
+      Opens a fund's own NPORT-P filings from the warehouse (every filing since 2019Q4; an amendment replaces the filing it amends) and identifies its private EQUITY interests — common/preferred stock, warrants, and indirect/SPV vehicles — in companies whose status is private in the reviewed company list, whatever fair-value level the filer used. Names not reviewed yet are labeled "unreviewed"; bonds and loans appear only in the capital structure. v1's Level-3 figure is shown beside each filing for comparison. If the warehouse is unavailable, the fund is looked up live on EDGAR with v1's rules.
     </div>
 
     <div class="date-filter-panel" id="xraySelectorPanel" style="display:none;">
@@ -771,6 +771,7 @@
 </div>
 
   <script src="/splits.js"></script>
+  <script src="/peer.js"></script>
   <script src="/fund-groups.js"></script>
   <script src="/app.js"></script>
 </body>

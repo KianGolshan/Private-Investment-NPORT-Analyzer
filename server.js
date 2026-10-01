@@ -8,6 +8,7 @@ const cache = require('./cache');
 const { fetchWithRetry } = require('./lib/edgar');
 const { openWarehouseReadOnly } = require('./lib/warehouse/db');
 const { warehouseRouter } = require('./lib/api/warehouse');
+const { adminRouter, adminEnabled, isLocalRequest } = require('./lib/api/admin');
 const {
   extractHoldings,
   extractCreditHoldings,
@@ -49,9 +50,13 @@ app.use((_req, res, next) => {
   });
   next();
 });
+// lib/analytics/peer.js is shared with the browser, like public/splits.js (P5b).
+app.get('/peer.js', (_req, res) => res.sendFile(path.join(__dirname, 'lib', 'analytics', 'peer.js')));
 app.use(express.static('public'));
 // Permalinks (ADR 0008): the page itself; app.js reads the path.
-app.get(['/company/:ref', '/name/:key'], (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get(['/company/:ref', '/name/:key', '/fund/:key'], (_req, res) =>
+  res.sendFile(path.join(__dirname, 'public', 'index.html'))
+);
 
 const USER_AGENT = process.env.SEC_USER_AGENT || '';
 const EFFECTIVE_USER_AGENT = USER_AGENT || 'Vantage internal-tool@localhost';
@@ -133,6 +138,9 @@ app.use(
 // never call the SEC.
 const warehouseApi = warehouseRouter(() => openWarehouseReadOnly());
 app.use('/api', warehouseApi);
+// Admin actions ("make this a company"): local, admin-only, run as a job
+// (lib/api/admin.js); refused unless VANTAGE_ADMIN=1 and the request is local.
+app.use('/api/admin', adminRouter());
 
 // EDGAR identifiers go straight into sec.gov archive URLs, so they are
 // validated, not just URL-encoded: a CIK is up to 10 digits, an accession
@@ -353,11 +361,19 @@ function eftsPhrase(term) {
 }
 
 // Config endpoint — lets the frontend show a warning if user-agent isn't set
-app.get('/api/config', (_req, res) => {
-  res.json({ userAgentConfigured: !!USER_AGENT });
+app.get('/api/config', (req, res) => {
+  // admin: the "make this a company" action is available to this viewer (lib/api/admin.js).
+  res.json({ userAgentConfigured: !!USER_AGENT, admin: adminEnabled() && isLocalRequest(req) });
 });
 
 // Search for NPORT-P filings matching a security name/ticker
+// ── v1 per-filing routes: a compatibility layer (ROADMAP §5b task 7, ADR 0008) ──
+// Since P5b the app answers private companies and funds from the warehouse
+// (/api/search, /api/companies, /api/entities, /api/funds). It calls the routes
+// below only for the live path: listed companies, debt, names the warehouse
+// cannot match, and when the warehouse is unavailable (labeled "live, not
+// warehoused"). They stay for that and for existing links and scripts
+// (test/app-retired.test.js pins which views may still reach them).
 app.get('/api/search-nport', async (req, res) => {
   const { security } = req.query;
   if (!security) return res.status(400).json({ error: 'security parameter required' });
@@ -748,6 +764,8 @@ async function fetchFundNportHistory(cik) {
   });
 }
 
+// Compatibility layer (see /api/search-nport above): the fund page reads
+// /api/funds; these answer only when the warehouse is unavailable.
 app.get('/api/search-fund', async (req, res) => {
   const { fund } = req.query;
   if (!fund) return res.status(400).json({ error: 'fund parameter required' });

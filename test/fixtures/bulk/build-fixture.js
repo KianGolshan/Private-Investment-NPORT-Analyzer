@@ -8,7 +8,8 @@
 // the same holdings, so the warehouse ingest can be compared row-for-row with
 // extractAllHoldings() on the XML. Every kept (private-candidate) holding is
 // included, plus up to 3 public equity rows and 2 non-equity rows per filing
-// that the ingest must drop. Nothing in the output is hand-written.
+// that the ingest must drop, and every debt row it keeps as a capital-structure
+// row (same issuer as a kept row). Nothing in the output is hand-written.
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
@@ -17,6 +18,8 @@ const yazl = require('yazl');
 const { openZip, readTable } = require('../../../lib/warehouse/tsv-zip');
 const { isValidIsin } = require('../../../lib/warehouse/identifiers');
 const { isPrivateCandidate, isEquityType } = require('../../../lib/warehouse/keep-rule');
+const { instrumentTypeOf } = require('../../../lib/warehouse/bulk-ingest');
+const { anchorCollector } = require('../../../lib/warehouse/capital-structure');
 
 const OUT = __dirname;
 const ACCESSIONS = {
@@ -27,6 +30,7 @@ const ACCESSIONS = {
   '0000894189-26-016628': 'Destiny Tech100 2026-03-31: SPVs via assetConditional (indirect)',
   '0000225318-26-000007': 'Small filing with private warrants (DERIVATIVE_CAT WAR)',
   '0002048251-26-002806': 'Global X Copper Miners: CAD-denominated Level-3 holding (valUSD check)',
+  '0001398344-26-009765': 'Northeast Investors Trust 2026-03-31: Altice France equity and debt (capital structure)',
 };
 const TABLES = ['SUBMISSION.tsv', 'REGISTRANT.tsv', 'FUND_REPORTED_INFO.tsv', 'FUND_REPORTED_HOLDING.tsv', 'IDENTIFIERS.tsv'];
 
@@ -88,7 +92,10 @@ async function main() {
     const all = rows['FUND_REPORTED_HOLDING.tsv'].filter(r => r.ACCESSION_NUMBER === accession);
     const kept = all.filter(r => isPrivateCandidate(r, isinHolders.has(r.HOLDING_ID)));
     const publicEquity = all.filter(r => isEquityType(r) && !kept.includes(r)).slice(0, 3);
-    const nonEquity = all.filter(r => !isEquityType(r)).slice(0, 2);
+    const anchors = anchorCollector();
+    for (const r of kept) anchors.add(accession, r, instrumentTypeOf(r));
+    const capital = all.filter(r => !kept.includes(r) && anchors.capitalKey(accession, r, instrumentTypeOf(r)));
+    const nonEquity = [...new Set([...all.filter(r => !isEquityType(r)).slice(0, 2), ...capital])];
     const selected = [...kept, ...publicEquity, ...nonEquity];
 
     const url = `https://www.sec.gov/Archives/edgar/data/${cik}/${accession.replace(/-/g, '')}/primary_doc.xml`;
@@ -122,6 +129,7 @@ async function main() {
       note: ACCESSIONS[accession],
       keptHoldingIds: kept.map(r => r.HOLDING_ID),
       droppedHoldingIds: [...publicEquity, ...nonEquity].map(r => r.HOLDING_ID),
+      capitalHoldingIds: capital.map(r => r.HOLDING_ID),
     };
     console.log(`${accession}: ${kept.length} kept, ${publicEquity.length + nonEquity.length} dropped rows`);
   }

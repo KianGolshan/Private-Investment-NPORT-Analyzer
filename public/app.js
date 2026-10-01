@@ -13,8 +13,8 @@
    searchFundXray, runFundXray, doXrayExportCSV, doXrayExportExcel, doXrayExportPDF, selectXrayComparison,
    onXrayCompareSelectChange, runFundXrayCompare, doXrayCompareExportCSV, doXrayCompareExportExcel,
    doXrayCompareExportPDF, selectIndexedFund, sortBasketLeaderboard, runXrayReturns, onXraySeriesChange,
-   openCandidate, onSecurityInput, applyAsOf, loadLiveDebt */
-/* global VantageSplits, VantageFundGroups */
+   openCandidate, onSecurityInput, applyAsOf, loadLiveDebt, confirmWatchlistMatch, makeThisACompany */
+/* global VantageFundGroups, VantagePeer */
 
 // ── State ──────────────────────────────────────────────────────────────────
 // Bumped at the start of searchNPORT/searchPrivateCredit/searchFundXray (the
@@ -41,6 +41,8 @@ let singleReferenceValue = null; // optional user-entered $ price to overlay/dif
 // companies, different price scales), so each security gets its own.
 let batchReferenceValues = {};
 let creditReferenceValue = null; // optional user-entered mark (%) to overlay/diff against peers
+let batchSources = {}; // security -> { source: 'warehouse' | 'live', kind, ref } for the section labels
+let currentXrayCompareFilings = null; // { current, prior } filings behind currentXrayCompare, for its export
 let xrayFilings = []; // filings returned by the current Fund X-Ray search, sorted newest-first
 let xraySnapshots = { current: null, prior: null }; // { xray, filing } per rendered period-detail section, for CSV export/re-render
 let currentXrayCompare = null; // most recently rendered QoQ/YoY comparison, for CSV export
@@ -152,11 +154,13 @@ const getColor = i => COLORS[i % COLORS.length];
 (async () => {
   try {
     const cfg = await fetchJSON('/api/config');
+    adminMode = cfg.admin === true;
     if (!cfg.userAgentConfigured) {
       document.getElementById('configWarning').style.display = 'block';
     }
   } catch (_) {}
   renderWatchlist();
+  resolveWatchlist(); // v1 name entries -> ids, once (ADR 0008)
   populateTopFundsDropdown();
   applyURLParams();
 })();
@@ -200,6 +204,12 @@ function applyURLParams() {
   if (company) return openCompany(Number(company[1]), { date: params.get('date') || undefined });
   const named = window.location.pathname.match(/^\/name\/(.+)$/);
   if (named) return openEntity(decodeURIComponent(named[1]), { date: params.get('date') || undefined });
+  // /fund/<fund key>[?accession=…]: the fund page on the warehouse (P5b).
+  const fundLink = window.location.pathname.match(/^\/fund\/(.+)$/);
+  if (fundLink) {
+    switchTab('xray', { skipUrlReset: true });
+    return openFund(decodeURIComponent(fundLink[1]), { accession: params.get('accession') || undefined });
+  }
   const tab = params.get('tab');
   const limit = params.get('limit');
   const issuer = params.get('issuer');
@@ -223,7 +233,7 @@ function applyURLParams() {
 }
 function updateURLParams(params) {
   const url = new URL(window.location.href);
-  url.pathname = '/'; // leaving a /company/ or /name/ permalink
+  url.pathname = '/'; // leaving a /company/, /name/ or /fund/ permalink
   url.search = '';
   Object.entries(params).forEach(([k, v]) => {
     if (v) url.searchParams.set(k, v);
@@ -298,6 +308,7 @@ function switchTab(tab, { skipUrlReset } = {}) {
 // EDGAR flow (searchNPORTLive), labeled "live, not warehoused".
 const STRONG_MATCH = ['exact', 'normalized'];
 const EDGAR_ARCHIVE = 'https://www.sec.gov/Archives/edgar/data/';
+let adminMode = false; // /api/config: this viewer may run admin actions (local, VANTAGE_ADMIN=1)
 let currentCompany = null; // { kind: 'company' | 'unreviewed', ref, name, head }
 let suggestTimer = null;
 let suggestGeneration = 0;
@@ -458,6 +469,56 @@ async function openEntity(key, { others = [], date, knownAsOf } = {}) {
   }
 }
 
+// ── Admin: "make this a company" (ROADMAP §5b task 8) ─────────────────────
+// Shown on an unreviewed name's page only to a local admin (/api/config). The
+// server runs the review import as a job under the refresh lock, then this
+// page opens the new company by its id.
+function makeCompanyFormHTML(entity) {
+  return `<div class="date-filter-panel" id="makeCompanyPanel" style="display:block;">
+    <div class="search-row">
+      <div class="input-group"><label for="makeCompanyName">Company name</label><input type="text" id="makeCompanyName" value="${esc(entity.name)}"></div>
+      <div class="input-group narrow"><label for="makeCompanyStatus">Status</label><select id="makeCompanyStatus"><option value="private">private</option><option value="public">listed</option></select></div>
+      <label class="check"><input type="checkbox" id="makeCompanyTrack"> Track</label>
+      <button class="btn btn-primary" id="makeCompanyBtn" onclick="makeThisACompany()">Make this a company</button>
+    </div>
+    <div class="hint">Admin: writes ${entity.keys.length} issuer key(s) to data/review/aliases.csv and runs the review import (about half a minute; refused while a refresh runs).</div>
+  </div>`;
+}
+
+async function makeThisACompany() {
+  const c = currentCompany;
+  if (!c || c.kind !== 'unreviewed') return;
+  const name = document.getElementById('makeCompanyName').value.trim();
+  if (!name) return showMsg('Enter a company name.', 'error');
+  const btn = document.getElementById('makeCompanyBtn');
+  btn.disabled = true;
+  showLoading(`Making "${esc(name)}" a company and re-running the review import...`);
+  try {
+    const r = await fetch('/api/admin/companies', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Vantage-Admin': '1' },
+      body: JSON.stringify({
+        key: c.ref,
+        name,
+        status: document.getElementById('makeCompanyStatus').value,
+        track: document.getElementById('makeCompanyTrack').checked ? 'Y' : 'N',
+      }),
+    });
+    const body = await r.json();
+    hideLoading();
+    if (!r.ok) {
+      btn.disabled = false;
+      return showMsg('Not done: ' + esc(body.error || `HTTP ${r.status}`), 'error');
+    }
+    await openCompany(body.company.id);
+    showMsg(`"${esc(body.company.name)}" is now company #${body.company.id} (${body.company.rows} rows).`, 'success');
+  } catch (err) {
+    hideLoading();
+    btn.disabled = false;
+    showMsg('Error: ' + esc(err.message), 'error');
+  }
+}
+
 const apiBase = c => (c.kind === 'company' ? `/api/companies/${enc(c.ref)}` : `/api/entities/${enc(c.ref)}`);
 
 async function loadCompanyPage(mySearchGen, { date, knownAsOf } = {}) {
@@ -519,6 +580,7 @@ function historyToBuckets(history) {
           cik: f.cik,
           accession: p.accession,
           viaSpv: p.viaSpv,
+          source: 'warehouse',
         });
       }
     }
@@ -589,6 +651,7 @@ function renderCompanyPage() {
       ${others}
     </div>
     ${unreviewedNote}
+    ${!isCompany && adminMode ? makeCompanyFormHTML(head.entity) : ''}
     <div class="search-row">
       <div class="input-group narrow"><label for="asOfDate">Holders as of</label><input type="date" id="asOfDate" value="${esc(x.date)}"></div>
       <label class="check"><input type="checkbox" id="knownAsOf" ${x.knownAsOf ? 'checked' : ''}> Only what was public on that date</label>
@@ -732,23 +795,63 @@ async function runWatchlist() {
   await runBatchPipeline(securities, limit);
 }
 
+// A name resolved through the warehouse search, only on a strong match (the
+// company page's rule): { kind: 'company' | 'unreviewed', ref, name }, else null.
+// null too when the warehouse is unavailable.
+async function resolveName(name) {
+  try {
+    const { results } = await fetchJSON('/api/search?q=' + enc(name) + '&limit=5');
+    const top = results?.[0];
+    if (!top || !(STRONG_MATCH.includes(top.match?.how) || results.length === 1)) return null;
+    return top.type === 'company'
+      ? { kind: 'company', ref: top.id, name: top.name }
+      : { kind: 'unreviewed', ref: top.key, name: top.name };
+  } catch {
+    return null;
+  }
+}
+
 // ── Shared batch pipeline (used by both Batch Search and Watchlist) ───────
-async function runBatchPipeline(securities, limit) {
+// P5b (ADR 0008): each entry (a typed name, or a Watchlist entry with its
+// company id) answers from the warehouse's full history when it resolves to a
+// private company or an unreviewed name; a listed company, or a name the
+// warehouse cannot match, runs v1's live per-filing search, labeled.
+async function runBatchPipeline(entries, limit) {
   clearResults();
-  showLoading(`Starting search across ${securities.length} issuer(s)...`);
+  showLoading(`Starting search across ${entries.length} issuer(s)...`);
 
   const batchResults = {};
+  batchSources = {};
   let totalFailures = 0;
   // Securities whose EDGAR matches ran past the per-security cap — reported so
   // a capped run is never mistaken for full coverage.
   let cappedCount = 0;
 
-  for (let i = 0; i < securities.length; i++) {
-    const security = securities[i];
-    showProgress(`Searching ${i + 1}/${securities.length}: ${esc(security)}`, (i / securities.length) * 100);
+  for (let i = 0; i < entries.length; i++) {
+    const entry = typeof entries[i] === 'string' ? { name: entries[i] } : entries[i];
+    const security = entry.name;
+    showProgress(`Searching ${i + 1}/${entries.length}: ${esc(security)}`, (i / entries.length) * 100);
+
+    let liveName = security;
+    try {
+      const target = entry.ref != null ? entry : entry.unmatched ? null : await resolveName(security);
+      if (target) {
+        const history = await fetchJSON(`${apiBase(target)}/history`);
+        if (history.source === 'live') liveName = history.liveQuery || security;
+        else {
+          if (history.funds?.length) {
+            batchResults[security] = historyToBuckets(history);
+            batchSources[security] = { source: 'warehouse', ...target };
+          }
+          continue;
+        }
+      }
+    } catch (err) {
+      console.error('Warehouse error for', security, err); // falls through to the live path
+    }
 
     try {
-      const data = await fetchJSON('/api/search-nport?security=' + enc(security));
+      const data = await fetchJSON('/api/search-nport?security=' + enc(liveName));
       if (!data.hits?.hits?.length) continue;
 
       // Sort before cutting — see searchNPORT().
@@ -758,6 +861,7 @@ async function runBatchPipeline(securities, limit) {
       totalFailures += failures.length;
       if (holdings.length) {
         batchResults[security] = groupAndDedupe(holdings);
+        batchSources[security] = { source: 'live' };
       }
     } catch (err) {
       console.error('Batch error for', security, err);
@@ -776,10 +880,14 @@ async function runBatchPipeline(securities, limit) {
   }
 
   const found = Object.keys(batchResults).length;
+  const live = Object.values(batchSources).filter(x => x.source === 'live').length;
   showMsg(
-    `Found holdings for ${found} of ${securities.length} securities.` +
+    `Found holdings for ${found} of ${entries.length} securities` +
+      (found - live ? `, ${found - live} from the warehouse (every filing since 2019Q4)` : '') +
+      (live ? `, ${live} live from EDGAR (not warehoused)` : '') +
+      '.' +
       (cappedCount
-        ? ` ${cappedCount} of them matched more filings than the ${limit}-per-security cap — only the most recent ${limit} were parsed.`
+        ? ` ${cappedCount} of the live searches matched more filings than the ${limit}-per-security cap — only the most recent ${limit} were parsed.`
         : '') +
       (totalFailures
         ? ` ${totalFailures} filing(s) failed to parse across all searches — data may be incomplete.`
@@ -885,47 +993,14 @@ function groupAndDedupe(holdings) {
   return buckets;
 }
 
-// Splits one company's holdings into per-instrument series, computing a
-// disambiguated label so same-fund holdings that collide on the same
-// fallback label (e.g. two rows both generically "Preferred", per the real
-// BlackRock case found in the Databricks survey) are still visually
-// distinguishable even though instrumentKey already keeps them as separate
-// data series.
+// Series grouping and peer mark analytics live in lib/analytics/peer.js (served
+// as /peer.js, shared with Node, ROADMAP §5b task 5); these names stay for the
+// rest of this file and the UI tests.
 function groupCompanyByInstrumentKey(company, holdings) {
-  const byKey = {};
-  holdings.forEach(h => {
-    const k = h.instrumentKey || company;
-    (byKey[k] ||= []).push(h);
-  });
-  const keys = Object.keys(byKey);
-  const multi = keys.length > 1;
-
-  const labelCounts = {};
-  keys.forEach(k => {
-    const lbl = byKey[k][0].instrumentLabel || '';
-    labelCounts[lbl] = (labelCounts[lbl] || 0) + 1;
-  });
-
-  return keys.map(k => {
-    const hs = byKey[k].slice().sort((a, b) => dateCmp(a.reportDate, b.reportDate));
-    const baseLabel = hs[0].instrumentLabel || '';
-    const collision = multi && labelCounts[baseLabel] > 1;
-    const shortLabel = collision ? `${baseLabel} (…${String(k).slice(-6)})` : baseLabel;
-    const fullLabel = multi ? `${company} — ${shortLabel}` : company;
-    // baseLabel (pre-disambiguation) is what chips/filtering group by —
-    // the disambiguation suffix exists so two colliding rows are tellable
-    // apart *within one fund's table*, not to fragment the section-wide
-    // "toggle everything in this class" control into one chip per
-    // collision (real case: ~15 funds each with one unlabeled "Common"
-    // row produced ~15 near-duplicate chips before this fix).
-    return { company, key: k, baseLabel, shortLabel, fullLabel, holdings: hs };
-  });
+  return VantagePeer.groupCompanyByInstrumentKey(company, holdings);
 }
-
-// Flat list of (company, instrumentKey) series across an entire bucket —
-// what the chart actually plots one line per.
 function getSeriesGroups(companiesMap) {
-  return Object.keys(companiesMap).flatMap(company => groupCompanyByInstrumentKey(company, companiesMap[company]));
+  return VantagePeer.getSeriesGroups(companiesMap);
 }
 
 // ── Compute summary stats ─────────────────────────────────────────────────
@@ -960,216 +1035,14 @@ function computeStats(companiesMap) {
   };
 }
 
-// ── Mark analytics: velocity, outliers, and the mark-event ledger ─────────
-// Funds report on different fiscal calendars (real Databricks holders span
-// nine different month-ends), so nothing here assumes filings line up in
-// time: velocity compares a series with its OWN earlier filing, outliers
-// compare against peers' as-of values within a staleness window, and the
-// ledger only orders each fund's own mark changes by date — no interpolated
-// "consensus" line is ever fitted across funds.
-const MARK_DAY_MS = 86400000;
-const VELOCITY_MIN_DAYS = 30;
-const ANNUALIZE_MIN_DAYS = 180;
-const OUTLIER_MIN_REL_DEV = 0.15;
-const OUTLIER_MAX_STALENESS_DAYS = 135;
-const OUTLIER_MIN_PEERS = 4;
-const MARK_EVENT_MIN_MOVE = 0.05;
-const EPISODE_WINDOW_DAYS = 150;
-const EPISODE_MIN_FUNDS = 3;
-
-// Observations for one series, with prices restated onto the latest share
-// basis whenever a stock split is detected between consecutive filings (a
-// 5-for-1 split would otherwise read as a ~68% markdown). Marks are compared
-// only within a series, so restating earlier prices is enough.
-function seriesObservations(series) {
-  const obs = series.holdings
-    .filter(h => h.chartValue != null && h.chartValue > 0 && h.reportDate)
-    .map(h => ({
-      t: Date.parse(h.reportDate),
-      date: h.reportDate,
-      value: h.chartValue,
-      shares: h.shares,
-      pps: h.pricePerShare,
-      isDebt: h.instrumentType === 'debt',
-    }))
-    .filter(o => Number.isFinite(o.t))
-    .sort((a, b) => a.t - b.t);
-
-  let cumulative = 1;
-  for (let i = obs.length - 1; i >= 0; i--) {
-    obs[i].adjValue = obs[i].value / cumulative;
-    if (i > 0 && !obs[i].isDebt) {
-      const ratio = VantageSplits.detectSplit(
-        { shares: obs[i - 1].shares, pricePerShare: obs[i - 1].pps },
-        { shares: obs[i].shares, pricePerShare: obs[i].pps }
-      );
-      if (ratio) {
-        obs[i - 1].splitAfter = ratio;
-        cumulative *= ratio;
-      }
-    }
-  }
-  return obs.map(o => ({ ...o, value: o.adjValue }));
-}
-
-// Latest mark vs. the most recent earlier mark at least VELOCITY_MIN_DAYS
-// back. Annualized only when that gap is long enough to mean something.
 function computeMarkVelocity(series) {
-  const obs = seriesObservations(series);
-  if (obs.length < 2) return null;
-  const last = obs[obs.length - 1];
-  let prev = null;
-  for (let i = obs.length - 2; i >= 0; i--) {
-    if ((last.t - obs[i].t) / MARK_DAY_MS >= VELOCITY_MIN_DAYS) {
-      prev = obs[i];
-      break;
-    }
-  }
-  if (!prev) return null;
-  const days = (last.t - prev.t) / MARK_DAY_MS;
-  const ratio = last.value / prev.value;
-  // Annualizing a single quarter's move explodes (a 60% quarter reads as
-  // +500%/yr), so the annualized figure uses a trailing window of at least
-  // ANNUALIZE_MIN_DAYS instead; the raw latest-interval change is always shown.
-  let annualizedPct = null;
-  let annualizedDays = null;
-  for (let i = obs.length - 2; i >= 0; i--) {
-    const d = (last.t - obs[i].t) / MARK_DAY_MS;
-    if (d >= ANNUALIZE_MIN_DAYS) {
-      annualizedPct = (Math.pow(last.value / obs[i].value, 365 / d) - 1) * 100;
-      annualizedDays = Math.round(d);
-      break;
-    }
-  }
-  const first = obs[0];
-  const spanDays = (last.t - first.t) / MARK_DAY_MS;
-  return {
-    latestPct: (ratio - 1) * 100,
-    splitAdjusted: obs.some(o => o.splitAfter),
-    days: Math.round(days),
-    annualizedPct,
-    annualizedDays,
-    priorDate: prev.date,
-    sinceFirstPct: spanDays >= VELOCITY_MIN_DAYS ? (last.value / first.value - 1) * 100 : null,
-    spanDays: Math.round(spanDays),
-  };
+  return VantagePeer.computeMarkVelocity(series);
 }
-
-function madStats(values) {
-  const med = median(values);
-  const mad = median(values.map(v => Math.abs(v - med)));
-  return { med, mad };
-}
-
-// Flags a series whose latest mark is far from what same-class peers were
-// carrying as of that date. Peer value = the peer's most recent observation
-// at or before this date, ignored if older than the staleness window.
 function computeOutlierFlags(seriesList) {
-  const result = {};
-  const byClass = {};
-  seriesList.forEach(sr => (byClass[sr.baseLabel] ||= []).push(sr));
-
-  Object.values(byClass).forEach(group => {
-    const withObs = group.map(sr => ({ sr, obs: seriesObservations(sr) })).filter(g => g.obs.length);
-    withObs.forEach(({ sr, obs }) => {
-      const latest = obs[obs.length - 1];
-      const peers = [];
-      withObs.forEach(other => {
-        if (other.sr === sr || other.sr.company === sr.company) return;
-        const asOf = [...other.obs].reverse().find(o => o.t <= latest.t);
-        if (asOf && (latest.t - asOf.t) / MARK_DAY_MS <= OUTLIER_MAX_STALENESS_DAYS) peers.push(asOf.value);
-      });
-      if (peers.length < OUTLIER_MIN_PEERS) return;
-      const { med, mad } = madStats(peers);
-      const relDev = med ? (latest.value - med) / med : 0;
-      let z = null;
-      let flagged;
-      if (mad > 0) {
-        z = (0.6745 * (latest.value - med)) / mad;
-        flagged = Math.abs(z) > 3.5 && Math.abs(relDev) >= OUTLIER_MIN_REL_DEV;
-      } else {
-        flagged = Math.abs(relDev) >= OUTLIER_MIN_REL_DEV; // peers agree exactly; any material gap stands out
-      }
-      if (flagged) {
-        result[`${sr.company}||${sr.key}`] = {
-          direction: latest.value > med ? 'high' : 'low',
-          z,
-          peerMedian: med,
-          relDevPct: relDev * 100,
-          peerCount: peers.length,
-        };
-      }
-    });
-  });
-  return result;
+  return VantagePeer.computeOutlierFlags(seriesList);
 }
-
-// Each fund's own consecutive-filing mark changes of at least 5%, grouped
-// into "repricing episodes" (same direction, within ~5 months of the first
-// mover, 3+ different funds). Lead score = how early a fund's move landed
-// within its episodes (1 = first, 0 = last), averaged across episodes.
 function buildMarkEventLedger(seriesList) {
-  const events = [];
-  seriesList.forEach(sr => {
-    const obs = seriesObservations(sr);
-    for (let i = 1; i < obs.length; i++) {
-      const change = obs[i].value / obs[i - 1].value - 1;
-      if (Math.abs(change) >= MARK_EVENT_MIN_MOVE) {
-        events.push({
-          company: sr.company,
-          label: sr.fullLabel,
-          t: obs[i].t,
-          date: obs[i].date,
-          prevDate: obs[i - 1].date,
-          pct: change * 100,
-          dir: change > 0 ? 'up' : 'down',
-        });
-      }
-    }
-  });
-  events.sort((a, b) => a.t - b.t);
-
-  const episodes = [];
-  ['up', 'down'].forEach(dir => {
-    let current = null;
-    events
-      .filter(e => e.dir === dir)
-      .forEach(e => {
-        if (
-          current &&
-          (e.t - current.startT) / MARK_DAY_MS <= EPISODE_WINDOW_DAYS &&
-          !current.events.some(x => x.company === e.company)
-        ) {
-          current.events.push(e);
-        } else {
-          if (current) episodes.push(current);
-          current = { dir, startT: e.t, events: [e] };
-        }
-      });
-    if (current) episodes.push(current);
-  });
-
-  const real = episodes.filter(ep => ep.events.length >= EPISODE_MIN_FUNDS).sort((a, b) => b.startT - a.startT);
-
-  const scores = {};
-  real.forEach(ep => {
-    const n = ep.events.length;
-    ep.events.forEach((e, idx) => {
-      const rank = ep.events.findIndex(x => x.t === e.t); // ties share the earlier rank
-      (scores[e.company] ||= []).push(1 - rank / (n - 1));
-      void idx;
-    });
-  });
-  const leaders = Object.entries(scores)
-    .filter(([, arr]) => arr.length >= 2)
-    .map(([company, arr]) => ({
-      company,
-      episodes: arr.length,
-      leadScore: arr.reduce((a, b) => a + b, 0) / arr.length,
-    }))
-    .sort((a, b) => b.leadScore - a.leadScore);
-
-  return { episodes: real, leaders };
+  return VantagePeer.buildMarkEventLedger(seriesList);
 }
 
 function fmtSignedPct(v, digits = 1) {
@@ -1393,60 +1266,7 @@ function renderSingleResults(buckets) {
 // several quarters with genuine cross-fund disagreement — the wrong signal
 // for "dispersion." This uses each fund's single latest-dated holding only.
 function computeLeaderboardRows(batchResults) {
-  return Object.keys(batchResults).flatMap(security => {
-    const buckets = batchResults[security];
-    const types = nonEmptyBuckets(buckets);
-    // One row per bucket a security actually has (not just the primary
-    // one) — a security held as both equity and debt across the basket
-    // must not have its debt holdings silently dropped from the ranking.
-    // The security label only gets a "(Debt / Loans)"-style suffix when
-    // there's more than one bucket, so the common single-bucket case is
-    // visually unchanged.
-    const multi = types.length > 1;
-
-    return types
-      .map(type => {
-        const companiesMap = buckets[type];
-
-        const latestPerFund = Object.values(companiesMap)
-          .map(holdings => [...holdings].sort((a, b) => dateCmp(b.reportDate, a.reportDate))[0])
-          .filter(h => h && h.chartValue != null && h.chartValue > 0);
-        if (!latestPerFund.length) return null;
-
-        const values = latestPerFund.map(h => h.chartValue);
-        const minValue = Math.min(...values);
-        const maxValue = Math.max(...values);
-        const medianValue = median(values);
-        const mostRecent = [...latestPerFund].sort((a, b) => dateCmp(b.reportDate, a.reportDate))[0];
-        const dispersionPct = medianValue ? ((maxValue - minValue) / medianValue) * 100 : null;
-        const ageDays = mostRecent.reportDate
-          ? Math.round((Date.now() - new Date(mostRecent.reportDate)) / 86400000)
-          : null;
-
-        const velocities = getSeriesGroups(companiesMap)
-          .map(sr => computeMarkVelocity(sr))
-          .filter(v => v && v.annualizedPct != null)
-          .map(v => v.annualizedPct);
-        const velocityPct = velocities.length ? median(velocities) : null;
-
-        return {
-          velocityPct,
-          security,
-          label: multi ? `${security} (${INSTRUMENT_META[type].sectionTitle})` : security,
-          type,
-          meta: INSTRUMENT_META[type],
-          latestValue: mostRecent.chartValue,
-          latestDate: mostRecent.reportDate,
-          minValue,
-          maxValue,
-          medianValue,
-          fundCount: latestPerFund.length,
-          dispersionPct,
-          ageDays,
-        };
-      })
-      .filter(Boolean);
-  });
+  return VantagePeer.computeLeaderboardRows(batchResults, { meta: INSTRUMENT_META });
 }
 
 function sortLeaderboardRows(rows, field, dir) {
@@ -1550,7 +1370,14 @@ function renderBatchResults(batchResults) {
     const secId = cleanId(security);
 
     html += `<div class="security-section" id="secsection_${secId}">`;
-    html += `<div class="security-section-header">${esc(security)}</div>`;
+    const src = batchSources[security];
+    const srcLabel =
+      src?.source === 'warehouse'
+        ? ` <a class="badge" href="${esc(companyPath(src))}">${src.kind === 'company' ? 'warehouse' : 'warehouse · unreviewed'}</a>`
+        : src?.source === 'live'
+          ? ` <span class="badge">live, not warehoused</span>`
+          : '';
+    html += `<div class="security-section-header">${esc(security)}${srcLabel}</div>`;
     if (multi) {
       const names = types.map(t => INSTRUMENT_META[t].sectionTitle.toLowerCase()).join(', ');
       html += `<div class="alert alert-info">Holdings span ${esc(names)} — shown in separate sections below since they aren't directly comparable on one chart.</div>`;
@@ -2142,6 +1969,10 @@ function flattenBucketRows(type, companiesMap, security) {
           value: h.chartValue,
           currency: h.currency || 'USD',
           url: edgarFilingUrl(h.cik, h.accession) || '',
+          // P5b: every row names its mark date, filing and source (ADR 0008).
+          markDate: h.reportDate,
+          accession: h.accession || '',
+          source: h.source === 'warehouse' ? 'warehouse' : 'live EDGAR',
         })
       );
     });
@@ -2164,6 +1995,9 @@ function doExportCSV() {
         'Value',
         'Currency',
         'Source Filing URL',
+        'Mark Date',
+        'Accession',
+        'Source',
       ]
     : [
         'Security',
@@ -2177,6 +2011,9 @@ function doExportCSV() {
         'Value',
         'Currency',
         'Source Filing URL',
+        'Mark Date',
+        'Accession',
+        'Source',
       ];
   const rows = [header];
 
@@ -2194,6 +2031,9 @@ function doExportCSV() {
           r.value.toFixed(4),
           r.currency,
           r.url,
+          r.markDate,
+          r.accession,
+          r.source,
         ])
       )
     );
@@ -2211,6 +2051,18 @@ function doExportCSV() {
 }
 
 // ── Export: Excel ──────────────────────────────────────────────────────────
+// A valid, unused sheet name: Excel refuses : \ / ? * [ ] and more than 31
+// characters, so "Debt / Loans" (a section title) or a typed security name
+// made the whole export throw (found in P5b once the tests ran real SheetJS).
+function sheetName(wb, name) {
+  const base =
+    String(name || 'Sheet')
+      .replace(/[:\\/?*[\]]/g, '-')
+      .slice(0, 31) || 'Sheet';
+  let out = base;
+  for (let i = 2; wb.SheetNames.includes(out); i++) out = `${base.slice(0, 28)} ${i}`;
+  return out;
+}
 function doExportExcel() {
   const wb = XLSX.utils.book_new();
   const bucketCols = [
@@ -2224,6 +2076,9 @@ function doExportExcel() {
     { wch: 14 },
     { wch: 10 },
     { wch: 50 },
+    { wch: 12 },
+    { wch: 22 },
+    { wch: 12 },
   ];
 
   if (allResults.mode === 'single') {
@@ -2244,6 +2099,9 @@ function doExportExcel() {
           'Value',
           'Currency',
           'Source Filing URL',
+          'Mark Date',
+          'Accession',
+          'Source',
         ],
       ];
       rows.forEach(r =>
@@ -2258,11 +2116,14 @@ function doExportExcel() {
           r.value,
           r.currency,
           r.url,
+          r.markDate,
+          r.accession,
+          r.source,
         ])
       );
       const ws = XLSX.utils.aoa_to_sheet(data);
       ws['!cols'] = bucketCols;
-      XLSX.utils.book_append_sheet(wb, ws, INSTRUMENT_META[type].sectionTitle.substring(0, 31));
+      XLSX.utils.book_append_sheet(wb, ws, sheetName(wb, INSTRUMENT_META[type].sectionTitle));
     });
   } else {
     const visibleBatch = visibleBatchBuckets();
@@ -2279,6 +2140,9 @@ function doExportExcel() {
         'Value',
         'Currency',
         'Source Filing URL',
+        'Mark Date',
+        'Accession',
+        'Source',
       ],
     ];
 
@@ -2297,6 +2161,9 @@ function doExportExcel() {
           'Value',
           'Currency',
           'Source Filing URL',
+          'Mark Date',
+          'Accession',
+          'Source',
         ],
       ];
       allRows.forEach(r => {
@@ -2311,6 +2178,9 @@ function doExportExcel() {
           r.value,
           r.currency,
           r.url,
+          r.markDate,
+          r.accession,
+          r.source,
         ]);
         combined.push([
           sec,
@@ -2324,11 +2194,14 @@ function doExportExcel() {
           r.value,
           r.currency,
           r.url,
+          r.markDate,
+          r.accession,
+          r.source,
         ]);
       });
       const ws = XLSX.utils.aoa_to_sheet(data);
       ws['!cols'] = bucketCols;
-      XLSX.utils.book_append_sheet(wb, ws, sec.substring(0, 31));
+      XLSX.utils.book_append_sheet(wb, ws, sheetName(wb, sec));
     });
 
     const ws2 = XLSX.utils.aoa_to_sheet(combined);
@@ -2405,6 +2278,8 @@ function doExportPDF() {
             fmtCurrency(h.marketValue),
             meta.fmt(h.chartValue),
             h.currency || 'USD',
+            h.accession || '',
+            h.source === 'warehouse' ? 'warehouse' : 'live',
           ])
         )
       )
@@ -2413,20 +2288,24 @@ function doExportPDF() {
     if (rows.length) {
       doc.autoTable({
         startY: y,
-        head: [['Fund', 'Class', 'Date', 'Title', 'Shares', 'Mkt Value', meta.valueLabel, 'CCY']],
+        head: [
+          ['Fund', 'Class', 'Mark Date', 'Title', 'Shares', 'Mkt Value', meta.valueLabel, 'CCY', 'Accession', 'Source'],
+        ],
         body: rows,
         margin: { left: margin, right: margin },
         styles: { fontSize: 7.5, cellPadding: 2.5 },
         headStyles: { fillColor: [37, 99, 235], fontStyle: 'bold', fontSize: 8 },
         columnStyles: {
-          0: { cellWidth: 46 },
-          1: { cellWidth: 34 },
-          2: { cellWidth: 20 },
-          3: { cellWidth: 46 },
-          4: { cellWidth: 22, halign: 'right' },
-          5: { cellWidth: 24, halign: 'right' },
-          6: { cellWidth: 24, halign: 'right' },
-          7: { cellWidth: 14, halign: 'center' },
+          0: { cellWidth: 36 },
+          1: { cellWidth: 26 },
+          2: { cellWidth: 19 },
+          3: { cellWidth: 34 },
+          4: { cellWidth: 20, halign: 'right' },
+          5: { cellWidth: 22, halign: 'right' },
+          6: { cellWidth: 22, halign: 'right' },
+          7: { cellWidth: 11, halign: 'center' },
+          8: { cellWidth: 40 },
+          9: { cellWidth: 20 },
         },
         alternateRowStyles: { fillColor: [249, 250, 251] },
       });
@@ -3323,10 +3202,20 @@ function downloadBlob(content, type, filename) {
 }
 
 // ── Watchlist: persisted issuer list (localStorage — this browser only) ───
+// Watchlist entries (ADR 0008 decision 4): { name, kind, ref } once matched to
+// a company id (kind 'company') or an unreviewed name (kind 'unreviewed', its
+// issuer key); { name, unmatched: true, candidates } when the warehouse search
+// has no strong match, kept and shown as "unmatched" until the user confirms
+// one (it runs on the live path meanwhile); { name } not looked up yet. v1
+// stored plain names: those are read as { name } and resolved once, through
+// the same search, by resolveWatchlist().
 function getWatchlist() {
   try {
-    const raw = localStorage.getItem(WATCHLIST_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const raw = JSON.parse(localStorage.getItem(WATCHLIST_KEY) || '[]');
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .map(e => (typeof e === 'string' ? { name: e } : e))
+      .filter(e => e && typeof e.name === 'string' && e.name);
   } catch {
     return [];
   }
@@ -3336,36 +3225,98 @@ function saveWatchlist(list) {
     localStorage.setItem(WATCHLIST_KEY, JSON.stringify(list));
   } catch (_) {}
 }
+const sameEntry = (a, b) =>
+  a.ref != null && b.ref != null
+    ? a.kind === b.kind && String(a.ref) === String(b.ref)
+    : a.name.toLowerCase() === b.name.toLowerCase();
+
+function addToWatchlist(name) {
+  const list = getWatchlist();
+  if (list.some(e => sameEntry(e, { name }))) return false;
+  list.push({ name });
+  saveWatchlist(list);
+  renderWatchlist();
+  resolveWatchlist();
+  return true;
+}
 function addWatchlistItem() {
   const input = document.getElementById('watchlistInput');
   const name = input.value.trim();
   if (!name) return;
-  const list = getWatchlist();
-  if (list.some(n => n.toLowerCase() === name.toLowerCase())) {
-    input.value = '';
-    return showMsg(`"${esc(name)}" is already on your watchlist.`, 'info');
-  }
-  list.push(name);
-  saveWatchlist(list);
   input.value = '';
-  renderWatchlist();
+  if (!addToWatchlist(name)) return showMsg(`"${esc(name)}" is already on your watchlist.`, 'info');
 }
 function removeWatchlistItem(name) {
-  saveWatchlist(getWatchlist().filter(n => n !== name));
+  saveWatchlist(getWatchlist().filter(e => e.name !== name));
   renderWatchlist();
 }
 function quickAddToWatchlist(inputId) {
   const name = document.getElementById(inputId).value.trim();
   if (!name) return showMsg('Enter a security or issuer name first.', 'error');
-  const list = getWatchlist();
-  if (list.some(n => n.toLowerCase() === name.toLowerCase())) {
-    return showMsg(`"${esc(name)}" is already on your watchlist.`, 'info');
-  }
-  list.push(name);
-  saveWatchlist(list);
-  renderWatchlist();
+  if (!addToWatchlist(name)) return showMsg(`"${esc(name)}" is already on your watchlist.`, 'info');
   showMsg(`Added "${esc(name)}" to your watchlist.`, 'success');
 }
+
+// Looks up every entry not looked up yet, once: a strong match stores its id;
+// anything else is kept as "unmatched" with the top candidates. Entries stay
+// as they are when the warehouse is unavailable (tried again next time).
+let watchlistResolving = null;
+function resolveWatchlist() {
+  if (watchlistResolving) return watchlistResolving.then(() => resolveWatchlist());
+  watchlistResolving = (async () => {
+    const pending = getWatchlist().filter(e => e.ref == null && !e.unmatched);
+    for (const e of pending) {
+      let found;
+      try {
+        const { results } = await fetchJSON('/api/search?q=' + enc(e.name) + '&limit=3');
+        if (!Array.isArray(results)) continue;
+        const top = results[0];
+        found =
+          top && (STRONG_MATCH.includes(top.match?.how) || results.length === 1)
+            ? top.type === 'company'
+              ? { kind: 'company', ref: top.id, matched: top.name }
+              : { kind: 'unreviewed', ref: top.key, matched: top.name }
+            : {
+                unmatched: true,
+                candidates: results.map(r => ({
+                  kind: r.type === 'company' ? 'company' : 'unreviewed',
+                  ref: r.type === 'company' ? r.id : r.key,
+                  name: r.name,
+                  how: r.match?.how || '',
+                })),
+              };
+      } catch {
+        continue; // warehouse unavailable: try again later
+      }
+      const list = getWatchlist();
+      const i = list.findIndex(x => x.name === e.name && x.ref == null);
+      if (i < 0) continue;
+      const next = { ...list[i], ...found };
+      if (next.ref != null && list.some((x, j) => j !== i && sameEntry(x, next))) list.splice(i, 1);
+      else list[i] = next;
+      saveWatchlist(list);
+    }
+  })().finally(() => {
+    watchlistResolving = null;
+    renderWatchlist();
+  });
+  return watchlistResolving;
+}
+
+// The user picks one of an unmatched entry's candidates.
+function confirmWatchlistMatch(name, selectId) {
+  const pick = +document.getElementById(selectId).value;
+  const list = getWatchlist();
+  const i = list.findIndex(e => e.name === name);
+  const c = list[i]?.candidates?.[pick];
+  if (!c) return;
+  const next = { name: list[i].name, kind: c.kind, ref: c.ref, matched: c.name };
+  if (list.some((x, j) => j !== i && sameEntry(x, next))) list.splice(i, 1);
+  else list[i] = next;
+  saveWatchlist(list);
+  renderWatchlist();
+}
+
 function renderWatchlist() {
   const list = getWatchlist();
   const container = document.getElementById('watchlistItems');
@@ -3382,14 +3333,25 @@ function renderWatchlist() {
     return;
   }
   container.innerHTML = list
-    .map(
-      name => `
+    .map((e, i) => {
+      let body = esc(e.name);
+      if (e.ref != null) {
+        const label = e.matched && e.matched !== e.name ? ` → ${esc(e.matched)}` : '';
+        body = `<a href="${esc(companyPath({ kind: e.kind, ref: e.ref, name: e.matched || e.name }))}">${esc(e.name)}</a>${label} ${badge(e.kind === 'company' ? 'company #' + e.ref : 'unreviewed')}`;
+      } else if (e.unmatched) {
+        const selectId = 'wlpick_' + i;
+        body += ` ${badge('unmatched')}`;
+        if (e.candidates?.length)
+          body += ` <select id="${selectId}">${e.candidates.map((c, j) => `<option value="${j}">${esc(c.name)}${c.how ? ' (' + esc(MATCH_TEXT[c.how] || c.how) + ')' : ''}</option>`).join('')}</select>
+          <button class="btn btn-sm" data-name="${esc(e.name)}" data-select="${selectId}" onclick="confirmWatchlistMatch(this.dataset.name, this.dataset.select)">Confirm</button>`;
+      }
+      return `
     <div class="watchlist-item">
-      <span>${esc(name)}</span>
-      <button class="btn btn-sm btn-red" data-name="${esc(name)}" onclick="removeWatchlistItem(this.dataset.name)">Remove</button>
+      <span>${body}</span>
+      <button class="btn btn-sm btn-red" data-name="${esc(e.name)}" onclick="removeWatchlistItem(this.dataset.name)">Remove</button>
     </div>
-  `
-    )
+  `;
+    })
     .join('');
 }
 
@@ -3433,6 +3395,7 @@ async function onXraySeriesChange() {
     return;
   }
   const opt = xraySeriesOptions[+idx];
+  if (opt.fundKey) return openFund(opt.fundKey);
   const myGen = ++xrayRunGeneration;
   showLoading('Loading this fund’s filings...');
   try {
@@ -3459,13 +3422,96 @@ async function onXraySeriesChange() {
   }
 }
 
+// ── Fund page on the warehouse (ROADMAP §5b, ADR 0008) ─────────────────────
+// A fund is its fund key; its canonical filings (an amendment replaces the
+// filing it amends) come from /api/funds. The v1 per-filing routes below stay
+// as the live fallback when the warehouse is unavailable or has no match.
+const normName = t =>
+  String(t || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/ (inc|llc|corp|corporation|ltd|co|lp)$/, '');
+const fundLabel = f =>
+  `${f.seriesName || f.registrant}${f.seriesName && f.registrant && f.registrant !== f.seriesName ? ' — ' + f.registrant : ''} (last report ${f.lastReportDate}${f.inactive ? ', no longer filing' : ''})`;
+const fundApi = filing => `/api/funds/${enc(filing.fundKey)}`;
+
 async function searchFundXray() {
   const fund = document.getElementById('xrayFundInput').value.trim();
   if (!fund) return showMsg('Please enter a fund or registrant name.', 'error');
-
   const mySearchGen = ++searchGeneration;
   clearResults();
+  showLoading('Searching the warehouse...');
+  let results;
+  try {
+    results = (await fetchJSON('/api/funds?q=' + enc(fund) + '&limit=25')).results;
+  } catch {
+    results = null; // warehouse unavailable: the live path answers
+  }
+  if (mySearchGen !== searchGeneration) return;
+  hideLoading();
+  if (!results || !results.length)
+    return searchFundXrayLive(
+      fund,
+      mySearchGen,
+      results ? `No fund in the warehouse matches "${fund}"; searching live EDGAR filings instead.` : ''
+    );
+  const q = normName(fund);
+  const exact = results.filter(f => normName(f.seriesName) === q || f.fundKey === fund.toUpperCase());
+  // A registrant (trust) name picks its own funds; one fund opens directly.
+  const trust = results.filter(f => normName(f.registrant) === q);
+  const only = exact.length === 1 ? exact[0] : trust.length === 1 ? trust[0] : results.length === 1 ? results[0] : null;
+  if (only) {
+    document.getElementById('xraySeriesGroup').style.display = 'none';
+    return openFund(only.fundKey);
+  }
+  xraySeriesOptions = (trust.length ? trust : results).map(f => ({ fundKey: f.fundKey, name: fundLabel(f) }));
+  document.getElementById('xraySeriesSelect').innerHTML =
+    '<option value="">— choose a fund —</option>' +
+    xraySeriesOptions.map((o, i) => `<option value="${i}">${esc(o.name)}</option>`).join('');
+  document.getElementById('xraySeriesGroup').style.display = 'flex';
+  document.getElementById('xraySelectorPanel').style.display = 'block';
+  applyXrayFilings([]);
+  showMsg(
+    trust.length
+      ? `"${esc(fund)}" is a trust that files separately for ${trust.length} funds — choose one from the Fund list so periods and comparisons stay within a single fund.`
+      : `"${esc(fund)}" matches ${results.length} funds in the warehouse — choose one from the Fund list.`,
+    'info'
+  );
+}
+
+async function openFund(fundKey, { accession } = {}) {
+  const myGen = ++xrayRunGeneration;
+  showLoading('Loading this fund from the warehouse...');
+  try {
+    const data = await fetchJSON(`/api/funds/${enc(fundKey)}`);
+    if (myGen !== xrayRunGeneration) return;
+    hideLoading();
+    const name = data.fund.seriesName || data.fund.registrant || fundKey;
+    const filings = data.filings.map(f => ({
+      fundKey: data.fund.fundKey,
+      cik: data.fund.cik,
+      accession: f.accession,
+      company: name,
+      period: f.reportDate,
+      fileDate: f.filingDate,
+      form: f.form,
+      versions: f.versions,
+    }));
+    if (!filings.length) return showMsg('No NPORT-P filings found for this fund.', 'error');
+    applyXrayFilings(filings);
+    const i = accession ? xrayFilings.findIndex(f => f.accession === accession) : 0;
+    if (i > 0) document.getElementById('xrayFilingSelect').value = String(i);
+    await runFundXray();
+  } catch (err) {
+    hideLoading();
+    showMsg('Error: ' + esc(err.message), 'error');
+  }
+}
+
+async function searchFundXrayLive(fund, mySearchGen, notice) {
   showLoading('Looking up this fund on SEC EDGAR...');
+  if (notice) showMsg(esc(notice), 'info');
 
   try {
     const data = await fetchJSON('/api/search-fund?fund=' + enc(fund));
@@ -3565,11 +3611,23 @@ async function runFundXray() {
   const myXrayGen = ++xrayRunGeneration;
   showLoading('Pulling this filing and classifying every holding...');
   try {
-    const data = await fetchJSON(`/api/fund-xray?cik=${enc(filing.cik)}&accession=${enc(filing.accession)}`);
+    const data = await fetchJSON(
+      filing.fundKey
+        ? `${fundApi(filing)}/xray?accession=${enc(filing.accession)}`
+        : `/api/fund-xray?cik=${enc(filing.cik)}&accession=${enc(filing.accession)}`
+    );
     if (myXrayGen !== xrayRunGeneration) return;
     hideLoading();
-    if (!data.success || !data.xray) {
+    if (!data.xray || (!filing.fundKey && !data.success)) {
       return showMsg('Error: ' + esc(data.error || 'Could not parse this filing.'), 'error');
+    }
+    if (filing.fundKey) {
+      const first = filing === xrayFilings[0];
+      window.history.replaceState(
+        {},
+        '',
+        `/fund/${enc(filing.fundKey)}${first ? '' : '?accession=' + enc(filing.accession)}`
+      );
     }
     renderFundXray(data.xray, filing);
 
@@ -3605,6 +3663,11 @@ function buildXraySnapshotHTML(xray, filing, opts) {
     html += `<div class="hint">Report period: ${esc(xray.fund?.reportDate || filing.period || '—')} &bull; ${sourceLinkHTML(filing.cik, filing.accession, 'View source filing')}</div>`;
   }
 
+  const wh = !!xray.v1Level3; // answered from the warehouse (/api/funds)
+  if (wh) {
+    html += `<div class="hint">Source: warehouse &bull; mark date ${esc(xray.markDate)} &bull; accession ${esc(xray.accession)}${filing.versions > 1 ? ' (an amendment; it replaces the original filing)' : ''}</div>`;
+  }
+
   html += `
     <div class="stats-grid">
       <div class="stat-box">
@@ -3627,11 +3690,24 @@ function buildXraySnapshotHTML(xray, filing, opts) {
       <div class="stat-box">
         <div class="stat-label">Fund Net Assets</div>
         <div class="stat-value sm">${xray.fund?.netAssets ? fmtCompactCurrency(xray.fund.netAssets) : '—'}</div>
-      </div>
+      </div>${
+        wh
+          ? `
+      <div class="stat-box">
+        <div class="stat-label">v1 Figure (Level 3)</div>
+        <div class="stat-value sm">${fmtCompactCurrency(xray.v1Level3.valueUSD)}</div>
+        <div class="stat-sub">${xray.v1Level3.rows} holdings at fair-value Level 3, not debt</div>
+      </div>`
+          : ''
+      }
     </div>`;
 
-  html +=
-    '<div class="alert alert-info">Private equity = an equity-type interest (common/preferred stock, a warrant, or an indirect/SPV vehicle) that this filing marks at SEC fair-value hierarchy Level 3 — valued with unobservable inputs, meaning there\'s no real market for it — not an external judgment call. Bonds/loans are excluded even at Level 3, since they\'re creditor claims, not equity. A "restricted" flag alone does NOT qualify a holding here: a foreign-ownership-restricted but still publicly-traded stock (Level 2) is excluded, since it trades in an observable market and simply isn\'t privately held. A publicly-traded wrapper around a private company (e.g. a listed vehicle tracking it) will also show as public here, since the fund itself marks it at a quoted price.</div>';
+  if (wh)
+    html +=
+      '<div class="alert alert-info">Private equity = an equity-type holding (common or preferred stock, a warrant, or an SPV / fund vehicle) in a company whose status is private, from the reviewed company list, not from the fair-value level: filers mark real private companies at Level 1 or 2 too. Names not reviewed yet count when they look private and are labeled "unreviewed"; listed companies\' restricted rows and names that look listed are shown apart below with the reason. Bonds and loans are never private equity; they appear in the capital structure. v1\'s Level-3 figure for the same filing is shown for comparison. Totals and % of holdings value cover every row of the filing.</div>';
+  else
+    html +=
+      '<div class="alert alert-info">Private equity = an equity-type interest (common/preferred stock, a warrant, or an indirect/SPV vehicle) that this filing marks at SEC fair-value hierarchy Level 3 — valued with unobservable inputs, meaning there\'s no real market for it — not an external judgment call. Bonds/loans are excluded even at Level 3, since they\'re creditor claims, not equity. A "restricted" flag alone does NOT qualify a holding here: a foreign-ownership-restricted but still publicly-traded stock (Level 2) is excluded, since it trades in an observable market and simply isn\'t privately held. A publicly-traded wrapper around a private company (e.g. a listed vehicle tracking it) will also show as public here, since the fund itself marks it at a quoted price.</div>';
 
   const typeEntries = Object.entries(xray.byInstrumentType).sort((a, b) => b[1] - a[1]);
   const countryEntries = Object.entries(xray.byCountry).sort((a, b) => b[1] - a[1]);
@@ -3657,6 +3733,8 @@ function buildXraySnapshotHTML(xray, filing, opts) {
   }
 
   html += `<div class="results-header"><h2>Private Equity Holdings (${xray.privateHoldingsCount})</h2></div>`;
+  if (xray.truncated)
+    html += `<div class="hint">Showing the ${fmtNum(xray.truncated.shown)} largest of ${fmtNum(xray.truncated.privateHoldings)} rows; every total above covers all of them.</div>`;
   if (xray.privateHoldings.length) {
     html += `<table><thead><tr>
       <th>Company</th><th>Instrument</th><th>Country</th><th class="right">Fair Value Level</th>
@@ -3665,9 +3743,12 @@ function buildXraySnapshotHTML(xray, filing, opts) {
     </tr></thead><tbody>`;
     xray.privateHoldings.forEach(h => {
       const shares = h.shares != null && !isNaN(h.shares) ? fmtNum(h.shares) : '—';
-      const pps = h.pricePerShare != null && !isNaN(h.pricePerShare) ? fmtCurrency(h.pricePerShare) : '—';
+      const pps =
+        h.pricePerShare != null && !isNaN(h.pricePerShare)
+          ? fmtCurrency(h.pricePerShare) + (h.perShare === false ? ' /unit' : '')
+          : '—';
       html += `<tr>
-        <td class="title-cell">${esc(h.name || h.title || '—')}</td>
+        <td class="title-cell">${holdingNameHTML(h)}</td>
         <td>${esc(h.instrumentLabel || '—')}</td>
         <td>${esc(h.country || '—')}</td>
         <td class="right">${esc(h.fairValLevel || '—')}</td>
@@ -3678,9 +3759,22 @@ function buildXraySnapshotHTML(xray, filing, opts) {
       </tr>`;
     });
     html += '</tbody></table>';
+  } else if (wh) {
+    html += '<div class="alert alert-info">No private equity holdings found in this filing.</div>';
   } else {
     html +=
       '<div class="alert alert-info">No private equity holdings (Level-3 equity, warrants, or SPV vehicles) found in this filing — this fund’s book appears to hold no private equity as of this report date. (It may still hold Level-3 bonds/loans or Level-2 restricted stock, which this view intentionally excludes.)</div>';
+  }
+
+  if (wh && xray.notPrivate.length) {
+    html += `<div class="results-header"><h2>Not Counted as Private (${xray.notPrivate.length})</h2></div>`;
+    html +=
+      '<div class="hint">Stored private-candidate rows (Level 3, restricted, or no valid ISIN/CUSIP) whose company is listed or looks listed.</div>';
+    html += `<table><thead><tr><th>Company</th><th>Instrument</th><th>Why not private</th><th class="right">Fair Value Level</th><th class="right">$ Value</th></tr></thead><tbody>`;
+    xray.notPrivate.forEach(h => {
+      html += `<tr><td class="title-cell">${holdingNameHTML(h)}</td><td>${esc(h.instrumentLabel || '—')}</td><td>${esc(h.reason || '—')}</td><td class="right">${esc(h.fairValLevel || '—')}</td><td class="right">${fmtCompactCurrency(h.marketValue)}</td></tr>`;
+    });
+    html += '</tbody></table>';
   }
 
   html += capitalStructureHTML(xray);
@@ -3693,6 +3787,17 @@ function buildXraySnapshotHTML(xray, filing, opts) {
   </div>`;
   html += '</div>';
   return html;
+}
+
+// A holding's name on the fund page: linked to its company page (curated) or
+// its unreviewed-name page, with its display labels (DATA-QUALITY Display rules).
+function holdingNameHTML(h) {
+  const name = esc(h.name || h.title || '—');
+  let html = name;
+  if (h.company) html = `<a href="/company/${enc(h.company.id)}-${slugOf(h.company.name)}">${name}</a>`;
+  else if (h.unreviewed?.key) html = `<a href="/name/${enc(h.unreviewed.key)}">${name}</a>`;
+  const labels = (h.labels || []).map(l => `<span class="status-pill">${esc(l)}</span>`).join(' ');
+  return labels ? `${html} ${labels}` : html;
 }
 
 // ── Fund X-Ray: per-issuer capital structure ──────────────────────────────
@@ -3748,11 +3853,14 @@ async function runXrayReturns() {
   out.innerHTML = `<div class="hint">Fetching ${filings.length} filings…</div>`;
   const myGen = xrayRunGeneration;
   try {
+    const list = enc(filings.map(f => f.accession).join(','));
     const data = await fetchJSON(
-      `/api/fund-xray-returns?cik=${enc(filings[0].cik)}&accessions=${enc(filings.map(f => f.accession).join(','))}`
+      filings[0].fundKey
+        ? `${fundApi(filings[0])}/returns?accessions=${list}`
+        : `/api/fund-xray-returns?cik=${enc(filings[0].cik)}&accessions=${list}`
     );
     if (myGen !== xrayRunGeneration) return;
-    if (!data.success) throw new Error(data.error || 'Request failed');
+    if (!filings[0].fundKey && !data.success) throw new Error(data.error || 'Request failed');
     out.innerHTML = returnsResultHTML(data.returns);
   } catch (e) {
     if (myGen === xrayRunGeneration) out.innerHTML = `<div class="alert alert-error">${esc(e.message)}</div>`;
@@ -3834,7 +3942,20 @@ function xraySnapshotExportRows(key) {
     'Price / Share',
     '% of NAV',
     '$ Value',
+    'Mark Date',
+    'Accession',
+    'Source',
+    'Private By',
   ];
+  const wh = !!xray.v1Level3;
+  const source = wh ? 'warehouse' : 'live EDGAR';
+  const accession = xray.accession || snap.filing?.accession || '';
+  const privateBy = h =>
+    !wh
+      ? 'fair-value Level 3 (v1 rule)'
+      : h.company
+        ? `company status (${h.company.name})`
+        : (h.labels || [])[0] || 'unreviewed';
   const rows = xray.privateHoldings.map(h => [
     fundName,
     reportDate,
@@ -3847,8 +3968,12 @@ function xraySnapshotExportRows(key) {
     h.pricePerShare != null && !isNaN(h.pricePerShare) ? h.pricePerShare.toFixed(6) : '',
     h.pctOfNetAssets != null ? h.pctOfNetAssets.toFixed(4) : '',
     h.marketValue != null ? h.marketValue.toFixed(2) : '',
+    xray.markDate || reportDate,
+    accession,
+    source,
+    privateBy(h),
   ]);
-  return { header, rows, fundName, reportDate };
+  return { header, rows, fundName, reportDate, markDate: xray.markDate || reportDate, accession, source };
 }
 
 function doXrayExportCSV(key) {
@@ -3879,6 +4004,10 @@ function doXrayExportExcel(key) {
     { wch: 14 },
     { wch: 10 },
     { wch: 16 },
+    { wch: 12 },
+    { wch: 22 },
+    { wch: 12 },
+    { wch: 30 },
   ];
   XLSX.utils.book_append_sheet(wb, ws, 'Fund X-Ray');
   const datePart = data.reportDate ? `_${fileNamePart(data.reportDate)}` : '';
@@ -3900,15 +4029,23 @@ function doXrayExportPDF(key) {
   doc.setFontSize(8.5);
   doc.setFont(undefined, 'normal');
   doc.setTextColor(100);
-  doc.text('Report period: ' + (data.reportDate || '—') + ' · Generated: ' + new Date().toLocaleString(), margin, y);
+  // Mark date, accession and source are one filing's: printed once here, not
+  // as three more columns in an already dense table.
+  doc.text(
+    `Report period: ${data.reportDate || '—'} · Mark date: ${data.markDate || '—'} · Accession: ${data.accession || '—'} · Source: ${data.source} · Generated: ${new Date().toLocaleString()}`,
+    margin,
+    y
+  );
   y += 8;
   doc.setTextColor(0);
+  const once = new Set(['Mark Date', 'Accession', 'Source']);
+  const cols = data.header.map((h, i) => (once.has(h) ? -1 : i)).filter(i => i >= 0);
 
   if (data.rows.length) {
     doc.autoTable({
       startY: y,
-      head: [data.header],
-      body: data.rows,
+      head: [cols.map(i => data.header[i])],
+      body: data.rows.map(r => cols.map(i => r[i])),
       margin: { left: margin, right: margin },
       styles: { fontSize: 7.5, cellPadding: 2.5 },
       headStyles: { fillColor: [37, 99, 235], fontStyle: 'bold', fontSize: 8 },
@@ -4018,13 +4155,16 @@ async function runFundXrayCompare() {
   showLoading('Comparing periods...');
   try {
     const data = await fetchJSON(
-      `/api/fund-xray-compare?cik=${enc(currentFiling.cik)}&currentAccession=${enc(currentFiling.accession)}&priorAccession=${enc(priorFiling.accession)}`
+      currentFiling.fundKey
+        ? `${fundApi(currentFiling)}/compare?current=${enc(currentFiling.accession)}&prior=${enc(priorFiling.accession)}`
+        : `/api/fund-xray-compare?cik=${enc(currentFiling.cik)}&currentAccession=${enc(currentFiling.accession)}&priorAccession=${enc(priorFiling.accession)}`
     );
     hideLoading();
-    if (!data.success || !data.comparison) {
+    if (!data.comparison || (!currentFiling.fundKey && !data.success)) {
       return showMsg('Error: ' + esc(data.error || 'Could not build this comparison.'), 'error');
     }
     currentXrayCompare = data.comparison;
+    currentXrayCompareFilings = { current: currentFiling, prior: priorFiling };
     // Order on the page: 1) analysis (prepended, see renderFundXrayComparison)
     // 2) the current snapshot already in #resultsContainer, now relabeled
     // "Most Recent Period" since it's no longer the only thing shown
@@ -4056,8 +4196,12 @@ function relabelCurrentXraySnapshot() {
 // supplementary "see that period's own report" convenience.
 async function renderPriorXraySnapshot(priorFiling) {
   try {
-    const data = await fetchJSON(`/api/fund-xray?cik=${enc(priorFiling.cik)}&accession=${enc(priorFiling.accession)}`);
-    if (!data.success || !data.xray) return;
+    const data = await fetchJSON(
+      priorFiling.fundKey
+        ? `${fundApi(priorFiling)}/xray?accession=${enc(priorFiling.accession)}`
+        : `/api/fund-xray?cik=${enc(priorFiling.cik)}&accession=${enc(priorFiling.accession)}`
+    );
+    if (!data.xray || (!priorFiling.fundKey && !data.success)) return;
     xraySnapshots.prior = { xray: data.xray, filing: priorFiling };
     const html = buildXraySnapshotHTML(data.xray, priorFiling, {
       periodRole: 'Prior Period',
@@ -4081,7 +4225,7 @@ async function renderPriorXraySnapshot(priorFiling) {
 function fmtXrayDeltaPair(block, fmt) {
   if (block.current == null && block.prior == null) return '—';
   if (block.prior == null) return `${fmt(block.current)} <span style="color:var(--green)">(new)</span>`;
-  if (block.current == null) return `${fmt(block.prior)} <span style="color:var(--red)">(exited)</span>`;
+  if (block.current == null) return `${fmt(block.prior)} <span style="color:var(--red)">(no longer reported)</span>`;
   let pctLabel = '';
   if (block.deltaPct != null && !isNaN(block.deltaPct)) {
     const color = block.deltaPct > 0 ? 'var(--green)' : block.deltaPct < 0 ? 'var(--red)' : 'var(--gray-500)';
@@ -4222,7 +4366,9 @@ function renderFundXrayComparison(cmp, currentFiling, priorFiling) {
   );
   html += '</div>';
 
-  html += `<div class="results-header"><h2>Full Position-Level Detail (${cmp.positions.length})</h2></div>`;
+  html += `<div class="results-header"><h2>Full Position-Level Detail (${cmp.positionsTotal || cmp.positions.length})</h2></div>`;
+  if (cmp.positionsTotal > cmp.positions.length)
+    html += `<div class="hint">Showing the ${fmtNum(cmp.positions.length)} largest of ${fmtNum(cmp.positionsTotal)} positions; the totals above cover all of them.</div>`;
   if (cmp.positions.length) {
     html += `<table><thead><tr>
       <th>Status</th><th>Company</th><th>Instrument</th>
@@ -4238,7 +4384,7 @@ function renderFundXrayComparison(cmp, currentFiling, priorFiling) {
           ? `${p.pctOfNetAssets.delta > 0 ? '+' : ''}${p.pctOfNetAssets.delta.toFixed(2)}pp`
           : '—';
       html += `<tr class="${rowClass}">
-        <td><span class="status-pill ${p.status}">${p.status}</span>${p.splitRatio ? `<div class="hint" style="margin:2px 0 0;">${p.splitRatio >= 1 ? p.splitRatio + '-for-1' : '1-for-' + Math.round(1 / p.splitRatio)} split — adjusted</div>` : ''}</td>
+        <td><span class="status-pill ${p.status}">${p.status === 'exited' ? 'no longer reported' : p.status}</span>${p.splitRatio ? `<div class="hint" style="margin:2px 0 0;">${p.splitRatio >= 1 ? p.splitRatio + '-for-1' : '1-for-' + Math.round(1 / p.splitRatio)} split — adjusted</div>` : ''}</td>
         <td class="title-cell">${esc(p.name || p.title || '—')}</td>
         <td>${esc(p.instrumentLabel || '—')}</td>
         <td class="right">${fmtXrayDeltaPair(p.shares, fmtNum)}</td>
@@ -4292,7 +4438,13 @@ function xrayCompareExportRows() {
     'Value Δ from Position Sizing ($)',
     '% of NAV (Prior)',
     '% of NAV (Current)',
+    'Mark Date (Prior)',
+    'Mark Date (Current)',
+    'Accession (Prior)',
+    'Accession (Current)',
+    'Source',
   ];
+  const f = currentXrayCompareFilings || {};
   const rows = cmp.positions.map(p => [
     p.status,
     p.name || p.title || '',
@@ -4310,6 +4462,11 @@ function xrayCompareExportRows() {
     p.shareEffectUSD != null ? p.shareEffectUSD.toFixed(2) : '',
     p.pctOfNetAssets.prior != null ? p.pctOfNetAssets.prior.toFixed(4) : '',
     p.pctOfNetAssets.current != null ? p.pctOfNetAssets.current.toFixed(4) : '',
+    cmp.prior.reportDate || f.prior?.period || '',
+    cmp.current.reportDate || f.current?.period || '',
+    f.prior?.accession || '',
+    f.current?.accession || '',
+    f.current?.fundKey ? 'warehouse' : 'live EDGAR',
   ]);
   const fundName = cmp.current.seriesName || cmp.current.registrantName || '';
   return { header, rows, fundName };

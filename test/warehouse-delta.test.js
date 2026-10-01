@@ -70,7 +70,7 @@ function mockXml({ skip = [] } = {}) {
 }
 
 test('parseFormIndex: reads real EDGAR form.idx lines, only NPORT-P(/A), inside the date window', () => {
-  assert.equal(ENTRIES.length, 7);
+  assert.equal(ENTRIES.length, 8);
   const gfa = ENTRIES.find(e => e.accession === '0001193125-26-182055');
   assert.deepEqual(
     { form: gfa.form, cik: gfa.cik, filingDate: gfa.filingDate },
@@ -78,7 +78,7 @@ test('parseFormIndex: reads real EDGAR form.idx lines, only NPORT-P(/A), inside 
   );
   assert.ok(!/^10-Q/m.test(ENTRIES.map(e => e.form).join('\n')), 'other forms ignored');
   const window = parseFormIndex(INDEX, { since: '2026-05-26', until: '2026-05-29' });
-  assert.deepEqual(window.map(e => e.filingDate).sort(), ['2026-05-26', '2026-05-29', '2026-05-29']);
+  assert.deepEqual(window.map(e => e.filingDate).sort(), ['2026-05-26', '2026-05-27', '2026-05-29', '2026-05-29']);
 });
 
 test('indexQuarters: spans quarter and year boundaries', () => {
@@ -92,8 +92,8 @@ test('ingestDelta: loads every listed filing from EDGAR XML, identical to the bu
   mockIndex();
   mockXml();
   const stats = await ingestDelta(db, { since: '2026-04-01', until: '2026-06-30' });
-  assert.equal(stats.listed, 7);
-  assert.equal(stats.loaded, 7);
+  assert.equal(stats.listed, 8);
+  assert.equal(stats.loaded, 8);
   assert.equal(stats.failed, 0);
   assert.equal(stats.rowsKept, KEPT_TOTAL);
 
@@ -143,7 +143,7 @@ test('ingestDelta: resumable — a second run skips filings already loaded', asy
   mockXml();
   await ingestDelta(db, { since: '2026-04-01', until: '2026-06-30' });
   const again = await ingestDelta(db, { since: '2026-04-01', until: '2026-06-30' });
-  assert.equal(again.listed, 7);
+  assert.equal(again.listed, 8);
   assert.equal(again.loaded, 0, 'no XML refetched (no interceptors left)');
   db.close();
 });
@@ -154,7 +154,7 @@ test('ingestDelta: a failed filing is recorded, retried next run, and cleared on
   mockIndex();
   mockXml({ skip: [bad] });
   const first = await ingestDelta(db, { since: '2026-04-01', until: '2026-06-30' });
-  assert.equal(first.loaded, 6);
+  assert.equal(first.loaded, 7);
   assert.equal(first.failed, 1);
   assert.deepEqual(db.prepare('SELECT accession, error, attempts FROM ingest_errors').all(), [
     { accession: bad, error: 'HTTP 404', attempts: 1 },
@@ -170,7 +170,7 @@ test('ingestDelta: a failed filing is recorded, retried next run, and cleared on
   assert.equal(second.loaded, 1);
   assert.equal(second.failed, 0);
   assert.equal(db.prepare('SELECT COUNT(*) n FROM ingest_errors').get().n, 0);
-  assert.equal(db.prepare('SELECT COUNT(*) n FROM filings').get().n, 7);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM filings').get().n, 8);
   db.close();
 });
 
@@ -192,7 +192,7 @@ test('ingestDelta: a dropped connection (real: EPIPE / stalled socket) is retrie
     .reply(200, fs.readFileSync(path.join(BULK, 'xml', `${flaky}.xml`), 'utf8'));
   const stats = await ingestDelta(db, { since: '2026-04-01', until: '2026-06-30' });
   assert.equal(stats.failed, 0);
-  assert.equal(stats.loaded, 7);
+  assert.equal(stats.loaded, 8);
   db.close();
 });
 

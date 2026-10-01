@@ -102,6 +102,41 @@
     </fundInfo>
     <invstOrSecs>
       <invstOrSec>
+        <name>ARDAGH GROUP SA</name>
+        <lei>6354006L1NWUUOPYX274</lei>
+        <title>Ardagh Group SA</title>
+        <cusip>039959AA9</cusip>
+        <identifiers>
+          <isin value="US039959AA98"/>
+        </identifiers>
+        <balance>1039000.00</balance>
+        <units>PA</units>
+        <curCd>USD</curCd>
+        <valUSD>1090237.2500000000</valUSD>
+        <pctVal>0.2236625687</pctVal>
+        <payoffProfile>Long</payoffProfile>
+        <assetCat>DBT</assetCat>
+        <issuerCat>CORP</issuerCat>
+        <invCountry>LU</invCountry>
+
+        <isRestrictedSec>Y</isRestrictedSec>
+
+        <fairValLevel>2</fairValLevel>
+        <debtSec>
+          <maturityDt>2030-12-01</maturityDt>
+          <couponKind>Fixed</couponKind>
+          <annualizedRt>9.5000000000</annualizedRt>
+          <isDefault>N</isDefault>
+          <areIntrstPmntsInArrs>N</areIntrstPmntsInArrs>
+          <isPaidKind>N</isPaidKind>
+        </debtSec>
+        <securityLending>
+          <isCashCollateral>N</isCashCollateral>
+          <isNonCashCollateral>N</isNonCashCollateral>
+          <isLoanByFund>N</isLoanByFund>
+        </securityLending>
+      </invstOrSec>
+<invstOrSec>
         <name>AUDACY CAPITAL</name>
         <lei>549300S5JUSXRHNCHD80</lei>
         <title>AUDACY CAPITAL</title>

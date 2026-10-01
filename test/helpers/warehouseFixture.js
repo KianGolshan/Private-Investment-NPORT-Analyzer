@@ -20,6 +20,11 @@ function openFixtureWarehouse(file = FIXTURE) {
   insertTable(db, 'filings', data.filings);
   insertTable(db, 'holdings', data.holdings);
   for (const t of [
+    'filing_totals',
+    'capital_structure_rows',
+    'companies',
+    'tracked_companies',
+    'unreviewed_entities',
     'ncen_filings',
     'ncen_advisers',
     'advisers',

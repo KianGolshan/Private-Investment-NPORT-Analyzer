@@ -1,6 +1,7 @@
 # 0008: How the app reads the warehouse (parity scope, API shape, identifiers)
 
-**Status:** accepted, 2026-09-30 (Phase 5 planning; user chose every recommendation). Implemented in P5a/P5b.
+**Status:** accepted, 2026-09-30 (Phase 5 planning; user chose every recommendation). Implemented in P5a (signed off
+2026-09-30) and P5b (built 2026-09-30: decision 7's capital-structure rows adopted after measuring, ADR 0003 amended).
 
 ## Context
 

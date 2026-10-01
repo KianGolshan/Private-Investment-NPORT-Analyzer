@@ -646,6 +646,26 @@ rows_listed, value_listed, rows_debt, value_debt, …)` computed from **all** ro
 
 **Out of scope for 5b:** firm pages and new analysis (P6); the deployed curation path (before P9).
 
+**Checkpoint (built 2026-09-30; awaiting sign-off)**
+
+- Built, in task order: migrations 0015–0018 (`filing_totals`, `capital_structure_rows` + `filing_totals.rows_capital`,
+  `fund_names` + `fund_search`, `refresh_runs.kind`); `lib/warehouse/{filing-totals,capital-structure,fund-names,
+totals-backfill}.js` and `scripts/backfill-filing-totals.js`; `lib/services/fund.js` and the `/api/funds` routes; the
+  fund page, Batch and Watchlist on the services; `lib/analytics/peer.js` (served as `/peer.js`); exports with mark
+  date, accession and source; the per-filing routes as a compatibility layer; `lib/entities/{review-import,
+make-company}.js`, `scripts/make-company.js` and `lib/api/admin.js`.
+- Results: `filing_totals` identical across both paths on 8 real filings and equal to v1's `buildFundXRay` (also on 3
+  full EDGAR filings, LIVE), backfilled for all 354,997 filings; capital rows measured (2026q2: 1,855 candidates,
+  1,788 stored) and adopted with the user's yes; a fund's private book equals `exposureAsOf` per company; F1, F2, F8/F9,
+  F16, F34 and F36 through the service, API, screen and exports; no view reaches a per-filing route for a private
+  company or fund. p95 under 50 ms on every route (worst single request 376 ms); 542.7 MB.
+- Found on real data and fixed: a 26k-row filing (trap 45) bounded on the wire; the Excel export's invalid sheet
+  name; outliers against split-restated peers; capital structure split by a filer's typo (trap 46, F36).
+- Deviations: the fixture for the parity test gained an eighth real filing (Northeast Investors Trust) so that both
+  paths store capital rows; fund search needed a precomputed list (`fund_names`, measured 350–970 ms without it);
+  Batch and Watchlist fall back to the live path per name (listed, unmatched) rather than for the whole run; exports
+  append columns rather than renaming v1's "Report Date" (it is the mark date).
+
 ---
 
 ## Phase 6: new analysis and UI

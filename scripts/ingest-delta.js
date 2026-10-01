@@ -12,6 +12,7 @@ const fs = require('fs');
 const { openWarehouse, defaultWarehousePath } = require('../lib/warehouse/db');
 const { ingestDelta, defaultSince } = require('../lib/warehouse/delta');
 const { entityUpkeep } = require('../lib/entities/upkeep');
+const { rebuildFundNames } = require('../lib/warehouse/fund-names');
 
 function parseArgs(argv) {
   const opts = { since: null, until: null, concurrency: 3 };
@@ -36,6 +37,7 @@ async function main() {
     if (!since) throw new Error('no bulk data yet: run npm run ingest:bulk -- --all first, or pass --since');
     const stats = await ingestDelta(db, { since, until: opts.until, concurrency: opts.concurrency, log: console.log });
     const e = entityUpkeep(db);
+    rebuildFundNames(db);
     console.log(
       `entities: ${e.advisers.mapped}/${e.advisers.funds} funds with an adviser, ${e.companies.resolved} rows resolved`
     );
