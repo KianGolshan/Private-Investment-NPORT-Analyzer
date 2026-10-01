@@ -1,8 +1,8 @@
 # Vantage v2 Status
 
-**Current phase:** Phase 5b **built, awaiting sign-off** (2026-09-30). P5a signed off and merged to `main` (PR #3,
-bed52f8). Next after sign-off: P6 (P7 may start any time). Read [LESSONS.md](LESSONS.md) first.
-**Branch:** `v2-phase5b` (off `main` at bed52f8), pushed. No PR, no merge to `main` without the user's yes.
+**Current phase:** Phase 6 **next** (P5b signed off 2026-09-30, merged to `main` by PR at the user's request). P7 may
+start any time. Read [LESSONS.md](LESSONS.md) first.
+**Branch:** `main` (P5b merged from `v2-phase5b`).
 **Last updated:** 2026-09-30
 
 ## Phase tracker
@@ -14,13 +14,13 @@ bed52f8). Next after sign-off: P6 (P7 may start any time). Read [LESSONS.md](LES
 - [x] P4: entities (companies, aliases, SPVs, managers, tracked list) (finalized 2026-09-29)
 - [x] P4.5: evidence-based company identity + unresolved-value report (signed off 2026-09-30)
 - [x] P5a: services, search over every issuer, company page on the warehouse (signed off 2026-09-30)
-- [ ] P5b: fund pages, lists, exports, per-filing flows retired (built 2026-09-30; awaiting sign-off)
+- [x] P5b: fund pages, lists, exports, per-filing flows retired (signed off 2026-09-30)
 - [ ] P6: new analysis and UI
 - [ ] P7: MCP server (may start after P5a)
 - [ ] P8: operations hardening
 - [ ] P9: public deployment (live site; hosting choice to confirm with the user as ADR 0006)
 
-## Phase 5b results (built 2026-09-30, awaiting sign-off)
+## Phase 5b results (signed off 2026-09-30)
 
 - **Step 0:** CI green on `main` for the P5a merge (bed52f8). Refresh #11 `ok`: no 2026Q3 bulk file yet, nothing new to
   catch up, `ingest_errors` empty, 504.8 MB with 364 free pages (no VACUUM needed). Suite 425 / 395 pass / 0 fail;
@@ -462,7 +462,7 @@ The evidence as presented:
   each session.
 - **Branch:** P5b is on `v2-phase5b` (pushed). Ask before merging to `main`, opening PRs, renaming or deleting branches
   (`audit-fixes`, `v2-plan-and-phase0`, `v2-phase5-plan`, `v2-phase5a` are all contained in `main`).
-- **5b sign-off** (2026-09-30): built; the user signs off, then a PR to `main` only with a yes.
+- ~~5b sign-off~~ Signed off by the user 2026-09-30; `v2-phase5b` merged to `main` by PR.
 - **Trap 45 (loans filed as `OTHER`):** 81,995 indirect rows in principal ($265.3B) mix real fund interests with
   merchant cash advances, personal loans, HEIs and promissory notes. A rule by `other_asset` wording would move the
   loans to debt; not changed without the user's yes. No tracked company is affected.
@@ -506,6 +506,8 @@ The evidence as presented:
 - The SEC 2026Q3 bulk file (expected after 2026-09-30) loads on the next `npm run refresh`.
 
 ## Log
+
+- **2026-09-30:** User signed off P5b; PR opened and merged to `main`. Next: Phase 6.
 
 - **2026-09-30:** Phase 5b built on `v2-phase5b` (tasks 1–8; `filing_totals` and capital rows backfilled, the fund page,
   lists, peer module, exports, compatibility layer, admin job). Traps 45–46, F36, C23–C25, ADR 0003 amended, LESSONS
