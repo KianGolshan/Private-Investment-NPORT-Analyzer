@@ -95,6 +95,22 @@ test('firm: Capital Group holds Anthropic in 9 funds / $8.46B at 2026-06-30 (A3)
   assert.equal(Math.round(afis.value / 1e4) / 100, 0.66);
 });
 
+test("company holders by firm: filtering Anthropic's holders to a firm equals that firm's book (A3), one definition", async () => {
+  const id = firmIdOf('Capital Group (American Funds)');
+  const x = (await api(`/api/companies/${idOf('Anthropic')}/exposure?date=2026-06-30`)).body;
+  const mine = x.holdings.filter(h => h.firms.some(f => f.id === id));
+  const book = (await api(`/api/firms/${id}?date=2026-06-30`)).body.byCompany.find(c => c.name === 'Anthropic');
+  assert.equal(mine.length, book.funds);
+  assert.equal(Math.round(mine.reduce((s, h) => s + h.value, 0)), Math.round(book.value));
+  // positions carry the class the class views group by; pctNav stays the filed percent (0.83 = 0.83%)
+  const gfa = x.holdings.find(h => h.accession === '0001193125-26-323081');
+  const g1 = gfa.positions.find(p => p.classLabel === 'Preferred G-1');
+  assert.ok(g1 && g1.pctNav > 0.5 && g1.pctNav < 1, `G-1 is ${g1?.pctNav}% of the fund`);
+  // changes carry the same firms
+  const { events } = (await api(`/api/companies/${idOf('Anthropic')}/activity`)).body;
+  assert.ok(events.filter(e => e.fundKey === gfa.fundKey).every(e => e.firms.some(f => f.id === id)));
+});
+
 test('firm: Capital Group marks Stripe in 8 of 12 months of 2025, at one price per date', async () => {
   const id = firmIdOf('Capital Group (American Funds)');
   const m = (await api(`/api/firms/${id}/marks/${idOf('Stripe')}`)).body;

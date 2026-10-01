@@ -49,7 +49,7 @@ export default function Firms() {
             exportName={`firms-${firms.data.date}`}
             filterPlaceholder="Filter firms…"
             maxHeight={680}
-            totals={{ name: `${num(rows.length)} firms`, value: moneyC(rows.reduce((s, f) => s + f.value, 0)) }}
+            totals={rs => ({ name: `${num(rs.length)} firms`, value: moneyC(rs.reduce((s, f) => s + f.value, 0)) })}
           />
         </Card>
       )}

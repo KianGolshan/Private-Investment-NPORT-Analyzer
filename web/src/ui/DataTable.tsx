@@ -40,7 +40,8 @@ interface Props<T> {
   rowKey: (row: T, i: number) => string;
   sort?: { id: string; desc?: boolean };
   group?: Group<T>;
-  totals?: Partial<Record<string, ComponentChildren>>;
+  /** The total row, computed from the rows shown (after the filter box). */
+  totals?: (rows: T[]) => Partial<Record<string, ComponentChildren>>;
   exportName?: string;
   filterPlaceholder?: string;
   maxHeight?: number;
@@ -178,6 +179,7 @@ export function DataTable<T>(p: Props<T>) {
     body = rows.map(rowEl);
   }
 
+  const totals = p.totals?.(rows);
   const showToolbar = p.exportName || p.filterPlaceholder || p.toolbar;
   return (
     <div>
@@ -235,7 +237,7 @@ export function DataTable<T>(p: Props<T>) {
               <tr class="total">
                 {p.columns.map(c => (
                   <td key={c.id} class={c.num ? 'num' : ''}>
-                    {p.totals![c.id] ?? ''}
+                    {totals?.[c.id] ?? ''}
                   </td>
                 ))}
               </tr>

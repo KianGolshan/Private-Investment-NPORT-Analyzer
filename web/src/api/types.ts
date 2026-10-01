@@ -75,9 +75,17 @@ export interface Position {
   assetCat: string | null;
   instrumentType: string;
   instrumentLabel: string;
+  /** The class the class views group by (instrumentLabel with "F1" = "F-1"). */
+  classLabel: string;
   fvLevel: string | null;
   viaSpv: boolean;
+  /** Percent of the fund's net assets as filed (N-PORT pctVal): 0.83 means 0.83%. */
   pctNav: number | null;
+}
+
+export interface FirmRef {
+  id: number;
+  name: string;
 }
 
 export interface Holding extends FundRef {
@@ -92,6 +100,8 @@ export interface Holding extends FundRef {
   positions?: Position[];
   indirect?: boolean;
   label: string | null;
+  /** The fund's advising firms (current N-CEN adviser). */
+  firms?: FirmRef[];
 }
 
 export interface Exposure extends Envelope {
@@ -104,7 +114,14 @@ export interface Exposure extends Envelope {
   zeroValue: Holding[];
   exited: Holding[];
   inactive: Holding[];
-  disclosedExposure: { fundKey: string; basis: string; reportDate: string; sourceAccession: string }[];
+  disclosedExposure: {
+    fundKey: string;
+    registrant: string | null;
+    seriesName: string | null;
+    markDate: string;
+    accession: string;
+    basis: string;
+  }[];
 }
 
 export interface TrendPoint {
@@ -151,6 +168,7 @@ export interface ChangeEvent extends FundRef {
   valueChange: number;
   markChangePct: number | null;
   instruments: Leg[];
+  firms?: FirmRef[];
 }
 
 export interface Activity extends Envelope {

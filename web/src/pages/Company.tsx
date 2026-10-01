@@ -8,13 +8,14 @@ import type {
   CompanyStats,
   Envelope,
   Exposure,
+  FirmRef,
   Freshness,
   Holding,
   MarkSeries,
   Position,
   TrendPoint,
 } from '../api/types';
-import { firmPath, fundPath, longDate, money, moneyC, num, pct, price, share } from '../lib/format';
+import { firmPath, fundPath, longDate, money, moneyC, num, pct, pctOfNav, price } from '../lib/format';
 import { ScopeBar } from '../scope/ScopeBar';
 import { isRange, useParam, useScope } from '../scope/scope';
 import { Badge, Card, Empty, ErrorBox, FilingRef, Kpi, Loading, Tabs } from '../ui/bits';
@@ -280,21 +281,87 @@ interface PosRow extends Position {
   h: Holding;
 }
 
+const firmNames = (firms: FirmRef[] | undefined) => (firms?.length ? firms.map(f => f.name).join(' / ') : '—');
+const inFirms = (firms: FirmRef[] | undefined, ids: number[]) => !ids.length || !!firms?.some(f => ids.includes(f.id));
+
+/** Pickers that add a firm or class to the scope (the chips in the scope bar remove them). */
+function FilterPickers({ firms, classes }: { firms?: FirmRef[]; classes?: string[] }) {
+  const [scope, setScope] = useScope();
+  return (
+    <>
+      {firms && firms.length > 0 && (
+        <select
+          class="input"
+          aria-label="Filter by firm"
+          value=""
+          onChange={e => {
+            const id = Number((e.target as HTMLSelectElement).value);
+            if (id && !scope.firms.includes(id)) setScope({ firms: [...scope.firms, id] });
+          }}
+        >
+          <option value="">+ Firm</option>
+          {firms.map(f => (
+            <option key={f.id} value={f.id}>
+              {f.name}
+            </option>
+          ))}
+        </select>
+      )}
+      {classes && classes.length > 0 && (
+        <select
+          class="input"
+          aria-label="Filter by share class"
+          value=""
+          onChange={e => {
+            const c = (e.target as HTMLSelectElement).value;
+            if (c && !scope.classes.includes(c)) setScope({ classes: [...scope.classes, c] });
+          }}
+        >
+          <option value="">+ Class</option>
+          {classes.map(c => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+      )}
+    </>
+  );
+}
+
+/** Distinct firms across funds, largest first by how often they appear. */
+function firmOptions(lists: (FirmRef[] | undefined)[]): FirmRef[] {
+  const m = new Map<number, { f: FirmRef; n: number }>();
+  for (const l of lists) for (const f of l ?? []) m.set(f.id, { f, n: (m.get(f.id)?.n ?? 0) + 1 });
+  return [...m.values()].sort((a, b) => b.n - a.n || a.f.name.localeCompare(b.f.name)).map(x => x.f);
+}
+
 function Holders({ base, sq, name, newest }: ViewProps) {
   const [scope] = useScope();
   const exp = useApi<Exposure & Partial<Live>>(`${base}/exposure${qs({ date: scope.asof, ...sq })}`);
   const d = exp.data;
-  const rows = useMemo(() => {
+  const all = useMemo(() => {
     const out: PosRow[] = [];
     for (const h of d?.holdings ?? []) for (const p of h.positions ?? []) out.push({ ...p, h });
-    return out.filter(
-      r =>
-        (!scope.classes.length || scope.classes.includes(r.instrumentLabel)) &&
-        (!scope.kind || (scope.kind === 'indirect') === r.viaSpv) &&
-        (!scope.funds.length || scope.funds.includes(r.h.fundKey))
-    );
-  }, [d, scope.classes, scope.kind, scope.funds]);
-  const total = rows.reduce((s, r) => s + (r.valueUsd || 0), 0);
+    return out;
+  }, [d]);
+  const rows = useMemo(
+    () =>
+      all.filter(
+        r =>
+          (!scope.classes.length || scope.classes.includes(r.classLabel)) &&
+          (!scope.kind || (scope.kind === 'indirect') === r.viaSpv) &&
+          (!scope.funds.length || scope.funds.includes(r.h.fundKey)) &&
+          inFirms(r.h.firms, scope.firms)
+      ),
+    [all, scope.classes, scope.kind, scope.funds, scope.firms]
+  );
+  const filtered = rows.length !== all.length;
+  const shownFunds = new Set(rows.map(r => r.h.fundKey)).size;
+  const shownTotal = rows.reduce((s, r) => s + (r.valueUsd || 0), 0);
+  const firmList = useMemo(() => firmOptions((d?.holdings ?? []).map(h => h.firms)), [d]);
+  const classList = useMemo(() => [...new Set(all.map(r => r.classLabel))].sort(), [all]);
+  const fundName = (k: string) => d?.holdings.find(h => h.fundKey === k)?.fundLabel;
 
   const columns: Column<PosRow>[] = [
     {
@@ -309,6 +376,25 @@ function Holders({ base, sq, name, newest }: ViewProps) {
       wrap: true,
     },
     {
+      id: 'firm',
+      header: 'Firm',
+      value: r => firmNames(r.h.firms),
+      render: r =>
+        r.h.firms?.length ? (
+          <span class="small">
+            {r.h.firms.map((f, i) => (
+              <span key={f.id}>
+                {i > 0 && ' / '}
+                <a href={firmPath(f.id)}>{f.name}</a>
+              </span>
+            ))}
+          </span>
+        ) : (
+          <span class="muted">—</span>
+        ),
+      title: 'The fund’s adviser on its latest N-CEN',
+    },
+    {
       id: 'markDate',
       header: 'Mark date',
       value: r => r.h.markDate,
@@ -318,16 +404,17 @@ function Holders({ base, sq, name, newest }: ViewProps) {
     {
       id: 'class',
       header: 'Class',
-      value: r => r.instrumentLabel,
+      value: r => r.classLabel,
       render: r => (
         <span title={r.title}>
-          {r.instrumentLabel} {r.viaSpv && <Badge tone="info">indirect</Badge>}
+          {r.classLabel} {r.viaSpv && <Badge tone="info">through SPV</Badge>}
         </span>
       ),
       exportAs: [
         { header: 'Title', value: r => r.title },
         { header: 'Instrument key', value: r => r.instrumentKey },
-        { header: 'Indirect (SPV)', value: r => r.viaSpv },
+        { header: 'Asset category', value: r => r.assetCat },
+        { header: 'Through a named SPV', value: r => r.viaSpv },
       ],
     },
     {
@@ -346,13 +433,23 @@ function Holders({ base, sq, name, newest }: ViewProps) {
       render: r => price(r.pricePerShare ?? r.pricePerUnit, r.unit),
     },
     { id: 'value', header: 'Value', value: r => r.valueUsd, num: true, render: r => moneyC(r.valueUsd) },
-    { id: 'pctNav', header: '% of fund', value: r => r.pctNav, num: true, render: r => share(r.pctNav) },
+    {
+      id: 'pctNav',
+      header: '% of fund',
+      value: r => r.pctNav,
+      num: true,
+      render: r => pctOfNav(r.pctNav),
+      title: 'Percent of the fund’s net assets, as filed',
+    },
     { id: 'level', header: 'FV level', value: r => r.fvLevel, num: true },
   ];
 
-  const others = (list: Holding[] | undefined, title: string, note: string) =>
-    list && list.length > 0 ? (
-      <Card title={`${title} (${list.length})`} actions={<span class="muted small">{note}</span>} flush>
+  const others = (list: Holding[] | undefined, title: string, note: string) => {
+    const shown = (list ?? []).filter(
+      h => inFirms(h.firms, scope.firms) && (!scope.funds.length || scope.funds.includes(h.fundKey))
+    );
+    return shown.length > 0 ? (
+      <Card title={`${title} (${shown.length})`} actions={<span class="muted small">{note}</span>} flush>
         <DataTable
           columns={[
             {
@@ -362,6 +459,7 @@ function Holders({ base, sq, name, newest }: ViewProps) {
               render: (h: Holding) => <a href={fundPath(h.fundKey)}>{h.fundLabel || h.seriesName}</a>,
               wrap: true,
             },
+            { id: 'firm', header: 'Firm', value: (h: Holding) => firmNames(h.firms) },
             {
               id: 'mark',
               header: 'Latest filing',
@@ -374,34 +472,45 @@ function Holders({ base, sq, name, newest }: ViewProps) {
               header: 'Last reported holding',
               value: (h: Holding) => h.lastHeldDate,
               render: (h: Holding) => <FilingRef cik={h.cik} accession={h.lastHeldAccession} date={h.lastHeldDate} />,
+              exportAs: [{ header: 'Last holding accession', value: (h: Holding) => h.lastHeldAccession }],
             },
           ]}
-          rows={list}
+          rows={shown}
           rowKey={h => h.fundKey}
           sort={{ id: 'last', desc: true }}
           exportName={`${name}-${title}`}
         />
       </Card>
     ) : null;
+  };
 
   return (
     <div class="stack">
       <div class="row wrap">
-        <ScopeBar supports={{ asof: true, filters: true }} newest={newest} />
+        <ScopeBar
+          supports={{ asof: true, filters: ['firm', 'fund', 'class', 'kind'] }}
+          newest={newest}
+          fundName={fundName}
+        />
+        <FilterPickers firms={firmList} classes={classList} />
       </div>
       <ErrorBox error={exp.error} />
       {exp.loading && !d && <Loading rows={6} />}
       {d && (
         <>
           <div class="kpis">
-            <Kpi label="Funds holding" value={num(d.funds)} sub={`as of ${longDate(d.date)}`} />
-            <Kpi label="Value" value={moneyC(d.total)} sub="each fund at its own mark date" />
             <Kpi
-              label="Positions shown"
-              value={num(rows.length)}
-              sub={total !== d.total ? `${moneyC(total)} after filters` : undefined}
+              label="Funds holding"
+              value={num(filtered ? shownFunds : d.funds)}
+              sub={filtered ? `of ${num(d.funds)} as of ${longDate(d.date)}` : `as of ${longDate(d.date)}`}
             />
-            <Kpi label="No longer reported" value={num(d.exited.length)} sub="since their last holding" />
+            <Kpi
+              label="Value"
+              value={moneyC(filtered ? shownTotal : d.total)}
+              sub={filtered ? `of ${moneyC(d.total)}; filtered` : 'each fund at its own mark date'}
+            />
+            <Kpi label="Positions" value={num(rows.length)} sub="fund × share class rows" />
+            <Kpi label="No longer reported" value={num(d.exited.length)} sub="funds, since their last holding" />
           </div>
           <Card title={`Holders as of ${longDate(d.date)}`} flush>
             <DataTable
@@ -410,17 +519,18 @@ function Holders({ base, sq, name, newest }: ViewProps) {
               rowKey={r => `${r.h.fundKey}:${r.rowKey}`}
               sort={{ id: 'value', desc: true }}
               exportName={`${name}-holders-${d.date}`}
-              filterPlaceholder="Filter funds or classes…"
+              filterPlaceholder="Filter funds, firms or classes…"
               maxHeight={620}
-              totals={{ fund: 'Total', value: moneyC(total) }}
+              totals={rs => ({ fund: 'Total', value: moneyC(rs.reduce((s, r) => s + (r.valueUsd || 0), 0)) })}
             />
           </Card>
           {d.disclosedExposure.length > 0 && (
             <Card title="Disclosed without naming vehicles">
               <ul>
                 {d.disclosedExposure.map(x => (
-                  <li key={x.fundKey + x.reportDate}>
-                    {x.fundKey}: “{x.basis}” ({x.reportDate}, {x.sourceAccession})
+                  <li key={x.fundKey + x.markDate}>
+                    <a href={fundPath(x.fundKey)}>{x.seriesName || x.registrant || x.fundKey}</a>: “{x.basis}” (
+                    {x.markDate}, <span class="mono">{x.accession}</span>)
                   </li>
                 ))}
               </ul>
@@ -442,18 +552,28 @@ function Changes({ base, sq, name, newest }: ViewProps) {
     `${base}/activity${qs({ since: range ? scope.from : '', until: range ? scope.to : '', ...sq })}`
   );
   const events = useMemo(
-    () => (act.data?.events ?? []).filter(e => !scope.funds.length || scope.funds.includes(e.fundKey)),
-    [act.data, scope.funds]
+    () =>
+      (act.data?.events ?? []).filter(
+        e => (!scope.funds.length || scope.funds.includes(e.fundKey)) && inFirms(e.firms, scope.firms)
+      ),
+    [act.data, scope.funds, scope.firms]
   );
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
-    for (const e of events) c[e.label] = (c[e.label] ?? 0) + 1;
+    for (const e of events) c[e.type] = (c[e.type] ?? 0) + 1;
     return c;
   }, [events]);
+  const firmList = useMemo(() => firmOptions((act.data?.events ?? []).map(e => e.firms)), [act.data]);
+  const fundName = (k: string) => act.data?.events.find(e => e.fundKey === k)?.fundLabel;
   return (
     <div class="stack">
       <div class="row wrap">
-        <ScopeBar supports={{ range: true, asof: false, filters: true }} newest={newest} />
+        <ScopeBar
+          supports={{ range: true, asof: false, filters: ['firm', 'fund'] }}
+          newest={newest}
+          fundName={fundName}
+        />
+        <FilterPickers firms={firmList} />
         {!range && <span class="muted small">All changes since the first filing. Pick a range to narrow.</span>}
       </div>
       <ErrorBox error={act.error} />
@@ -461,9 +581,18 @@ function Changes({ base, sq, name, newest }: ViewProps) {
       {act.data && (
         <>
           <div class="kpis">
-            {['first reported', 'added', 'reduced', 'no longer reported', 'mark moved'].map(k => (
-              <Kpi key={k} label={k} value={num(counts[k] ?? 0)} />
-            ))}
+            <Kpi label="First reported" value={num(counts.new ?? 0)} sub="funds’ first filing with it" />
+            <Kpi label="Added" value={num(counts.added ?? 0)} sub="more shares or a new class" />
+            <Kpi label="Reduced" value={num(counts.reduced ?? 0)} />
+            <Kpi label="No longer reported" value={num(counts.exited ?? 0)} />
+            <Kpi label="Mark moved only" value={num(counts.unchanged ?? 0)} sub="same shares, new mark" />
+            {(counts.mixed ?? 0) + (counts.zeroed ?? 0) > 0 && (
+              <Kpi
+                label="Other"
+                value={num((counts.mixed ?? 0) + (counts.zeroed ?? 0))}
+                sub="added and reduced, or $0"
+              />
+            )}
           </div>
           <Card title="Position changes, filing by filing" flush>
             <ChangesTable events={events} exportName={`${name}-changes`} />

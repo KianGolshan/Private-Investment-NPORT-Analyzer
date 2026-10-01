@@ -2,7 +2,7 @@ import { useMemo } from 'preact/hooks';
 import { useRoute } from 'preact-iso';
 import { qs, useApi } from '../api/client';
 import type { ChangeEvent, Envelope, FirmBook, Freshness } from '../api/types';
-import { companyPath, fundPath, longDate, moneyC, num, price, share } from '../lib/format';
+import { companyPath, fundPath, longDate, moneyC, num, pctOfNav, price, share } from '../lib/format';
 import { ScopeBar } from '../scope/ScopeBar';
 import { isRange, useParam, useScope } from '../scope/scope';
 import { Badge, Card, ErrorBox, FilingRef, Kpi, Loading, Tabs } from '../ui/bits';
@@ -122,7 +122,7 @@ export default function Firm() {
                       header: '% of fund',
                       value: p => p.pctNav,
                       num: true,
-                      render: p => share(p.pctNav),
+                      render: p => pctOfNav(p.pctNav),
                     },
                   ]}
                   rows={positions}
@@ -147,7 +147,7 @@ export default function Firm() {
                   }}
                   exportName={`${b.firm.name}-book-${b.date}`}
                   filterPlaceholder="Filter companies, funds, classes…"
-                  totals={{ fund: 'Total', value: moneyC(b.value) }}
+                  totals={rs => ({ fund: 'Total', value: moneyC(rs.reduce((s, p) => s + p.value, 0)) })}
                 />
               </Card>
             </>

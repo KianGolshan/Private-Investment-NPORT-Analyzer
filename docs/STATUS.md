@@ -66,6 +66,46 @@
   15 / 15 (scope ⇄ URL round trip, formatting, CSV, DataTable sort/filter/group, search ranking, folded change rows); lint, format and
   typecheck clean. LIVE suite not rerun (no SEC-facing change).
 
+## Anthropic end-to-end audit (2026-10-01, after W0)
+
+- **Data is consistent at every level checked:**
+  - 678 rows, 405 filings, 124 funds, 2023-04-28 → 2026-07-31. No Anthropic-named row sits outside the company.
+  - At all 15 quarter ends from 2023Q1 to 2026Q3, an independent SQL as-of equals `/exposure`, `/market/top` and
+    `/trend` in every count: funds, value, $0, no longer reported, inactive. Examples: 2026-03-31 = 72 / $5.9446B
+    (A1); 2026-06-30 = 117 / $17.2948B.
+  - Per-share prices cluster at each mark date ($140.97 → $259.14 → $589.01, and Fidelity's Series D at $622.94).
+  - No fund's share count ever fell (274 consecutive pairs, 113 increases = 112 "added" + 1 mixed). "First
+    reported" + "held at the first stored filing" = 124 = funds ever.
+- **Verified on raw EDGAR:** F39 and F40 (GOLDEN-NUMBERS).
+- **Decomposition (prototype of W1 `legsOf`; reconciles to the cent on all 392 events):** Anthropic's $18.23B of
+  reported change = new funds $4.58B + new classes $3.98B + added shares $0.06B + **mark moves $9.61B**. The $0.25B
+  gap to the $17.97B as-of total is funds that stopped filing (the bridge's planned bucket).
+  - Example: Growth Fund of America's "added" +$2.92B (2026-05-31) is $0.31B position and $2.62B mark (F39). The
+    W0 table shows it as "added", so W1's split is needed before Δ value reads right.
+- **Fixed now:**
+  - "% of fund" showed 100× (pctNav is already a percent; GFA's G-1 read 82.83%, now 0.83%).
+  - A firm chip showed on Holders but did not filter. Holders and Changes now filter by firm through the
+    `firmsOfFund` definition. The API adds `firms` to holders and changes and `classLabel` to positions. Filtered
+    holders equal the firm book (Capital Group 9 / $8.4582B, Fidelity 45 / $3.9816B at 2026-06-30; test in
+    `views.test.js`).
+  - The disclosed-exposure fields were misnamed (blank).
+  - Totals ignored the filter box.
+  - A page could show the previous URL's data while loading.
+  - Chips showed for filters a view does not apply.
+- **Open, decided into W1:**
+  1. **One class, two labels by filer category:** Series G filed EC ("Common G": BlackRock, 8 funds, $115M) vs EP
+     ("Preferred G": Fidelity, 33 funds, $764M), at the same $589.01. Likewise F-1 (Franklin) and G-1 (NY Life).
+     The class views split them. Proposed trap 50: merge to "Series X" when a company's EC and EP rows share a
+     series code and the same price at the same mark date from ≥ 2 filer families. Keys stay apart (trap 47).
+  2. **"Indirect" has three meanings:** a named SPV (`via_spv`; badge, kind filter, market column); a fund-interest
+     row (`instrument_type` indirect: Coatue's "private fund" $1.49B and BlackRock "Pooled Investment Fund
+     Interests"); and the class label "Indirect via X". Coatue is marked at exactly Anthropic's per-share price yet
+     labeled "Indirect via ANTHROPIC" and treated as direct. Proposal: one kind field (direct | named SPV | fund
+     interest) shown and filtered the same everywhere.
+  3. The class mark chart's median across firms at nearby mark dates zig-zags (Common, Nov–Dec 2025: BlackRock
+     $203.36 vs Fidelity $140.96). W2 draws per-firm lines with the low–high band.
+  4. Firm changes since 2019 take 2.1 s for Fidelity (12.9k events): W1's `position_facts` covers it.
+
 ## Post-P5 review and this session (2026-10-01)
 
 - **Review findings, all fixed** (archive has the review): funds sharing a name merged on the company page (trap 48);

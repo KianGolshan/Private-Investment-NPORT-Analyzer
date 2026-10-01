@@ -37,9 +37,12 @@ export const signedNum = (v: number | null | undefined) =>
 export const pct = (v: number | null | undefined, digits = 1) =>
   bad(v) ? '—' : `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(digits)}%`;
 
-/** A share of a whole, unsigned: 0.0611716221 -> "6.12%" (pctNav is a fraction). */
+/** A fraction of a whole, unsigned: 0.0612 -> "6.12%". (N-PORT pctNav is already a percent: use pctOfNav.) */
 export const share = (fraction: number | null | undefined, digits = 2) =>
   bad(fraction) ? '—' : `${(fraction * 100).toFixed(digits)}%`;
+
+/** N-PORT's percent of net assets, as filed: 0.8283 -> "0.83%". */
+export const pctOfNav = (v: number | null | undefined, digits = 2) => (bad(v) ? '—' : `${v.toFixed(digits)}%`);
 
 /** Per-share mark from share rows only; units and contracts are per unit (trap 40). */
 export function price(v: number | null | undefined, unit: string | null | undefined): string {

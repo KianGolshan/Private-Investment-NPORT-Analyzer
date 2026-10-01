@@ -74,7 +74,8 @@ export function useApi<T>(url: string | null): ApiState<T> {
       return;
     }
     const ctl = new AbortController();
-    setState(s => ({ data: s.data, error: null, loading: true }));
+    // never show the previous URL's answer under the new one
+    setState({ data: null, error: null, loading: true });
     getJSON<T>(url, ctl.signal).then(
       data => setState({ data, error: null, loading: false }),
       error => {

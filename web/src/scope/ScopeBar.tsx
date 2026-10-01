@@ -7,10 +7,13 @@ import { isRange, useScope, type Scope } from './scope';
 // removable chips. Pages say which parts apply to them (`supports`); a filter
 // a page can't honor is never shown as if it applied.
 
+export type FilterKind = 'firm' | 'fund' | 'class' | 'kind';
+
 export interface ScopeSupport {
   range?: boolean;
   asof?: boolean;
-  filters?: boolean;
+  /** The filters this view applies; only these show as chips. */
+  filters?: FilterKind[];
 }
 
 const addYears = (iso: string, n: number) => {
@@ -21,7 +24,16 @@ const addYears = (iso: string, n: number) => {
 
 export const FIRST_DATE = '2019-09-30';
 
-export function ScopeBar({ supports, newest }: { supports: ScopeSupport; newest: string | null }) {
+export function ScopeBar({
+  supports,
+  newest,
+  fundName,
+}: {
+  supports: ScopeSupport;
+  newest: string | null;
+  /** Label for a fund key chip (the page knows its funds' names). */
+  fundName?: (key: string) => string | undefined;
+}) {
   const [scope, setScope] = useScope();
   const range = isRange(scope);
   const firms = useApi<Envelope & { results: Firm[] }>(scope.firms.length ? '/api/firms' : null);
@@ -36,12 +48,22 @@ export function ScopeBar({ supports, newest }: { supports: ScopeSupport; newest:
   const preset = (years: number | 'all') =>
     setScope({ from: years === 'all' ? FIRST_DATE : addYears(end, -years), to: end, asof: '' });
 
+  const on = new Set(supports.filters ?? []);
   const chips: { label: string; clear: Partial<Scope> }[] = [
-    ...scope.firms.map(id => ({ label: `Firm: ${firmName(id)}`, clear: { firms: scope.firms.filter(f => f !== id) } })),
-    ...scope.funds.map(k => ({ label: `Fund: ${k}`, clear: { funds: scope.funds.filter(f => f !== k) } })),
-    ...scope.classes.map(c => ({ label: `Class: ${c}`, clear: { classes: scope.classes.filter(x => x !== c) } })),
-    ...(scope.kind
-      ? [{ label: scope.kind === 'direct' ? 'Direct only' : 'Indirect (SPV) only', clear: { kind: '' as const } }]
+    ...(on.has('firm')
+      ? scope.firms.map(id => ({ label: `Firm: ${firmName(id)}`, clear: { firms: scope.firms.filter(f => f !== id) } }))
+      : []),
+    ...(on.has('fund')
+      ? scope.funds.map(k => ({
+          label: `Fund: ${fundName?.(k) ?? k}`,
+          clear: { funds: scope.funds.filter(f => f !== k) },
+        }))
+      : []),
+    ...(on.has('class')
+      ? scope.classes.map(c => ({ label: `Class: ${c}`, clear: { classes: scope.classes.filter(x => x !== c) } }))
+      : []),
+    ...(on.has('kind') && scope.kind
+      ? [{ label: scope.kind === 'direct' ? 'Direct only' : 'Through an SPV only', clear: { kind: '' as const } }]
       : []),
   ];
 
@@ -112,15 +134,14 @@ export function ScopeBar({ supports, newest }: { supports: ScopeSupport; newest:
           </div>
         </>
       )}
-      {supports.filters &&
-        chips.map(c => (
-          <span class="chip" key={c.label}>
-            {c.label}
-            <button type="button" aria-label={`Remove ${c.label}`} onClick={() => setScope(c.clear)}>
-              ×
-            </button>
-          </span>
-        ))}
+      {chips.map(c => (
+        <span class="chip" key={c.label}>
+          {c.label}
+          <button type="button" aria-label={`Remove ${c.label}`} onClick={() => setScope(c.clear)}>
+            ×
+          </button>
+        </span>
+      ))}
     </div>
   );
 }

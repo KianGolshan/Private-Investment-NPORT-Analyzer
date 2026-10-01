@@ -282,6 +282,9 @@ select.input {
   color: var(--text);
   font: inherit;
 }
+select.input {
+  max-width: 220px;
+}
 .seg {
   display: inline-flex;
   border: 1px solid var(--border-strong);
