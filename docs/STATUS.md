@@ -60,9 +60,10 @@
   - Enter in ⌘K during a search opened a stale "recent" item (the handler read a lagging `q`).
   - Keys typed right after ⌘K were lost.
   - The fund filter applied on Changes was not shown as a chip.
+  - Change rows listed every class (7 lines for one Stripe filing); unchanged classes now fold into one line per mark move.
   - Date cells wrapped; the page overflowed at phone width.
 - **Tests:** `npm test` 497 / 466 pass / 0 fail / 31 skipped (new: workspace at `/`, v1 at `/legacy`); `web` Vitest
-  13 / 13 (scope ⇄ URL round trip, formatting, CSV, DataTable sort/filter/group, search ranking); lint, format and
+  15 / 15 (scope ⇄ URL round trip, formatting, CSV, DataTable sort/filter/group, search ranking, folded change rows); lint, format and
   typecheck clean. LIVE suite not rerun (no SEC-facing change).
 
 ## Post-P5 review and this session (2026-10-01)

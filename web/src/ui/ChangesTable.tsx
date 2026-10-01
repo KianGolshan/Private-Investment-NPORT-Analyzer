@@ -20,7 +20,41 @@ export function ChangeBadge({ e }: { e: Pick<ChangeEvent, 'type' | 'label'> }) {
   return <Badge tone={TONE[e.type] ?? ''}>{e.label}</Badge>;
 }
 
-function legText(l: Leg): string {
+function markText(l: Leg): string {
+  const unit = l.perShare ? 'NS' : l.unit;
+  return l.prevPrice != null && l.price != null
+    ? `${price(l.prevPrice, unit)} → ${price(l.price, unit)} (${pct(l.priceChangePct)})`
+    : price(l.price ?? l.prevPrice, unit);
+}
+
+/**
+ * The lines shown for one event: every class whose shares changed on its own
+ * line; classes whose shares did not change folded into one line per mark
+ * move ("7 classes, shares unchanged · $41.42/sh → $63.00/sh"). Exports keep
+ * every class (legText).
+ */
+export function legLines(e: Pick<ChangeEvent, 'type' | 'instruments'>): { key: string; text: string; note?: string }[] {
+  const out: { key: string; text: string; note?: string }[] = [];
+  const same = new Map<string, Leg[]>();
+  for (const l of e.instruments) {
+    if (l.change === 'unchanged') {
+      const k = markText(l);
+      const list = same.get(k);
+      if (list) list.push(l);
+      else same.set(k, [l]);
+    } else out.push({ key: l.instrumentKey, text: legText(l), note: l.change !== e.type ? l.change : undefined });
+  }
+  for (const [mark, legs] of same) {
+    out.push(
+      legs.length === 1
+        ? { key: legs[0]!.instrumentKey, text: legText(legs[0]!) }
+        : { key: `same:${mark}`, text: `${legs.length} classes, shares unchanged · ${mark}` }
+    );
+  }
+  return out;
+}
+
+export function legText(l: Leg): string {
   const shares =
     l.prevBalance != null && l.balance != null
       ? `${num(l.prevBalance)} → ${num(l.balance)}${l.split ? ` (split ${l.split}:1)` : ''}`
@@ -29,12 +63,7 @@ function legText(l: Leg): string {
         : l.prevBalance != null
           ? `${num(l.prevBalance)} → none`
           : 'no share count';
-  const unit = l.perShare ? 'NS' : l.unit;
-  const mark =
-    l.prevPrice != null && l.price != null
-      ? `${price(l.prevPrice, unit)} → ${price(l.price, unit)} (${pct(l.priceChangePct)})`
-      : price(l.price ?? l.prevPrice, unit);
-  return `${l.instrument || l.title}: ${shares} · ${mark}`;
+  return `${l.instrument || l.title}: ${shares} · ${markText(l)}`;
 }
 
 export function ChangesTable({
@@ -121,12 +150,14 @@ export function ChangesTable({
       id: 'legs',
       header: 'Classes: shares · mark',
       value: e => e.instruments.map(legText).join(' | '),
+      title:
+        'Classes whose share count did not change are folded into one line per mark move; exports list every class',
       render: e => (
         <div class="small">
-          {e.instruments.map(l => (
-            <div key={l.instrumentKey}>
-              {legText(l)}
-              {l.change !== e.type && l.change !== 'unchanged' && <span class="muted"> · {l.change}</span>}
+          {legLines(e).map(l => (
+            <div key={l.key}>
+              {l.text}
+              {l.note && <span class="muted"> · {l.note}</span>}
             </div>
           ))}
         </div>
