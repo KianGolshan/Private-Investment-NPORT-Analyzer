@@ -45,7 +45,7 @@ test('fund page: a search opens the fund from the warehouse; F2 on screen with i
   await window.searchFundXray();
   await tick(window);
   assert.ok(
-    calls.every(u => u.startsWith('/api/funds') || u === '/api/config'),
+    calls.every(u => u.startsWith('/api/funds') || u === '/api/config' || u === '/api/freshness'),
     calls.join(' ')
   );
   // Pick the 2026-05-31 filing (F2).
@@ -88,7 +88,7 @@ test('fund page: the permalink opens a filing; an exit shows as "no longer repor
   assert.ok(rows.length >= 2);
   for (const r of rows) assert.match(r.textContent, /no longer reported/);
   assert.ok(calls.some(u => u.includes('/compare?current=0000035402-26-002031&prior=0000035402-25-002966')));
-  assert.ok(calls.every(u => u.startsWith('/api/funds') || u === '/api/config'));
+  assert.ok(calls.every(u => u.startsWith('/api/funds') || u === '/api/config' || u === '/api/freshness'));
 });
 
 test('fund page: "reported at $0" (F34), unreviewed labels, not-private rows and the capital structure', async () => {

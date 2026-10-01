@@ -58,8 +58,10 @@ test('company page: Anthropic at 2026-06-30 shows 117 funds / $17.26B with mark 
   );
   assert.match(gfa.textContent, /2026-05-31/);
   assert.match(gfa.textContent, /\$4\.98B/);
+  // The fund links to its fund page; the filing links to EDGAR.
+  assert.equal(gfa.querySelector('a').getAttribute('href'), '/fund/S000009228');
   assert.equal(
-    gfa.querySelector('a').getAttribute('href'),
+    gfa.querySelector('a[href^="https://www.sec.gov/"]').getAttribute('href'),
     'https://www.sec.gov/Archives/edgar/data/44201/000119312526323081/'
   );
   // F11: Magnitude's SPV is labeled indirect; F22: Fundrise's range in the filing's words.

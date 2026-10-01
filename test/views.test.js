@@ -157,3 +157,44 @@ test('marks use canonical filings only: an amended filing replaces the original 
     assert.ok(!used.includes(superseded), 'the superseded filing is not');
   }
 });
+
+test('tracked dashboard: holders now and a year earlier equal exposureAsOf for every tracked company', async () => {
+  const r = (await api('/api/market/tracked?date=2026-06-30')).body;
+  assert.equal(r.yearAgo, '2025-06-30');
+  for (const c of r.companies.filter(x => x.funds || x.fundsYearAgo)) {
+    const now = exposureAsOf(db, { companyId: c.companyId, date: '2026-06-30' });
+    const then = exposureAsOf(db, { companyId: c.companyId, date: '2025-06-30' });
+    assert.deepEqual([c.funds, c.fundsYearAgo], [now.funds, then.funds], c.name);
+  }
+  const stripe = r.companies.find(c => c.name === 'Stripe');
+  assert.deepEqual([stripe.funds, stripe.fundsYearAgo, stripe.holderChange], [37, 49, -12]); // A5
+  assert.ok(stripe.markChange12mPct > 0 && stripe.markChangeFunds > 0);
+});
+
+test('stale marks: every flagged series really repeats its mark while the class median moved', async () => {
+  const id = idOf('Databricks');
+  const st = (await api(`/api/companies/${id}/stale?min=2`)).body;
+  const h = (await api(`/api/companies/${id}/history`)).body;
+  for (const x of st.stale) {
+    const pts = h.funds
+      .find(f => f.fundKey === x.fundKey)
+      .series.flatMap(s => s.points)
+      .filter(p => p.markDate >= x.unchangedSince && p.markDate <= x.lastMarkDate && p.pricePerShare != null);
+    assert.ok(
+      pts.some(p => Math.abs(p.pricePerShare - x.pricePerShare) < 1e-6),
+      x.fund
+    );
+    assert.ok(x.reports >= 2 && Math.abs(x.marketMovePct) > 1, x.fund);
+  }
+});
+
+test('Atom feed: a company feed lists its changes with their filings (Stripe: Fidelity OTC, F9)', async () => {
+  const r = await request(app)
+    .get(`/api/companies/${idOf('Stripe')}/feed.xml`)
+    .set('Accept-Encoding', 'identity');
+  assert.equal(r.status, 200);
+  assert.match(r.headers['content-type'], /application\/atom\+xml/);
+  assert.match(r.text, /^<\?xml version="1\.0"/);
+  assert.match(r.text, /<feed xmlns="http:\/\/www\.w3\.org\/2005\/Atom">/);
+  assert.ok((r.text.match(/<entry>/g) || []).length > 0);
+});

@@ -1,6 +1,6 @@
 /* exported showCompanyView, renderCompanyActivity, renderCompanyClasses, loadMarket, loadFeed, loadFirms,
    openFirm, exportFirmBook, loadFirmChanges, loadFirmMarks, loadFundChanges, attachCompanyViews, exportCsv,
-   CHANGE_COLUMNS, renderFeed, marketState, feedState, firmState, firmsState, companyView */
+   CHANGE_COLUMNS, renderFeed, loadTracked, sortTracked, trackedState, marketState, feedState, firmState, firmsState, companyView */
 /* global fetchJSON, esc, enc, fmtNum, fmtCurrency, fmtCompactCurrency, badge, accessionLink, slugOf, downloadBlob,
    fileNamePart, switchTab */
 // Analysis views on the warehouse (ROADMAP §6), loaded after app.js and using
@@ -150,9 +150,10 @@ async function showCompanyView(which) {
       v.activity ||= await fetchJSON(`${v.base}/activity?${q}`);
       renderCompanyTrend();
     } else {
-      [v.classes, v.marks] = await Promise.all([
+      [v.classes, v.marks, v.stale] = await Promise.all([
         fetchJSON(`${v.base}/classes?date=${enc(v.date || '')}&${q}`),
         v.marks || fetchJSON(`${v.base}/marks?${q}`),
+        v.stale || fetchJSON(`${v.base}/stale?${q}`),
       ]);
       renderCompanyClasses();
     }
@@ -248,7 +249,7 @@ function renderCompanyClasses() {
     <div class="table-wrap"><table><thead><tr><th>Class</th><th class="right">Value</th><th class="right">Funds</th><th>Newest mark date</th><th class="right">Median</th><th class="right">Low – High</th><th class="right">Spread</th><th>Firms</th></tr></thead><tbody>${c.classes
       .map(k => {
         const d = k.byMarkDate[0];
-        return `<tr><td>${esc(k.instrument)}</td><td class="right">${fmtCompactCurrency(k.value)}</td><td class="right">${fmtNum(k.funds)}</td><td>${esc(d?.markDate || '—')}</td><td class="right">${d ? fmtCurrency(d.median) : '—'}</td><td class="right">${d ? `${fmtCurrency(d.low)} – ${fmtCurrency(d.high)}` : '—'}</td><td class="right">${d && d.funds > 1 ? pctText(d.spreadPct, 2) : '—'}</td><td>${esc((d?.firms || []).join(', '))}</td></tr>`;
+        return `<tr><td>${esc(k.instrument)}</td><td class="right">${fmtCompactCurrency(k.value)}</td><td class="right">${fmtNum(k.funds)}</td><td>${esc(d?.markDate || '—')}</td><td class="right">${d ? fmtCurrency(d.median) : '—'}</td><td class="right">${d ? `${fmtCurrency(d.low)} – ${fmtCurrency(d.high)}` : '—'}</td><td class="right">${d && d.funds > 1 ? pctText(d.spreadPct, 2) : '—'}</td><td>${(d?.firms || []).map(f => firmLink(f.id, f.name)).join(', ')}</td></tr>`;
       })
       .join('')}</tbody></table></div>
     ${
@@ -256,13 +257,14 @@ function renderCompanyClasses() {
         ? `<h3>Class gaps within one filing</h3><div class="hint">One fund marking classes of the same company at different prices in the same filing.</div><div class="table-wrap"><table><thead><tr><th>Fund</th><th>Firm</th><th>Mark date</th><th>Classes (vs the filing's lowest mark)</th><th>Filing</th></tr></thead><tbody>${c.withinFiling
             .map(
               w =>
-                `<tr><td>${fundLink(w.fundKey, w.fund)}</td><td>${esc(w.firm || '—')}</td><td>${esc(w.markDate)}</td><td>${w.classes
+                `<tr><td>${fundLink(w.fundKey, w.fund)}</td><td>${(w.firms || []).map(f => firmLink(f.id, f.name)).join(', ') || '—'}</td><td>${esc(w.markDate)}</td><td>${w.classes
                   .map(x => `${esc(x.instrument)} ${fmtCurrency(x.pricePerShare)} (${pctText(x.vsLowPct, 2)})`)
                   .join('<br>')}</td><td>${accessionLink(w.cik, w.accession)}</td></tr>`
             )
             .join('')}</tbody></table></div>`
         : ''
     }
+    ${staleHTML(v.stale)}
     <h3>Per-share marks over time</h3>
     <div class="search-row"><div class="input-group narrow"><label for="classPick">Class</label><select id="classPick" onchange="renderCompanyClasses()">${classes
       .map(k => `<option${k === pick ? ' selected' : ''}>${esc(k)}</option>`)
@@ -293,6 +295,99 @@ function renderCompanyClasses() {
       scales: { y: { ticks: { callback: x => fmtCurrency(x) } } },
     },
   });
+}
+
+// Funds carrying an unchanged mark while the class's median moved.
+function staleHTML(st) {
+  if (!st?.stale?.length) return '';
+  return `<h3>Stale marks</h3><div class="hint">Funds still filing the same per-share mark for ${fmtNum(st.minReports)}+ consecutive reports while the median mark of that class across all funds moved more than ${fmtNum(st.moveThreshold)}%.</div>
+    <div class="table-wrap"><table><thead><tr><th>Fund</th><th>Firm</th><th>Class</th><th class="right">Mark</th><th>Unchanged since</th><th class="right">Reports</th><th class="right">Market median then → now</th><th>Latest filing</th></tr></thead><tbody>${st.stale
+      .map(
+        x =>
+          `<tr><td>${fundLink(x.fundKey, x.fund)}</td><td>${x.firms.map(f => firmLink(f.id, f.name)).join(', ') || '—'}</td><td>${esc(x.instrument)}</td><td class="right">${fmtCurrency(x.pricePerShare)}</td><td>${esc(x.unchangedSince)}</td><td class="right">${fmtNum(x.reports)}</td><td class="right">${fmtCurrency(x.marketMedianThen)} → ${fmtCurrency(x.marketMedianNow)} (${pctText(x.marketMovePct)})</td><td>${accessionLink(x.cik, x.accession)} ${esc(x.lastMarkDate)}</td></tr>`
+      )
+      .join('')}</tbody></table></div>`;
+}
+
+// ── Freshness banner ──
+async function loadFreshness() {
+  const el = document.getElementById('freshnessBanner');
+  if (!el) return;
+  try {
+    const f = await fetchJSON('/api/freshness');
+    el.textContent =
+      `Data: SEC N-PORT bulk through ${f.latestBulkQuarter || '—'}, EDGAR catch-up through filings of ${f.newestFilingDate || '—'}` +
+      ` · newest mark date ${f.newestReportDate || '—'} (still being filed: funds file about 60 days after each report date)` +
+      ` · refreshed ${f.refreshedAt ? f.refreshedAt.slice(0, 16).replace('T', ' ') + ' UTC' : '—'}`;
+  } catch {
+    el.textContent = '';
+  }
+}
+loadFreshness();
+
+// ── Tracked dashboard ──
+let trackedState = null;
+async function loadTracked() {
+  const box = document.getElementById('trackedContainer');
+  if (!box) return;
+  box.innerHTML = '<div class="hint">Loading from the warehouse…</div>';
+  try {
+    trackedState = { data: await fetchJSON('/api/market/tracked'), sort: 'value', dir: -1 };
+    renderTracked();
+  } catch (err) {
+    box.innerHTML = `<div class="alert alert-error">${esc(err.message)}</div>`;
+  }
+}
+const TRACKED_COLUMNS = [
+  ['name', 'Company', r => companyLink(r.companyId, r.name), false],
+  ['funds', 'Funds', r => `${fmtNum(r.funds)} <span class="fund-meta">(${fmtNum(r.fundsYearAgo)})</span>`, true],
+  ['holderChange', 'Holder change', r => (r.holderChange > 0 ? '+' : '') + fmtNum(r.holderChange), true],
+  ['value', 'Value', r => fmtCompactCurrency(r.value), true],
+  [
+    'markChange12mPct',
+    '12-mo mark change',
+    r =>
+      `${pctText(r.markChange12mPct)} <span class="fund-meta">${r.markChangeFunds ? `(${fmtNum(r.markChangeFunds)} series)` : ''}</span>`,
+    true,
+  ],
+  [
+    'median',
+    'Most-held class mark',
+    r =>
+      r.median == null
+        ? '—'
+        : `${esc(r.mainClass)} ${fmtCurrency(r.median)} <span class="fund-meta">${esc(r.markDate || '')}</span>`,
+    true,
+  ],
+  ['dispersionPct', 'Spread', r => pctText(r.dispersionPct, 2), true],
+  ['staleFunds', 'Stale marks', r => fmtNum(r.staleFunds), true],
+];
+function sortTracked(key) {
+  trackedState.dir = trackedState.sort === key ? -trackedState.dir : -1;
+  trackedState.sort = key;
+  renderTracked();
+}
+function renderTracked() {
+  const { data, sort, dir } = trackedState;
+  const rows = [...data.companies].sort((a, b) => {
+    const x = a[sort];
+    const y = b[sort];
+    if (x == null) return 1;
+    if (y == null) return -1;
+    return (typeof x === 'string' ? x.localeCompare(y) : x - y) * dir;
+  });
+  document.getElementById('trackedContainer').innerHTML =
+    `<div class="hint">As of ${esc(data.date)}; a year earlier is ${esc(data.yearAgo)}. Click a column to sort.</div>
+    <div class="table-wrap"><table><thead><tr>${TRACKED_COLUMNS.map(
+      ([k, label, , right]) =>
+        `<th class="sortable${right ? ' right' : ''}" onclick="sortTracked('${k}')">${esc(label)}${sort === k ? (dir < 0 ? ' ▼' : ' ▲') : ''}</th>`
+    ).join('')}</tr></thead><tbody>${rows
+      .map(
+        r =>
+          `<tr>${TRACKED_COLUMNS.map(([, , cell, right]) => `<td${right ? ' class="right"' : ''}>${cell(r)}</td>`).join('')}</tr>`
+      )
+      .join('')}</tbody></table></div>
+    <button class="btn btn-green" onclick="exportCsv('tracked companies ' + trackedState.data.date, [['Company', r => r.name], ['Company Id', r => r.companyId], ['Funds', r => r.funds], ['Funds Year Ago', r => r.fundsYearAgo], ['Value USD', r => r.value], ['Value Year Ago', r => r.valueYearAgo], ['12m Mark Change %', r => r.markChange12mPct ?? ''], ['Series', r => r.markChangeFunds], ['Most-Held Class', r => r.mainClass], ['Median Mark', r => r.median ?? ''], ['Mark Date', r => r.markDate], ['Spread %', r => r.dispersionPct ?? ''], ['Stale Marks', r => r.staleFunds], ['As Of', () => trackedState.data.date], ['Source', () => 'SEC N-PORT (warehouse)']], trackedState.data.companies)">Export CSV</button>`;
 }
 
 // ── Market tab ─────────────────────────────────────────────────────────────

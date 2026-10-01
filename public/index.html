@@ -511,6 +511,7 @@
     </div>
     <button class="about-trigger" onclick="openAbout()">About</button>
   </div>
+  <div id="freshnessBanner" class="hint"></div>
 
   <div id="configWarning" class="alert alert-warning" style="display:none;">
     <strong>User-Agent Not Configured</strong>
@@ -614,6 +615,11 @@
       </div>
     </div>
     <div id="marketContainer"></div>
+    <div class="panel-block">
+      <h2>Tracked companies</h2>
+      <div class="hint">The tracked list: holders and value now and a year earlier, the 12-month change in each fund's own split-adjusted per-share mark (median across funds), the spread of the most-held class's marks at its newest date, and funds carrying a stale mark.</div>
+    </div>
+    <div id="trackedContainer"></div>
     <div class="panel-block">
       <h2>What's new</h2>
       <div class="hint">Position changes and mark moves in the N-PORT filings made since a date: first reported, added, reduced, no longer reported, reported at $0.</div>

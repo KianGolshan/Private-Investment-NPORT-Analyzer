@@ -14,7 +14,7 @@
    onXrayCompareSelectChange, runFundXrayCompare, doXrayCompareExportCSV, doXrayCompareExportExcel,
    doXrayCompareExportPDF, selectIndexedFund, sortBasketLeaderboard, runXrayReturns, onXraySeriesChange,
    openCandidate, onSecurityInput, applyAsOf, loadLiveDebt, confirmWatchlistMatch, makeThisACompany */
-/* global VantageFundGroups, VantagePeer, attachCompanyViews, loadMarket, loadFeed, loadFirms, openFirm */
+/* global VantageFundGroups, VantagePeer, attachCompanyViews, loadMarket, loadFeed, loadFirms, openFirm, loadTracked */
 
 // ── State ──────────────────────────────────────────────────────────────────
 // Bumped at the start of searchNPORT/searchPrivateCredit/searchFundXray (the
@@ -300,6 +300,7 @@ function switchTab(tab, { skipUrlReset } = {}) {
   if (tab === 'market' && !document.getElementById('marketContainer').innerHTML.trim()) {
     loadMarket();
     loadFeed();
+    loadTracked();
   }
   if (tab === 'firms' && !skipUrlReset && !document.getElementById('firmsContainer').innerHTML.trim()) loadFirms();
 }
@@ -626,16 +627,19 @@ function positionText(p) {
   return `${esc(p.instrumentLabel || p.title || '')} · ${qty}${price ? ' @ ' + price : ''}${p.viaSpv ? ' ' + badge('indirect', 'badge-muted') : ''}`;
 }
 
+// Conviction: the position as a share of the fund's net assets, as filed.
+const convictionOf = h => (h.positions || []).reduce((s, p) => s + (p.pctNav || 0), 0);
+
 function holdersTableHTML(rows, { showValue = true, lastHeld = false } = {}) {
   if (!rows.length) return '';
   return `<div class="table-wrap"><table>
-    <thead><tr><th>Fund</th><th>Mark date</th>${showValue ? '<th class="right">Value</th><th>Positions</th>' : ''}${lastHeld ? '<th>Last reported</th>' : ''}<th>Filing</th></tr></thead>
+    <thead><tr><th>Fund</th><th>Mark date</th>${showValue ? '<th class="right">Value</th><th class="right" title="The position as a share of the fund\'s net assets, as filed">% of fund</th><th>Positions</th>' : ''}${lastHeld ? '<th>Last reported</th>' : ''}<th>Filing</th></tr></thead>
     <tbody>${rows
       .map(
         h => `<tr>
-      <td>${esc(h.fundLabel || h.seriesName || h.registrant || h.fundKey)}<div class="fund-meta">${esc(h.registrant || '')}</div></td>
+      <td><a href="/fund/${enc(h.fundKey)}">${esc(h.fundLabel || h.seriesName || h.registrant || h.fundKey)}</a><div class="fund-meta">${esc(h.registrant || '')}</div></td>
       <td>${esc(h.markDate)}</td>
-      ${showValue ? `<td class="right">${fmtCompactCurrency(h.value ?? 0)}</td><td>${(h.positions || []).map(positionText).join('<br>')}${h.label && h.label !== 'indirect' ? ' ' + badge(h.label, 'badge-muted') : ''}</td>` : ''}
+      ${showValue ? `<td class="right">${fmtCompactCurrency(h.value ?? 0)}</td><td class="right">${convictionOf(h) ? convictionOf(h).toFixed(2) + '%' : '—'}</td><td>${(h.positions || []).map(positionText).join('<br>')}${h.label && h.label !== 'indirect' ? ' ' + badge(h.label, 'badge-muted') : ''}</td>` : ''}
       ${lastHeld ? `<td>${esc(h.lastHeldDate || '—')} ${accessionLink(h.cik, h.lastHeldAccession)}</td>` : ''}
       <td>${accessionLink(h.cik, h.accession)}</td>
     </tr>`
@@ -676,7 +680,7 @@ function renderCompanyPage() {
   setCompanyHTML(`<div class="results-section company-page">
     <div class="company-head">
       <h2>${esc(c.name)} ${status}</h2>
-      <div class="fund-meta">${brands}Reported by funds from ${esc(hist.firstMarkDate || '—')} to ${esc(hist.lastMarkDate || '—')}. Source: SEC N-PORT warehouse, refresh #${esc(x.refreshId)}.</div>
+      <div class="fund-meta">${brands}Reported by funds from ${esc(hist.firstMarkDate || '—')} to ${esc(hist.lastMarkDate || '—')}. Source: SEC N-PORT warehouse, refresh #${esc(x.refreshId)}.${isCompany ? ` <a href="/api/companies/${enc(c.ref)}/feed.xml" title="An Atom feed of this company's position changes and mark moves">Feed</a>` : ''}</div>
       ${others}
     </div>
     ${storedNote}
