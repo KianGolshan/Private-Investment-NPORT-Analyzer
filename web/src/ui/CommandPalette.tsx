@@ -117,8 +117,10 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     if (open) input.current?.focus();
   }, [open]);
 
+  // Reset on close, never on open: an effect that cleared the box after it
+  // opened wiped keys typed in that first frame.
   useEffect(() => {
-    if (open) {
+    if (!open) {
       searched.current = '';
       pendingEnter.current = null;
       setQ('');

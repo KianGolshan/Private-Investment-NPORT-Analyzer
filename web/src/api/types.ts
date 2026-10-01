@@ -152,6 +152,8 @@ export interface Leg {
   priceChangePct?: number | null;
   balanceChange?: number | null;
   change: string;
+  /** The filer's previous instrument id when it re-keyed the same holding (activity.rekeyed). */
+  rekeyedFrom?: string;
   /** value - prevValue = positionEffect + markEffect + otherEffect (lib/analytics/activity.js leg()). */
   positionEffect: number;
   markEffect: number;

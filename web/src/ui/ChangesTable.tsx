@@ -185,6 +185,16 @@ export function ChangesTable({
               {l.note && <span class="muted"> · {l.note}</span>}
             </div>
           ))}
+          {e.instruments.some(l => l.rekeyedFrom) && (
+            <div class="muted" title="Same holding under a new instrument id: the share count or mark carried over">
+              the filer changed its instrument id (
+              {e.instruments
+                .filter(l => l.rekeyedFrom)
+                .map(l => `${l.rekeyedFrom} → ${l.instrumentKey}`)
+                .join(', ')}
+              )
+            </div>
+          )}
         </div>
       ),
       wrap: true,

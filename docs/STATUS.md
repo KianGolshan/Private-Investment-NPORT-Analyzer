@@ -66,6 +66,41 @@
   15 / 15 (scope ⇄ URL round trip, formatting, CSV, DataTable sort/filter/group, search ranking, folded change rows); lint, format and
   typecheck clean. LIVE suite not rerun (no SEC-facing change).
 
+## Audit fixes and the Canva audit (2026-10-01)
+
+- **Fixed (the Anthropic open items):**
+  - Trap 50: one class across EC/EP and the issuer field (`classes.classOfRow`). Anthropic Series G is one class
+    (41 funds, $879M at $589.01); Canva T. Rowe Price "Common" → "Common B".
+  - One indirect `kind`: direct | spv | fund (`asof.kindOf`), shared by holders, the market's indirect value and
+    filters.
+  - Every change splits into position, mark and other effects that sum to the value change exactly (`activity.leg`).
+    That holds to $0.0000 on 2,738 Anthropic, Stripe and Databricks events, the F13 split gives no position change,
+    and F39 is reproduced. The Changes tab has Position Δ / Mark Δ columns and totals. Capital Group's Anthropic
+    change in 2026 = +$7.85B, of which $4.12B is position and $3.73B mark.
+  - Per-firm class marks (`classMarks.firmSeries`): a picked class draws each firm's line over the low–high band.
+- **Canva (company 6) audit:**
+  - 3,091 rows; issuers "CANVAS INC" (Fidelity) and "Canvas, Inc." (Franklin) are Canva by the filers' own titles
+    ("CANVA INC SER A…") and ids (correct). No look-alike merged (Canvas Energy, Under Canvas and GoCanvas are
+    separate entities).
+  - Independent as-of = `/exposure` = `/market/top` = `/trend` at all 27 quarter ends 2020–2026 (e.g. 81 / $1.42B at
+    2025-12-31, 79 / $1.27B at 2026-06-30), exits and inactive included.
+  - EDGAR: F41 and F42 (EUPAC $1,646.14 → $1,255.40 → $1,646.14 as filed; MassMutual exit has no row).
+  - Marks disagree by firm: since late 2025 Fidelity is at $1,233–$1,385, T. Rowe Price at $1,496.42 and Franklin at
+    $1,727.67. The Series A spread is +29.6% at 2026-06-30.
+  - Effects: Canva +$1.34B from positions, −$56M from marks (2022 −$359M, 2026 −$197M).
+- **Bugs found and fixed in this pass:**
+  1. **Trap 51, filer re-keys read as trades.** T. Rowe Price re-keyed Canva on 2022-12-31 (same 58,155 sh, old id
+     moved to `<cusip>`). It read as "added and reduced across classes" in 15+ funds, and the −42% mark move was
+     booked as position. Now one continuing position (`rekeyedFrom`, shown in the row). Canva's mixed events went
+     25 → 1 (the last is a real preferred → common conversion). Warehouse-wide, about 1,030 same-title,
+     same-share id changes in 140 funds and 94 companies. Test: `test/activity-rekey.test.js` (real rows).
+  2. **Stale marks returned 0 everywhere.** A regression from the class change: series-level fields were read where
+     only points carry them. Canva now flags 4 funds at $1,646.14 while its class median moved −9.1% (Neuberger
+     ×2, JPMorgan ×2). A test asserts every fund's class lookup hits a known class.
+  3. **⌘K lost the first keys typed on a fresh page** (an open-time reset ran after typing). It now resets on close.
+- **Measured (load 4.4):** Databricks activity 73 ms, marks 29 ms, exposure 26 ms; Canva activity 44 ms. A cold
+  firm search takes 756 ms once at server start (warmed after).
+
 ## Anthropic end-to-end audit (2026-10-01, after W0)
 
 - **Data is consistent at every level checked:**
@@ -93,7 +128,7 @@
   - A page could show the previous URL's data while loading.
   - Chips showed for filters a view does not apply.
 - **Open, decided into W1:**
-  1. **One class, two labels by filer category:** Series G filed EC ("Common G": BlackRock, 8 funds, $115M) vs EP
+  1. **(Fixed above.) One class, two labels by filer category:** Series G filed EC ("Common G": BlackRock, 8 funds, $115M) vs EP
      ("Preferred G": Fidelity, 33 funds, $764M), at the same $589.01. Likewise F-1 (Franklin) and G-1 (NY Life).
      The class views split them. Proposed trap 50: merge to "Series X" when a company's EC and EP rows share a
      series code and the same price at the same mark date from ≥ 2 filer families. Keys stay apart (trap 47).

@@ -131,6 +131,15 @@ test("trap 50: one series across filers' categories; a CLASS code with common wo
     classOfRow({ instrumentLabel: 'Preferred I', title: 'STRIPE INC PFD SER I 6.00% NON-CUM PP' }),
     'Series I'
   );
+  // a class code only in the issuer field (T. Rowe Price Canva, 0001099263-26-009584)
+  assert.equal(
+    classOfRow({
+      instrumentLabel: 'Common',
+      title: 'CANVA COMMON STOCK PP',
+      issuerName: 'CANVA CLASS B COMMON STOCK PP',
+    }),
+    'Common B'
+  );
   // uncoded labels and vehicles are unchanged
   assert.equal(classOfRow({ instrumentLabel: 'Preferred', title: 'Anthropic PBC' }), 'Preferred');
   assert.equal(classOfRow({ instrumentLabel: 'Indirect via ANTHROPIC', title: 'ANTHROPIC' }), 'Indirect via ANTHROPIC');
@@ -160,6 +169,20 @@ test('a 3:1 split is neither a position nor a mark change (F13)', async () => {
   const legs = events.flatMap(e => e.instruments).filter(l => l.split === 3);
   assert.ok(legs.length > 0);
   for (const l of legs) assert.ok(Math.abs(l.positionEffect) < 1, `${l.title}: ${l.positionEffect}`);
+});
+
+test('stale marks look up each fund\'s class the way the class views name it (never "Unlabeled")', () => {
+  const { companyHistory } = require('../lib/analytics/asof');
+  const { classOfRow } = require('../lib/services/classes');
+  const marks = require('../lib/services/marks');
+  for (const name of ['Anthropic', 'Stripe', 'Databricks']) {
+    const known = new Set(marks.classMarks(db, { companyId: idOf(name) }).classes);
+    for (const f of companyHistory(db, { companyId: idOf(name) }))
+      for (const s of f.series) {
+        const last = s.points.filter(p => p.pricePerShare != null).at(-1);
+        if (last) assert.ok(known.has(classOfRow(last)), `${name} ${f.fundKey} ${classOfRow(last)}`);
+      }
+  }
 });
 
 test('firm: Capital Group marks Stripe in 8 of 12 months of 2025, at one price per date', async () => {
