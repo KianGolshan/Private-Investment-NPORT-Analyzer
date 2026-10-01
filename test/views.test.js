@@ -1,0 +1,145 @@
+// Phase 6 views on the golden fixture (test/fixtures/warehouse/, real rows):
+// position changes, trends, share classes, firms, the market and the feed,
+// each checked against GOLDEN-NUMBERS and against exposureAsOf (one definition,
+// two answers: LESSONS 32). Through the API, with no SEC call.
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const request = require('supertest');
+const nock = require('nock');
+const { goldenWarehouse } = require('./helpers/warehouseApp');
+const { exposureAsOf, exposureSeries, monthEnds } = require('../lib/analytics/asof');
+const market = require('../lib/services/market');
+const firm = require('../lib/services/firm');
+
+const { db, app, idOf, firmIdOf } = goldenWarehouse();
+// nock (no SEC calls) aborts large gzipped bodies; gzip itself is tested in
+// test/api-warehouse.test.js, and real HTTP serves these answers gzipped.
+const api = url => request(app).get(url).set('Accept-Encoding', 'identity').expect(200);
+const billions = v => Math.round(v / 1e7) / 100;
+
+test.before(() => {
+  nock.disableNetConnect();
+  nock.enableNetConnect('127.0.0.1');
+});
+test.after(() => nock.enableNetConnect());
+
+test('activity: Fidelity OTC Portfolio no longer reports Stripe at 2026-01-31 (F8/F9)', async () => {
+  const { events } = (await api(`/api/companies/${idOf('Stripe')}/activity`)).body;
+  const otc = events.find(e => e.accession === '0000035402-26-002031');
+  assert.deepEqual([otc.type, otc.label, otc.prevAccession], ['exited', 'no longer reported', '0000035402-25-002966']);
+  assert.equal(otc.markDate, '2026-01-31');
+});
+
+test('activity: Capital Group marks Stripe $33.73 -> $35.50 -> $41.42 -> $63.00 (Growth Fund of America)', async () => {
+  const { events } = (await api(`/api/companies/${idOf('Stripe')}/activity`)).body;
+  const gfa = events.filter(e => e.fundKey === 'S000009228');
+  const at = acc => gfa.find(e => e.accession === acc).instruments[0];
+  const path = [
+    ['0001193125-25-251567', 33.73, 35.5],
+    ['0001193125-26-027715', 35.5, 41.42],
+    ['0001193125-26-182055', 41.42, 63.0],
+  ];
+  for (const [acc, prev, cur] of path) {
+    const leg = at(acc);
+    assert.deepEqual([Math.round(leg.prevPrice * 100) / 100, Math.round(leg.price * 100) / 100], [prev, cur], acc);
+  }
+  // 2025-05-31 repeated $33.73 with no share change: nothing to report.
+  assert.ok(!gfa.some(e => e.accession === '0001145549-25-048194'));
+});
+
+test('activity: a 3:1 split is not an add (F13, T. Rowe Databricks 2022-08-31)', async () => {
+  const { events } = (await api(`/api/companies/${idOf('Databricks')}/activity`)).body;
+  const e = events.find(x => x.accession === '0001752724-22-239970');
+  assert.equal(e.type, 'unchanged');
+  assert.ok(e.instruments.every(i => i.split === 3 && i.change === 'unchanged'));
+});
+
+test('trend: the monthly series equals exposureAsOf at A1 and A2 (72 / $5.93B, 117 / $17.26B)', async () => {
+  const { points } = (await api(`/api/companies/${idOf('Anthropic')}/trend`)).body;
+  const at = d => points.find(p => p.date === d);
+  assert.deepEqual([at('2026-03-31').funds, billions(at('2026-03-31').total)], [72, 5.93]);
+  assert.deepEqual([at('2026-06-30').funds, billions(at('2026-06-30').total)], [117, 17.26]);
+  assert.equal(points[0].date, '2023-04-30'); // first mark 2023-04-28
+  const dates = monthEnds('2024-01-01', '2026-07-31');
+  const series = exposureSeries(db, { companyId: idOf('Stripe'), dates });
+  for (const [i, d] of dates.entries()) {
+    const x = exposureAsOf(db, { companyId: idOf('Stripe'), date: d });
+    assert.deepEqual([series[i].funds, Math.round(series[i].total)], [x.funds, Math.round(x.total)], d);
+  }
+});
+
+test('classes: Fidelity marks Anthropic Series D 5.76% above Series E-H in one filing (F30)', async () => {
+  const c = (await api(`/api/companies/${idOf('Anthropic')}/classes?date=2026-05-31`)).body;
+  const fid = c.withinFiling.find(w => w.accession === '0000035402-26-004618');
+  const d = fid.classes.find(x => x.instrument === 'Preferred D');
+  const g = fid.classes.find(x => x.instrument === 'Preferred G');
+  assert.equal(Math.round(d.pricePerShare * 100) / 100, 622.94);
+  assert.equal(Math.round(g.pricePerShare * 100) / 100, 589.01);
+  assert.equal(Math.round(d.vsLowPct * 100) / 100, 5.76);
+  assert.equal(fid.firm, 'Fidelity');
+  // Capital Group marks every class alike at 5/31 (F30): no within-filing gap.
+  assert.ok(!c.withinFiling.some(w => w.accession === '0001193125-26-323081'));
+  const marks = (await api(`/api/companies/${idOf('Anthropic')}/marks`)).body;
+  assert.ok(marks.series.some(s => s.markDate === '2026-05-31' && s.instrument === 'Preferred D' && s.median > 622));
+});
+
+test('firm: Capital Group holds Anthropic in 9 funds / $8.46B at 2026-06-30 (A3), equal to exposureAsOf', async () => {
+  const id = firmIdOf('Capital Group (American Funds)');
+  const book = (await api(`/api/firms/${id}?date=2026-06-30`)).body;
+  const anthropic = book.byCompany.find(c => c.name === 'Anthropic');
+  assert.deepEqual([anthropic.funds, billions(anthropic.value)], [9, 8.46]);
+  const x = firm.firmExposureByCompany(db, id, idOf('Anthropic'), '2026-06-30');
+  assert.deepEqual([x.funds, Math.round(x.value)], [anthropic.funds, Math.round(anthropic.value)]);
+  // F17: the ninth holder is the AFIS Capital World Growth & Income series, $0.66M.
+  const afis = anthropic.positions.find(p => p.accession === '0001193125-26-371285');
+  assert.equal(Math.round(afis.value / 1e4) / 100, 0.66);
+});
+
+test('firm: Capital Group marks Stripe in 8 of 12 months of 2025, at one price per date', async () => {
+  const id = firmIdOf('Capital Group (American Funds)');
+  const m = (await api(`/api/firms/${id}/marks/${idOf('Stripe')}`)).body;
+  const y2025 = m.series.filter(s => s.markDate.startsWith('2025'));
+  assert.deepEqual([...new Set(y2025.map(s => s.markDate.slice(5, 7)))].sort(), [
+    '02',
+    '03',
+    '05',
+    '06',
+    '08',
+    '09',
+    '11',
+    '12',
+  ]);
+  const cents = v => Math.round(v * 100);
+  for (const s of y2025) assert.equal(cents(s.low), cents(s.high), `${s.markDate} ${s.instrument}`);
+  const changes = (await api(`/api/firms/${id}/changes?since=2025-01-01`)).body;
+  assert.ok(changes.events.length > 0);
+  assert.ok(changes.events.every(e => e.markDate >= '2025-01-01' && e.fundLabel));
+});
+
+test('market: every company in the top list equals exposureAsOf at that date', async () => {
+  const top = (await api('/api/market/top?date=2026-06-30')).body;
+  assert.ok(top.results.length >= 3);
+  for (const r of top.results) {
+    const x = exposureAsOf(db, { companyId: r.companyId, date: '2026-06-30' });
+    assert.deepEqual([r.funds, Math.round(r.value)], [x.funds, Math.round(x.total)], r.name);
+  }
+  assert.equal(top.results[0].name, 'Anthropic');
+  const c = market.countries(db, { date: '2026-06-30' });
+  assert.ok(Math.abs(c.results.reduce((s, r) => s + r.value, 0) - top.totalValue) < 1);
+});
+
+test("feed: the filings made on 2026-07-29 include Growth Fund of America's 5/31 Anthropic marks (F2)", async () => {
+  const f = (await api('/api/feed?since=2026-07-29&until=2026-07-29')).body;
+  const gfa = f.events.find(e => e.accession === '0001193125-26-323081' && e.company === 'Anthropic');
+  assert.ok(gfa, 'F2 is in the feed');
+  assert.equal(gfa.markDate, '2026-05-31');
+  assert.equal(gfa.filingDate, '2026-07-29');
+  assert.ok(f.events.every(e => e.tracked));
+  await request(app).get('/api/feed?since=2026-01-01&until=2026-06-30').expect(400); // over 92 days
+});
+
+test('fund changes: Growth Fund of America reports its Stripe marks filing by filing', async () => {
+  const r = (await api('/api/funds/S000009228/changes')).body;
+  const s = r.events.find(e => e.accession === '0001193125-26-182055' && e.company === 'Stripe');
+  assert.ok(Math.abs(s.markChangePct - 52.1) < 0.1);
+});
