@@ -52,7 +52,7 @@
 | Nightly refresh                | ≤5 min | 0.7 min (#15, nothing new; reclassify adds ~4 s)                                                      |
 | API p95, new routes (load ~4)  | <200ms | activity 28, trend 11, classes 9, marks 5, firm 11, firm changes 138, top 118, feed 192, firms 103 ms |
 | API p95, P5 routes             | <200ms | all routes 19.7 ms (P5b bench)                                                                        |
-| Suite                          | green  | 496 tests, 465 pass, 0 fail, 31 skipped (LIVE); lint and format clean                                 |
+| Suite                          | green  | 496 tests, 465 pass, 0 fail, 31 skipped; `npm run test:live` 31 / 31; lint and format clean           |
 | Full backfill / first catch-up | —      | 13.6 min / 26.9 min (P1, P2)                                                                          |
 
 Cold first requests are slower (disk); the server warms tracked exposure, the market list, firms and the dashboard
