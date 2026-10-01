@@ -44,3 +44,9 @@ Fund X-Ray treats fair-value Level 3 as "private." Real filings break that:
   company 508 rows / $3.51B, listed 157 / $1.43B, unreviewed only 1,190 / $2.94B), ~0.46 MB per quarter.
 - Every filing also stores totals over all its rows (`filing_totals`, migration 0015): total, listed equity,
   debt, and v1's Level-3 non-debt figure, so the fund page has its denominators without the dropped rows.
+
+**Amended 2026-10-01 (trap 45):** rows filed under `assetConditional OTHER` whose description is a loan or debt in the
+filer's own words (MCA, HEI, personal loans, promissory notes, senior/mezzanine/direct debt, CLO debt, …) are
+instrument type debt, not indirect equity (`classifyInstrument`; stored rows re-derived by every refresh). They stay
+stored (as term loans tagged EP do, trap 5) but never count as private equity. Measured: 71,043 rows, $22.8B
+(GOLDEN C26). Decided by Claude under the user's "fix everything"; the user can overrule.

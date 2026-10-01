@@ -2,27 +2,36 @@
 
 An internal tool for analyzing SEC NPORT-P filings to track and compare private investment valuations across institutional funds. Search by company name or ticker to see how different funds mark the same asset over time.
 
-> **Vantage v2 is in progress.** The data layer is built (Phases 0–4.5): an SEC-verified local warehouse
-> with complete N-PORT history since 2019Q4, a nightly refresh from EDGAR, an as-of engine (amendments,
-> exits and dead funds handled), companies resolved from filing evidence, parent firms from Form N-CEN, and
-> a tracked list of 180 private companies. **Since Phase 5 the app reads the warehouse**: Single Security,
-> Batch, Watchlist and Fund X-Ray answer private companies and funds from every filing since 2019Q4, with mark
-> dates, accessions and amendments handled; listed companies and debt still come from live EDGAR, labeled.
-> Phase 6 adds the new analysis views, Phase 7 an MCP server. Some sections below still describe v1's live flow.
-> - Plan and phase checkpoints: [docs/ROADMAP.md](docs/ROADMAP.md)
-> - Progress: [docs/STATUS.md](docs/STATUS.md)
-> - Design: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-> - Data rules: [docs/DATA-QUALITY.md](docs/DATA-QUALITY.md)
-> - Lessons learned so far: [docs/LESSONS.md](docs/LESSONS.md)
-> - Verified figures: [docs/GOLDEN-NUMBERS.md](docs/GOLDEN-NUMBERS.md)
-> - Decisions: [docs/decisions/](docs/decisions/)
-> - Prompts for resuming work: [docs/SESSION-PROMPTS.md](docs/SESSION-PROMPTS.md)
-> - Rules for contributors and AI sessions: [CLAUDE.md](CLAUDE.md)
+> **Vantage v2** answers from an SEC-verified local warehouse: complete N-PORT history since 2019Q4, a refresh from
+> EDGAR, an as-of engine (amendments, exits, dead funds, $0 positions handled), companies resolved from filing
+> evidence, parent firms from Form N-CEN, and a tracked list of 180 private companies. Analyze it by:
 >
-> **Known limits of today's app, measured on real data** (details in [docs/DATA-QUALITY.md](docs/DATA-QUALITY.md)):
-> - The live path (listed companies, debt, names the warehouse cannot match) still parses at most the 100 newest matching filings. Private companies and funds come from the warehouse, with no such limit (Phase 5).
-> - Fund X-Ray now counts a holding as private by the company's reviewed status, not its fair-value level (v1's Level-3 figure is shown beside it).
-> - Fixed in Phase 0: duplicate filings (about 21% of hits), look-alike name matches ("Revolut" matching Revolution Medicines), relevance-ranked instead of newest filings on popular names, and filings that mention a name only in a trust-wide attachment. Search now matches whole words or an exact ticker.
+> - **Issuer** (company page): holders as of any date with each fund's mark date, % of fund and filing; activity
+>   per fund filing (first reported, added, reduced, no longer reported, reported at $0, mark moved, split-adjusted);
+>   monthly trend of holders and value.
+> - **Security** (share classes): every fund's per-share mark per class, spreads at one mark date, gaps within a
+>   filing, stale marks, per-class mark history.
+> - **Fund** (Fund X-Ray, `/fund/<key>`): private book split into operating companies, fund interests and vehicles;
+>   period compare, mark-implied returns, changes filing by filing.
+> - **Manager** (Firms, `/firm/<id>`): a firm's book as of any date, its marks per class, its position changes.
+> - **Market** (Market & What's New): top private companies as of any date, by country, the tracked dashboard, and a
+>   feed of changes in newly filed reports. Every view exports CSV with mark date, accession and source.
+>
+> Listed companies and debt come from live EDGAR, labeled; a listed company's private-era marks open on request.
+> Some sections below still describe v1's live flow.
+>
+> - Plan: [docs/ROADMAP.md](docs/ROADMAP.md) · Progress: [docs/STATUS.md](docs/STATUS.md) · Design:
+>   [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Data rules: [docs/DATA-QUALITY.md](docs/DATA-QUALITY.md) ·
+>   Verified figures: [docs/GOLDEN-NUMBERS.md](docs/GOLDEN-NUMBERS.md) · Decisions: [docs/decisions/](docs/decisions/)
+>   · How we work: [docs/LESSONS.md](docs/LESSONS.md), [CLAUDE.md](CLAUDE.md) · History: [docs/archive/](docs/archive/)
+>
+> **Known limits, measured on real data:**
+>
+> - The live path (listed companies, debt, names the warehouse cannot match) parses at most the newest 250
+>   matching filings (25–250, selectable). Private companies, funds and firms come from the warehouse with no limit.
+> - A fund's "private" book follows the company's reviewed status, not its fair-value level (the Level-3 figure is
+>   shown beside it). Loans a filer reports as "other" (merchant cash advances, personal loans…) count as debt.
+> - Filings arrive about 60 days after each report date, so the newest month is always partial.
 
 ---
 
@@ -349,10 +358,15 @@ as a failure count rather than being silently dropped.
 ├── cache.js            # SQLite-backed cache for parsed filings and search results
 ├── public/
 │   ├── index.html     # Single-page frontend (HTML + CSS; CDN scripts SRI-pinned)
-│   ├── app.js          # Frontend logic (search, rendering, charts, export)
+│   ├── app.js          # Frontend logic (search, company and fund pages, charts, export)
+│   ├── views.js        # Analysis views: activity, trend, share classes, market, feed, firms
 │   └── splits.js       # Stock-split detection, shared by browser and server
 ├── test/               # Unit, integration, jsdom UI and opt-in live tests, with real-filing fixtures
-├── lib/warehouse/      # v2 warehouse: SQLite connection + migrations, bulk-dataset ingest, id validation
+├── lib/warehouse/      # v2 warehouse: migrations, bulk and EDGAR ingest, refresh, fund identity
+├── lib/entities/       # companies, aliases, identity graph, review import, managers
+├── lib/analytics/      # as-of engine, position changes, peer statistics
+├── lib/services/       # company, fund, firm, market, marks, search, dashboard (shared by server and MCP)
+├── lib/api/            # read-only warehouse routes; local admin route
 ├── db/migrations/      # Numbered SQL migrations for warehouse.db
 ├── scripts/            # CLI jobs (ingest-bulk.js, ingest-delta.js, refresh.js)
 ├── docs/               # v2 roadmap, status, architecture, data-quality rules, golden numbers, ADRs
@@ -365,6 +379,10 @@ as a failure count rather than being silently dropped.
 ```
 
 ### API Routes
+
+The warehouse routes (`/api/search`, `/api/companies/…`, `/api/entities/…`, `/api/funds/…`, `/api/firms/…`,
+`/api/market/…`, `/api/feed`, `/api/freshness`) are listed in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#warehouse-api-read-only-libapiwarehousejs). The live-path routes:
 
 | Route | Method | Description |
 |-------|--------|-------------|

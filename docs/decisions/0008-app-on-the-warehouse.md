@@ -1,11 +1,14 @@
 # 0008: How the app reads the warehouse (parity scope, API shape, identifiers)
 
-**Status:** accepted, 2026-09-30 (Phase 5 planning; user chose every recommendation). Implemented in P5a (signed off
-2026-09-30) and P5b (built 2026-09-30: decision 7's capital-structure rows adopted after measuring, ADR 0003 amended).
+**Status:** accepted, 2026-09-30 (Phase 5 planning; user chose every recommendation). Implemented in P5a and P5b
+(both signed off 2026-09-30). **Amended 2026-10-01 (post-P5 review):** decision 1 hid listed companies' stored
+private-era marks; a listed company still answers from the live path, and its stored rows open on request
+(`?stored=1`), labeled, with exits read as "not in stored rows" (DATA-QUALITY trap 49). Search marks the one result
+that may open by itself (`strong`).
 
 ## Context
 
-Checked against the code and the live warehouse on 2026-09-30 (STATUS "Phase 5 planning"):
+Checked against the code and the live warehouse on 2026-09-30 (archive/STATUS-history.md, "Phase 5 planning"):
 
 - The warehouse holds private-candidate equity only (ADR 0003): no debt, and for listed companies only their
   restricted or PIPE rows. All 502 listed companies have some stored rows, so "the warehouse has seen this

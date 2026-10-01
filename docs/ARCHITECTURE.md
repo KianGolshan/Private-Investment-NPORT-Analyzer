@@ -143,7 +143,8 @@ Fund calendars are staggered, so "as of D" mixes mark dates. The UI always shows
   3. Catch up on every NPORT-P / NPORT-P/A filed on or after the newest bulk filing date.
      - Filings already stored are skipped.
      - Earlier failures in `ingest_errors` are retried.
-  4. Entity upkeep (fund advisers, company resolution), then the identity graph and the review queue
+  4. Re-derive stored OTHER rows' instrument type under today's rule (trap 45, `lib/warehouse/reclassify.js`;
+     a no-op unless the rule changed). Entity upkeep (fund advisers, company resolution), then the identity graph and the review queue
      (`reports/entities/unresolved.csv`, `conflicts.csv`; P4.5), then unreviewed entities, their row tags,
      `company_stats` and the search index (`lib/entities/entities.js`, P5a), then the fund list and fund-name
      index (`lib/warehouse/fund-names.js`, P5b). Both ingest paths also write `filing_totals` and the
@@ -212,7 +213,9 @@ Check health with `sqlite3 warehouse.db "select * from refresh_runs order by id 
 - First catch-up: ≤90 min.
 - Nightly: ≤5 min.
 - API and MCP p95: <200 ms.
-- Warehouse size: ≤600 MB (raised from 500 MB on 2026-09-30; measured 364 MB at P1, 513 MB after P4.5, 542.7 MB after P5b).
+- Warehouse size: ≤1 GB (raised from 600 MB on 2026-10-01 by Claude under the user's "fix everything"; growth is
+  25–30 MB per bulk quarter and the only prunable tables were 9–34 MB; measured 364 MB at P1, 542.7 MB after P5b,
+  544.0 MB on 2026-10-01).
 
 ## Module map
 
@@ -279,9 +282,37 @@ lib/entities/make-company.js       "make this a company": review files + import 
 lib/api/admin.js                   POST /api/admin/companies (VANTAGE_ADMIN=1, local only; runs scripts/make-company.js)
 ```
 
-Planned:
+Built in P6 (2026-10-01):
 
 ```
-lib/services/{manager,marks,feed}.js   P6: firm pages, mark series, what's-new feed
-mcp-server.js             P7 (after P5a)
+lib/warehouse/reclassify.js        re-derives stored OTHER rows' instrument type each refresh (trap 45)
+lib/analytics/asof.js              + exposureSeries (as-of at many dates, one read), monthEnds, keepCanonical,
+                                   privateRowsOf
+lib/analytics/activity.js          position changes per fund filing: companyActivity (a company in every fund),
+                                   fundChanges (a fund, a firm's funds, or every filing made since a date)
+lib/services/errors.js             ServiceError and shared input checks
+lib/services/memo.js               whole-warehouse answers kept until the next refresh run
+lib/services/market.js             top private companies as of D, by country, the what's-new feed
+lib/services/firm.js               firms (N-CEN adviser, registrant fallback), firm book, firm marks, firm changes
+lib/services/marks.js              share classes as of D, per-class mark history, stale marks
+lib/services/dashboard.js          the tracked-list dashboard
+public/views.js                    company Activity / Trend / Share classes; Market & What's New; Firms
+```
+
+Planned: `mcp-server.js` (P7) over the same services.
+
+## Warehouse API (read-only, `lib/api/warehouse.js`)
+
+Every answer carries `source`, `refreshId` and mark dates; JSON over 2 KB is gzipped; the ETag is refresh id +
+build. A listed company answers its views only with `?stored=1`, labeled (trap 49).
+
+```
+/api/freshness                                   bulk quarter, newest filing and report dates, refresh time
+/api/search?q=                                   ranked matches with match reason; `strong` on the one that may open
+/api/companies/:id[/exposure|/history|/activity|/trend|/classes|/marks|/stale|/feed.xml]
+/api/entities/:issuerKey[/…same views]           unreviewed names; a resolved key answers 301
+/api/market/top?date=&tracked=1                  private companies as of D
+/api/market/countries?date=   /api/market/tracked?date=   /api/feed?since=&until=&all=1
+/api/firms?date=&q=   /api/firms/:id?date=   /api/firms/:id/changes?since=   /api/firms/:id/marks/:companyId
+/api/funds?q=   /api/funds/:key[/xray|/compare|/returns|/changes]
 ```
