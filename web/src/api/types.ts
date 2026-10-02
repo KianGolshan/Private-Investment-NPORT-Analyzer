@@ -582,3 +582,222 @@ export interface CompanyHistory extends Envelope, ScopeEcho {
     }[];
   })[];
 }
+
+// ── P6b W3: firm and fund pages ──
+
+export interface Timeline extends Envelope {
+  firm?: number;
+  fund?: string;
+  asOf: string;
+  attribution: string;
+  companies: {
+    companyId: number;
+    name: string;
+    firstHeld: string;
+    /** null = still held as of asOf */
+    lastHeld: string | null;
+    spans: { from: string; until: string | null }[];
+    value: number;
+    funds: number;
+    positionEffect: number;
+    markEffect: number;
+    events: {
+      markDate: string;
+      type: string;
+      label: string;
+      funds: number;
+      valueChange: number;
+      positionEffect: number;
+      markEffect: number;
+    }[];
+  }[];
+}
+
+export interface MarksVsOthers extends Envelope {
+  firm?: number;
+  fund?: string;
+  date: string;
+  tolerancePct: number;
+  summary: {
+    positions: number;
+    compared: number;
+    above: number;
+    same: number;
+    below: number;
+    valueAbove: number;
+    valueSame: number;
+    valueBelow: number;
+  };
+  rows: {
+    companyId: number;
+    company: string;
+    classLabel: string;
+    markDate: string;
+    mark: number;
+    funds: number;
+    value: number;
+    othersMedian: number | null;
+    othersLow: number | null;
+    othersHigh: number | null;
+    otherFunds: number;
+    otherFirms: number;
+    diffPct: number | null;
+    position: 'above' | 'same' | 'below' | 'no other fund that date';
+  }[];
+}
+
+export interface FirmChanges extends Envelope {
+  firm: { id: number; name: string };
+  since: string;
+  until: string;
+  count: number;
+  offset: number;
+  byType: Record<string, number>;
+  totals: { valueChange: number; positionEffect: number; markEffect: number; otherEffect: number };
+  events: ChangeEvent[];
+}
+
+/** One holding row in X-Ray's shape (lib/services/fund.js forDisplay). */
+export interface XrayHolding {
+  name: string;
+  title: string;
+  shares: number | null;
+  marketValue: number;
+  pricePerShare: number | null;
+  unit: string | null;
+  perShare: boolean;
+  instrumentType: string;
+  instrumentLabel: string;
+  instrumentKey: string;
+  filerId: string | null;
+  fairValLevel: string | null;
+  isRestrictedSec: string | null;
+  pctOfNetAssets: number | null;
+  country: string | null;
+  rowKey: string;
+  privateKind: 'company' | 'fund' | 'vehicle';
+  company: { id: number; name: string; tracked: boolean } | null;
+  unreviewed: { key: string; name?: string } | null;
+  labels: string[];
+  reason?: string;
+}
+
+export interface Xray extends Envelope {
+  fund: FundInfo;
+  xray: {
+    fund: { seriesName: string | null; registrantName: string; reportDate: string; netAssets: number | null };
+    filing: { accession: string; reportDate: string; filingDate: string; form: string; versions: number; cik: string };
+    markDate: string;
+    accession: string;
+    totalHoldingsCount: number;
+    publicHoldingsCount: number;
+    privateHoldingsCount: number;
+    privateValueUSD: number;
+    privateByKind: Record<'company' | 'fund' | 'vehicle', { label: string; rows: number; valueUSD: number }>;
+    totalValueUSD: number;
+    privatePctOfNetAssets: number | null;
+    listedValueUSD: number;
+    debtValueUSD: number;
+    byCountry: Record<string, number>;
+    privateHoldings: XrayHolding[];
+    notPrivate: XrayHolding[];
+    capitalStructure: {
+      issuer: string;
+      totalValueUSD: number;
+      pctOfNetAssets: number;
+      byType: Record<string, number>;
+      debtPctOfExposure: number;
+      weightedDebtCouponPct: number | null;
+      instruments: {
+        title: string;
+        instrumentType: string;
+        instrumentLabel: string;
+        marketValue: number;
+        shares: number | null;
+        couponPct: number | null;
+        maturity: string | null;
+      }[];
+    }[];
+    truncated: { rows: number; shown: number } | null;
+  };
+}
+
+interface Delta {
+  current: number | null;
+  prior: number | null;
+  delta: number | null;
+  deltaPct: number | null;
+}
+
+export interface XrayCompare extends Envelope {
+  fund: FundInfo;
+  current: { accession: string; markDate: string; privateValueUSD: number; privateHoldingsCount: number };
+  prior: { accession: string; markDate: string; privateValueUSD: number; privateHoldingsCount: number } | null;
+  comparison: {
+    totals: {
+      privateValueUSD: Delta;
+      privateHoldingsCount: Delta;
+      issuerCount: Delta;
+      newCount: number;
+      exitedCount: number;
+      continuingCount: number;
+      valueChangeFromPrice: { amount: number; pct?: number };
+      valueChangeFromShares: { amount: number; pct?: number };
+      valueChangeOther: { amount: number };
+    };
+    positions: {
+      key: string;
+      splitRatio: number | null;
+      name: string;
+      title: string;
+      instrumentLabel: string;
+      status: string;
+      shares: Delta;
+      marketValue: Delta;
+      pricePerShare: Delta;
+      pctOfNetAssets: Delta;
+      priceEffectUSD: number | null;
+      shareEffectUSD: number | null;
+    }[];
+  } | null;
+  positionsTotal?: number;
+}
+
+export interface XrayReturns extends Envelope {
+  fund: FundInfo;
+  filings: { accession: string; markDate: string }[];
+  returns: {
+    summary: {
+      positionCount: number;
+      invested: number;
+      realized: number;
+      currentValue: number;
+      moic: number | null;
+      irr: number | null;
+      partialSales: number;
+      leftPrivateBook: number;
+      windowStartCount: number;
+      excludedCount: number;
+      firstDate: string;
+      lastDate: string;
+      periodCount: number;
+    };
+    positions: {
+      name: string;
+      title: string;
+      instrumentLabel: string;
+      status: string;
+      firstDate: string;
+      lastDate: string;
+      entryIsWindowStart: boolean;
+      lotsUnavailable: boolean;
+      chainedFrom: string | null;
+      invested: number;
+      realized: number;
+      currentValue: number;
+      moic: number | null;
+      irr: number | null;
+      events: { type: string; date: string; ratio?: number }[];
+    }[];
+  };
+}

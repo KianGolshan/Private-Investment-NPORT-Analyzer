@@ -411,3 +411,63 @@ test('leadership: Stripe Common B $63.00 was first filed on 2026-02-28 by Capita
   assert.ok(lvl.adopters.every(a => a.markDate >= lvl.firstDate && a.prevMarkDate < a.markDate));
   assert.ok(L.levels.every(l => l.instrument === 'Common B'));
 });
+
+// ── P6b W3: firm and fund pages ──
+
+test('marks vs others: each firm mark and the others’ median equal a recomputation from stored rows', async () => {
+  const cg = firmIdOf('Capital Group (American Funds)');
+  const m = (await api(`/api/analysis/marks?firm=${cg}&date=2026-06-30`)).body;
+  const managed = new Set(firm.fundFirms(db).byFirm.get(cg).managed);
+  const median = xs => {
+    const s = [...xs].sort((a, b) => a - b);
+    const h = s.length >> 1;
+    return s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2;
+  };
+  const compared = m.rows.filter(r => r.othersMedian != null);
+  assert.ok(compared.length >= 3);
+  for (const r of m.rows) {
+    const rows = keepRows(r.companyId).filter(
+      x => x.report_date === r.markDate && x.counts && x.balance > 0 && x.unit === 'NS'
+    );
+    const same = rows.filter(x => classOfRow(rowInfo(x)).replace(/ \(segregated\)$/, '') === r.classLabel);
+    const mine = same.filter(x => managed.has(x.fund_key)).map(x => x.value_usd / x.balance);
+    const others = same.filter(x => !managed.has(x.fund_key)).map(x => x.value_usd / x.balance);
+    assert.ok(mine.length > 0, `${r.company} ${r.classLabel} ${r.markDate}`);
+    assert.ok(Math.abs(median(mine) - r.mark) < 0.01, `${r.company} ${r.classLabel}: ${median(mine)} vs ${r.mark}`);
+    if (others.length)
+      assert.ok(Math.abs(median(others) - r.othersMedian) < 0.01, `${r.company} ${r.classLabel} others`);
+    else assert.equal(r.othersMedian, null);
+  }
+  const s = m.summary;
+  assert.equal(s.above + s.same + s.below, s.compared);
+  await request(app).get('/api/analysis/marks').expect(400);
+});
+const keepRowsCache = new Map();
+function keepRows(companyId) {
+  if (!keepRowsCache.has(companyId)) {
+    const { keepCanonical } = require('../lib/analytics/asof');
+    keepRowsCache.set(companyId, keepCanonical(db, companyRows(db, { companyId }, '9999-12-31')));
+  }
+  return keepRowsCache.get(companyId);
+}
+
+test('firm changes: pages reassemble the unpaged list; counts and totals cover every matching event', async () => {
+  const cg = firmIdOf('Capital Group (American Funds)');
+  const all = firm.firmChanges(db, cg, { since: '2019-01-01' }).events;
+  const pages = [];
+  for (let offset = 0; ; offset += 100) {
+    const p = (await api(`/api/firms/${cg}/changes?since=2019-01-01&limit=100&offset=${offset}`)).body;
+    assert.equal(p.count, all.length);
+    pages.push(...p.events);
+    if (offset + 100 >= p.count) break;
+  }
+  assert.deepEqual(
+    pages.map(e => `${e.fundKey}|${e.accession}|${e.companyId}`),
+    all.map(e => `${e.fundKey}|${e.accession}|${e.companyId}`)
+  );
+  const added = (await api(`/api/firms/${cg}/changes?since=2019-01-01&types=added&limit=5`)).body;
+  assert.equal(added.count, all.filter(e => e.type === 'added').length);
+  assert.ok(added.events.length <= 5 && added.events.every(e => e.type === 'added'));
+  const sum = all.filter(e => e.type === 'added').reduce((t, e) => t + e.markEffect, 0);
+  assert.equal(cents(added.totals.markEffect), cents(sum));
+});

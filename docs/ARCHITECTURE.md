@@ -355,6 +355,23 @@ shared.tsx          filter pickers from the unfiltered answer, kind badge, the v
 Services added: `analysis.legsAt`, `company.filingRows`, `marks.markLeadership`. Every tab sends the scope to the
 server (`scope.scopeParams`); nothing filters on the client.
 
+Built in P6b W3 (2026-10-01), firm and fund pages (`web/src/pages/firm/`, `pages/fund/`, shared `pages/book/`,
+replacing `pages/Firm.tsx` and `pages/Fund.tsx`):
+
+```
+book/BookOverview.tsx   private book by company at each period end (pivot), companies and funds holding, the bridge
+                        for the range and position vs mark effect by quarter, a by-company table
+book/Timeline.tsx       investment timeline: a bar per company while held, event marks (/api/analysis/timeline)
+book/MarksVsOthers.tsx  each class against other funds' median at the same mark date (/api/analysis/marks)
+firm/index.tsx          Overview · Timeline · Book (by company, by fund, company × fund matrix) · Marks · Changes
+firm/Changes.tsx        the paged ledger (500 per page, type filter; counts and totals over all)
+fund/index.tsx          Overview · X-Ray · Compare · Returns · Timeline · Marks · Changes · Filings
+fund/XRay.tsx           Fund X-Ray from v1: private book at any filing, compare (prior / a year earlier), returns
+ui/BridgeView.tsx       the bridge waterfall, steps and period effects (company, firm and fund pages)
+```
+
+Services added: `analysis.marksVsOthers` (+ `marksByDate`, warmed at start); `firm.firmChanges` paged.
+
 Planned: `mcp-server.js` (P7) over the same services.
 
 ## Warehouse API (read-only, `lib/api/warehouse.js`)
@@ -377,9 +394,11 @@ build. A listed company answers its views only with `?stored=1`, labeled (trap 4
 /api/entities/:issuerKey[/…same views]           unreviewed names; a resolved key answers 301
 /api/market/top?date=&tracked=1                  private companies as of D
 /api/market/countries?date=   /api/market/tracked?date=   /api/feed?since=&until=&all=1
-/api/firms?date=&q=   /api/firms/:id?date=   /api/firms/:id/changes?since=   /api/firms/:id/marks/:companyId
+/api/firms?date=&q=   /api/firms/:id?date=   /api/firms/:id/marks/:companyId
+/api/firms/:id/changes?since=&until=&types=&company=&limit=&offset=   paged (default 500, at most 2,000)
 /api/funds?q=   /api/funds/:key[/xray|/compare|/returns|/changes]
 /api/analysis/bridge?from=&to=[&company=|&entity=][&firm=&fund=&class=&kind=]   (class, kind need a subject)
 /api/analysis/pivot?rows=firm|fund|company|class&period=month|quarter|year&from=&to=&limit=[&company=…&firm=…]
 /api/analysis/timeline?firm=|fund=               per company: spans held, value now, events by mark date
+/api/analysis/marks?firm=|fund=[&date=]          each class held vs other funds' median at the same mark date
 ```

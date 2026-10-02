@@ -1,7 +1,44 @@
-# Archive: STATUS through P6b W1
+# Archive: STATUS through P6b W2
 
 Verbatim copy of docs/STATUS.md as of 2026-10-01, before it was shortened to the current state. Phase results,
 measurements and decisions per phase, oldest at the bottom. Not read at session start.
+
+## P6b W2 (signed off by the user 2026-10-01; verbatim from STATUS)
+
+### P6b W2: the company workbench (2026-10-01)
+
+Built on the W1 routes, every tab asking the server within the scope (`scope.scopeParams`; nothing filters on the
+client any more). `web/src/pages/company/` replaces `pages/Company.tsx` (module map in ARCHITECTURE).
+
+- **Header:** status, brands, funds and value now with a sparkline, firms holding, funds ever, the latest
+  per-share mark of the three largest classes with its mark date.
+- **Overview:** value by firm, fund or class at each quarter or month end (the pivot), funds holding, the slider
+  sets the range; a table of each row's start and end value with position and mark effects. Anthropic all funds:
+  $0 → $18.16B, of which **+$9.61B mark**, the same as the Anthropic audit's independent decomposition.
+- **Holders:** as of any date, grouped by firm or fund, and each fund's change since its own prior filing (Δ shares,
+  position Δ, mark Δ; new service `analysis.legsAt`, whose values sum to `exposureAsOf`, tested).
+- **Positions:** a fund × mark-month heatmap (value, shares, $/share, Δ value); a cell opens the drawer.
+- **Changes:** the bridge as a waterfall and a step table ("reconciles to the cent"), position vs mark effect by
+  quarter, and the ledger for the same window (mark dates after `from` through `to`).
+- **Marks & classes:** per-firm lines over the low–high band, spreads, gaps within one filing, stale marks, and
+  **mark leadership** (new `marks.markLeadership`; checked on real data before it was built: e.g. Anthropic Series
+  G $589.01 first filed by Fidelity 2026-05-31, then BlackRock and T. Rowe +30 days, Franklin +61). It always
+  compares every firm; each adopter shows its previous mark date (staggered calendars).
+- **Filings:** the stored rows as filed (titles, filer ids, units, balance, value, FV level), new `company.filingRows`.
+- **Position drawer** (`?pos=<fund>`, a permalink): every leg at every filing, value bars and a split-adjusted
+  per-share line (the Databricks 2022 3:1 split no longer reads as a crash), Esc closes.
+- **Goldens on screen** (built app, live warehouse): **A1** Anthropic 2026-03-31 = 72 / $5.94B; **F30** Fidelity
+  Advisor Growth Opportunities Series D $622.94 (+5.76%); the **Capital Group Stripe path** $33.73 → $35.50 →
+  $41.42 → $63.00; **F43** $407.7M + $150.0M added + $212.4M mark = $770.1M. New golden **F49** (leadership: Stripe
+  $63.00 first filed by Capital Group and Fidelity on 2026-02-28, T. Rowe +31 days), verified on EDGAR.
+- **Found while verifying and fixed:** leadership under a firm filter saw one firm and showed nothing (it now reads
+  every firm); the drawer's per-share line was not split-adjusted; drawer rows said "unchanged" where the mark moved.
+- **Checks:** no console errors; dark theme; 375 px with no page overflow (tabs and tables scroll in place).
+- **Tests:** `npm test` 529 / 498 pass / 0 fail / 31 skipped (new: legs = `exposureAsOf` filtered or not, rows =
+  canonical rows and the F43 row, leadership F49); web 18 / 18 (scope → API params); lint, format, typecheck clean.
+- **Bench** (warm pass, load 14.5 from other work on the machine): legs 1.5 ms, company pivot 2.4, leadership 66.5,
+  rows 86.9 (630 KB for Databricks), history 52.4 p95; all 3,523 requests p95 59.8 ms. Cold first requests over
+  150 ms: the firm list and top list (one each, then cached) and Fidelity's firm changes (927 ms, 5.3 MB: W3 pages it).
 
 ## P6b W1 (signed off by the user 2026-10-01; verbatim from STATUS)
 

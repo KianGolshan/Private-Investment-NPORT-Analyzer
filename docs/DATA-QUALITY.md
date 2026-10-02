@@ -97,6 +97,12 @@ every refresh (`lib/warehouse/reclassify.js`), which also moves each filing's to
   over 0.5% to it before any other firm's did (levels within 0.5%); every adopter shows its previous mark date,
   because staggered calendars decide who can file first. It compares firms, so it always reads every firm. Never
   "led" or "followed" as a cause (F49).
+- **Marks vs others** (`analysis.marksVsOthers`, firm and fund pages): a firm's (or fund's) median per-share mark
+  per class against the median of every other fund that filed the same class at the **same** mark date; no other
+  fund that date = no comparison, shown as such (staggered calendars leave most Fidelity classes uncompared: 123 of
+  460). "Above", "same" (within 0.5%), "below" as filed (F50).
+- **Timeline:** a bar while any of the firm's funds is in force with the company (the as-of rule); a holding in a
+  fund's first stored filing reads "held at the first stored filing", never "first reported" (the data starts 2019).
 - **Firms are the current adviser** (latest N-CEN). Dated attribution was measured and not adopted: real firm-to-firm
   adviser changes touch 16 private-company filings, $0.05B of $640.6B filed (0.01%; $0.28B with retired adviser
   entities not in `managers.csv`); answers say "current adviser (latest N-CEN)".

@@ -91,6 +91,11 @@ function requests() {
     ['pivot', '/api/analysis/pivot?rows=company&period=month'],
     ['pivot', '/api/analysis/pivot?rows=fund&period=year&from=2019-12-31'],
     ['bridge all', '/api/analysis/bridge'],
+    // P6b W3: firm and fund pages
+    ...firmsTop.map(id => ['firm marks', `/api/analysis/marks?firm=${id}`]),
+    ...firmsTop.map(id => ['firm changes page', `/api/firms/${id}/changes?limit=500`]),
+    ...funds.slice(0, 20).map(f => ['fund timeline', `/api/analysis/timeline?fund=${enc(f.fund_key)}`]),
+    ...funds.slice(0, 20).map(f => ['fund marks', `/api/analysis/marks?fund=${enc(f.fund_key)}`]),
     // P6b W2: the company workbench
     ...tracked.map(c => ['legs', `/api/companies/${c.id}/legs`]),
     ...tracked.map(c => ['rows', `/api/companies/${c.id}/rows`]),
