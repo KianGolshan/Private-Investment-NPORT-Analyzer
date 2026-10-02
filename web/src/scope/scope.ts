@@ -91,3 +91,20 @@ export function useParam(name: string): [string, (v: string, opts?: { replace?: 
   };
   return [value, set];
 }
+
+/**
+ * The scope's filters as API query params (P6b W1: every company route takes
+ * firm, fund, class and kind). `only` limits them to the filters a view applies.
+ */
+export function scopeParams(
+  s: Scope,
+  only: ('firm' | 'fund' | 'class' | 'kind')[] = ['firm', 'fund', 'class', 'kind']
+): Record<string, string | string[]> {
+  const on = new Set(only);
+  const out: Record<string, string | string[]> = {};
+  if (on.has('firm') && s.firms.length) out.firm = s.firms.map(String);
+  if (on.has('fund') && s.funds.length) out.fund = s.funds;
+  if (on.has('class') && s.classes.length) out.class = s.classes;
+  if (on.has('kind') && s.kind) out.kind = s.kind;
+  return out;
+}

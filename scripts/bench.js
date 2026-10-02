@@ -91,6 +91,14 @@ function requests() {
     ['pivot', '/api/analysis/pivot?rows=company&period=month'],
     ['pivot', '/api/analysis/pivot?rows=fund&period=year&from=2019-12-31'],
     ['bridge all', '/api/analysis/bridge'],
+    // P6b W2: the company workbench
+    ...tracked.map(c => ['legs', `/api/companies/${c.id}/legs`]),
+    ...tracked.map(c => ['rows', `/api/companies/${c.id}/rows`]),
+    ...tracked.map(c => ['leadership', `/api/companies/${c.id}/leadership`]),
+    ...tracked.map(c => [
+      'company pivot',
+      `/api/analysis/pivot?company=${c.id}&rows=firm&period=quarter&from=2019-09-30`,
+    ]),
     ...[...SEARCHES, 'Fidelity', 'Capital Group', 'Growth Fund of America', 'Anthropic Series G'].map(q => [
       'search all',
       `/api/search?q=${enc(q)}&kinds=company,entity,firm,fund,class`,

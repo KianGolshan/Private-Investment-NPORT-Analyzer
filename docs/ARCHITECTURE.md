@@ -338,6 +338,23 @@ lib/services/search.js             + unifiedSearch: companies, unreviewed names,
 web/src/ui/CommandPalette.tsx      one call to the unified search
 ```
 
+Built in P6b W2 (2026-10-01), the company workbench (`web/src/pages/company/`, replacing `pages/Company.tsx`):
+
+```
+index.tsx           header (status, brands, holders, value + sparkline, firms, latest mark by class), tabs, drawer
+Overview.tsx        value by firm | fund | class at each month or quarter end (pivot), funds holding, brush = range
+Holders.tsx         holders as of D within the scope, each fund's change since its prior filing (/legs), grouping
+Positions.tsx       fund × mark-month heatmap: value, shares, $/share, Δ value; a cell opens the drawer
+Changes.tsx         the bridge (waterfall + steps), position vs mark effect by quarter, the ledger
+Marks.tsx           per-firm marks over the band, spreads, gaps within a filing, stale marks, mark leadership
+Filings.tsx         the stored rows behind every number, as filed
+PositionDrawer.tsx  ?pos=<fund>: one fund's legs at every filing; split-adjusted per-share line
+shared.tsx          filter pickers from the unfiltered answer, kind badge, the view props
+```
+
+Services added: `analysis.legsAt`, `company.filingRows`, `marks.markLeadership`. Every tab sends the scope to the
+server (`scope.scopeParams`); nothing filters on the client.
+
 Planned: `mcp-server.js` (P7) over the same services.
 
 ## Warehouse API (read-only, `lib/api/warehouse.js`)
@@ -353,6 +370,9 @@ build. A listed company answers its views only with `?stored=1`, labeled (trap 4
 /api/companies/:id/bridge?from=&to=              start, first reported, added, reduced, no longer reported, mark,
                                                  value only, started / stopped filing, end; reconciled to the cent
 /api/companies/:id/positions/:fundKey[?instrument=]   one fund's legs at every filing
+/api/companies/:id/legs?date=                    each fund's legs in force at D (its change since its prior filing)
+/api/companies/:id/rows?from=&to=                the stored rows as filed (canonical filings; at most 20,000)
+/api/companies/:id/leadership[?instrument=]      per class: who first filed each new per-share level, lags
   every company view takes ?firm=&fund=&class=&kind= (lists: repeated or comma-separated) and echoes `scope`
 /api/entities/:issuerKey[/…same views]           unreviewed names; a resolved key answers 301
 /api/market/top?date=&tracked=1                  private companies as of D

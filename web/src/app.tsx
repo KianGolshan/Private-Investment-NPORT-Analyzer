@@ -7,7 +7,7 @@ import { density, themePref, type ThemePref } from './lib/prefs';
 import { longDate } from './lib/format';
 
 const Market = lazy(() => import('./pages/Market'));
-const Company = lazy(() => import('./pages/Company'));
+const Company = lazy(() => import('./pages/company'));
 const Firms = lazy(() => import('./pages/Firms'));
 const Firm = lazy(() => import('./pages/Firm'));
 const Fund = lazy(() => import('./pages/Fund'));

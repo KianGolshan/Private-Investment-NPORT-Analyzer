@@ -355,3 +355,59 @@ test('bridge: Fidelity Select Technology’s move to segregated lines is a mark 
   assert.equal(h.holdings[0].positions.length, 2);
   assert.equal(cents(h.total), 29961860 + 22060900);
 });
+
+// ── P6b W2: the company workbench's answers ──
+
+test('legs: each fund’s legs in force at D sum to exposureAsOf, filtered or not', async () => {
+  for (const id of privateIds)
+    for (const date of ['2025-06-30', '2026-03-31', '2026-06-30']) {
+      const { legs } = analysis.legsAt(db, { companyId: id }, { date });
+      const x = exposureAsOf(db, { companyId: id, date });
+      assert.equal(cents(legs.reduce((t, l) => t + l.value, 0)), cents(x.total), `${id} ${date}`);
+      assert.equal(new Set(legs.filter(l => l.value > 0).map(l => l.fundKey)).size, x.funds);
+    }
+  const cg = firmIdOf('Capital Group (American Funds)');
+  const id = idOf('Anthropic');
+  const b = (await api(`/api/companies/${id}/legs?date=2026-06-30&firm=${cg}`)).body;
+  const e = (await api(`/api/companies/${id}/exposure?date=2026-06-30&firm=${cg}`)).body;
+  assert.equal(cents(b.legs.reduce((t, l) => t + l.value, 0)), cents(e.total));
+  // Growth Fund of America's latest Stripe filing as of 2026-05-31 is the F43 add.
+  const s = (await api(`/api/companies/${idOf('Stripe')}/legs?date=2026-05-31&fund=S000009228`)).body.legs;
+  const clB = s.find(l => l.instrumentKey === 'ECS282034');
+  assert.deepEqual([clB.prevBalance, clB.balance, cents(clB.positionEffect)], [1123404, 3504356, 149999976]);
+});
+
+test('rows: the Filings tab lists each canonical filing’s rows as filed, in the range and scope', async () => {
+  const id = idOf('Stripe');
+  const all = (await api(`/api/companies/${id}/rows`)).body;
+  const canonical = db
+    .prepare(
+      `SELECT COUNT(*) n FROM holdings h JOIN canonical_filings f ON f.accession = h.accession
+       WHERE h.company_id = ? AND h.instrument_type IN ('equity','indirect','derivative')
+         AND (h.value_usd > 0 AND (h.balance > 0 OR h.balance IS NULL OR h.balance = 0) OR NOT h.value_usd > 0)`
+    )
+    .get(id).n;
+  assert.equal(all.count, canonical);
+  const gfa = (await api(`/api/companies/${id}/rows?fund=S000009228&from=2026-05-01&to=2026-05-31`)).body.rows;
+  assert.equal(gfa.length, 7);
+  const r = gfa.find(x => x.otherId === 'ECS282034');
+  assert.deepEqual(
+    [r.balance, r.valueUsd, r.accession, r.markDate],
+    [3504356, 220774428, '0001193125-26-323081', '2026-05-31']
+  );
+});
+
+test('leadership: Stripe Common B $63.00 was first filed on 2026-02-28 by Capital Group and Fidelity', async () => {
+  const L = (await api(`/api/companies/${idOf('Stripe')}/leadership?instrument=${encodeURIComponent('Common B')}`))
+    .body;
+  const lvl = L.levels.find(l => Math.abs(l.mark - 63) < 0.01);
+  assert.equal(lvl.firstDate, '2026-02-28');
+  const first = lvl.adopters
+    .filter(a => a.lagDays === 0)
+    .map(a => a.firm)
+    .sort();
+  assert.deepEqual(first, ['Capital Group (American Funds)', 'Fidelity']);
+  // Every follower filed later, and its own previous mark date is shown.
+  assert.ok(lvl.adopters.every(a => a.markDate >= lvl.firstDate && a.prevMarkDate < a.markDate));
+  assert.ok(L.levels.every(l => l.instrument === 'Common B'));
+});

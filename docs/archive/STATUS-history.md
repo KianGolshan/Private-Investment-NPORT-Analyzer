@@ -1,7 +1,81 @@
-# Archive: STATUS through P6b W0
+# Archive: STATUS through P6b W1
 
 Verbatim copy of docs/STATUS.md as of 2026-10-01, before it was shortened to the current state. Phase results,
 measurements and decisions per phase, oldest at the bottom. Not read at session start.
+
+## P6b W1 (signed off by the user 2026-10-01; verbatim from STATUS)
+
+### P6b W1: the data layer (2026-10-01)
+
+Setup gates at session start, all green: refresh #16 (no 2026Q3 bulk yet, 0 new filings, `ingest_errors` 0, 544.0
+MB); `npm test` 505 / 474 pass / 0 fail / 31 skipped (exit 0); lint, format, `test:web` 15 / 15; LIVE 31 / 31.
+
+1. **Dated firm attribution (research): not adopted.** Matching every N-CEN, 1,476 funds show a different adviser
+   set over time; 119 of them hold private companies. Real firm-to-firm changes (Altegris → iCapital, Pioneer → Amundi
+   → Victory, Credit Suisse → UBS, MML → Barings → Cliffwater, Eaton Vance → Morgan Stanley) touch **16 filings,
+   $0.05B of $640.6B** of private-company value filed since 2019 (0.01%); counting retired adviser entities not in
+   `managers.csv` too, 121 filings, $0.28B (0.04%). Firms stay the current adviser, and the answers say so
+   (`attribution: 'current adviser (latest N-CEN)'`; DATA-QUALITY display rules).
+2. **`position_facts` (migration 0019), measured before it was written:**
+   - private companies only: 66,825 rows → **68,285 legs, 31 MB, built in 2.6–3.8 s** (load 1.5–2); warehouse **574.7
+     MB** of 1 GB.
+   - every subject (unreviewed names and listed companies' stored rows too) would be 1.05M legs and **497 MB** (over
+     budget), so those subjects get the same legs on demand from their own rows (`factsOf`).
+   - Built only from the activity walk: `companyActivity`'s per-fund loop is now `activity.walkPosition`, and the
+     builder runs it with `diffPosition`, `rekeyed` and `leg`. Unchanged legs and exit legs are kept, with each
+     fund's next filing date, so the as-of rule reads straight off the table.
+   - Rebuilt by refresh (after the fund names), by the review import and by both ingest scripts; logged to `ingest_log`
+     (`position-facts`); a failed build rolls back (tested).
+   - Found by the table's primary key: lots of one instrument were separate legs in "first reported", "no longer
+     reported", "$0" and first-filing events (sums were right). Every branch now merges lots.
+3. **`lib/services/analysis.js`:** `bridge`, `pivot` (firm, fund, company or class × month, quarter or year: value
+   and holders at each period end, every flow, position and mark effect), `timeline` (firm or fund: spans held, value
+   now, events by mark date), `positionHistory`; **scope filters** (`lib/services/scope.js`: firm, fund, class, kind)
+   on every company route; **unified search** (`/api/search?kinds=…`: companies, unreviewed names, firms, funds and
+   share classes; "anthropic series g" opens the class, "fidelity" the firm); ⌘K makes one call. Routes in
+   ARCHITECTURE.
+4. **Tests and equality on the real warehouse:**
+   - All **304 private companies × 28 quarter windows (8,512 bridges)**: start and end equal `exposureSeries` in funds
+     and value, worst residual **$0.000003**; the table's legs equal an on-the-fly walk of each company's rows, leg for
+     leg; every `companyActivity` event equals its legs (type, value change, position, mark).
+   - Firm pivot = `firms()` in all 1,710 firm × quarter cells (2024Q1–2026Q2); company pivot in a firm = `firmBook`.
+   - Offline: `test/analysis.test.js` (18) and 3 new trap tests in `test/activity-rekey.test.js`; the timeline's
+     events equal `firmChanges` by type; filtered exposure, activity, trend and classes equal post-filters.
+   - **Bench** (`npm run bench`, now with every P6 and W1 route, the 12 largest firms with Fidelity first; load 1.9):
+     every route's p95 under 200 ms. Warm: bridge 0.5, bridge `?kind` 13.1, positions 0.7, firm bridge 10.5, firm
+     timeline 20.8, firm pivot 15.1, market pivots 41.9, unified search 39, exposure `?firm` 6.6, activity `?firm` 9.4,
+     firm changes 153.3 (Fidelity) ms; all 2,803 requests p95 15.9 ms.
+5. **Audits (warehouse vs API vs UI vs raw EDGAR, independent SQL as-of at every quarter end):**
+   - **Databricks** (4,035 rows, 135 funds, 2019-10-31 → 2026-07-31): as-of equal at all 27 quarter ends (e.g. 120 /
+     $6.2325B at 2026-06-30); 1,508 events sum exactly; splits (2022 3:1) and re-keys handled; no stale marks.
+     **Found and fixed:**
+     - Trap 52: Fidelity moved Series G–L into "PC PP-SEGREGATED LINE" rows (2026-05-31, three funds; Stripe too). Same
+       shares, mark $179.70 → $190.00, but it read "added and reduced across classes" with the mark move booked as
+       position. Now a class whose keys change is measured per class (F44: Select Technology +$5,080,773.70, all
+       mark). Guards found by diffing the facts warehouse-wide: a 60:1 Nscale share exchange (would have moved $1.35B)
+       and a Redwood key relabeled Series C → D stay per key. Net effect: 68 events in 20 companies, at most $3.1M
+       each.
+     - Trap 51 across labels: Coatue's 433,333 units moved through three ids and labels (F45); The Pre-IPO and Growth
+       Fund's LP interest likewise. Now one continuing position.
+     - Verified F46: T. Rowe Blue Chip Growth +$111,484,910 mark (largest), VY T. Rowe Diversified Mid Cap Growth
+       $10,660,162.50 no longer reported (largest exit).
+   - **FHU US Holdings / Chobani** (SPV-heavy: 35 of 44 rows through Fidelity's per-fund LLCs): as-of equal at every
+     quarter end since 2025-10-31 (13 / $359.0M at 2026-06-30). Marks move opposite ways by firm: AMCAP −7.7%,
+     Contrafund +6.0% (F47). T. Rowe Large-Cap Growth is stale at $4,456.35 since 2025-12-31. Nothing to fix.
+   - **Ripple Labs** (unreviewed name, 6 funds since 2020): as-of equal at all 26 quarter ends with holdings; no
+     look-alikes. On 2026-06-30 one class (common) is marked $300.00 / $131.37 / $105.51 by three filers (F48).
+     Known edge, left as is: a 2021 Common → Preferred flip of the same 42,000 sh with a −40% value change reads as
+     position −$0.91M, because pairing across classes on share count alone is too weak.
+   - In the browser (built app): ⌘K "anthropic series g" → the class as best match → Holders filtered to 35 funds /
+     $899.1M; Databricks › Changes › Select Technology shows 2026-05-31 "mark moved, shares unchanged, $179.70 →
+     $190.00", position $0. No console errors.
+6. **Goldens:** F43 (the Growth Fund of America Stripe bridge, the W1 decomposition: +$212,419,557.74 mark,
+   +$149,999,976 added, to the cent) and F44–F48, all verified on raw EDGAR.
+
+**Not done in W1 (by design or deferred):** `companyCube` (W2 decides with the workbench whether the browser needs it);
+firm changes since 2019 compute in 0.35–0.8 s but are **15.6 MB** for Fidelity, so the facts-backed timeline and pivot
+answer that question (20 ms, 124 KB) and W3 pages the raw ledger; the W0 company page still filters on the client and
+its Overview ignores a class filter (W2 switches it to the server scope).
 
 ## P6 core and P6b W0 (signed off by the user 2026-10-01; verbatim from STATUS)
 

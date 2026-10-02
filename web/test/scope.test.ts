@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EMPTY_SCOPE, isRange, parseScope, scopeQuery } from '../src/scope/scope';
+import { EMPTY_SCOPE, isRange, parseScope, scopeParams, scopeQuery } from '../src/scope/scope';
 
 describe('scope <-> URL', () => {
   it('round-trips every field and keeps other params', () => {
@@ -34,5 +34,14 @@ describe('scope <-> URL', () => {
     expect(s.firms).toEqual([9]);
     expect(s.kind).toBe('');
     expect(isRange(s)).toBe(false);
+  });
+});
+
+describe('scope as API params', () => {
+  it('sends every filter a view applies, and only those', () => {
+    const s = parseScope('?firm=9&firm=3&fund=S000009228&class=Series+G&kind=indirect&asof=2026-03-31');
+    expect(scopeParams(s)).toEqual({ firm: ['9', '3'], fund: ['S000009228'], class: ['Series G'], kind: 'indirect' });
+    expect(scopeParams(s, ['firm', 'kind'])).toEqual({ firm: ['9', '3'], kind: 'indirect' });
+    expect(scopeParams(parseScope(''))).toEqual({});
   });
 });

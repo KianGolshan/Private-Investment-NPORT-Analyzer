@@ -176,6 +176,8 @@ export interface Leg {
   change: string;
   /** The filer's previous instrument id when it re-keyed the same holding (activity.rekeyed). */
   rekeyedFrom?: string;
+  /** One class held under several filer ids, merged into this leg (trap 52). */
+  mergedKeys?: string[];
   /** value - prevValue = positionEffect + markEffect + otherEffect (lib/analytics/activity.js leg()). */
   positionEffect: number;
   markEffect: number;
@@ -257,6 +259,17 @@ export interface ClassesAsOf extends Envelope {
       firms: { id: number; name: string }[];
     }[];
     marks: ClassMark[];
+  }[];
+  /** Filings that mark two or more classes apart: each class against the filing's lowest (F30). */
+  withinFiling: {
+    fundKey: string;
+    fund: string;
+    firm: string | null;
+    firms: FirmRef[];
+    cik: string;
+    markDate: string;
+    accession: string;
+    classes: { instrument: string; pricePerShare: number; vsLowPct: number }[];
   }[];
 }
 
@@ -382,4 +395,190 @@ export interface Feed extends Envelope {
   scope: string;
   count: number;
   events: ChangeEvent[];
+}
+
+// ── P6b W1/W2: analysis answers (lib/services/analysis.js) ──
+
+export interface ScopeEcho {
+  scope?: { firm?: number[]; fund?: string[]; class?: string[]; kind?: string[] } | null;
+}
+
+export interface BridgeStep {
+  key: 'firstReported' | 'added' | 'reduced' | 'exited' | 'mark' | 'valueOnly' | 'started' | 'stopped';
+  label: string;
+  value: number;
+  events: number;
+}
+
+export interface Bridge extends Envelope, ScopeEcho {
+  from: string;
+  to: string;
+  label: string;
+  start: { value: number; funds: number };
+  end: { value: number; funds: number };
+  steps: BridgeStep[];
+  positionEffect: number;
+  markEffect: number;
+  residual: number;
+  reconciled: boolean;
+}
+
+export type PivotMetric =
+  | 'value'
+  | 'holders'
+  | 'firstReported'
+  | 'added'
+  | 'reduced'
+  | 'exited'
+  | 'mark'
+  | 'valueOnly'
+  | 'started'
+  | 'stopped'
+  | 'positionEffect'
+  | 'markEffect';
+
+export type PivotCells = Record<PivotMetric, number[]> & { startValue: number };
+
+export interface Pivot extends Envelope, ScopeEcho {
+  rows: 'firm' | 'fund' | 'company' | 'class';
+  period: 'month' | 'quarter' | 'year';
+  from: string;
+  to: string;
+  label: string;
+  periods: { label: string; from: string; to: string; partial: boolean }[];
+  metrics: PivotMetric[];
+  count: number;
+  results: (PivotCells & { key: string | number; label: string })[];
+  total: PivotCells;
+}
+
+/** One change leg of one fund at one filing (position facts). */
+export interface FactLeg {
+  fundKey?: string;
+  markDate: string;
+  accession: string;
+  filingDate: string;
+  prevMarkDate: string | null;
+  prevAccession: string | null;
+  nextMarkDate: string | null;
+  event: string;
+  label: string;
+  change: string;
+  instrumentKey: string;
+  rekeyedFrom: string | null;
+  mergedKeys: string[] | null;
+  classLabel: string;
+  instrument: string | null;
+  kind: 'direct' | 'spv' | 'fund';
+  unit: string | null;
+  title: string | null;
+  balance: number | null;
+  prevBalance: number | null;
+  price: number | null;
+  prevPrice: number | null;
+  perShare: boolean;
+  value: number;
+  prevValue: number;
+  split: number | null;
+  positionEffect: number;
+  markEffect: number;
+  otherEffect: number;
+  pctNav: number | null;
+}
+
+export interface LegsAt extends Envelope, ScopeEcho {
+  date: string;
+  legs: (FactLeg & { fundKey: string })[];
+}
+
+export interface PositionHistory extends Envelope, ScopeEcho {
+  fund: FundRef & { label: string };
+  legs: FactLeg[];
+}
+
+export interface FilingRow {
+  fundKey: string;
+  cik: string;
+  registrant: string;
+  seriesName: string | null;
+  markDate: string;
+  filingDate: string;
+  accession: string;
+  rowKey: string;
+  issuerName: string | null;
+  title: string | null;
+  otherId: string | null;
+  otherIdDesc: string | null;
+  cusip: string | null;
+  isin: string | null;
+  lei: string | null;
+  restricted: string | null;
+  assetCat: string | null;
+  instrumentType: string;
+  unit: string | null;
+  balance: number | null;
+  valueUsd: number;
+  pctNav: number | null;
+  fvLevel: string | null;
+  country: string | null;
+  viaSpv: boolean;
+  counts: boolean;
+}
+
+export interface FilingRows extends Envelope, ScopeEcho {
+  from: string | null;
+  to: string | null;
+  count: number;
+  truncated: boolean;
+  rows: FilingRow[];
+}
+
+export interface Leadership extends Envelope, ScopeEcho {
+  tolerancePct: number;
+  levels: {
+    instrument: string;
+    mark: number;
+    firstDate: string;
+    firms: number;
+    adopters: {
+      firmId: number;
+      firm: string;
+      markDate: string;
+      mark: number;
+      prevMarkDate: string;
+      prevMark: number;
+      lagDays: number;
+      movePct: number;
+      funds: number;
+    }[];
+  }[];
+  firms: { firmId: number; firm: string; levels: number; first: number; medianLagDays: number | null }[];
+}
+
+export interface CompanyHistory extends Envelope, ScopeEcho {
+  firstMarkDate: string | null;
+  lastMarkDate: string | null;
+  funds: (FundRef & {
+    label: string;
+    firstMarkDate: string;
+    lastMarkDate: string;
+    series: {
+      instrumentKey: string;
+      title: string;
+      instrumentLabel: string;
+      chartUnit: string;
+      points: {
+        markDate: string;
+        accession: string;
+        balance: number | null;
+        unit: string | null;
+        valueUsd: number;
+        pricePerShare: number | null;
+        pricePerUnit: number | null;
+        splitFactor: number;
+        split: number | null;
+        kind: 'direct' | 'spv' | 'fund';
+      }[];
+    }[];
+  })[];
 }

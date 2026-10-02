@@ -72,12 +72,15 @@ export function ChangesTable({
   withFund = true,
   exportName,
   maxHeight = 640,
+  onFund,
 }: {
   events: ChangeEvent[];
   withCompany?: boolean;
   withFund?: boolean;
   exportName: string;
   maxHeight?: number;
+  /** A row click opens that fund's position history (the company workbench's drawer). */
+  onFund?: (fundKey: string) => void;
 }) {
   const columns: Column<ChangeEvent>[] = [
     {
@@ -185,6 +188,16 @@ export function ChangesTable({
               {l.note && <span class="muted"> · {l.note}</span>}
             </div>
           ))}
+          {e.instruments.some(l => l.mergedKeys?.length) && (
+            <div class="muted" title="One class held under several filer ids, measured as one position (trap 52)">
+              one class across ids (
+              {e.instruments
+                .filter(l => l.mergedKeys?.length)
+                .map(l => [l.instrumentKey, ...(l.mergedKeys ?? [])].join(' + '))
+                .join(', ')}
+              )
+            </div>
+          )}
           {e.instruments.some(l => l.rekeyedFrom) && (
             <div class="muted" title="Same holding under a new instrument id: the share count or mark carried over">
               the filer changed its instrument id (
@@ -211,6 +224,7 @@ export function ChangesTable({
       filterPlaceholder="Filter changes…"
       maxHeight={maxHeight}
       empty="No position changes in this window."
+      onRowClick={onFund ? e => onFund(e.fundKey) : undefined}
     />
   );
 }
