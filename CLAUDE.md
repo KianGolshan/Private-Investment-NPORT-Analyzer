@@ -79,6 +79,7 @@ npm run entities:report            # review queue: unresolved value by component
 npm run bench                      # p50/p95 per warehouse route on the live warehouse (note the load average)
 node scripts/backfill-filing-totals.js --status   # one-off P5b backfill of filing_totals + capital rows (--bulk, --edgar, --max-minutes)
 node scripts/make-company.js --key KEY --name NAME  # admin: make an unreviewed name a company (writes data/review, runs the import)
+node scripts/verify-edgar.js CIK PATTERN ACCESSION...   # raw primary_doc.xml rows behind a number (golden checks)
 ```
 
 ## Scope

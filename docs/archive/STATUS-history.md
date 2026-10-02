@@ -1,7 +1,40 @@
-# Archive: STATUS through P6b W2
+# Archive: STATUS through P6b W3
 
 Verbatim copy of docs/STATUS.md as of 2026-10-01, before it was shortened to the current state. Phase results,
 measurements and decisions per phase, oldest at the bottom. Not read at session start.
+
+## P6b W3 (signed off by the user 2026-10-01; verbatim from STATUS)
+
+### P6b W3: firm and fund pages (2026-10-01)
+
+Shared pieces in `web/src/pages/book/` (module map in ARCHITECTURE); `pages/firm/` and `pages/fund/` replace the W0
+pages. W2 was signed off ("continue").
+
+- **Firm page:** Overview (the private book by company at each quarter or month end, companies and funds holding, the
+  bridge for the range, position vs mark effect by quarter, a by-company table) · **Timeline** (a bar per company
+  while any fund holds it, marks for first reported, added, reduced, no longer reported, $0; sort by first held or
+  value) · **Book** (by company, by fund, a company × fund matrix) · **Marks vs others** · **Changes** (paged).
+- **Fund page:** the same Overview, Timeline and Marks at fund scope, plus **Fund X-Ray ported from v1**: the private
+  book at any filing (by kind, "private by", rows not private and why, debt beside equity, by country), **Compare**
+  (prior filing or a year earlier, ±45 days, v1's rule) and **Returns** (mark-implied MOIC and IRR with v1's caveat;
+  wording now "reduced" and "left the private book", never "sale"), plus changes and filings.
+- **New services:** `analysis.marksVsOthers` (each class against other funds' median at the same mark date, from the
+  facts; a test recomputes every row from stored rows) and paging for `firmChanges` (Fidelity's year: 4,093 events,
+  5.3 MB → 649 KB per 500-event page, counts and totals over all; pages reassemble the full list, tested).
+- **On screen (built app, live warehouse):**
+  - **A3:** Capital Group book as of 2026-06-30: Anthropic 9 funds / $8.46B.
+  - The timeline matches `firmChanges` (W1 test).
+  - Fidelity's marks against others: 460 classes priced, 123 comparable at the same mark date (26 above, 42 within 0.5%,
+    55 below). Canva CL A $1,270.63 vs $1,496.42–$1,646.14 agrees with F42.
+  - GFA Compare (2026-05-31 vs 2026-02-28) shows Stripe CL B +2,380,952 sh, +$150.0M (F43).
+  - Contrafund X-Ray agrees with F42 and F50.
+- **New golden F50** (verified on EDGAR): Stripe Series I at 2026-06-30 is $51.00 at Morgan Stanley's Growth Portfolio
+  against $63.00 at Fidelity and Capital Group and $63.43 at Franklin, as filed.
+- **Found and fixed:** the timeline called a holding in a fund's first stored filing "first reported" (it now reads
+  "held at the first stored filing"); changing the change type kept the old page.
+- **Tests:** `npm test` 531 / 500 pass / 0 fail / 31 skipped (one run of three at load 16–20 had the flake below);
+  web 18 / 18; lint, format and typecheck clean. **Bench** (load 26): firm marks 11.4 ms, fund marks 6, fund timeline
+  10.6, firm changes page 9.4 p95; all 3,587 requests p95 26.4 ms.
 
 ## P6b W2 (signed off by the user 2026-10-01; verbatim from STATUS)
 

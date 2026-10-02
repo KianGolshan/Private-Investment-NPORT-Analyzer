@@ -1,7 +1,7 @@
 # Vantage v2 Status
 
-**Phase:** P6b (analyst workspace) **W3 firm and fund pages built, awaiting sign-off**, on branch `v2-p6b-workspace`.
-P6 core, W0, W1 and W2 were signed off by the user on 2026-10-01 (archive).
+**Phase:** P6b (analyst workspace): **W0–W3 signed off 2026-10-01; next W4 (cross-cutting)**, on branch
+`v2-p6b-workspace` (pushed). P6 core signed off 2026-10-01. Wave results: [archive](archive/STATUS-history.md).
 **Last updated:** 2026-10-01. Earlier results: [archive/STATUS-history.md](archive/STATUS-history.md).
 
 ## Phase tracker
@@ -9,7 +9,7 @@ P6 core, W0, W1 and W2 were signed off by the user on 2026-10-01 (archive).
 - [x] P0–P5b: live fixes, warehouse, refresh, as-of, entities, identity, services, company and fund pages
       (signed off 2026-09-28..30; ROADMAP "Done")
 - [x] P6 core: analysis views (signed off 2026-10-01; remaining items in ROADMAP §6)
-- [ ] **P6b: analyst workspace**: W0–W2 signed off 2026-10-01; **W3 built 2026-10-01**; W4–W5 in ROADMAP §6b
+- [ ] **P6b: analyst workspace**: W0–W3 signed off 2026-10-01; **W4 next**; W5 after (ROADMAP §6b)
 - [ ] P7: MCP server (open now; the services exist)
 - [ ] P8: operations hardening (nightly job, backups, alerting, doctor)
 - [ ] P9: public deployment (hosting to decide as ADR 0006)
@@ -31,36 +31,57 @@ P6 core, W0, W1 and W2 were signed off by the user on 2026-10-01 (archive).
 | Scope and search (W1)        | every company route; ⌘K                              | `?firm=&fund=&class=&kind=` on every company view; one ranked search over companies, names, firms, funds and classes                                       |
 | Exports                      | every view                                           | CSV with mark date, accession and source (XLSX/PDF on the v1 views)                                                                                        |
 
-## P6b W3: firm and fund pages (2026-10-01)
+## Where things stand (2026-10-01, end of session)
 
-Shared pieces in `web/src/pages/book/` (module map in ARCHITECTURE); `pages/firm/` and `pages/fund/` replace the W0
-pages. W2 was signed off ("continue").
+P6b W0–W3 are built and **signed off**; the next wave is **W4 (cross-cutting)**. Wave results are in the archive
+(verbatim). What exists now, and where:
 
-- **Firm page:** Overview (the private book by company at each quarter or month end, companies and funds holding, the
-  bridge for the range, position vs mark effect by quarter, a by-company table) · **Timeline** (a bar per company
-  while any fund holds it, marks for first reported, added, reduced, no longer reported, $0; sort by first held or
-  value) · **Book** (by company, by fund, a company × fund matrix) · **Marks vs others** · **Changes** (paged).
-- **Fund page:** the same Overview, Timeline and Marks at fund scope, plus **Fund X-Ray ported from v1**: the private
-  book at any filing (by kind, "private by", rows not private and why, debt beside equity, by country), **Compare**
-  (prior filing or a year earlier, ±45 days, v1's rule) and **Returns** (mark-implied MOIC and IRR with v1's caveat;
-  wording now "reduced" and "left the private book", never "sale"), plus changes and filings.
-- **New services:** `analysis.marksVsOthers` (each class against other funds' median at the same mark date, from the
-  facts; a test recomputes every row from stored rows) and paging for `firmChanges` (Fidelity's year: 4,093 events,
-  5.3 MB → 649 KB per 500-event page, counts and totals over all; pages reassemble the full list, tested).
-- **On screen (built app, live warehouse):**
-  - **A3:** Capital Group book as of 2026-06-30: Anthropic 9 funds / $8.46B.
-  - The timeline matches `firmChanges` (W1 test).
-  - Fidelity's marks against others: 460 classes priced, 123 comparable at the same mark date (26 above, 42 within 0.5%,
-    55 below). Canva CL A $1,270.63 vs $1,496.42–$1,646.14 agrees with F42.
-  - GFA Compare (2026-05-31 vs 2026-02-28) shows Stripe CL B +2,380,952 sh, +$150.0M (F43).
-  - Contrafund X-Ray agrees with F42 and F50.
-- **New golden F50** (verified on EDGAR): Stripe Series I at 2026-06-30 is $51.00 at Morgan Stanley's Growth Portfolio
-  against $63.00 at Fidelity and Capital Group and $63.43 at Franklin, as filed.
-- **Found and fixed:** the timeline called a holding in a fund's first stored filing "first reported" (it now reads
-  "held at the first stored filing"); changing the change type kept the old page.
-- **Tests:** `npm test` 531 / 500 pass / 0 fail / 31 skipped (one run of three at load 16–20 had the flake below);
-  web 18 / 18; lint, format and typecheck clean. **Bench** (load 26): firm marks 11.4 ms, fund marks 6, fund timeline
-  10.6, firm changes page 9.4 p95; all 3,587 requests p95 26.4 ms.
+- **Data layer (W1):** `position_facts` (migration 0019; private companies only, rebuilt by refresh, review import and
+  ingest) built from the one activity walk (`activity.walkPosition` → `diffPosition`, `rekeyed`, `movedWithinClass`,
+  `leg`). `lib/services/analysis.js`: `bridge`, `pivot`, `timeline`, `positionHistory`, `legsAt`, `marksVsOthers`,
+  `allFacts`/`marksByDate` (memoized per refresh). `lib/services/scope.js`: firm/fund/class/kind for rows and legs.
+  Unreviewed names and listed stored rows get the same legs on demand (`factsOf` over their rows).
+- **Company workbench (W2):** `web/src/pages/company/` (Overview, Holders, Positions, Changes, Marks & classes with mark
+  leadership, Filings, `?pos=` drawer). Services `company.filingRows`, `marks.markLeadership`.
+- **Firm and fund pages (W3):** `web/src/pages/book/` (BookOverview, Timeline, MarksVsOthers) shared by
+  `pages/firm/` and `pages/fund/` (Fund X-Ray, Compare, Returns ported from v1). `ui/BridgeView.tsx` is the one
+  bridge view. `firmChanges` is paged.
+- **Still on v1 (`/legacy`):** Batch, Watchlist, Private Credit (deferred scope). W4 replaces Batch and Watchlist.
+
+## Handoff: how to work on this project (read before W4)
+
+- **Working with the user.** The user signs off each wave ("sign off", or "continue" = sign-off and build the next).
+  Build the whole wave, verify it in the browser on the live warehouse, update docs, commit and push to
+  `v2-p6b-workspace`, then stop for sign-off. Recommend, don't survey; decide delegated questions by v1 behavior and
+  v2 goals and list the call under Open decisions. No PR, merge to main, launchd job or global config without an
+  explicit yes.
+- **Real data only.** Check any new metric's definition on real rows _before_ building it (mark leadership and marks
+  vs others were prototyped on Anthropic, Stripe, Databricks and Canva first). Every new number shown as a finding
+  goes to GOLDEN-NUMBERS after a raw-EDGAR check: `node scripts/verify-edgar.js <cik> <pattern> <accession>…`
+  (needs `SEC_USER_AGENT` from `.env`; paced client). Last golden: **F50**.
+- **One definition, held equal by tests.** New answers must equal `exposureAsOf` / `companyActivity` / `firmBook`
+  where they overlap (see `test/analysis.test.js` for the pattern: real fixture rows, recomputation from stored rows).
+  The bridge reconciles to the cent. Pivot value cells equal `exposureAsOf` — W4's exit check.
+- **Words as filed:** first reported, added, reduced, no longer reported, reported at $0, mark moved, "held at the first
+  stored filing", "first filed" (leadership). Never sale, bought, led. Compare marks only at the same mark date
+  (staggered calendars); show "no other fund that date" rather than stretching a rule.
+- **Rules that bite (DATA-QUALITY):** trap 50 (one class across EC/EP), 51 (re-keys incl. relabels), 52 (segregated
+  lines = one class; guards: 4× mark move, keys present in both filings). A rule that merges identities gets a
+  warehouse-wide diff against the previous build before it is kept (LESSONS 36).
+- **Frontend patterns:** pages read the scope from the URL (`useScope`, `useParam`) and send it to the server
+  (`scopeParams`); never filter on the client. Every chart has a table twin and CSV/XLSX export. Mark dates link
+  their accession (`FilingRef`). Build with `npm run build:web` before `preview_start` (`nport-analyzer`, port 3000).
+  Check light/dark, 375 px width and the console.
+- **Performance:** add every new route to `scripts/bench.js` (p95 < 200 ms; record the load average — this machine
+  often runs at load 15–25 from other work). Bound payloads (page large lists; Fidelity is the worst case, firm id 3).
+- **Gotchas:** the shell blocks `rm` on a `$VAR` path (use `"${S:?}"` or a literal path); scratch scripts go in the
+  session scratchpad; ids worth knowing: companies Anthropic 1, Databricks 2, Stripe 5, Canva 6, FHU 741; firms
+  BlackRock 1, Fidelity 3, T. Rowe 8, Capital Group 9; Growth Fund of America `S000009228`, Contrafund `S000006037`.
+- **W4 scope** (ROADMAP §6b, plan doc): Explore pivot (`/explore`: rows × periods, every metric, drill from a cell
+  to its events — the pivot API exists; a drill route listing the legs behind a cell is the missing piece), Market
+  (movers: largest mark moves and net position flows in a range; newly reported companies), Activity with the scope,
+  Tracked & Watchlist (server-backed list; localStorage first per the plan), Compare (2–5 companies, firms or
+  classes overlaid; replaces Batch).
 
 ## Measurements
 
@@ -83,8 +104,8 @@ entities, 68,285 position-fact legs. `ingest_errors` empty. 2026Q3 bulk not post
 
 ## Open decisions (user)
 
-- **Sign off P6b W3** (open `/firm/9`, `/firm/3?tab=marks`, `/fund/S000009228?tab=compare`). Next: W4, Explore pivot,
-  Market movers and newly reported, Activity, Tracked & Watchlist, Compare.
+- **W4 next** (no decision pending to start it). The warm-up flake task (chip "Stop server warm-up from blocking past
+  keep-alive") can run in parallel.
 - **Overrule or keep** two calls made under "v1 is the guidepost": trap 52 (a coded class moved to other keys is one
   position; segregated lines are the class) and dated firm attribution not adopted (0.01% of value).
 - **Install the nightly refresh** (launchd entry in ARCHITECTURE §Refresh lifecycle)? Not installed; until then run
@@ -107,22 +128,32 @@ entities, 68,285 position-fact legs. `ingest_errors` empty. 2026Q3 bulk not post
 
 ## Next session
 
-> Resume Vantage v2 on branch `v2-p6b-workspace` (pushed). Read CLAUDE.md, docs/STATUS.md, docs/ROADMAP.md §6b,
-> docs/plans/P6b-analyst-workspace.md (W4: cross-cutting), docs/DATA-QUALITY.md (traps 50–52, display rules) and
-> docs/LESSONS.md.
+> Resume Vantage v2 on branch `v2-p6b-workspace` (pushed). P6b W0–W3 are signed off; build **W4 (cross-cutting)**.
+> Read CLAUDE.md, then docs/STATUS.md in full ("Where things stand" and "Handoff" first), docs/ROADMAP.md §6b,
+> docs/plans/P6b-analyst-workspace.md (Explore pivot, Market, Activity, Tracked & Watchlist, Compare),
+> docs/DATA-QUALITY.md (traps 50–52 and the display rules: bridge, scope, mark leadership, marks vs others, timeline)
+> and docs/LESSONS.md.
 >
-> Setup and gates: `npm install`, `npm --prefix web install`, `npm run build:web`, `npm run refresh` (report 2026Q3,
-> `ingest_errors`, size vs 1 GB), `npm test` (check the exit code), lint, format, `npm run test:web`. Start the app
-> with preview_start (`nport-analyzer`).
+> Setup and gates first, stop and report if any fail: `npm install`, `npm --prefix web install`, `npm run build:web`,
+> `npm run refresh` (report 2026Q3 bulk, `ingest_errors`, size vs 1 GB), `npm test` (check the exit code; two known
+> flakes are in Known issues), `npm run lint`, `npm run format:check`, `npm run test:web`, `npm run lint:web`, and the
+> full `npm run test:live`.
 >
-> If W3 is signed off, start P6b W4: the Explore pivot (`/api/analysis/pivot`: rows firm/fund/company/class ×
-> periods, every metric, a drill from any cell to its events), Market (movers: largest mark moves and net flows in a
-> range; newly reported companies), Activity with the scope, Tracked & Watchlist (server-backed list), Compare (2–5
-> companies, firms or classes). Exit check: pivot cells equal `exposureAsOf`, a drill lands on the right events.
+> W4, in order: (1) Explore pivot at `/explore` on `/api/analysis/pivot` (rows firm, fund, company or class × month,
+> quarter or year; every metric; heatmap + table; saved views in the URL) with a drill from any cell to the events
+> and legs behind it (new route; test that a drill's legs sum to the cell). (2) Market: movers (largest mark moves and
+> net position flows over a range) and newly reported companies, each checked on real data before it is built.
+> (3) Activity with the scope. (4) Tracked & Watchlist. (5) Compare: 2–5 companies, firms or classes overlaid,
+> replacing v1's Batch. Exit check: pivot cells equal `exposureAsOf`; a drill lands on the right events. Verify new
+> numbers with `node scripts/verify-edgar.js` and add them to GOLDEN-NUMBERS (next is F51). Walk it in the browser
+> (light, dark, 375 px), bench every new route, update STATUS/ROADMAP/ARCHITECTURE, commit and push, and stop for W4
+> sign-off.
 
 ## Log
 
-- **2026-10-01 (latest):** W2 signed off. P6b W3 built: firm and fund pages (overview + bridge, timeline, book matrix,
+- **2026-10-01 (end):** W3 signed off by the user. Handoff written (STATUS "Handoff"); `scripts/verify-edgar.js`
+  added for raw-EDGAR checks.
+- **2026-10-01:** W2 signed off. P6b W3 built: firm and fund pages (overview + bridge, timeline, book matrix,
   marks vs others, paged changes; Fund X-Ray, compare, returns ported); golden F50. Stopped for W3 sign-off.
 - **2026-10-01:** W1 signed off. P6b W2 built: the company workbench (six tabs, position drawer), legs,
   rows and mark leadership services; goldens A1, F30, the Stripe path and F43 on screen; F49. Stopped for W2 sign-off.
