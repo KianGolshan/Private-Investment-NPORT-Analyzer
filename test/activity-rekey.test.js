@@ -173,3 +173,64 @@ test('a class move is merged only when it is one security: a 60:1 exchange and a
   assert.equal(ev2.type, 'unchanged');
   assert.ok(ev2.instruments.every(l => !l.mergedKeys && l.positionEffect === 0));
 });
+
+// Staff review F05 (2026-10-05): a class written down to $0 while another class
+// stays positive is a mark move, not a class no longer reported. Expected values
+// are worked by hand, not by leg(): Common A 195,705 sh at $154.15 = $30,167,925.75
+// (reported at $0 next filing, same shares); Series B 1,000 sh $10.00 -> $12.00.
+const zrow = (key, title, balance, value_usd) => ({
+  ...row(key, title, key, '000000000', 'EC', balance, value_usd),
+  counts: value_usd > 0,
+});
+const before = [zrow('A1', 'X CORP COMMON A', 195705, 30167925.75), zrow('B1', 'X CORP SERIES B PFD', 1000, 10000)];
+const zeroed = [zrow('A1', 'X CORP COMMON A', 195705, 0), zrow('B1', 'X CORP SERIES B PFD', 1000, 12000)];
+
+test('F05: one class reported at $0 beside a positive class is a mark move with its shares kept', () => {
+  const ev = diffPosition(before, zeroed);
+  const a = ev.instruments.find(l => l.instrumentKey === 'A1');
+  assert.equal(a.change, 'reported at $0');
+  assert.equal(a.balance, 195705);
+  assert.equal(a.value, 0);
+  assert.equal(a.positionEffect, 0);
+  assert.equal(a.markEffect.toFixed(2), '-30167925.75');
+  const pos = ev.instruments.reduce((s, l) => s + l.positionEffect, 0);
+  const mark = ev.instruments.reduce((s, l) => s + l.markEffect, 0);
+  assert.equal(pos, 0);
+  assert.equal(mark.toFixed(2), (-30167925.75 + 2000).toFixed(2));
+  assert.equal(ev.type, 'unchanged'); // no shares moved: the event is a mark move
+});
+
+test('F05: a partial sale plus a write-down splits into position (prior mark) and mark', () => {
+  // 195,705 -> 100,000 sh: position = -95,705 x $154.15 = -14,752,925.75; mark = 100,000 x -$154.15 = -15,415,000
+  const ev = diffPosition(before, [zrow('A1', 'X CORP COMMON A', 100000, 0), before[1]]);
+  const a = ev.instruments.find(l => l.instrumentKey === 'A1');
+  assert.equal(a.change, 'reported at $0');
+  assert.equal(a.positionEffect.toFixed(2), '-14752925.75');
+  assert.equal(a.markEffect.toFixed(2), '-15415000.00');
+  assert.equal(ev.type, 'reduced');
+});
+
+test('F05: the whole position at $0 keeps its shares; recovery from $0 is a mark move, not first reported', () => {
+  const allZero = [zrow('A1', 'X CORP COMMON A', 195705, 0), zrow('B1', 'X CORP SERIES B PFD', 1000, 0)];
+  const z = diffPosition(before, allZero);
+  assert.equal(z.type, 'zeroed');
+  assert.deepEqual(
+    z.instruments.map(l => [l.instrumentKey, l.balance, l.positionEffect, l.markEffect.toFixed(2)]),
+    [
+      ['A1', 195705, 0, '-30167925.75'],
+      ['B1', 1000, 0, '-10000.00'],
+    ]
+  );
+  // back above $0 at 1,000 sh x $5: all mark (+$5,000), nothing "first reported"
+  const back = diffPosition(allZero, [
+    zrow('A1', 'X CORP COMMON A', 195705, 0),
+    zrow('B1', 'X CORP SERIES B PFD', 1000, 5000),
+  ]);
+  assert.notEqual(back.type, 'new');
+  const b = back.instruments.find(l => l.instrumentKey === 'B1');
+  assert.equal(b.positionEffect, 0);
+  assert.equal(b.markEffect, 5000);
+  assert.equal(b.change, 'reported above $0 again');
+  // a class still at $0 on both sides is not a leg
+  assert.ok(!back.instruments.some(l => l.instrumentKey === 'A1'));
+});

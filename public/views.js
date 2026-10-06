@@ -1,7 +1,7 @@
 /* exported showCompanyView, renderCompanyActivity, renderCompanyClasses, loadMarket, loadFeed, loadFirms,
    openFirm, exportFirmBook, loadFirmChanges, loadFirmMarks, loadFundChanges, attachCompanyViews, exportCsv,
    CHANGE_COLUMNS, renderFeed, loadTracked, sortTracked, trackedState, marketState, feedState, firmState, firmsState, companyView */
-/* global fetchJSON, esc, enc, fmtNum, fmtCurrency, fmtCompactCurrency, badge, accessionLink, slugOf, downloadBlob,
+/* global csvText, fetchJSON, esc, enc, fmtNum, fmtCurrency, fmtCompactCurrency, badge, accessionLink, slugOf, downloadBlob,
    fileNamePart, switchTab */
 // Analysis views on the warehouse (ROADMAP §6), loaded after app.js and using
 // its helpers (fetchJSON, esc, enc, fmt*, badge, accessionLink, slugOf,
@@ -41,8 +41,8 @@ const CHANGE_CLASS = {
 
 function csvOf(columns, rows) {
   const cell = v => {
-    const s = v == null ? '' : String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    const s = csvText(v);
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   return [columns.map(c => cell(c[0])).join(','), ...rows.map(r => columns.map(c => cell(c[1](r))).join(','))].join(
     '\n'

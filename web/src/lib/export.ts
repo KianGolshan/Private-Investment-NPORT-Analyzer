@@ -14,8 +14,19 @@ const fileSafe = (s: string) =>
     .replace(/_+/g, '_')
     .slice(0, 80);
 
-function cell(v: unknown): string {
+// Text a spreadsheet would read as a formula (it starts with = + - @, a tab or
+// a carriage return, and is not a plain number) gets a leading apostrophe, so a
+// name from a filing opens as text (staff review F09). Numbers stay numbers;
+// XLSX writes typed cells (strings are never formulas there).
+const FORMULA = /^[=+\-@\t\r]/;
+const PLAIN_NUMBER = /^[-+]?[\d,]*\.?\d+(?:[eE][-+]?\d+)?%?$/;
+export function csvText(v: unknown): string {
   const s = v == null ? '' : String(v);
+  return typeof v === 'string' && FORMULA.test(s) && !PLAIN_NUMBER.test(s) ? `'${s}` : s;
+}
+
+function cell(v: unknown): string {
+  const s = csvText(v);
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

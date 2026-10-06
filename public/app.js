@@ -2081,7 +2081,7 @@ function doExportCSV() {
     );
   }
 
-  const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+  const csv = rows.map(r => r.map(c => '"' + csvText(c).replace(/"/g, '""') + '"').join(',')).join('\n');
   downloadBlob(csv, 'text/csv', `nport_${allResults.mode}_${today()}.csv`);
 }
 
@@ -2472,6 +2472,15 @@ function setVal(id, v) {
 // Filename-safe text ("Fidelity Advisor Growth Fund" → "Fidelity_Advisor_Growth_Fund").
 // cleanId (below) encodes every symbol as its char code to keep DOM ids
 // collision-free, which made real export names read "Fidelity_32_Advisor_32_...".
+// A CSV cell's text. Text that a spreadsheet would read as a formula (it starts
+// with = + - @, a tab or a carriage return, and is not a plain number) gets a
+// leading apostrophe, so a name from a filing opens as text (staff review F09).
+// The same rule as web/src/lib/export.ts.
+function csvText(v) {
+  const s = v == null ? '' : String(v);
+  return /^[=+\-@\t\r]/.test(s) && !/^[-+]?[\d,]*\.?\d+(?:[eE][-+]?\d+)?%?$/.test(s) ? `'${s}` : s;
+}
+
 function fileNamePart(s) {
   return String(s || '')
     .replace(/[^A-Za-z0-9]+/g, '_')
@@ -3082,7 +3091,7 @@ function doCreditExportCSV() {
       ])
     )
   );
-  const csv = rows.map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
+  const csv = rows.map(r => r.map(c => '"' + csvText(c).replace(/"/g, '""') + '"').join(',')).join('\n');
   downloadBlob(csv, 'text/csv', `private_credit_${today()}.csv`);
 }
 
@@ -4031,7 +4040,7 @@ function doXrayExportCSV(key) {
   const data = xraySnapshotExportRows(key);
   if (!data) return;
   const csv = [data.header, ...data.rows]
-    .map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(','))
+    .map(r => r.map(c => '"' + csvText(c).replace(/"/g, '""') + '"').join(','))
     .join('\n');
   const datePart = data.reportDate ? `_${fileNamePart(data.reportDate)}` : '';
   downloadBlob(csv, 'text/csv', `fund_xray_${fileNamePart(data.fundName || 'fund')}${datePart}_${today()}.csv`);
@@ -4527,7 +4536,7 @@ function doXrayCompareExportCSV() {
   const data = xrayCompareExportRows();
   if (!data) return;
   const csv = [data.header, ...data.rows]
-    .map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(','))
+    .map(r => r.map(c => '"' + csvText(c).replace(/"/g, '""') + '"').join(','))
     .join('\n');
   downloadBlob(csv, 'text/csv', `fund_xray_compare_${fileNamePart(data.fundName || 'fund')}_${today()}.csv`);
 }

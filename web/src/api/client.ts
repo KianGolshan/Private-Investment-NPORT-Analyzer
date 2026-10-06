@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 
 // One fetch path for the whole app. Answers are cached by URL for the life of
-// one warehouse refresh: the first answer whose refreshId differs from the
-// cache's clears it, so a nightly refresh never serves yesterday's numbers.
-// Every request in a hook is aborted when its inputs change, so a slow answer
-// can never overwrite a newer one (v1's views.js had no such guard).
+// one published warehouse generation (refreshId). The generation is learned
+// from every answer and re-checked on its own: when the tab regains focus or
+// becomes visible, and every 5 minutes (staff review F02). A newer generation
+// clears the cache and tells every mounted useApi to fetch again, so a session
+// left open through a refresh never keeps serving yesterday's numbers. An answer
+// from an older generation than one already seen (a slow response that raced a
+// refresh) is fetched again, never cached. Every request in a hook is aborted
+// when its inputs change, so a slow answer can never overwrite a newer one.
 
 export class ApiError extends Error {
   constructor(
@@ -17,6 +21,49 @@ export class ApiError extends Error {
 
 const cache = new Map<string, unknown>();
 let cacheRefreshId: number | null = null;
+const listeners = new Set<() => void>();
+const REVALIDATE_MS = 5 * 60 * 1000;
+
+/** Takes a generation id seen on an answer. Returns false when it is older than the current one. */
+function adopt(rid: unknown): boolean {
+  if (typeof rid !== 'number') return true;
+  if (cacheRefreshId != null && rid < cacheRefreshId) return false;
+  if (rid !== cacheRefreshId) {
+    const first = cacheRefreshId == null;
+    cache.clear();
+    cacheRefreshId = rid;
+    if (!first) for (const fn of [...listeners]) fn();
+  }
+  return true;
+}
+
+/** Asks the server which generation it serves, outside the answer cache. */
+export async function revalidate(): Promise<void> {
+  try {
+    const res = await fetch('/api/freshness', { cache: 'no-store', headers: { Accept: 'application/json' } });
+    if (res.ok) adopt(((await res.json()) as { refreshId?: number }).refreshId);
+  } catch {
+    // offline or the server is restarting: try again on the next trigger
+  }
+}
+
+let watching = false;
+function watchFreshness(): void {
+  if (watching || typeof window === 'undefined') return;
+  watching = true;
+  const check = () => {
+    if (document.visibilityState === 'visible') void revalidate();
+  };
+  window.addEventListener('focus', check);
+  document.addEventListener('visibilitychange', check);
+  setInterval(check, REVALIDATE_MS);
+}
+
+/** Calls fn whenever a newer generation is seen; returns the unsubscribe. */
+export function onGeneration(fn: () => void): () => void {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
 
 export function qs(params: Record<string, string | number | boolean | null | undefined | string[]>): string {
   const sp = new URLSearchParams();
@@ -31,24 +78,24 @@ export function qs(params: Record<string, string | number | boolean | null | und
 
 export async function getJSON<T>(url: string, signal?: AbortSignal): Promise<T> {
   if (cache.has(url)) return cache.get(url) as T;
-  const res = await fetch(url, { signal, headers: { Accept: 'application/json' } });
-  let body: unknown = null;
-  try {
-    body = await res.json();
-  } catch {
-    // a non-JSON error page; reported below by status
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(url, { signal, headers: { Accept: 'application/json' } });
+    let body: unknown = null;
+    try {
+      body = await res.json();
+    } catch {
+      // a non-JSON error page; reported below by status
+    }
+    if (!res.ok) {
+      const msg = (body as { error?: string } | null)?.error || `${res.status} ${res.statusText}`;
+      throw new ApiError(msg, res.status);
+    }
+    const current = adopt((body as { refreshId?: number } | null)?.refreshId);
+    // an older generation than one already seen: ask once more, else show it uncached
+    if (!current && attempt === 0) continue;
+    if (current) cache.set(url, body);
+    return body as T;
   }
-  if (!res.ok) {
-    const msg = (body as { error?: string } | null)?.error || `${res.status} ${res.statusText}`;
-    throw new ApiError(msg, res.status);
-  }
-  const rid = (body as { refreshId?: number } | null)?.refreshId;
-  if (typeof rid === 'number' && rid !== cacheRefreshId) {
-    cache.clear();
-    cacheRefreshId = rid;
-  }
-  cache.set(url, body);
-  return body as T;
 }
 
 export interface ApiState<T> {
@@ -57,34 +104,48 @@ export interface ApiState<T> {
   loading: boolean;
 }
 
-/** Fetches `url` (null = nothing to fetch) and re-fetches when it changes. */
+/** Fetches `url` (null = nothing to fetch) and re-fetches when it changes or a newer generation is published. */
 export function useApi<T>(url: string | null): ApiState<T> {
   const [state, setState] = useState<ApiState<T>>(() => ({
     data: url && cache.has(url) ? (cache.get(url) as T) : null,
     error: null,
     loading: !!url && !cache.has(url),
   }));
+  const [gen, setGen] = useState(0);
+  const shown = useRef<string | null>(null);
+  useEffect(() => {
+    watchFreshness();
+    return onGeneration(() => setGen(g => g + 1));
+  }, []);
   useEffect(() => {
     if (!url) {
+      shown.current = null;
       setState({ data: null, error: null, loading: false });
       return;
     }
     if (cache.has(url)) {
+      shown.current = url;
       setState({ data: cache.get(url) as T, error: null, loading: false });
       return;
     }
     const ctl = new AbortController();
-    // never show the previous URL's answer under the new one
-    setState({ data: null, error: null, loading: true });
+    // never show the previous URL's answer under the new one; the same URL in
+    // a newer generation keeps its answer on screen until the new one arrives
+    if (shown.current === url) setState(s => ({ ...s, loading: true }));
+    else setState({ data: null, error: null, loading: true });
     getJSON<T>(url, ctl.signal).then(
-      data => setState({ data, error: null, loading: false }),
+      data => {
+        if (ctl.signal.aborted) return;
+        shown.current = url;
+        setState({ data, error: null, loading: false });
+      },
       error => {
         if (ctl.signal.aborted) return;
         setState({ data: null, error, loading: false });
       }
     );
     return () => ctl.abort();
-  }, [url]);
+  }, [url, gen]);
   return state;
 }
 
@@ -92,4 +153,5 @@ export function useApi<T>(url: string | null): ApiState<T> {
 export function clearApiCache(): void {
   cache.clear();
   cacheRefreshId = null;
+  listeners.clear();
 }

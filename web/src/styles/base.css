@@ -692,6 +692,8 @@ table.data td.wrap {
 .chart {
   width: 100%;
   height: var(--chart-h, 320px);
+  /* an empty box in a flex column (the position drawer) would shrink to nothing */
+  flex-shrink: 0;
 }
 .grid-2 {
   display: grid;

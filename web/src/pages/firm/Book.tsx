@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'preact/hooks';
 import type { FirmBook } from '../../api/types';
-import { companyPath, fundPath, money, moneyC, num, pctOfNav, price, share } from '../../lib/format';
+import { escapeHtml, companyPath, fundPath, money, moneyC, num, pctOfNav, price, share } from '../../lib/format';
 import { ScopeBar } from '../../scope/ScopeBar';
 import { useParam } from '../../scope/scope';
 import { Badge, Card, Empty, FilingRef, Segmented } from '../../ui/bits';
@@ -61,7 +61,7 @@ export function Book({ id, book: b, newest }: { id: number; book: FirmBook; newe
           borderColor: t.border,
           textStyle: { color: t.text, fontSize: 12 },
           formatter: (p: { value: [number, number, number] }) =>
-            `${matrix.companies[matrix.companies.length - 1 - p.value[1]]!.name}<br/>${matrix.funds[p.value[0]]!.label}<br/>${moneyC(p.value[2])}`,
+            `${escapeHtml(matrix.companies[matrix.companies.length - 1 - p.value[1]]!.name)}<br/>${escapeHtml(matrix.funds[p.value[0]]!.label)}<br/>${moneyC(p.value[2])}`,
         },
         xAxis: {
           type: 'category',

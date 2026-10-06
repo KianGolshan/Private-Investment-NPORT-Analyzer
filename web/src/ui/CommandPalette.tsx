@@ -30,7 +30,14 @@ const MATCH_TEXT: Record<string, string> = {
 const RECENT_KEY = 'vantage.recent';
 function recent(): PaletteItem[] {
   try {
-    return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]').slice(0, 8);
+    // stored by an older build or edited by hand: keep only well-formed in-app links
+    const list: unknown = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
+    return (Array.isArray(list) ? list : [])
+      .filter(
+        (r): r is PaletteItem =>
+          !!r && typeof r.title === 'string' && typeof r.href === 'string' && /^\/(?!\/)/.test(r.href)
+      )
+      .slice(0, 8);
   } catch {
     return [];
   }
@@ -99,12 +106,13 @@ export function unifiedToItem(h: UnifiedHit, rank: number): PaletteItem {
   return { ...hitToItem(h), tier: rank };
 }
 
+/** Throws when the search fails: an outage is never shown as "no match" (staff review F13). */
 export async function searchAll(q: string, signal?: AbortSignal): Promise<PaletteItem[]> {
   const r = await getJSON<Envelope & { results: UnifiedHit[] }>(
     `/api/search${qs({ q, kinds: SEARCH_KINDS, limit: 20 })}`,
     signal
-  ).catch(() => null);
-  return (r?.results ?? []).map(unifiedToItem);
+  );
+  return (r.results ?? []).map(unifiedToItem);
 }
 
 const KIND_ORDER: PaletteItem['kind'][] = ['Company', 'Firm', 'Class', 'Name', 'Fund'];
@@ -117,6 +125,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const [q, setQ] = useState('');
   const [items, setItems] = useState<PaletteItem[]>([]);
   const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [sel, setSel] = useState(0);
   const input = useRef<HTMLInputElement>(null);
   // Enter pressed while a search is in flight opens that search's best result
@@ -144,6 +154,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   useEffect(() => {
     if (!open) return;
     const term = q.trim();
+    setFailed(null);
     if (term.length < 2) {
       setItems(recent());
       setBusy(false);
@@ -164,14 +175,20 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             go(byKind(r)[0]);
           }
         },
-        () => setBusy(false)
+        err => {
+          if (ctl.signal.aborted) return;
+          pendingEnter.current = null;
+          setItems([]);
+          setFailed(String(err?.message || err));
+          setBusy(false);
+        }
       );
     }, 120);
     return () => {
       clearTimeout(t);
       ctl.abort();
     };
-  }, [q, open]);
+  }, [q, open, attempt]);
 
   const go = (it: PaletteItem | undefined) => {
     if (!it) return;
@@ -239,7 +256,15 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
               </span>
             </li>
           ))}
-          {!busy && q.trim().length >= 2 && grouped.length === 0 && (
+          {!busy && failed && (
+            <li class="muted" role="alert">
+              Search failed ({failed}).{' '}
+              <button class="btn sm" type="button" onClick={() => setAttempt(a => a + 1)}>
+                Retry
+              </button>
+            </li>
+          )}
+          {!busy && !failed && q.trim().length >= 2 && grouped.length === 0 && (
             <li class="muted">No private company, fund or firm in the warehouse matches “{q.trim()}”.</li>
           )}
           {busy && <li class="muted">Searching…</li>}

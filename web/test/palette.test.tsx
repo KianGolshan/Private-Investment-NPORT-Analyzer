@@ -68,3 +68,41 @@ describe('unified search', () => {
     expect(it.detail).toContain('unreviewed');
   });
 });
+
+describe('palette failures (F13)', () => {
+  it('a failed search shows the failure and a retry, never "no match"', async () => {
+    const { render, fireEvent, findByRole } = await import('@testing-library/preact');
+    const { vi } = await import('vitest');
+    const { LocationProvider } = await import('preact-iso');
+    const { CommandPalette } = await import('../src/ui/CommandPalette');
+    const { clearApiCache } = await import('../src/api/client');
+    clearApiCache();
+    let up = false;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        up
+          ? { ok: true, status: 200, statusText: 'OK', json: async () => ({ refreshId: 1, results: [] }) }
+          : {
+              ok: false,
+              status: 503,
+              statusText: 'Service Unavailable',
+              json: async () => ({ error: 'warehouse is busy' }),
+            }
+      )
+    );
+    const r = render(
+      <LocationProvider>
+        <CommandPalette open onClose={() => {}} />
+      </LocationProvider>
+    );
+    fireEvent.input(r.getByLabelText('Search'), { target: { value: 'anthropic' } });
+    const alert = await findByRole(r.container as HTMLElement, 'alert', {}, { timeout: 2000 });
+    expect(alert.textContent).toContain('Search failed (warehouse is busy)');
+    expect(r.container.textContent).not.toContain('matches');
+    up = true;
+    fireEvent.click(r.getByText('Retry'));
+    await vi.waitFor(() => expect(r.container.textContent).toContain('No private company, fund or firm'));
+    vi.unstubAllGlobals();
+  });
+});

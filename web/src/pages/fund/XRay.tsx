@@ -69,7 +69,11 @@ export function XRay({ fund, name }: Props) {
             <Kpi
               label="Private value"
               value={moneyC(d.privateValueUSD)}
-              sub={`${share((d.privatePctOfNetAssets ?? 0) / 100)} of net assets`}
+              sub={
+                d.privatePctOfNetAssets == null
+                  ? 'share of net assets not reported'
+                  : `${share(d.privatePctOfNetAssets / 100)} of net assets`
+              }
             />
             <Kpi
               label="Private positions"

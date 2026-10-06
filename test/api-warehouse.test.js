@@ -45,6 +45,16 @@ test('API goldens: Anthropic A1 72 / $5.93B, A2 117 / $17.26B, A4 knownAsOf 82 /
   assert.equal(Math.round(magnitude.value / 1e5) / 10, 235.7);
   const fundrise = a2.disclosedExposure.find(d => d.accession === '0001867090-26-000109');
   assert.match(fundrise.basis, /Greater than 20%/);
+  assert.equal(fundrise.filingDate, '2026-08-28');
+  // F07 (staff review): the range obeys knownAsOf (filed 2026-08-28) and the as-of rule.
+  const fr = body => body.disclosedExposure.filter(d => d.accession === '0001867090-26-000109').length;
+  const at = async q => (await api(`/api/companies/${id}/exposure?${q}`).expect(200)).body;
+  assert.equal(fr(a4), 0); // known 2026-06-30: not filed yet
+  assert.equal(fr(await at('date=2026-06-30&knownAsOf=2019-01-01')), 0);
+  assert.equal(fr(await at('date=2026-06-30&knownAsOf=2026-08-27')), 0);
+  assert.equal(fr(await at('date=2026-06-30&knownAsOf=2026-08-28')), 1);
+  assert.equal(fr(await at('date=2026-10-31')), 1); // 123 days after 06-30
+  assert.equal(fr(await at('date=2026-11-01')), 0); // 124 days: the fund is inactive
 });
 
 test('API goldens: Stripe A5 49 / 35 / 34 / 37 and Databricks A6 120 / $6.22B', async () => {

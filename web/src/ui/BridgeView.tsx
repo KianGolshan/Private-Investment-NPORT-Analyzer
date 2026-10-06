@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'preact/hooks';
 import type { Bridge, Pivot } from '../api/types';
-import { moneyC, moneyDelta, num, tone } from '../lib/format';
+import { escapeHtml, moneyC, moneyDelta, num, tone } from '../lib/format';
 import { Card, Kpi } from './bits';
 import { Chart } from './Chart';
 import { DataTable } from './DataTable';
@@ -62,7 +62,7 @@ export function BridgeView({ bridge: b, name }: { bridge: Bridge; name: string }
           axisPointer: { type: 'shadow' },
           formatter: (ps: { dataIndex: number }[]) => {
             const s = steps[ps[0]!.dataIndex]!;
-            return `${s.label}<br/>${s.key === 'start' || s.key === 'end' ? moneyC(s.value) : moneyDelta(s.value)}${s.events != null ? ` · ${num(s.events)} ${s.key === 'stopped' ? 'funds' : 'fund filings'}` : ''}`;
+            return `${escapeHtml(s.label)}<br/>${s.key === 'start' || s.key === 'end' ? moneyC(s.value) : moneyDelta(s.value)}${s.events != null ? ` · ${num(s.events)} ${s.key === 'stopped' ? 'funds' : 'fund filings'}` : ''}`;
           },
         },
         xAxis: {

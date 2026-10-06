@@ -214,7 +214,14 @@ test('compare: rows equal the pivot’s; class marks are same-date medians of th
   for (const r of cls.results)
     for (const m of r.marks) {
       const list = byDate.get(`${r.key.replace(':', '\u0000')}\u0000${m.markDate}`);
-      const s = list.map(x => x.price).sort((a, b) => a - b);
+      // one observation per fund: its lots' value over their shares (F06)
+      const per = new Map();
+      for (const x of list) {
+        const f = per.get(x.fundKey) || per.set(x.fundKey, { v: 0, n: 0 }).get(x.fundKey);
+        f.v += x.value;
+        f.n += x.shares;
+      }
+      const s = [...per.values()].map(f => f.v / f.n).sort((a, b) => a - b);
       const h = s.length >> 1;
       assert.equal(m.median, s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2);
     }

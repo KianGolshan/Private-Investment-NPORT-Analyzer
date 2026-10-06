@@ -10,8 +10,14 @@ import { readTheme, type ChartTheme } from './theme';
 
 type Handler = (params: unknown, chart: ECharts) => void;
 
+// A failed load (a dropped connection, a deploy that replaced the chunk) is
+// forgotten, so Retry loads it again (staff review F18).
 let loader: Promise<typeof import('./echarts')> | null = null;
-const loadEcharts = () => (loader ??= import('./echarts'));
+const loadEcharts = () =>
+  (loader ??= import('./echarts').catch(err => {
+    loader = null;
+    throw err;
+  }));
 
 export function Chart({
   build,
@@ -27,6 +33,7 @@ export function Chart({
   const el = useRef<HTMLDivElement>(null);
   const chart = useRef<ECharts | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const theme = effectiveTheme.value;
 
   useEffect(() => {
@@ -40,7 +47,9 @@ export function Chart({
         ro = new ResizeObserver(() => c.resize());
         ro.observe(el.current);
       },
-      e => setFailed(String(e?.message || e))
+      e => {
+        if (!disposed) setFailed(String(e?.message || e));
+      }
     );
     return () => {
       disposed = true;
@@ -48,15 +57,17 @@ export function Chart({
       chart.current?.dispose();
       chart.current = null;
     };
-  }, []);
+  }, [attempt]);
 
   useEffect(() => {
+    if (failed) return undefined; // nothing to draw into: no polling while the load has failed
     let cancelled = false;
     const draw = () => {
       if (cancelled) return;
       const c = chart.current;
       if (!c) {
-        // ECharts still loading: try again on the next frame
+        // ECharts still loading: try again on the next frame (a failed load
+        // re-runs this effect with `failed` set, which cancels this loop)
         requestAnimationFrame(draw);
         return;
       }
@@ -72,8 +83,23 @@ export function Chart({
     return () => {
       cancelled = true;
     };
-  }, [build, theme, on]);
+  }, [build, theme, on, failed]);
 
-  if (failed) return <div class="notice error">Chart failed to load: {failed}</div>;
+  if (failed)
+    return (
+      <div class="notice error" role="alert">
+        Chart failed to load: {failed}. The table below has the same numbers.{' '}
+        <button
+          class="btn sm"
+          type="button"
+          onClick={() => {
+            setFailed(null);
+            setAttempt(a => a + 1);
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    );
   return <div ref={el} class="chart" style={{ height: `${height}px` }} role="img" aria-label={label} />;
 }

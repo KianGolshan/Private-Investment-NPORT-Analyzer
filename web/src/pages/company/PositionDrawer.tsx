@@ -7,7 +7,10 @@ import { Card, Empty, ErrorBox, FilingRef, Kpi, Loading } from '../../ui/bits';
 import { Chart } from '../../ui/Chart';
 import { DataTable, type Column } from '../../ui/DataTable';
 import { baseOption, type ChartTheme } from '../../ui/theme';
+import { markLines, type MarkLine } from './markLines';
 import type { ViewProps } from './shared';
+
+const markName = (c: MarkLine) => `${c.classLabel} per share${c.split ? ' (split-adjusted)' : ''}`;
 
 // One fund's position in the company across its whole history (?pos=<fund>):
 // value and per-share mark at every filing, and every leg's change with its
@@ -33,33 +36,17 @@ export function PositionDrawer({
   }, [onClose]);
 
   const legs = hist.data?.legs ?? [];
-  // One point per filing: the value reported, and the per-share mark of share rows.
+  // One point per filing: the value reported. Per-share marks are drawn per
+  // class (markLines), never pooled across classes.
   const filings = useMemo(() => {
-    const m = new Map<string, { markDate: string; value: number; shares: number; shareValue: number }>();
+    const m = new Map<string, { markDate: string; value: number }>();
     for (const l of legs) {
-      const x =
-        m.get(l.markDate) ??
-        m.set(l.markDate, { markDate: l.markDate, value: 0, shares: 0, shareValue: 0 }).get(l.markDate)!;
+      const x = m.get(l.markDate) ?? m.set(l.markDate, { markDate: l.markDate, value: 0 }).get(l.markDate)!;
       x.value += l.value;
-      if (l.perShare && l.balance) {
-        x.shares += l.balance;
-        x.shareValue += l.value;
-      }
     }
-    const out = [...m.values()].sort((a, b) => a.markDate.localeCompare(b.markDate));
-    // Split-adjust the per-share line to today's shares (trap 9): a 3:1 split
-    // divides every earlier mark by 3, so it never reads as a crash.
-    const splitAt = new Map<string, number>();
-    for (const l of legs) if (l.split) splitAt.set(l.markDate, l.split);
-    let factor = 1;
-    const adjusted = new Map<string, number>();
-    for (let i = out.length - 1; i >= 0; i--) {
-      adjusted.set(out[i]!.markDate, factor);
-      factor *= splitAt.get(out[i]!.markDate) ?? 1;
-    }
-    return out.map(f => ({ ...f, factor: adjusted.get(f.markDate) ?? 1 }));
+    return [...m.values()].sort((a, b) => a.markDate.localeCompare(b.markDate));
   }, [legs]);
-  const hasSplit = legs.some(l => l.split);
+  const lines = useMemo(() => markLines(legs), [legs]);
   const totals = useMemo(
     () =>
       legs.reduce((t, l) => ({ pos: t.pos + l.positionEffect + l.otherEffect, mark: t.mark + l.markEffect }), {
@@ -74,7 +61,7 @@ export function PositionDrawer({
       const b = baseOption(t);
       return {
         ...b,
-        legend: { ...b.legend, data: ['Value', hasSplit ? 'Mark per share (split-adjusted)' : 'Mark per share'] },
+        legend: { ...b.legend, data: ['Value', ...lines.map(markName)] },
         tooltip: { ...b.tooltip, valueFormatter: (v: number) => (v > 100000 ? moneyC(v) : money(v)) },
         xAxis: { type: 'category', data: filings.map(f => f.markDate), ...b.xAxisDefaults },
         yAxis: [
@@ -83,18 +70,18 @@ export function PositionDrawer({
         ],
         series: [
           { name: 'Value', type: 'bar', data: filings.map(f => f.value), itemStyle: { color: t.series[0] } },
-          {
-            name: hasSplit ? 'Mark per share (split-adjusted)' : 'Mark per share',
+          ...lines.map((c, i) => ({
+            name: markName(c),
             type: 'line',
             yAxisIndex: 1,
-            data: filings.map(f => (f.shares ? f.shareValue / f.shares / f.factor : null)),
-            itemStyle: { color: t.series[1] },
+            data: filings.map(f => c.points.get(f.markDate) ?? null),
+            itemStyle: { color: t.series[(i + 1) % t.series.length] },
             connectNulls: true,
-          },
+          })),
         ],
       };
     },
-    [filings, hasSplit]
+    [filings, lines]
   );
 
   const columns: Column<FactLeg>[] = [
@@ -231,7 +218,11 @@ export function PositionDrawer({
                 />
               </div>
               {filings.length > 1 ? (
-                <Chart build={build} height={220} label={`${f?.label}: value and per-share mark by filing`} />
+                <Chart
+                  build={build}
+                  height={220}
+                  label={`${f?.label}: value and per-share mark of each class by filing`}
+                />
               ) : (
                 <Empty>One filing.</Empty>
               )}

@@ -31,3 +31,35 @@ describe('format', () => {
     expect(csv).toBe('Name\n"a, ""b"""\n');
   });
 });
+
+describe('CSV formula safety (F09)', () => {
+  type R = { v: string | number | null };
+  const col = [{ header: 'V', value: (r: R) => r.v }];
+  const cells = (vs: R['v'][]) =>
+    toCsv(
+      col,
+      vs.map(v => ({ v }))
+    )
+      .split('\n')
+      .slice(1, -1);
+  it('text a spreadsheet would run as a formula opens as text', () => {
+    expect(cells(['=1+1', '+SUM(A1)', '-2+3', '@cmd', '\tx', 'Stripe, Inc.'])).toEqual([
+      "'=1+1",
+      "'+SUM(A1)",
+      "'-2+3",
+      "'@cmd",
+      "'\tx",
+      '"Stripe, Inc."',
+    ]);
+  });
+  it('numbers, signed numeric text and blanks are unchanged', () => {
+    expect(cells([-30167925.75, '-12.5', '-1,234', '+4%', 0, null])).toEqual([
+      '-30167925.75',
+      '-12.5',
+      '"-1,234"',
+      '+4%',
+      '0',
+      '',
+    ]);
+  });
+});

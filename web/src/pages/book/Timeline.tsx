@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'preact/hooks';
 import { qs, useApi } from '../../api/client';
 import type { Timeline as TimelineT } from '../../api/types';
-import { companyPath, longDate, moneyC, moneyDelta, num, tone } from '../../lib/format';
+import { escapeHtml, companyPath, longDate, moneyC, moneyDelta, num, tone } from '../../lib/format';
 import { useParam } from '../../scope/scope';
 import { Card, Empty, ErrorBox, Kpi, Loading, Segmented } from '../../ui/bits';
 import { Chart } from '../../ui/Chart';
@@ -81,8 +81,8 @@ export function Timeline({ who, name }: { who: Who; name: string }) {
           formatter: (p: { data: { c: Company; e?: Company['events'][number] } }) => {
             const { c, e } = p.data;
             if (e)
-              return `${c.name}<br/>${e.markDate}: ${MARK[e.type]?.label ?? e.label} in ${num(e.funds)} fund${e.funds > 1 ? 's' : ''}<br/>Δ value ${moneyDelta(e.valueChange)} (position ${moneyDelta(e.positionEffect)}, mark ${moneyDelta(e.markEffect)})`;
-            return `${c.name}<br/>held ${c.firstHeld} → ${c.lastHeld ?? 'now'}<br/>value now ${moneyC(c.value)} in ${num(c.funds)} funds`;
+              return `${escapeHtml(c.name)}<br/>${e.markDate}: ${escapeHtml(MARK[e.type]?.label ?? e.label)} in ${num(e.funds)} fund${e.funds > 1 ? 's' : ''}<br/>Δ value ${moneyDelta(e.valueChange)} (position ${moneyDelta(e.positionEffect)}, mark ${moneyDelta(e.markEffect)})`;
+            return `${escapeHtml(c.name)}<br/>held ${c.firstHeld} → ${c.lastHeld ?? 'now'}<br/>value now ${moneyC(c.value)} in ${num(c.funds)} funds`;
           },
         },
         xAxis: {

@@ -199,8 +199,8 @@ test('firm: Capital Group marks Stripe in 8 of 12 months of 2025, at one price p
     '11',
     '12',
   ]);
-  const cents = v => Math.round(v * 100);
-  for (const s of y2025) assert.equal(cents(s.low), cents(s.high), `${s.markDate} ${s.instrument}`);
+  // one price per date ($33.725 sits on a half cent, so compare relatively, not in rounded cents)
+  for (const s of y2025) assert.ok(s.high / s.low - 1 < 1e-6, `${s.markDate} ${s.instrument}`);
   const changes = (await api(`/api/firms/${id}/changes?since=2025-01-01`)).body;
   assert.ok(changes.events.length > 0);
   assert.ok(changes.events.every(e => e.markDate >= '2025-01-01' && e.fundLabel));
@@ -287,4 +287,25 @@ test('Atom feed: a company feed lists its changes with their filings (Stripe: Fi
   assert.match(r.text, /^<\?xml version="1\.0"/);
   assert.match(r.text, /<feed xmlns="http:\/\/www\.w3\.org\/2005\/Atom">/);
   assert.ok((r.text.match(/<entry>/g) || []).length > 0);
+});
+
+// Staff review F06: a class's per-date row counts funds, not lots, and its
+// median is across funds (one observation per fund: its lots' value over shares).
+test('classes: Anthropic 2026-06-30 Common counts 13 funds, the PBC line 1 (F06)', async () => {
+  const c = (await api(`/api/companies/${idOf('Anthropic')}/classes?date=2026-06-30`)).body;
+  const at = name => c.classes.find(x => x.instrument === name).byMarkDate.find(d => d.markDate === '2026-06-30');
+  assert.equal(at('Common').funds, 13);
+  assert.equal(at('Indirect via ANTHROPIC PBC').funds, 1);
+});
+
+test('markStats: a fund with several lots is one observation at value / shares (F06)', () => {
+  const { markStats } = require('../lib/services/classes');
+  // A: 100 sh $1,000 + 300 sh $3,600 -> $11.50; B $12.00; C $20.00. Median $12.00 (not 11 of 4 rows)
+  const s = markStats([
+    { fundKey: 'A', value: 1000, shares: 100 },
+    { fundKey: 'A', value: 3600, shares: 300 },
+    { fundKey: 'B', value: 1200, shares: 100 },
+    { fundKey: 'C', value: 2000, shares: 100 },
+  ]);
+  assert.deepEqual(s, { funds: 3, median: 12, low: 11.5, high: 20, severalMarks: 1 });
 });

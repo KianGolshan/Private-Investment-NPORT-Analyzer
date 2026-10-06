@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
 import { qs, useApi } from '../api/client';
 import type { Compare as Answer, Freshness, UnifiedHit } from '../api/types';
-import { companyPath, firmPath, fundPath, money, moneyC, moneyDelta, tone } from '../lib/format';
+import { escapeHtml, companyPath, firmPath, fundPath, money, moneyC, moneyDelta, tone } from '../lib/format';
 import { ScopeBar } from '../scope/ScopeBar';
 import { isRange, useScope, useSetParams } from '../scope/scope';
 import { Card, Empty, ErrorBox, Loading, Segmented } from '../ui/bits';
@@ -96,7 +96,7 @@ export default function Compare() {
           ...b.tooltip,
           trigger: 'item',
           formatter: (p: { seriesName: string; data: [string, number, number, number] }) =>
-            `${p.seriesName}<br/>mark date ${p.data[0]}: median ${indexed ? p.data[1].toFixed(1) : money(p.data[1])}<br/>${p.data[2]} funds filed that day${indexed ? ` · ${money(p.data[3])}/sh` : ''}`,
+            `${escapeHtml(p.seriesName)}<br/>mark date ${escapeHtml(p.data[0])}: median ${indexed ? p.data[1].toFixed(1) : money(p.data[1])}<br/>${p.data[2]} funds filed that day${indexed ? ` · ${money(p.data[3])}/sh` : ''}`,
         },
         xAxis: { type: 'time', ...b.xAxisDefaults },
         yAxis: {

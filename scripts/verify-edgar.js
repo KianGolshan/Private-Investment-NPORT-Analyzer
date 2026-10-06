@@ -7,7 +7,10 @@
 //   node scripts/verify-edgar.js 44201 stripe 0001193125-26-182055 0001193125-26-323081
 //
 // Needs SEC_USER_AGENT (read from .env). Prints per row: name | title | filer id |
-// balance | units | value | percent of net assets | asset category.
+// balance | units | value | percent of net assets | asset category, then how many
+// holdings each filing had and how many matched. Fails closed (staff review): a
+// filing with no holdings it can read, or no matching row, exits non-zero, so a
+// golden check never passes on an empty result.
 require('dotenv').config();
 const { secGet } = require('../lib/warehouse/delta');
 
@@ -18,15 +21,22 @@ async function main() {
     process.exit(2);
   }
   const re = new RegExp(pattern, 'i');
+  const problems = [];
   for (const acc of accessions) {
     const url = `https://www.sec.gov/Archives/edgar/data/${cik}/${acc.replace(/-/g, '')}/primary_doc.xml`;
     const xml = String(await secGet(url));
-    const tag = t => (xml.match(new RegExp(`<${t}>([^<]+)`)) || [])[1];
+    // a tag with or without attributes or a namespace prefix
+    const open = t => `<(?:\\w+:)?${t}(?:\\s[^>]*)?>`;
+    const tag = t => (xml.match(new RegExp(`${open(t)}([^<]+)`)) || [])[1];
     console.log(`\n== ${acc} repPdDate=${tag('repPdDate')} series=${tag('seriesId')} registrant=${tag('regName')}`);
-    for (const m of xml.matchAll(/<invstOrSec>([\s\S]*?)<\/invstOrSec>/g)) {
+    let inspected = 0;
+    let matched = 0;
+    for (const m of xml.matchAll(/<(?:\w+:)?invstOrSec(?:\s[^>]*)?>([\s\S]*?)<\/(?:\w+:)?invstOrSec>/g)) {
       const b = m[1];
-      const g = t => (b.match(new RegExp(`<${t}>([^<]*)<`)) || [])[1];
+      inspected++;
+      const g = t => (b.match(new RegExp(`${open(t)}([^<]*)<`)) || [])[1];
       if (!re.test(g('name') || '') && !re.test(g('title') || '')) continue;
+      matched++;
       const other = (b.match(/<other[^>]*otherDesc="([^"]*)"[^>]*value="([^"]*)"/) || []).slice(1).join(' ');
       const cat = (b.match(/<assetCat>([^<]*)/) || b.match(/assetConditional desc="([^"]*)"/) || [])[1];
       console.log(
@@ -42,6 +52,13 @@ async function main() {
         ].join(' | ')
       );
     }
+    console.log(`-- ${acc}: ${matched} of ${inspected} holdings match /${pattern}/i`);
+    if (!inspected) problems.push(`${acc}: no holdings read (not an N-PORT primary_doc.xml, or an unknown layout)`);
+    else if (!matched) problems.push(`${acc}: no holding matches /${pattern}/i`);
+  }
+  if (problems.length) {
+    for (const p of problems) console.error(`FAILED ${p}`);
+    process.exit(1);
   }
 }
 

@@ -9,6 +9,18 @@ const usd2 = new Intl.NumberFormat('en-US', {
 });
 const int = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
 
+/**
+ * Text for an HTML string (ECharts tooltip formatters return HTML that ECharts
+ * assigns to innerHTML). Every name or label from a filing goes through this
+ * before it meets markup (staff review F01).
+ */
+export function escapeHtml(v: unknown): string {
+  return String(v ?? '').replace(
+    /[&<>"']/g,
+    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!
+  );
+}
+
 const bad = (v: number | null | undefined): v is null | undefined => v == null || Number.isNaN(v);
 
 /** Full dollars and cents: per-share prices and exact values. */

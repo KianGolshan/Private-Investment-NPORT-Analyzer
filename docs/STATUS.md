@@ -1,7 +1,8 @@
 # Vantage v2 Status
 
-**Phase:** P6b (analyst workspace): W0–W3 signed off 2026-10-01, **W4 signed off 2026-10-05; next W5 (retire &
-polish)**, paused for a separate check the user is running first. Branch `v2-p6b-workspace` (pushed). P6 core signed off 2026-10-01. Wave results: [archive](archive/STATUS-history.md).
+**Phase:** P6b W0–W4 signed off (W4 2026-10-05). **P6c (review remediation) inserted before W5**: the user's
+separate check was a staff engineering review (F01–F18); plan approved 2026-10-05. **R1 built 2026-10-05, stopped for
+sign-off; R2 (publication) next.** Branch `v2-p6b-workspace` (pushed). P6 core signed off 2026-10-01. Wave results: [archive](archive/STATUS-history.md).
 **Last updated:** 2026-10-05. Earlier results: [archive/STATUS-history.md](archive/STATUS-history.md).
 
 ## Phase tracker
@@ -10,6 +11,8 @@ polish)**, paused for a separate check the user is running first. Branch `v2-p6b
       (signed off 2026-09-28..30; ROADMAP "Done")
 - [x] P6 core: analysis views (signed off 2026-10-01; remaining items in ROADMAP §6)
 - [ ] **P6b: analyst workspace**: W0–W4 signed off (2026-10-01, W4 2026-10-05); **W5 next** (ROADMAP §6b)
+- [ ] **P6c: review remediation** (R1 correctness/security → R2 publication → R3 assurance), then W5
+      ([plan](plans/P6c-review-remediation.md))
 - [ ] P7: MCP server (open now; the services exist)
 - [ ] P8: operations hardening (nightly job, backups, alerting, doctor)
 - [ ] P9: public deployment (hosting to decide as ADR 0006)
@@ -111,6 +114,19 @@ entities, 68,277 position-fact legs. `ingest_errors` empty. 2026Q3 bulk not post
 
 ## Open decisions (user)
 
+- **P6c R1 calls (open to overrule):**
+  - _Mark observation unit (F06):_ one observation per fund × class × mark date at its lots' value / shares. Medians,
+    low, high and fund counts are across funds. `severalMarks` counts funds whose own lots differ by more than 0.1%:
+    115 of 4,332 observations at 2026-06-30, e.g. Kardium "Preferred" lots at $0.52, $0.85 and $1.07 in one fund.
+    The per-row list still shows every lot. Firm marks now use the shared class labels (`classOfRow`) like every other view.
+  - _$0 classes (F05):_ "reported at $0" keeps the shares, and the write-down is mark. A share cut at the same filing is
+    position at the prior mark. "Reported above $0 again" is mark. A row with no share count stays "value only", as for
+    any LP interest.
+  - _Disclosed ranges (F07):_ under the as-of rule. Filed by `knownAsOf`, the fund's latest canonical filing, and
+    within 123 days.
+  - _CSV (F09):_ text starting with `= + - @`, a tab or a CR gets a leading apostrophe unless it is a plain number. The
+    `data/review` curation CSVs are not neutralized (the import reads them back).
+
 - **W5 is next, paused:** the user signed off W4 and is running a different check in a new session before W5 starts.
   Ask what that check found before building W5. Calls made in W4 under "v1 is the guidepost", still open to overrule: the watchlist lives in this browser (localStorage, per the plan; no server account); Compare keeps
   v1 Batch's spread (dispersion) and mark age but not its per-fund charts (the company page has them); Market
@@ -148,22 +164,43 @@ entities, 68,277 position-fact legs. `ingest_errors` empty. 2026Q3 bulk not post
 
 ## Next session
 
-> Resume Vantage v2 on branch `v2-p6b-workspace` (pushed). P6b W0–W4 are signed off; build **W5 (retire & polish)**
-> once the user's separate check (run in its own session after W4) is settled. Read CLAUDE.md, then docs/STATUS.md in full ("Where things
-> stand", "Handoff", Open decisions first), docs/ROADMAP.md §6b, docs/plans/P6b-analyst-workspace.md (Delivery, W5),
-> docs/DATA-QUALITY.md (display rules incl. drill, movers, newly reported) and docs/LESSONS.md.
->
-> Setup and gates first, stop and report if any fail: `npm install`, `npm --prefix web install`, `npm run build:web`,
-> `npm run refresh` (report 2026Q3 bulk, `ingest_errors`, size vs 1 GB), `npm test` (check the exit code), `npm run
-lint`, `npm run format:check`, `npm run test:web`, `npm run lint:web`, and the full `npm run test:live`.
->
-> W5: move v1 Batch and Watchlist users to Compare and Tracked (link from `/legacy`, import the v1 watchlist), keep
-> only Private Credit in Legacy; a11y audit (axe) and Lighthouse ≥ 90 for perf and a11y on Explore, company, firm
-> and Market; trim the drill payload if needed (p95 382 KB for the total row); README and module map; LIVE suite
-> green. Walk it in the browser (light, dark, 375 px), bench, update STATUS/ROADMAP/ARCHITECTURE, commit and push,
-> and stop for W5 sign-off.
+> Resume Vantage v2 on branch `v2-p6b-workspace`. P6c R1 (staff review correctness/security) is built and waiting for
+> sign-off. On "continue", build **R2 (publication)** per docs/plans/P6c-review-remediation.md: `lib/warehouse/job.js`
+> `runJob` as the only write path (claim with heartbeat, candidate copy, `rebuildDerived`, validate, generation file +
+> pointer, keep the previous), readers reopen on a pointer change, `refreshId`/memo keyed to the opened generation,
+> F12 source validation and re-post detection, F08 manager id ledger (migration 0020, `data/review/manager_ids.csv`),
+> `generation_meta` (curation revision). Read CLAUDE.md, docs/STATUS.md (Open decisions: R1 calls),
+> docs/ROADMAP.md §6c, docs/DATA-QUALITY.md (trap 53) and docs/LESSONS.md first. Gates as in the plan's Verification
+> section; stop for R2 sign-off. W5 follows P6c.
 
 ## Log
+
+- **2026-10-05 (P6c R1):** Correctness and security wave of the staff review, each fix with a failing-first test
+  worked by hand:
+  - **F05:** `activity.diffPosition` matches instrument keys on every row. Warehouse-wide diff vs HEAD: 117 legs
+    changed, $18.1M moved out of position effects (Ares CLO, KKR European V, Octagon 42, Ascent, Cineworld). No
+    golden changed; trap 53.
+  - **F06:** `classes.fundMarks`/`markStats` in marks, firm marks, pivot marks and marks vs others. Anthropic
+    2026-06-30 Common reads 13 funds (was 14) and the PBC line 1 (was 2).
+  - **F07:** disclosure obeys `knownAsOf` plus the as-of rule.
+  - **F01:** `escapeHtml` in all six tooltip formatters, a source-scan guard, and a strict v2 CSP
+    (`script-src 'self'`); `unsafe-inline` only on `/legacy`.
+  - **F02:** the client revalidates freshness on focus, on visibility change and every 5 minutes; mounted views
+    refetch on a newer generation, and an older one is never cached.
+  - **F09:** CSV formula text, v2 and v1.
+  - **F15:** the drawer draws one mark line per class, each split-adjusted on its own. This also fixed the drawer
+    chart collapsing to 1px in its flex column.
+  - **Smaller items:** the palette shows search failure with a Retry (no more false "no match"); a chart import
+    failure stops polling and offers a Retry; XRay shows "not reported" instead of 0%; `verify-edgar` fails closed
+    and prints matched/inspected.
+  - **Gates:** refresh #21 (8 filings, 0 failed, facts rebuilt, 576.9 MB, `ingest_errors` 0). `npm test` 547 tests:
+    516 pass, 0 fail, 31 skipped. Web 37/37. LIVE 31/31. Lint and format clean.
+  - **Browser:** live warehouse walk (drawer per-class lines, Explore tooltip, CSP with no console errors, 375 px light).
+
+- **2026-10-05 (later):** The user's separate check was a staff engineering review
+  (`~/Documents/Vantage-2-Staff-Engineering-Review-2026-10-05.md`). Every cited code path was checked on `8c50fce`:
+  F01, F02, F03, F04, F05, F06, F07, F08, F09, F15 and F16 confirmed. Plan approved: phase P6c (R1–R3) before W5;
+  F10/F11 to P8/P9. Full bitemporal curation and a Postgres move were not adopted.
 
 - **2026-10-05 (end):** W4 signed off by the user ("continue"). W5 paused at the user's request for a separate check
   in a new session; no W5 work started.

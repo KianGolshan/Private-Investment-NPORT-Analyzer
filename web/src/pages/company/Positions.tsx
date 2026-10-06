@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'preact/hooks';
 import { qs, useApi } from '../../api/client';
 import type { CompanyHistory } from '../../api/types';
-import { fundPath, money, moneyC, moneyDelta, num } from '../../lib/format';
+import { escapeHtml, fundPath, money, moneyC, moneyDelta, num } from '../../lib/format';
 import { ScopeBar } from '../../scope/ScopeBar';
 import { isRange, scopeParams, useParam, useScope } from '../../scope/scope';
 import { Card, Empty, ErrorBox, Loading, Segmented } from '../../ui/bits';
@@ -170,7 +170,7 @@ export default function Positions({ base, sq, name, newest, openPosition }: View
           formatter: (p: { value: [number, number, number] }) => {
             const f = rows[p.value[1]]!;
             const c = f.cells.get(months[p.value[0]]!)!;
-            return `${f.label}<br/>mark date ${c.markDate}<br/>value ${moneyC(c.value)} · ${c.shares != null ? `${num(c.shares)} sh at ${money(c.price)}` : 'no share count'}${c.delta != null ? `<br/>since prior filing ${moneyDelta(c.delta)}` : ''}<br/><span style="opacity:.7">${c.accession} · click for the position history</span>`;
+            return `${escapeHtml(f.label)}<br/>mark date ${c.markDate}<br/>value ${moneyC(c.value)} · ${c.shares != null ? `${num(c.shares)} sh at ${money(c.price)}` : 'no share count'}${c.delta != null ? `<br/>since prior filing ${moneyDelta(c.delta)}` : ''}<br/><span style="opacity:.7">${escapeHtml(c.accession)} · click for the position history</span>`;
           },
         },
         xAxis: {

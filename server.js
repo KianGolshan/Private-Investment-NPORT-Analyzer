@@ -25,21 +25,28 @@ const app = express();
 // needed at all. Without this, cors() with no options reflects any Origin
 // header back with credentials-less wildcard access, letting any external
 // website's JS call these SEC-proxying endpoints on a visitor's behalf.
-// Security headers. script-src must allow 'unsafe-inline' because the UI wires
-// its buttons with inline onclick attributes, but it still pins every script
-// ORIGIN to this server plus the two SRI-pinned CDNs in index.html, and
-// connect-src 'self' keeps page JS from sending data anywhere but this API.
-const CSP = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.sheetjs.com",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
-  "connect-src 'self'",
-  "object-src 'none'",
-  "base-uri 'none'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-].join('; ');
+// Security headers. The analyst workspace (web/dist) loads only its own
+// module scripts, so its policy allows scripts from this server alone (staff
+// review F01: no inline script can run even if markup slipped through). v1 at
+// /legacy wires its buttons with inline onclick attributes, so its page alone
+// gets 'unsafe-inline', still pinned to this server plus the two SRI-pinned
+// CDNs in public/index.html. connect-src 'self' keeps page JS from sending data
+// anywhere but this API. A CSP applies to the document, so the legacy policy is
+// set on the legacy HTML responses only.
+const cspOf = scripts =>
+  [
+    "default-src 'self'",
+    `script-src ${scripts}`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "connect-src 'self'",
+    "object-src 'none'",
+    "base-uri 'none'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ].join('; ');
+const CSP = cspOf("'self'");
+const LEGACY_CSP = cspOf("'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.sheetjs.com");
 app.disable('x-powered-by');
 app.use((_req, res, next) => {
   res.set({
@@ -50,6 +57,7 @@ app.use((_req, res, next) => {
   });
   next();
 });
+const sendLegacy = res => res.set('Content-Security-Policy', LEGACY_CSP).sendFile(LEGACY_INDEX);
 // lib/analytics/peer.js is shared with the browser, like public/splits.js (P5b).
 app.get('/peer.js', (_req, res) => res.sendFile(path.join(__dirname, 'lib', 'analytics', 'peer.js')));
 // The analyst workspace (web/, built into web/dist) is the app when it has been
@@ -71,8 +79,8 @@ const APP_ROUTES = [
   '/tracked',
   '/compare',
 ];
-app.get('/legacy', (_req, res) => res.sendFile(LEGACY_INDEX));
-app.get(APP_ROUTES, (_req, res) => res.sendFile(webBuilt() ? WEB_INDEX : LEGACY_INDEX));
+app.get('/legacy', (_req, res) => sendLegacy(res));
+app.get(APP_ROUTES, (_req, res) => (webBuilt() ? res.sendFile(WEB_INDEX) : sendLegacy(res)));
 app.use('/assets', express.static(path.join(WEB_DIST, 'assets'), { immutable: true, maxAge: '1y', index: false }));
 app.use(express.static('public', { index: false }));
 

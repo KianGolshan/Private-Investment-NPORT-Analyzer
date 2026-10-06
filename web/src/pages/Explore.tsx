@@ -1,7 +1,18 @@
 import { useCallback, useMemo } from 'preact/hooks';
 import { qs, useApi } from '../api/client';
 import type { Drill, DrillEvent, Freshness, Pivot, PivotMetric } from '../api/types';
-import { companyPath, firmPath, fundPath, longDate, money, moneyC, moneyDelta, num, tone } from '../lib/format';
+import {
+  escapeHtml,
+  companyPath,
+  firmPath,
+  fundPath,
+  longDate,
+  money,
+  moneyC,
+  moneyDelta,
+  num,
+  tone,
+} from '../lib/format';
 import { FirmPicker } from '../scope/FirmPicker';
 import { ScopeBar } from '../scope/ScopeBar';
 import { isRange, scopeParams, useParam, useScope, useSetParams } from '../scope/scope';
@@ -137,7 +148,7 @@ export default function Explore() {
           formatter: (q: { value: [number, number, number] }) => {
             const r = list[q.value[1]]!;
             const per = p!.periods[q.value[0]]!;
-            return `${r.label}<br/>${per.label}${per.partial ? ' (part of the period)' : ''}: ${METRIC_LABEL[metric]} ${fmt(q.value[2])}<br/><span style="opacity:.7">click for the filings behind it</span>`;
+            return `${escapeHtml(r.label)}<br/>${escapeHtml(per.label)}${per.partial ? ' (part of the period)' : ''}: ${METRIC_LABEL[metric]} ${fmt(q.value[2])}<br/><span style="opacity:.7">click for the filings behind it</span>`;
           },
         },
         xAxis: {
