@@ -7,6 +7,7 @@ import { Card, Empty, ErrorBox, FilingRef, Kpi, Loading } from '../../ui/bits';
 import { Chart } from '../../ui/Chart';
 import { DataTable, type Column } from '../../ui/DataTable';
 import { baseOption, type ChartTheme } from '../../ui/theme';
+import { useDialog } from '../../ui/useDialog';
 import { markLines, type MarkLine } from './markLines';
 import type { ViewProps } from './shared';
 
@@ -28,12 +29,9 @@ export function PositionDrawer({
     `${base}/positions/${encodeURIComponent(fundKey)}${qs({ ...sq, ...scopeParams(scope, ['class', 'kind']) })}`
   );
   const close = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    close.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  const box = useRef<HTMLElement>(null);
+  useDialog(box, onClose);
+  useEffect(() => close.current?.focus(), []);
 
   const legs = hist.data?.legs ?? [];
   // One point per filing: the value reported. Per-share marks are drawn per
@@ -178,6 +176,7 @@ export function PositionDrawer({
   return (
     <div class="overlay" onClick={onClose}>
       <aside
+        ref={box}
         class="drawer"
         role="dialog"
         aria-modal="true"

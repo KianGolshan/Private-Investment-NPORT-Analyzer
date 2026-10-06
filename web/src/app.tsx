@@ -55,7 +55,7 @@ function Sidebar() {
         ))}
         <div class="nav-section">More</div>
         <a href="/legacy" target="_top">
-          Legacy (v1 tabs)
+          Private Credit (v1)
         </a>
       </nav>
       <div class="sidebar-foot">Private holdings and marks from SEC N-PORT filings. Every number links its filing.</div>

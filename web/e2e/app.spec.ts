@@ -69,6 +69,32 @@ test('the position drawer takes focus, closes on Escape and draws one mark line 
   await expect(dialog).toHaveCount(0);
 });
 
+test('dialogs keep focus and give it back; clickable rows open from the keyboard (F18)', async ({ page }) => {
+  await page.goto('/firms');
+  const trigger = page.getByRole('button', { name: 'Search (⌘K)' });
+  await trigger.click();
+  const palette = page.getByRole('dialog');
+  await expect(palette.getByLabel('Search', { exact: true })).toBeFocused();
+  for (let i = 0; i < 6; i++) await page.keyboard.press('Tab');
+  expect(await palette.evaluate(el => el.contains(document.activeElement))).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(palette).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  // a holder row opens its position history from the keyboard; Escape gives focus back to the row
+  await page.goto(`/company/${ANTHROPIC}?tab=holders`);
+  const row = page.locator('tbody tr[tabindex="0"]').first();
+  await row.focus();
+  await page.keyboard.press('Enter');
+  const drawer = page.getByRole('dialog');
+  await expect(drawer).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Close position history' })).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  expect(await drawer.evaluate(el => el.contains(document.activeElement))).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(drawer).toHaveCount(0);
+  await expect(row).toBeFocused();
+});
+
 test('a session left open sees a newly published generation without a reload (F02)', async ({ page }) => {
   await page.goto(`/company/${ANTHROPIC}`);
   await expect(page.locator('h1')).toHaveText('Anthropic');

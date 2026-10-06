@@ -152,6 +152,17 @@ export function DataTable<T>(p: Props<T>) {
     <tr
       key={p.rowKey(r, i)}
       onClick={p.onRowClick ? () => p.onRowClick!(r) : undefined}
+      // a row that opens something opens from the keyboard too (F18)
+      tabIndex={p.onRowClick ? 0 : undefined}
+      onKeyDown={
+        p.onRowClick
+          ? (e: KeyboardEvent) => {
+              if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return;
+              e.preventDefault();
+              p.onRowClick!(r);
+            }
+          : undefined
+      }
       style={p.onRowClick ? { cursor: 'pointer' } : undefined}
     >
       {p.columns.map(c => (

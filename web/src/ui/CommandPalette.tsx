@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
 import { getJSON, qs } from '../api/client';
+import { useDialog } from './useDialog';
 import type { Envelope, SearchHit, UnifiedHit } from '../api/types';
 import { companyPath, entityPath, firmPath, fundPath, moneyC } from '../lib/format';
 
@@ -129,6 +130,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const [attempt, setAttempt] = useState(0);
   const [sel, setSel] = useState(0);
   const input = useRef<HTMLInputElement>(null);
+  const box = useRef<HTMLDivElement>(null);
+  useDialog(box, onClose, open);
   // Enter pressed while a search is in flight opens that search's best result
   // when it arrives, never a stale row from the previous list.
   const pendingEnter = useRef<string | null>(null);
@@ -203,6 +206,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   return (
     <div class="overlay" onClick={onClose}>
       <div
+        ref={box}
         class="palette"
         role="dialog"
         aria-modal="true"
@@ -231,7 +235,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
               const live = (e.currentTarget as HTMLInputElement).value.trim();
               if (live.length >= 2 && searched.current !== live) pendingEnter.current = live;
               else if (live === q.trim()) go(grouped[sel]);
-            } else if (e.key === 'Escape') onClose();
+            }
           }}
         />
         <ul id="palette-list" role="listbox">

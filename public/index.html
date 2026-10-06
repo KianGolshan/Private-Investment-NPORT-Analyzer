@@ -182,6 +182,7 @@
     .input-group.narrow { flex: 0 0 175px; }
     label { display: block; margin-bottom: 5px; font-size: 13px; font-weight: 500; color: var(--gray-700); }
     .hint { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+    .moved-notice { margin: 0 0 16px; padding: 10px 14px; border-left: 3px solid var(--gold); background: var(--navy-pale); font-size: 13.5px; line-height: 1.6; }
     /* Company page (Phase 5a) */
     .input-group { position: relative; }
     .suggest { display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 20; background: white; border: 1px solid var(--gray-200); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,.08); max-height: 360px; overflow-y: auto; }
@@ -547,17 +548,30 @@
 
   <!-- Tabs -->
   <div class="tabs" role="tablist">
-    <button class="tab active" role="tab" aria-selected="true"  aria-controls="singleTab"    onclick="switchTab('single')">Single Security</button>
-    <button class="tab"        role="tab" aria-selected="false" aria-controls="marketTab"     onclick="switchTab('market')">Market &amp; What's New</button>
-    <button class="tab"        role="tab" aria-selected="false" aria-controls="firmsTab"      onclick="switchTab('firms')">Firms</button>
-    <button class="tab"        role="tab" aria-selected="false" aria-controls="batchTab"      onclick="switchTab('batch')">Batch Search</button>
-    <button class="tab"        role="tab" aria-selected="false" aria-controls="creditTab"     onclick="switchTab('credit')">Private Credit Analysis</button>
-    <button class="tab"        role="tab" aria-selected="false" aria-controls="watchlistTab"  onclick="switchTab('watchlist')">Watchlist</button>
-    <button class="tab"        role="tab" aria-selected="false" aria-controls="xrayTab"       onclick="switchTab('xray')">Fund X-Ray</button>
+    <!-- P6b W5: every tab but Private Credit moved to the analyst workspace at / (see #movedNotice).
+         Their code stays for the v1 regression tests; the buttons are hidden. -->
+    <button class="tab retired" hidden role="tab" aria-selected="false" aria-controls="singleTab"    onclick="switchTab('single')">Single Security</button>
+    <button class="tab retired" hidden role="tab" aria-selected="false" aria-controls="marketTab"     onclick="switchTab('market')">Market &amp; What's New</button>
+    <button class="tab retired" hidden role="tab" aria-selected="false" aria-controls="firmsTab"      onclick="switchTab('firms')">Firms</button>
+    <button class="tab retired" hidden role="tab" aria-selected="false" aria-controls="batchTab"      onclick="switchTab('batch')">Batch Search</button>
+    <button class="tab active"         role="tab" aria-selected="true"  aria-controls="creditTab"     onclick="switchTab('credit')">Private Credit Analysis</button>
+    <button class="tab retired" hidden role="tab" aria-selected="false" aria-controls="watchlistTab"  onclick="switchTab('watchlist')">Watchlist</button>
+    <button class="tab retired" hidden role="tab" aria-selected="false" aria-controls="xrayTab"       onclick="switchTab('xray')">Fund X-Ray</button>
+  </div>
+
+  <!-- Where the retired v1 tabs went (P6b W5) -->
+  <div id="movedNotice" class="moved-notice" role="note">
+    <strong>Everything but Private Credit has moved to the <a href="/">analyst workspace</a>.</strong>
+    Single Security → search any company with <a href="/">⌘K</a> ·
+    Market &amp; What's New → <a href="/">Market</a> and <a href="/activity">Activity</a> ·
+    Firms → <a href="/firms">Firms</a> ·
+    Batch Search → <a href="/compare">Compare</a> ·
+    Watchlist → <a href="/tracked">Tracked &amp; Watchlist</a> (it imports this browser's v1 watchlist) ·
+    Fund X-Ray → any fund's page (search its name).
   </div>
 
   <!-- Single tab -->
-  <div id="singleTab" class="tab-content active" role="tabpanel">
+  <div id="singleTab" class="tab-content" role="tabpanel">
     <div class="search-row">
       <div class="input-group">
         <label for="securityInput">Security Ticker or Name</label>
@@ -674,7 +688,7 @@
   </div>
 
   <!-- Private Credit tab -->
-  <div id="creditTab" class="tab-content" role="tabpanel">
+  <div id="creditTab" class="tab-content active" role="tabpanel">
     <div class="search-row">
       <div class="input-group">
         <label for="creditIssuerInput">Issuer Name</label>

@@ -241,7 +241,7 @@ Check health with `npm run warehouse` (generations and the last job), `cat wareh
 
 ## Module map
 
-Built so far (P1–P4.5):
+Built in P1–P4.5 (later additions follow below, by wave):
 
 ```
 lib/edgar.js                       fetchWithRetry, pace (moved from server.js; shared by server and jobs)
@@ -405,6 +405,23 @@ ui/bits.tsx WatchButton ☆ Watch on company, firm and fund page heads
 
 Services added (`lib/services/analysis.js`): `drill` (the legs behind one pivot cell; they sum to it), `movers`,
 `newlyReported`, `watchlist`, `compare`; `pivot` takes `keys` and `tracked`; `market.feed` takes `funds`.
+
+Added in P6c and W5 (2026-10-05/06):
+
+```
+lib/warehouse/job.js, job-state.js   runJob, the one write path; generations, lock, validation (ADR 0009)
+lib/services/classes.js fundMarks    one mark observation per fund x class x date (F06)
+web/src/api/client.ts   generation revalidation (focus, visibility, 5 min); views refetch on a new generation
+web/src/ui/useDialog.ts focus trap, Escape, focus back to the trigger (palette, position drawer)
+web/src/ui/Basis.tsx    how cross-company views read history (today's curation and advisers); Basis export column
+web/src/pages/company/markLines.ts   per-class, per-lineage split-adjusted marks for the position drawer
+web/src/lib/export.ts csvText        spreadsheet-formula-safe CSV text; format.ts escapeHtml for chart tooltips
+web/e2e/                Playwright suite (app.spec.ts, a11y.spec.ts with axe) on the golden warehouse
+test/oracle.test.js     raw-EDGAR oracle (test/fixtures/oracle, scripts/verify-edgar.js rawHoldings)
+public/ (v1, /legacy)   only Private Credit Analysis is shown; the retired tabs link to their replacements
+```
+
+ECharts loads after the page's load event, when the browser is idle (`ui/Chart.tsx`): the text and tables paint first.
 
 Planned: `mcp-server.js` (P7) over the same services.
 

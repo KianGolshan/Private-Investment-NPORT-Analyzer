@@ -68,7 +68,7 @@ export function ScopeBar({
   ];
 
   return (
-    <div class="scope" aria-label="Scope">
+    <div class="scope" role="group" aria-label="Scope">
       {supports.range && supports.asof && (
         <Segmented
           label="Date mode"

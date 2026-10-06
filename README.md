@@ -2,23 +2,28 @@
 
 An internal tool for analyzing SEC NPORT-P filings to track and compare private investment valuations across institutional funds. Search by company name or ticker to see how different funds mark the same asset over time.
 
-> **Vantage v2** answers from an SEC-verified local warehouse: complete N-PORT history since 2019Q4, a refresh from
-> EDGAR, an as-of engine (amendments, exits, dead funds, $0 positions handled), companies resolved from filing
-> evidence, parent firms from Form N-CEN, and a tracked list of 180 private companies. Analyze it by:
+> **Vantage v2** answers from an SEC-verified local warehouse: complete N-PORT history since 2019Q4, a nightly refresh
+> from EDGAR published as whole, validated generations, an as-of engine (amendments, exits, dead funds, $0 positions
+> handled), companies resolved from filing evidence, parent firms from Form N-CEN, and a tracked list of 180 private
+> companies. The analyst workspace (`web/`, served at `/`) is organized by **security → issuer → fund → manager**:
 >
-> - **Issuer** (company page): holders as of any date with each fund's mark date, % of fund and filing; activity
->   per fund filing (first reported, added, reduced, no longer reported, reported at $0, mark moved, split-adjusted);
->   monthly trend of holders and value.
-> - **Security** (share classes): every fund's per-share mark per class, spreads at one mark date, gaps within a
->   filing, stale marks, per-class mark history.
-> - **Fund** (Fund X-Ray, `/fund/<key>`): private book split into operating companies, fund interests and vehicles;
->   period compare, mark-implied returns, changes filing by filing.
-> - **Manager** (Firms, `/firm/<id>`): a firm's book as of any date, its marks per class, its position changes.
-> - **Market** (Market & What's New): top private companies as of any date, by country, the tracked dashboard, and a
->   feed of changes in newly filed reports. Every view exports CSV with mark date, accession and source.
+> | Where | What |
+> | --- | --- |
+> | ⌘K (anywhere) | one search over companies, unreviewed names, firms, funds and classes |
+> | `/` Market | top private companies as of any date, movers (mark and position effects), newly reported |
+> | `/company/<id>` | overview and bridge, holders, positions grid, changes, marks & share classes (spreads, leadership), filings; `?pos=<fund>` opens one fund's position history |
+> | `/fund/<key>` | a fund's private book (X-Ray), timeline, marks vs others, compare, mark-implied returns |
+> | `/firm/<id>`, `/firms` | a manager's book, timeline, fund × company matrix, marks vs others, changes |
+> | `/explore` | pivot of firm, fund, company or class × month, quarter or year; every cell drills to its filings |
+> | `/activity` | changes in newly filed reports, by firm and fund, paged |
+> | `/compare` | 2–5 companies, firms, funds or classes side by side (replaces v1 Batch) |
+> | `/tracked` | the tracked list and your watchlist (replaces v1 Watchlist; imports it) |
+> | `/legacy` | v1, now only Private Credit Analysis (BDC 10-Q/10-K schedules) |
 >
+> Every view is scoped from the URL (firm, fund, class, kind, as-of date or range), every chart has a table twin, and
+> every export carries mark dates, accessions and how it reads history (today's reviewed list and advisers).
 > Listed companies and debt come from live EDGAR, labeled; a listed company's private-era marks open on request.
-> Some sections below still describe v1's live flow.
+> The sections below "What It Does" describe v1's live flow, which remains for listed companies and Private Credit.
 >
 > - Plan: [docs/ROADMAP.md](docs/ROADMAP.md) · Progress: [docs/STATUS.md](docs/STATUS.md) · Design:
 >   [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Data rules: [docs/DATA-QUALITY.md](docs/DATA-QUALITY.md) ·
@@ -40,7 +45,7 @@ An internal tool for analyzing SEC NPORT-P filings to track and compare private 
 Institutional funds registered with the SEC are required to file NPORT-P reports disclosing their portfolio holdings quarterly. Vantage queries the SEC EDGAR database in real time, parses the raw XML filings, and extracts price-per-share data for any security you search — letting you see how different funds value the same private company across reporting periods.
 
 **Use cases:**
-- Compare marks on private investments across funds (e.g., Anthropic, OpenAI, SpaceX)
+- Compare marks on private investments across funds (e.g., Anthropic, OpenAI, Stripe)
 - Track valuation trends over time
 - Identify divergence in how funds price the same asset
 - Export data for further analysis
@@ -249,7 +254,7 @@ can't reach:
 
 ### Single Security
 
-1. Enter a company name (e.g., `Anthropic`, `OpenAI`, `SpaceX`) or ticker in the search box
+1. Enter a company name (e.g., `Anthropic`, `OpenAI`, `Stripe`) or ticker in the search box
 2. Choose how many filings to process (25 / 50 / 100 / 250) — the **most recent** matching filings are kept
 3. Click **Search NPORT Filings**
 4. Results show a price-per-share trend chart and a table of holdings broken down by fund. If EDGAR matched more filings than you chose to parse, the result message says so ("Parsed the 50 most recent of 837 matching filings") — a capped run never passes for complete coverage

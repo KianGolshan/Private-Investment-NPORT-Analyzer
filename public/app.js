@@ -234,9 +234,12 @@ function applyURLParams() {
     switchTab(tab, { skipUrlReset: true });
   }
 }
+// v1 lives at /legacy now (P6b W5): its links must stay there, never land on
+// the workspace at /. A page opened at / (the tests, an unbuilt checkout) keeps /.
+const legacyBase = () => (window.location.pathname.startsWith('/legacy') ? '/legacy' : '/');
 function updateURLParams(params) {
   const url = new URL(window.location.href);
-  url.pathname = '/'; // leaving a /company/, /name/ or /fund/ permalink
+  url.pathname = legacyBase(); // leaving a /company/, /name/ or /fund/ permalink
   url.search = '';
   Object.entries(params).forEach(([k, v]) => {
     if (v) url.searchParams.set(k, v);
@@ -294,7 +297,12 @@ function switchTab(tab, { skipUrlReset } = {}) {
   clearResults();
   // Skipped when applyURLParams() is driving the tab switch on page load —
   // it still has incoming ?security=/?issuer= params to read and act on.
-  if (!skipUrlReset) window.history.replaceState({}, '', tab === 'market' || tab === 'firms' ? `/?tab=${tab}` : '/');
+  if (!skipUrlReset)
+    window.history.replaceState(
+      {},
+      '',
+      tab === 'market' || tab === 'firms' ? `${legacyBase()}?tab=${tab}` : legacyBase()
+    );
   if (tab === 'watchlist') renderWatchlist();
   // The analysis tabs load on first visit (public/views.js).
   if (tab === 'market' && !document.getElementById('marketContainer').innerHTML.trim()) {

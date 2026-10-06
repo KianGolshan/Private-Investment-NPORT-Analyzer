@@ -7,7 +7,7 @@
   /* Brand (v1's navy and gold, kept) */
   --brand: #0f2440;
   --brand-strong: #0a1930;
-  --accent: #b8860b;
+  --accent: #8a6508; /* ≥ 4.5:1 as text on every light surface (W5 axe audit) */
 
   /* Surfaces and text */
   --bg: #f3f5f8;
@@ -18,16 +18,16 @@
   --border-strong: #c9d0d9;
   --text: #18212d;
   --text-2: #4a5566;
-  --text-3: #7a8494;
+  --text-3: #5f6877; /* muted text, ≥ 4.9:1 on every light surface */
   --link: #1d4f91;
   --focus: #2f6fd6;
 
   /* Meaning (always paired with a sign, word or icon, never color alone) */
-  --pos: #15803d;
+  --pos: #126b33;
   --pos-bg: #e3f3e8;
   --neg: #b91c1c;
   --neg-bg: #fbe9e9;
-  --warn: #b45309;
+  --warn: #9a4507;
   --warn-bg: #fcf1df;
   --info-bg: #e7eef8;
   --muted-bg: #eef1f5;

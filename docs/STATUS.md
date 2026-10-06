@@ -2,7 +2,7 @@
 
 **Phase:** P6b W0–W4 signed off (W4 2026-10-05). **P6c (review remediation) inserted before W5**: the user's
 separate check was a staff engineering review (F01–F18); plan approved 2026-10-05. R1–R3 signed off 2026-10-05.
-**W5 (retire & polish) next; not started** (only its scope was read). Branch `v2-p6b-workspace` (pushed). P6 core signed off 2026-10-01. Wave results: [archive](archive/STATUS-history.md).
+**W5 (retire & polish) built 2026-10-06, stopped for sign-off.** After W5: P7 (MCP) and P8 (operations). Branch `v2-p6b-workspace` (pushed). P6 core signed off 2026-10-01. Wave results: [archive](archive/STATUS-history.md).
 **Last updated:** 2026-10-05. Earlier results: [archive/STATUS-history.md](archive/STATUS-history.md).
 
 ## Phase tracker
@@ -10,7 +10,7 @@ separate check was a staff engineering review (F01–F18); plan approved 2026-10
 - [x] P0–P5b: live fixes, warehouse, refresh, as-of, entities, identity, services, company and fund pages
       (signed off 2026-09-28..30; ROADMAP "Done")
 - [x] P6 core: analysis views (signed off 2026-10-01; remaining items in ROADMAP §6)
-- [ ] **P6b: analyst workspace**: W0–W4 signed off (2026-10-01, W4 2026-10-05); **W5 next** (ROADMAP §6b)
+- [ ] **P6b: analyst workspace** (W5 built 2026-10-06, awaiting sign-off): W0–W4 signed off (2026-10-01, W4 2026-10-05); **W5 next** (ROADMAP §6b)
 - [x] **P6c: review remediation**: R1–R3 signed off 2026-10-05; W5 next
       ([plan](plans/P6c-review-remediation.md))
 - [ ] P7: MCP server (open now; the services exist)
@@ -114,6 +114,16 @@ entities, 68,277 position-fact legs. `ingest_errors` empty. 2026Q3 bulk not post
 
 ## Open decisions (user)
 
+- **W5 calls (open to overrule):**
+  - **v1 retirement:** `/legacy` shows only Private Credit, plus a panel linking each retired tab to its
+    replacement. The retired tabs' code stays (hidden) because ~30 v1 regression tests drive it; deleting it is a
+    separate cleanup.
+  - **Light theme for contrast:** muted text `#5f6877`, accent `#8a6508`, positive `#126b33`, warning `#9a4507`;
+    the header's "v2" mark is light gold. Links inside running text and table cells are underlined (faintly in
+    tables).
+  - **ECharts loads after the page's load event, when idle.** Charts appear a moment after the text.
+  - **Drill payload not trimmed:** 382 KB of JSON is 48.8 KB gzipped on the wire and is answered in 16 ms.
+
 - **P6c R3 calls (open to overrule):** the feed pages at up to 3,000 per request (the Activity page asks for 500),
   with `total`/`breakdown` over every match. Exports of a page carry their row range in the file name. A partial
   live answer is never cached. The basis note ("today's reviewed list, current N-CEN adviser, applied to every
@@ -162,6 +172,10 @@ entities, 68,277 position-fact legs. `ingest_errors` empty. 2026Q3 bulk not post
 
 ## Known issues
 
+- Full parallel `npm test` runs twice failed one warehouse-API test once each ("scope: … post-filter", 2026-10-05;
+  "API goldens: Stripe A5 …", 2026-10-06), each at load 3–5. Neither reproduced: alone, in 6 more full runs or in 4
+  parallel stress runs. Likely the same timing family as the startup and 429-retry flakes below; worth a look in P8.
+
 - `npm test` once failed "scope: firm, fund, class and kind filters equal a post-filter of the unfiltered answer"
   in a full parallel run (2026-10-05, load ~5). It passed alone, in 2 more full runs and in 4 parallel stress runs
   (not reproduced; the same family as the timing flakes below).
@@ -183,18 +197,32 @@ entities, 68,277 position-fact legs. `ingest_errors` empty. 2026Q3 bulk not post
 
 ## Next session
 
-> Resume Vantage v2 on branch `v2-p6b-workspace`. P6c R1–R3 are signed off. Build **W5 (retire & polish)** per docs/ROADMAP.md §6b, plus the rest of F18:
+> Resume Vantage v2 on branch `v2-p6b-workspace`. P6c is signed off; P6b W5 (retire & polish) is built and waiting
+> for sign-off, which completes P6b. Then ask the user which comes next:
 >
-> - move v1 Batch and Watchlist users to Compare and Tracked; only Private Credit stays in Legacy;
-> - an axe audit and Lighthouse ≥ 90 for perf and a11y on Explore, company, firm and Market;
-> - a focus trap and return-to-trigger for the palette and drawer, and keyboard activation for clickable rows;
-> - trim the drill payload if needed; README v2 map and module map.
+> - **P7 (MCP server)**: open; the services exist.
+> - **P8 (operations)**: readiness endpoint, binding 127.0.0.1 by default, async gzip, byte-bounded memo, a backup
+>   restore drill from a kept generation, alerts, and the nightly launchd job (only with the user's yes).
+> - **A PR of `v2-p6b-workspace` to main**, when the user says so.
 >
-> Read CLAUDE.md (every write is a job; `npm run test:e2e` after `npm run build:web`), docs/STATUS.md and
-> docs/plans/P6c-review-remediation.md. Extend `web/e2e` for the W5 a11y checks. Stop for W5 sign-off. After W5:
-> P7/P8 (F10/F11 items listed in ROADMAP).
+> Read CLAUDE.md, docs/STATUS.md (Open decisions, Known issues) and docs/ROADMAP.md first. Gates: `npm test`, lint,
+> format, `npm run test:web`, `npm run build:web` then `npm run test:e2e`, `npm run test:live`.
 
 ## Log
+
+- **2026-10-06 (P6b W5, retire & polish):**
+  - **v1:** `/legacy` keeps only Private Credit (moved panel with links); its URLs stay under `/legacy`. The v2
+    nav says "Private Credit (v1)".
+  - **F18:** `useDialog` (focus trap, Escape, focus back to the trigger) for the palette and drawer; clickable rows
+    open with Enter/Space.
+  - **Accessibility:** axe audit (WCAG 2.1 A/AA) on 10 views in light and dark is in `web/e2e/a11y.spec.ts`: 0
+    findings of any impact after the contrast tokens, link underlines and the scope bar's role.
+  - **Performance:** Lighthouse (Chromium for Testing, live warehouse), perf/a11y: Market 96/98 (was 59), Explore
+    97/98 (was 70), company 98/98, firm 95/98. ECharts is now deferred to idle, and unused ECharts parts dropped.
+  - **Docs:** README v2 map (the SpaceX example replaced), ARCHITECTURE module map.
+  - **Gates:** `npm test` 570 tests (538 pass, 31 skipped; one unreproduced intermittent, Known issues). Web 34/34.
+    e2e 27/27 (7 app + 20 a11y). LIVE 31/31. Lint and format clean. Bench p95 13.5–16.1 ms (load 3.2). Golden A1
+    live 72 / $5.945B.
 
 - **2026-10-05 (P6c R3):** Assurance.
   - **Browser suite:** `web/e2e` (Playwright, Chromium), in CI as job `e2e`. It covers the strict CSP and six

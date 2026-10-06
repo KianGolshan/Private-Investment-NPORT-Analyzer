@@ -13,11 +13,25 @@ type Handler = (params: unknown, chart: ECharts) => void;
 // A failed load (a dropped connection, a deploy that replaced the chunk) is
 // forgotten, so Retry loads it again (staff review F18).
 let loader: Promise<typeof import('./echarts')> | null = null;
+// ECharts (~650 KB) starts loading once the page has loaded and the browser is
+// idle, so the page's text and tables paint first (W5 perf pass: it was on the
+// largest-paint path of Market and Explore); the chart box holds its height.
+const afterFirstPaint = () =>
+  new Promise<void>(resolve => {
+    const idle = () =>
+      'requestIdleCallback' in window
+        ? (window as Window & typeof globalThis).requestIdleCallback(() => resolve(), { timeout: 1500 })
+        : setTimeout(resolve, 1);
+    if (document.readyState === 'complete') idle();
+    else window.addEventListener('load', idle, { once: true });
+  });
 const loadEcharts = () =>
-  (loader ??= import('./echarts').catch(err => {
-    loader = null;
-    throw err;
-  }));
+  (loader ??= afterFirstPaint()
+    .then(() => import('./echarts'))
+    .catch(err => {
+      loader = null;
+      throw err;
+    }));
 
 export function Chart({
   build,

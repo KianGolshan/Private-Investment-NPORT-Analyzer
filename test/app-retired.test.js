@@ -114,3 +114,15 @@ test('the live path still uses them: a listed company (Pfizer, F24) and an unkno
     );
   }
 });
+
+// P6b W5: /legacy keeps only Private Credit; every other v1 tab points to its
+// replacement in the analyst workspace.
+test('W5: v1 shows only Private Credit, opens on it, and links each retired tab to its replacement', async () => {
+  const { document } = await loadApp({ fetchImpl: async () => jsonResponse({}) });
+  const shown = [...document.querySelectorAll('.tab')].filter(t => !t.hidden).map(t => t.textContent.trim());
+  assert.deepEqual(shown, ['Private Credit Analysis']);
+  assert.ok(document.getElementById('creditTab').classList.contains('active'));
+  assert.ok(!document.getElementById('singleTab').classList.contains('active'));
+  const links = [...document.querySelectorAll('#movedNotice a')].map(a => a.getAttribute('href'));
+  for (const href of ['/', '/activity', '/firms', '/compare', '/tracked']) assert.ok(links.includes(href), href);
+});

@@ -24,6 +24,20 @@ a {
 a:hover {
   text-decoration: underline;
 }
+/* a link beside other text in a table cell: a faint underline (WCAG 1.4.1) */
+td a {
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-underline-offset: 2px;
+}
+/* a link inside running text is told apart by more than color (WCAG 1.4.1) */
+p a,
+li a,
+.muted a,
+.notice a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 :focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
@@ -115,7 +129,7 @@ th.num {
   font-size: var(--fs-lg);
 }
 .brandmark small {
-  color: var(--accent);
+  color: #e0b54a; /* light gold on the navy brand bar (8:1); --accent is tuned for light surfaces */
   font-weight: 600;
   font-size: var(--fs-xs);
 }
