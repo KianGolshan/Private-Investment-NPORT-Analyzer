@@ -12,11 +12,17 @@ const Firms = lazy(() => import('./pages/Firms'));
 const Firm = lazy(() => import('./pages/firm'));
 const Fund = lazy(() => import('./pages/fund'));
 const Activity = lazy(() => import('./pages/Activity'));
+const Explore = lazy(() => import('./pages/Explore'));
+const Tracked = lazy(() => import('./pages/Tracked'));
+const Compare = lazy(() => import('./pages/Compare'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 const NAV: { href: string; label: string; match: (p: string) => boolean }[] = [
+  { href: '/explore', label: 'Explore', match: p => p.startsWith('/explore') },
   { href: '/', label: 'Market', match: p => p === '/' },
   { href: '/activity', label: 'Activity', match: p => p.startsWith('/activity') },
+  { href: '/tracked', label: 'Tracked', match: p => p.startsWith('/tracked') },
+  { href: '/compare', label: 'Compare', match: p => p.startsWith('/compare') },
   { href: '/firms', label: 'Firms', match: p => p.startsWith('/firm') },
 ];
 
@@ -139,6 +145,9 @@ function Shell() {
               <Route path="/firm/:id" component={Firm} />
               <Route path="/fund/:key" component={Fund} />
               <Route path="/activity" component={Activity} />
+              <Route path="/explore" component={Explore} />
+              <Route path="/tracked" component={Tracked} />
+              <Route path="/compare" component={Compare} />
               <Route default component={NotFound} />
             </Router>
           </ErrorBoundary>

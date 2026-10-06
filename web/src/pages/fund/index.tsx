@@ -3,7 +3,7 @@ import { useApi } from '../../api/client';
 import type { ChangeEvent, Envelope, Freshness, FundFilings, FundInfo } from '../../api/types';
 import { longDate, moneyC, num } from '../../lib/format';
 import { useParam } from '../../scope/scope';
-import { Badge, Card, ErrorBox, FilingRef, Kpi, Loading, Tabs } from '../../ui/bits';
+import { Badge, Card, ErrorBox, FilingRef, Kpi, Loading, Tabs, WatchButton } from '../../ui/bits';
 import { ChangesTable } from '../../ui/ChangesTable';
 import { DataTable } from '../../ui/DataTable';
 import { BookOverview } from '../book/BookOverview';
@@ -57,6 +57,8 @@ export default function Fund() {
                 {d.fund.inactive && <Badge tone="warn">Stopped filing</Badge>}
               </div>
             </div>
+            <span class="spacer" />
+            <WatchButton kind="fund" id={d.fund.fundKey} label={name} />
           </div>
           <div class="kpis">
             <Kpi

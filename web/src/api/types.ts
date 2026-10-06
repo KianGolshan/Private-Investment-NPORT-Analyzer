@@ -392,7 +392,10 @@ export interface TopCompanies extends Envelope {
 export interface Feed extends Envelope {
   since: string;
   until: string;
+  /** Who: tracked companies or every reviewed private company. */
   scope: string;
+  /** The firm and fund filters applied (P6b W4). */
+  filters?: ScopeEcho['scope'];
   count: number;
   events: ChangeEvent[];
 }
@@ -800,4 +803,162 @@ export interface XrayReturns extends Envelope {
       events: { type: string; date: string; ratio?: number }[];
     }[];
   };
+}
+
+// ── P6b W4: Explore drill, Market movers and newly reported, watchlist, Compare ──
+
+export interface DrillEvent {
+  fundKey: string;
+  fundLabel?: string;
+  cik?: string;
+  companyId: number;
+  company?: string;
+  markDate: string;
+  /** null for a fund that stopped filing (dated the day it dropped out). */
+  accession: string | null;
+  lastAccession: string;
+  filingDate: string | null;
+  event: string;
+  label: string;
+  amount: number;
+  legs: (FactLeg & { step: string; amount: number })[];
+}
+
+export interface Drill extends Envelope, ScopeEcho {
+  rows: Pivot['rows'];
+  key: string | number | null;
+  rowLabel: string;
+  metric: PivotMetric;
+  from: string;
+  to: string;
+  tracked?: boolean;
+  label: string;
+  total: number;
+  funds: number;
+  legCount: number;
+  count: number;
+  events: DrillEvent[];
+}
+
+export interface Mover {
+  companyId: number;
+  name: string;
+  startValue: number;
+  endValue: number;
+  startFunds: number;
+  endFunds: number;
+  markEffect: number;
+  positionEffect: number;
+  firstReported: number;
+  added: number;
+  reduced: number;
+  exited: number;
+  started: number;
+  stopped: number;
+  valueOnly: number;
+}
+
+export interface Movers extends Envelope {
+  from: string;
+  to: string;
+  tracked?: boolean;
+  label: string;
+  companies: number;
+  markUp: Mover[];
+  markDown: Mover[];
+  flowIn: Mover[];
+  flowOut: Mover[];
+}
+
+export interface NewlyReported extends Envelope {
+  from: string;
+  to: string;
+  label: string;
+  count: number;
+  results: {
+    companyId: number;
+    name: string;
+    tracked: boolean;
+    firstMarkDate: string;
+    firstFunds: number;
+    firstValue: number;
+    firstAccession: string;
+    firstFund: string;
+    firstFundLabel?: string;
+    cik?: string;
+    how: string[];
+    funds: number;
+    value: number;
+  }[];
+}
+
+export type WatchKind = 'company' | 'firm' | 'fund';
+
+export interface WatchlistAnswer extends Envelope {
+  date: string;
+  yearAgo: string;
+  label: string;
+  items: {
+    kind: WatchKind;
+    key: number | string;
+    label: string | null;
+    value: number;
+    funds: number;
+    companies: number;
+    valueYearAgo: number;
+    fundsYearAgo: number;
+    positionEffect: number;
+    markEffect: number;
+  }[];
+}
+
+export interface TrackedDashboard extends Envelope {
+  date: string;
+  yearAgo: string;
+  companies: {
+    companyId: number;
+    name: string;
+    funds: number;
+    value: number;
+    fundsYearAgo: number;
+    valueYearAgo: number;
+    holderChange: number;
+    mainClass: string | null;
+    markDate: string | null;
+    median: number | null;
+    markChange12mPct: number | null;
+    markChangeFunds: number;
+    dispersionPct: number | null;
+    staleFunds: number;
+  }[];
+}
+
+export interface CompareMark {
+  markDate: string;
+  median: number;
+  low: number;
+  high: number;
+  funds: number;
+}
+
+export interface Compare extends Envelope {
+  rows: Pivot['rows'];
+  period: Pivot['period'];
+  from: string;
+  to: string;
+  label: string;
+  periods: Pivot['periods'];
+  metrics: PivotMetric[];
+  count: number;
+  results: (PivotCells & {
+    key: string | number;
+    label: string | null;
+    companies: number;
+    funds: number;
+    oldestMark: string | null;
+    newestMark: string | null;
+    markClass?: string;
+    marks?: CompareMark[];
+    spread?: { markDate: string; pct: number; funds: number } | null;
+  })[];
 }

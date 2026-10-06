@@ -3,7 +3,7 @@ import { qs, useApi } from '../../api/client';
 import type { FirmBook, Freshness } from '../../api/types';
 import { longDate, moneyC, num } from '../../lib/format';
 import { useParam, useScope } from '../../scope/scope';
-import { ErrorBox, Kpi, Loading, Tabs } from '../../ui/bits';
+import { ErrorBox, Kpi, Loading, Tabs, WatchButton } from '../../ui/bits';
 import { BookOverview } from '../book/BookOverview';
 import { MarksVsOthers } from '../book/MarksVsOthers';
 import { Timeline } from '../book/Timeline';
@@ -50,6 +50,8 @@ export default function Firm() {
                 the fund’s current N-CEN adviser. Each fund at its own mark date.
               </p>
             </div>
+            <span class="spacer" />
+            <WatchButton kind="firm" id={id} label={b.firm.name} />
           </div>
           <div class="kpis">
             <Kpi label="Private value" value={moneyC(b.value)} sub={`as of ${longDate(b.date)}`} />

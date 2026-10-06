@@ -5,7 +5,7 @@ import { qs, useApi } from '../../api/client';
 import type { ClassesAsOf, Company as CompanyT, CompanyStats, Envelope, Freshness, TrendPoint } from '../../api/types';
 import { longDate, money, moneyC, num } from '../../lib/format';
 import { useParam } from '../../scope/scope';
-import { Badge, Empty, ErrorBox, Kpi, Loading, Tabs } from '../../ui/bits';
+import { Badge, Empty, ErrorBox, Kpi, Loading, Tabs, WatchButton } from '../../ui/bits';
 import { Chart } from '../../ui/Chart';
 import type { ChartTheme } from '../../ui/theme';
 import { PositionDrawer } from './PositionDrawer';
@@ -143,6 +143,7 @@ export default function Company() {
               </div>
             </div>
             <span class="spacer" />
+            {!isEntity && h.company && <WatchButton kind="company" id={h.company.id} label={name} />}
             {!isEntity && (
               <a class="btn sm" href={`${base}/feed.xml`} target="_blank" rel="noopener">
                 Atom feed

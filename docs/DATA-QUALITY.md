@@ -103,6 +103,14 @@ every refresh (`lib/warehouse/reclassify.js`), which also moves each filing's to
   460). "Above", "same" (within 0.5%), "below" as filed (F50).
 - **Timeline:** a bar while any of the firm's funds is in force with the company (the as-of rule); a holding in a
   fund's first stored filing reads "held at the first stored filing", never "first reported" (the data starts 2019).
+- **Explore drill** (`analysis.drill`, P6b W4): a cell's legs are the ones the pivot summed: a level lists the legs
+  in force at the period end, a flow the legs whose change the bridge puts in that step, at their own mark date (a
+  fund that stopped filing at the day it dropped out). They sum to the cell, grouped by filing.
+- **Movers** (`analysis.movers`): each company's bridge over the window, ranked by mark effect and by net position
+  flow (first reported + added − reduced − no longer reported). Worded as filed; a share exchange that is not a
+  split reads as added + mark moved (Mesquite, F52).
+- **Newly reported** (`analysis.newlyReported`): the company's first stored holding with value, any fund, falls in
+  the window; the first stored quarter (2019Q4) never counts as new.
 - **Firms are the current adviser** (latest N-CEN). Dated attribution was measured and not adopted: real firm-to-firm
   adviser changes touch 16 private-company filings, $0.05B of $640.6B filed (0.01%; $0.28B with retired adviser
   entities not in `managers.csv`); answers say "current adviser (latest N-CEN)".

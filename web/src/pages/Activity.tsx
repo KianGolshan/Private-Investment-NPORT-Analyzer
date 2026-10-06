@@ -1,12 +1,15 @@
 import { qs, useApi } from '../api/client';
 import type { Feed, Freshness } from '../api/types';
 import { longDate, num } from '../lib/format';
-import { useParam } from '../scope/scope';
+import { FirmPicker } from '../scope/FirmPicker';
+import { ScopeBar } from '../scope/ScopeBar';
+import { scopeParams, useParam, useScope } from '../scope/scope';
 import { Card, ErrorBox, Kpi, Loading } from '../ui/bits';
 import { ChangesTable } from '../ui/ChangesTable';
 
 // What's new: position changes in filings made in a window (by filing date,
-// at most 92 days per request), tracked companies or every private company.
+// at most 92 days per request), tracked companies or every private company,
+// narrowed by the scope's firm and fund filters (the server filters; P6b W4).
 
 const daysBefore = (iso: string, n: number) => {
   const d = new Date(`${iso}T00:00:00Z`);
@@ -16,11 +19,18 @@ const daysBefore = (iso: string, n: number) => {
 
 export default function Activity() {
   const fresh = useApi<Freshness>('/api/freshness');
+  const [scope] = useScope();
   const [since, setSince] = useParam('since');
+  const [until, setUntil] = useParam('until');
   const [all, setAll] = useParam('all');
   const newest = fresh.data?.newestFilingDate ?? null;
-  const from = since || (newest ? daysBefore(newest, 30) : '');
-  const feed = useApi<Feed>(from ? `/api/feed${qs({ since: from, all: all === '1' })}` : null);
+  const to = until || newest || '';
+  const from = since || (to ? daysBefore(to, 30) : '');
+  const feed = useApi<Feed>(
+    from
+      ? `/api/feed${qs({ since: from, until: until || undefined, all: all === '1', ...scopeParams(scope, ['firm', 'fund']) })}`
+      : null
+  );
   const d = feed.data;
   const count = (t: string) => d?.events.filter(e => e.type === t).length ?? 0;
   return (
@@ -30,8 +40,8 @@ export default function Activity() {
           <div class="eyebrow">Activity</div>
           <h1>What's new in filings</h1>
           <p class="muted" style={{ margin: '4px 0 0' }}>
-            Changes reported in N-PORT filings made since {longDate(from)} ({d?.scope ?? '…'}). Each change compares a
-            fund's filing with its previous one.
+            Changes reported in N-PORT filings made from {longDate(from)} to {longDate(d?.until ?? to)}, in{' '}
+            {d?.scope ?? '…'}. Each change compares a fund's filing with its previous one; at most 92 days at a time.
           </p>
         </div>
         <span class="spacer" />
@@ -42,8 +52,19 @@ export default function Activity() {
               class="input"
               type="date"
               value={from}
-              max={newest ?? undefined}
+              max={to || undefined}
               onChange={e => setSince((e.target as HTMLInputElement).value)}
+            />
+          </label>
+          <label class="row small">
+            to
+            <input
+              class="input"
+              type="date"
+              value={to}
+              min={from || undefined}
+              max={newest ?? undefined}
+              onChange={e => setUntil((e.target as HTMLInputElement).value)}
             />
           </label>
           <label class="row small">
@@ -55,6 +76,10 @@ export default function Activity() {
             All private companies
           </label>
         </div>
+      </div>
+      <div class="row wrap">
+        <ScopeBar supports={{ filters: ['firm', 'fund'] }} newest={newest} />
+        <FirmPicker />
       </div>
       <ErrorBox error={feed.error} />
       {feed.loading && !d && <Loading rows={6} />}

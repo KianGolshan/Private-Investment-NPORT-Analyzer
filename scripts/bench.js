@@ -104,6 +104,48 @@ function requests() {
       'company pivot',
       `/api/analysis/pivot?company=${c.id}&rows=firm&period=quarter&from=2019-09-30`,
     ]),
+    // P6b W4: Explore drill, Market movers and newly reported, scoped feed, watchlist, Compare
+    ...['value', 'positionEffect', 'mark', 'holders'].map(m => [
+      'drill total',
+      `/api/analysis/drill?rows=firm&metric=${m}&from=${yearAgo}&to=${newest}`,
+    ]),
+    ...firmsTop.map(id => [
+      'drill firm',
+      `/api/analysis/drill?rows=firm&key=${id}&metric=positionEffect&from=${yearAgo}&to=${newest}`,
+    ]),
+    ...tracked.map(c => [
+      'drill company',
+      `/api/analysis/drill?rows=company&key=${c.id}&metric=value&from=${yearAgo}&to=${newest}`,
+    ]),
+    ['pivot tracked', '/api/analysis/pivot?rows=company&period=quarter&tracked=1'],
+    ['pivot class', '/api/analysis/pivot?rows=class&period=quarter'],
+    ['movers', '/api/market/movers'],
+    ['movers', `/api/market/movers?from=2019-12-31&to=${newest}`],
+    ['movers tracked', '/api/market/movers?tracked=1'],
+    ['newly reported', '/api/market/new'],
+    ['newly reported', `/api/market/new?from=2019-12-31&to=${newest}`],
+    ...firmsTop.map(id => ['feed ?firm', `/api/feed?all=1&firm=${id}`]),
+    [
+      'watchlist',
+      `/api/watchlist?company=${tracked
+        .slice(0, 100)
+        .map(c => c.id)
+        .join(',')}&firm=${firmsTop.join(',')}`,
+    ],
+    [
+      'compare companies',
+      `/api/analysis/compare?rows=company&${tracked
+        .slice(0, 5)
+        .map(c => `key=${c.id}`)
+        .join('&')}`,
+    ],
+    [
+      'compare firms',
+      `/api/analysis/compare?rows=firm&${firmsTop
+        .slice(0, 5)
+        .map(id => `key=${id}`)
+        .join('&')}`,
+    ],
     ...[...SEARCHES, 'Fidelity', 'Capital Group', 'Growth Fund of America', 'Anthropic Series G'].map(q => [
       'search all',
       `/api/search?q=${enc(q)}&kinds=company,entity,firm,fund,class`,

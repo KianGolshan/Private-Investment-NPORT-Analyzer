@@ -1,15 +1,15 @@
 # Vantage v2 Status
 
-**Phase:** P6b (analyst workspace): **W0–W3 signed off 2026-10-01; next W4 (cross-cutting)**, on branch
-`v2-p6b-workspace` (pushed). P6 core signed off 2026-10-01. Wave results: [archive](archive/STATUS-history.md).
-**Last updated:** 2026-10-01. Earlier results: [archive/STATUS-history.md](archive/STATUS-history.md).
+**Phase:** P6b (analyst workspace): W0–W3 signed off 2026-10-01; **W4 (cross-cutting) built 2026-10-05, awaiting
+sign-off**, on branch `v2-p6b-workspace` (pushed). P6 core signed off 2026-10-01. Wave results: [archive](archive/STATUS-history.md).
+**Last updated:** 2026-10-05. Earlier results: [archive/STATUS-history.md](archive/STATUS-history.md).
 
 ## Phase tracker
 
 - [x] P0–P5b: live fixes, warehouse, refresh, as-of, entities, identity, services, company and fund pages
       (signed off 2026-09-28..30; ROADMAP "Done")
 - [x] P6 core: analysis views (signed off 2026-10-01; remaining items in ROADMAP §6)
-- [ ] **P6b: analyst workspace**: W0–W3 signed off 2026-10-01; **W4 next**; W5 after (ROADMAP §6b)
+- [ ] **P6b: analyst workspace**: W0–W3 signed off 2026-10-01; **W4 built, awaiting sign-off**; W5 after (ROADMAP §6b)
 - [ ] P7: MCP server (open now; the services exist)
 - [ ] P8: operations hardening (nightly job, backups, alerting, doctor)
 - [ ] P9: public deployment (hosting to decide as ADR 0006)
@@ -29,6 +29,10 @@
 | Pivot and timeline (W1)      | `/api/analysis/pivot`, `/api/analysis/timeline`      | firm, fund, company or class × month, quarter or year: value, holders, flows, position and mark effects; a firm's or fund's spans and events per company   |
 | Position history (W1)        | `/api/companies/<id>/positions/<fund>`               | one fund's legs at every filing: shares, mark, value, change, effects, re-keys and merged keys                                                             |
 | Scope and search (W1)        | every company route; ⌘K                              | `?firm=&fund=&class=&kind=` on every company view; one ranked search over companies, names, firms, funds and classes                                       |
+| Explore (W4)                 | `/explore`, `/api/analysis/drill`                    | pivot rows × periods, every metric, heatmap + table; any cell drills to the legs behind it (they sum to the cell)                                          |
+| Market movers, new (W4)      | Market → Movers, Newly reported                      | largest mark effects and net position flows over a range; companies first reported in a range                                                              |
+| Activity, Watchlist (W4)     | `/activity`, `/tracked`                              | the feed with firm and fund filters; your watchlist (this browser) now vs a year earlier; the tracked dashboard                                            |
+| Compare (W4)                 | `/compare`                                           | 2–5 companies, firms, funds or classes: value per period, position and mark effects, median per-share marks (replaces v1 Batch)                            |
 | Exports                      | every view                                           | CSV with mark date, accession and source (XLSX/PDF on the v1 views)                                                                                        |
 
 ## Where things stand (2026-10-01, end of session)
@@ -46,7 +50,13 @@ P6b W0–W3 are built and **signed off**; the next wave is **W4 (cross-cutting)*
 - **Firm and fund pages (W3):** `web/src/pages/book/` (BookOverview, Timeline, MarksVsOthers) shared by
   `pages/firm/` and `pages/fund/` (Fund X-Ray, Compare, Returns ported from v1). `ui/BridgeView.tsx` is the one
   bridge view. `firmChanges` is paged.
-- **Still on v1 (`/legacy`):** Batch, Watchlist, Private Credit (deferred scope). W4 replaces Batch and Watchlist.
+- **Cross-cutting (W4, built 2026-10-05):** `web/src/pages/{Explore,Tracked,Compare}.tsx`, `pages/market/`
+  (Movers, NewlyReported), Activity with the scope; services `analysis.{drill,movers,newlyReported,watchlist,compare}`;
+  routes `/api/analysis/{drill,compare}`, `/api/market/{movers,new}`, `/api/watchlist`; tests
+  `test/workspace-w4.test.js` (pivot = `exposureAsOf` for every private company; every drill's legs = its cell;
+  drill events = `companyActivity`; movers = bridge) and `web/test/watchlist.test.ts`.
+- **Still on v1 (`/legacy`):** Batch, Watchlist, Private Credit (deferred scope). W4 built their replacements
+  (Compare, Tracked & Watchlist with a v1 import); W5 retires the v1 tabs.
 
 ## Handoff: how to work on this project (read before W4)
 
@@ -58,7 +68,7 @@ P6b W0–W3 are built and **signed off**; the next wave is **W4 (cross-cutting)*
 - **Real data only.** Check any new metric's definition on real rows _before_ building it (mark leadership and marks
   vs others were prototyped on Anthropic, Stripe, Databricks and Canva first). Every new number shown as a finding
   goes to GOLDEN-NUMBERS after a raw-EDGAR check: `node scripts/verify-edgar.js <cik> <pattern> <accession>…`
-  (needs `SEC_USER_AGENT` from `.env`; paced client). Last golden: **F50**.
+  (needs `SEC_USER_AGENT` from `.env`; paced client). Last golden: **F53**.
 - **One definition, held equal by tests.** New answers must equal `exposureAsOf` / `companyActivity` / `firmBook`
   where they overlap (see `test/analysis.test.js` for the pattern: real fixture rows, recomputation from stored rows).
   The bridge reconciles to the cent. Pivot value cells equal `exposureAsOf` — W4's exit check.
@@ -77,35 +87,40 @@ P6b W0–W3 are built and **signed off**; the next wave is **W4 (cross-cutting)*
 - **Gotchas:** the shell blocks `rm` on a `$VAR` path (use `"${S:?}"` or a literal path); scratch scripts go in the
   session scratchpad; ids worth knowing: companies Anthropic 1, Databricks 2, Stripe 5, Canva 6, FHU 741; firms
   BlackRock 1, Fidelity 3, T. Rowe 8, Capital Group 9; Growth Fund of America `S000009228`, Contrafund `S000006037`.
-- **W4 scope** (ROADMAP §6b, plan doc): Explore pivot (`/explore`: rows × periods, every metric, drill from a cell
-  to its events — the pivot API exists; a drill route listing the legs behind a cell is the missing piece), Market
-  (movers: largest mark moves and net position flows in a range; newly reported companies), Activity with the scope,
-  Tracked & Watchlist (server-backed list; localStorage first per the plan), Compare (2–5 companies, firms or
-  classes overlaid; replaces Batch).
+- **W5 scope** (ROADMAP §6b): move Batch and Watchlist users to Compare and Watchlist; only Private Credit stays
+  in Legacy; a11y audit, perf pass (Lighthouse ≥ 90), docs (README, module map), LIVE suite green.
 
 ## Measurements
 
-| Metric                         | Budget | Latest                                                                                         |
-| ------------------------------ | ------ | ---------------------------------------------------------------------------------------------- |
-| Warehouse size                 | ≤1 GB  | **574.7 MB** (2026-10-01; position facts 31 MB; ~25–30 MB per bulk quarter)                    |
-| Nightly refresh                | ≤5 min | 0.7 min (#18, nothing new; position facts 2.6 s)                                               |
-| API p95, all routes (load 1.9) | <200ms | 15.9 ms over 2,803 requests; slowest firm changes (Fidelity) 153 ms, market pivots 42 ms       |
-| Suite                          | green  | 531 tests, 500 pass, 0 fail, 31 skipped; web 18 / 18; LIVE 31 / 31 (W1); lint and format clean |
-| Full backfill / first catch-up | —      | 13.6 min / 26.9 min (P1, P2)                                                                   |
+| Metric                         | Budget | Latest                                                                                             |
+| ------------------------------ | ------ | -------------------------------------------------------------------------------------------------- |
+| Warehouse size                 | ≤1 GB  | **574.7 MB** (2026-10-02, refresh #19; position facts 31 MB; ~25–30 MB per bulk quarter)           |
+| Nightly refresh                | ≤5 min | 0.7 min (#19, nothing new; position facts 3.6 s)                                                   |
+| API p95, all routes (load 3–7) | <200ms | 29.8 ms over 3,805 requests (W4); new routes ≤ 70 ms (compare firms 64, drill total 36, movers 14) |
+| Suite                          | green  | 541 tests, 510 pass, 0 fail, 31 skipped; web 21 / 21; LIVE 31 / 31 (W4 start); lint, format clean  |
+| Full backfill / first catch-up | —      | 13.6 min / 26.9 min (P1, P2)                                                                       |
 
 Cold first requests are slower (disk); the server warms tracked exposure, the market list, firms, the dashboard and
 the position facts at start.
 
-## Warehouse state (refresh #18, 2026-10-01)
+## Warehouse state (refresh #19 + review import, 2026-10-02)
 
 Schema at migration 0019. 354,999 N-PORT filings (bulk 2019Q4–2026Q2 + catch-up through filings of 2026-09-30),
-1.165M private-candidate rows, 806 companies (304 private), 180 tracked, 529 firms, 18,852 funds, 71,833 unreviewed
-entities, 68,285 position-fact legs. `ingest_errors` empty. 2026Q3 bulk not posted yet.
+1.165M private-candidate rows, 806 companies (302 private: two registered VIP funds moved to public, see Log), 180 tracked, 529 firms, 18,852 funds, 71,833 unreviewed
+entities, 68,277 position-fact legs. `ingest_errors` empty. 2026Q3 bulk not posted yet.
 
 ## Open decisions (user)
 
-- **W4 next** (no decision pending to start it). The warm-up flake task (chip "Stop server warm-up from blocking past
-  keep-alive") can run in parallel.
+- **Sign off W4** ("sign off", or "continue" = sign off and build W5). Calls made under "v1 is the guidepost", open
+  to overrule: the watchlist lives in this browser (localStorage, per the plan; no server account); Compare keeps
+  v1 Batch's spread (dispersion) and mark age but not its per-fund charts (the company page has them); Market
+  movers rank dollars (mark effect, net position flow), not percent (a percent of a start value misleads for a
+  company first reported in the window: Anthropic $0.29B → $18.16B).
+- **Curation call made (finalize-reviews rule):** "LVIP ClearBridge Appreciation Fund - Standard" (id 235) and
+  "Franklin Gold And Precious Metals Vip Fund" (id 256) were reviewed `private`; both are registered series that file
+  N-PORT themselves (S000101700, S000101726), like the JNL funds already `public`. Set to `public` (aliases.csv);
+  they no longer show as "newly reported" companies. Overrule if you disagree.
+- The warm-up flake task (chip "Stop server warm-up from blocking past keep-alive") can run in parallel.
 - **Overrule or keep** two calls made under "v1 is the guidepost": trap 52 (a coded class moved to other keys is one
   position; segregated lines are the class) and dated firm attribution not adopted (0.01% of value).
 - **Install the nightly refresh** (launchd entry in ARCHITECTURE §Refresh lifecycle)? Not installed; until then run
@@ -124,32 +139,38 @@ entities, 68,285 position-fact legs. `ingest_errors` empty. 2026Q3 bulk not post
   (timing-sensitive, like the v1 429-retry test).
 - Fidelity's opaque per-fund vehicles (~$0.6B) stay on the review list (no filing names their targets).
 - `public/splits.js` knows ratios 2–100 from a fixed list; a 60:1 share exchange (Nscale 2026-05-31) reads as a class
-  change, not a split.
+  change, not a split. Likewise a non-split share exchange reads as "added" plus "mark moved": Mesquite Energy
+  (shares ×2.41, $205.76 → $15.45, Fidelity 2026-04-30; F52) is Market's largest mark move down (−$801.4M) with a
+  +$561.2M position flow. The bridge still reconciles; the split between the two legs follows the rule (shares at
+  the prior mark), not a reorganization price no filing states.
+- Explore's firm picker lists every firm holding private value (~170), including small advisers with terse N-CEN
+  names ("Portfolio", "Boston"); labels come from `managers.csv`.
 
 ## Next session
 
-> Resume Vantage v2 on branch `v2-p6b-workspace` (pushed). P6b W0–W3 are signed off; build **W4 (cross-cutting)**.
-> Read CLAUDE.md, then docs/STATUS.md in full ("Where things stand" and "Handoff" first), docs/ROADMAP.md §6b,
-> docs/plans/P6b-analyst-workspace.md (Explore pivot, Market, Activity, Tracked & Watchlist, Compare),
-> docs/DATA-QUALITY.md (traps 50–52 and the display rules: bridge, scope, mark leadership, marks vs others, timeline)
-> and docs/LESSONS.md.
+> Resume Vantage v2 on branch `v2-p6b-workspace` (pushed). P6b W4 is built and awaiting sign-off; if the user signs
+> off ("continue"), build **W5 (retire & polish)**. Read CLAUDE.md, then docs/STATUS.md in full ("Where things
+> stand", "Handoff", Open decisions first), docs/ROADMAP.md §6b, docs/plans/P6b-analyst-workspace.md (Delivery, W5),
+> docs/DATA-QUALITY.md (display rules incl. drill, movers, newly reported) and docs/LESSONS.md.
 >
 > Setup and gates first, stop and report if any fail: `npm install`, `npm --prefix web install`, `npm run build:web`,
-> `npm run refresh` (report 2026Q3 bulk, `ingest_errors`, size vs 1 GB), `npm test` (check the exit code; two known
-> flakes are in Known issues), `npm run lint`, `npm run format:check`, `npm run test:web`, `npm run lint:web`, and the
-> full `npm run test:live`.
+> `npm run refresh` (report 2026Q3 bulk, `ingest_errors`, size vs 1 GB), `npm test` (check the exit code), `npm run
+lint`, `npm run format:check`, `npm run test:web`, `npm run lint:web`, and the full `npm run test:live`.
 >
-> W4, in order: (1) Explore pivot at `/explore` on `/api/analysis/pivot` (rows firm, fund, company or class × month,
-> quarter or year; every metric; heatmap + table; saved views in the URL) with a drill from any cell to the events
-> and legs behind it (new route; test that a drill's legs sum to the cell). (2) Market: movers (largest mark moves and
-> net position flows over a range) and newly reported companies, each checked on real data before it is built.
-> (3) Activity with the scope. (4) Tracked & Watchlist. (5) Compare: 2–5 companies, firms or classes overlaid,
-> replacing v1's Batch. Exit check: pivot cells equal `exposureAsOf`; a drill lands on the right events. Verify new
-> numbers with `node scripts/verify-edgar.js` and add them to GOLDEN-NUMBERS (next is F51). Walk it in the browser
-> (light, dark, 375 px), bench every new route, update STATUS/ROADMAP/ARCHITECTURE, commit and push, and stop for W4
-> sign-off.
+> W5: move v1 Batch and Watchlist users to Compare and Tracked (link from `/legacy`, import the v1 watchlist), keep
+> only Private Credit in Legacy; a11y audit (axe) and Lighthouse ≥ 90 for perf and a11y on Explore, company, firm
+> and Market; trim the drill payload if needed (p95 382 KB for the total row); README and module map; LIVE suite
+> green. Walk it in the browser (light, dark, 375 px), bench, update STATUS/ROADMAP/ARCHITECTURE, commit and push,
+> and stop for W5 sign-off.
 
 ## Log
+
+- **2026-10-05:** P6b W4 built: Explore pivot with cell drill (`/explore`, `/api/analysis/drill`), Market movers and
+  newly reported, Activity with firm and fund filters, Tracked & Watchlist (localStorage, v1 import, Watch buttons),
+  Compare (2–5, replaces Batch). Exit check held by tests: pivot value cells = `exposureAsOf` for every private
+  company at every quarter end; all 768 live drill cells (4 row kinds × 12 metrics × 4 rows + total × 4 quarters)
+  equal their pivot cells; drill events = `companyActivity` events. Goldens F51–F53. Two VIP funds set `public`.
+  Gates green at start (refresh #19, LIVE 31/31). Stopped for W4 sign-off.
 
 - **2026-10-01 (end):** W3 signed off by the user. Handoff written (STATUS "Handoff"); `scripts/verify-edgar.js`
   added for raw-EDGAR checks.

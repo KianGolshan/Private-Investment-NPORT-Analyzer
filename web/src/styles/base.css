@@ -379,12 +379,18 @@ select.input {
   bottom: 0;
   z-index: 30;
   background: var(--brand);
-  justify-content: space-around;
+  /* safe: never push the first link off-screen when they overflow */
+  justify-content: safe space-around;
   padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  /* six destinations since W4: scroll sideways rather than squeeze */
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 .mobile-nav a {
   color: #c4cfdd;
-  padding: 8px 10px;
+  padding: 8px 8px;
+  white-space: nowrap;
+  flex: none;
   font-weight: 600;
   font-size: var(--fs-sm);
 }
@@ -697,4 +703,29 @@ table.data td.wrap {
   .mobile-nav {
     display: flex;
   }
+}
+
+/* A pivot cell that drills to its filings (Explore, P6b W4). */
+.cell-link {
+  background: none;
+  border: 0;
+  padding: 0 2px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.cell-link:hover {
+  text-decoration: underline;
+}
+.cell-link[aria-pressed='true'] {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+.cell-link.pos {
+  color: var(--pos);
+}
+.cell-link.neg {
+  color: var(--neg);
 }

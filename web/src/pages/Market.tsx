@@ -1,10 +1,11 @@
+import { lazy } from 'preact-iso';
 import { useCallback } from 'preact/hooks';
 import { qs, useApi } from '../api/client';
 import type { Freshness, TopCompanies } from '../api/types';
 import { companyPath, longDate, moneyC, num } from '../lib/format';
 import { ScopeBar } from '../scope/ScopeBar';
-import { useScope } from '../scope/scope';
-import { Badge, Card, Empty, ErrorBox, Kpi, Loading } from '../ui/bits';
+import { useParam, useScope } from '../scope/scope';
+import { Badge, Card, Empty, ErrorBox, Kpi, Loading, Tabs } from '../ui/bits';
 import { Chart } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
 import type { ChartTheme } from '../ui/theme';
@@ -12,7 +13,7 @@ import { baseOption } from '../ui/theme';
 
 type Row = TopCompanies['results'][number];
 
-export default function Market() {
+function Top() {
   const [scope] = useScope();
   const fresh = useApi<Freshness>('/api/freshness');
   const top = useApi<TopCompanies>(`/api/market/top${qs({ date: scope.asof, limit: 300 })}`);
@@ -87,15 +88,11 @@ export default function Market() {
 
   return (
     <div class="stack">
-      <div class="page-head">
-        <div>
-          <div class="eyebrow">Market</div>
-          <h1>Private companies held by registered funds</h1>
-          <p class="muted" style={{ margin: '4px 0 0' }}>
-            As of {scope.asof ? longDate(scope.asof) : 'the newest filings'}: each fund's latest N-PORT on or before
-            that date. Funds report on staggered fiscal quarters, so mark dates differ by fund.
-          </p>
-        </div>
+      <div class="row wrap">
+        <p class="muted" style={{ margin: 0 }}>
+          As of {scope.asof ? longDate(scope.asof) : 'the newest filings'}: each fund's latest N-PORT on or before that
+          date. Funds report on staggered fiscal quarters, so mark dates differ by fund.
+        </p>
         <span class="spacer" />
         <ScopeBar supports={{ asof: true }} newest={fresh.data?.newestReportDate ?? null} />
       </div>
@@ -131,6 +128,41 @@ export default function Market() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+const lazyMovers = lazy(() => import('./market/Movers'));
+const lazyNew = lazy(() => import('./market/NewlyReported'));
+
+// Market (P6b W4): the top private companies as of a date, the movers over a
+// range (largest mark moves and net position flows) and the companies first
+// reported in a range.
+export default function Market() {
+  const [view, setView] = useParam('view');
+  const current = view === 'movers' || view === 'new' ? view : 'top';
+  const Movers = lazyMovers;
+  const New = lazyNew;
+  return (
+    <div class="stack">
+      <div class="page-head">
+        <div>
+          <div class="eyebrow">Market</div>
+          <h1>Private companies held by registered funds</h1>
+        </div>
+      </div>
+      <Tabs
+        tabs={[
+          { id: 'top', label: 'Top companies' },
+          { id: 'movers', label: 'Movers' },
+          { id: 'new', label: 'Newly reported' },
+        ]}
+        current={current}
+        onSelect={id => setView(id === 'top' ? '' : id)}
+      />
+      {current === 'top' && <Top />}
+      {current === 'movers' && <Movers />}
+      {current === 'new' && <New />}
     </div>
   );
 }

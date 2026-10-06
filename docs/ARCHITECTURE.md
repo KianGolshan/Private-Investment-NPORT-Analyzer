@@ -372,6 +372,24 @@ ui/BridgeView.tsx       the bridge waterfall, steps and period effects (company,
 
 Services added: `analysis.marksVsOthers` (+ `marksByDate`, warmed at start); `firm.firmChanges` paged.
 
+Built in P6b W4 (2026-10-05), the cross-cutting pages:
+
+```
+Explore.tsx             /explore: pivot rows (firm, fund, company, class) × month | quarter | year, every metric,
+                        heatmap + table with totals; any cell drills to its legs (?dk=<row key or _>&dp=<period>)
+market/Movers.tsx       Market ?view=movers: largest mark effects and net position flows over a range
+market/NewlyReported.tsx  Market ?view=new: companies whose first stored holding falls in the range
+Activity.tsx            the feed by filing date with the scope's firm and fund filters (FirmPicker)
+Tracked.tsx             /tracked: the viewer's watchlist (lib/watchlist.ts, localStorage; v1 import) and the
+                        tracked-company dashboard
+Compare.tsx             /compare: 2–5 companies, firms, funds or classes; value per period, effects, median marks
+scope/FirmPicker.tsx    adds a firm to the scope; scope.useSetParams sets several URL params in one step
+ui/bits.tsx WatchButton ☆ Watch on company, firm and fund page heads
+```
+
+Services added (`lib/services/analysis.js`): `drill` (the legs behind one pivot cell; they sum to it), `movers`,
+`newlyReported`, `watchlist`, `compare`; `pivot` takes `keys` and `tracked`; `market.feed` takes `funds`.
+
 Planned: `mcp-server.js` (P7) over the same services.
 
 ## Warehouse API (read-only, `lib/api/warehouse.js`)
@@ -401,4 +419,11 @@ build. A listed company answers its views only with `?stored=1`, labeled (trap 4
 /api/analysis/pivot?rows=firm|fund|company|class&period=month|quarter|year&from=&to=&limit=[&company=…&firm=…]
 /api/analysis/timeline?firm=|fund=               per company: spans held, value now, events by mark date
 /api/analysis/marks?firm=|fund=[&date=]          each class held vs other funds' median at the same mark date
+/api/analysis/drill?rows=&key=&metric=&from=&to=[&tracked=1&firm=&fund=&company=]   the legs behind one pivot
+                                                 cell (no key = the total row), grouped by filing; 200 largest
+/api/analysis/compare?rows=company|firm|fund|class&key=…&key=…&period=&from=&to=   2 to 5 keys (class: id:label)
+/api/market/movers?from=&to=&tracked=1&limit=    mark effect and net position flow per company, top each way
+/api/market/new?from=&to=                        companies first reported (first stored holding) in the window
+/api/watchlist?company=&firm=&fund=&date=        each item now and a year earlier, the year's effects (≤100 each)
+  /api/feed takes ?firm=&fund= (echoed as `filters`); /api/analysis/pivot takes ?tracked=1
 ```

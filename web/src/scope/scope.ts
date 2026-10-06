@@ -108,3 +108,18 @@ export function scopeParams(
   if (on.has('kind') && s.kind) out.kind = s.kind;
   return out;
 }
+
+/** Sets several URL params in one step (two useParam setters in a row would each start from the old URL). */
+export function useSetParams(): (patch: Record<string, string>, opts?: { replace?: boolean }) => void {
+  const loc = useLocation();
+  const search = loc.url.includes('?') ? loc.url.slice(loc.url.indexOf('?') + 1) : '';
+  return (patch, opts = {}) => {
+    const next = new URLSearchParams(search);
+    for (const [k, v] of Object.entries(patch)) {
+      if (v) next.set(k, v);
+      else next.delete(k);
+    }
+    const q = next.toString();
+    loc.route(loc.path + (q ? `?${q}` : ''), opts.replace);
+  };
+}

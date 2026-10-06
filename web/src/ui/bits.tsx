@@ -1,5 +1,7 @@
 import type { ComponentChildren } from 'preact';
+import type { WatchKind } from '../api/types';
 import { edgarUrl, longDate } from '../lib/format';
+import { isWatched, toggleWatch } from '../lib/watchlist';
 
 type Tone = '' | 'pos' | 'neg' | 'warn' | 'info' | 'accent';
 
@@ -136,5 +138,21 @@ export function Segmented<T extends string>({
         </button>
       ))}
     </div>
+  );
+}
+
+/** Adds a company, firm or fund to the viewer's watchlist (this browser), or removes it. */
+export function WatchButton({ kind, id, label }: { kind: WatchKind; id: string | number; label: string }) {
+  const on = isWatched(kind, id);
+  return (
+    <button
+      class={`btn sm${on ? '' : ' ghost'}`}
+      type="button"
+      aria-pressed={on}
+      title={on ? 'On your watchlist (this browser): click to remove' : 'Add to your watchlist (this browser)'}
+      onClick={() => toggleWatch({ kind, key: id, label })}
+    >
+      {on ? '★ Watching' : '☆ Watch'}
+    </button>
   );
 }
