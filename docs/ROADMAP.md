@@ -78,7 +78,7 @@ changes 138, top 118, feed 192).
 
 ---
 
-## Phase 6b: analyst workspace (branch `v2-p6b-workspace`; W0–W4 signed off, W5 built 2026-10-06)
+## Phase 6b: analyst workspace (branch `v2-p6b-workspace`; W0–W5 signed off 2026-10-01..06, complete)
 
 **Goal (user, 2026-10-01):** the best way to search, analyze and display the data.
 
@@ -99,14 +99,14 @@ The full plan is in [plans/P6b-analyst-workspace.md](plans/P6b-analyst-workspace
 
 **Waves (each one ends at a checkpoint and the user's sign-off):**
 
-| Wave                   | Scope                                                                                                                                                                                                                                                                                                                    | Exit check                                                                                  |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| **W0 Foundations**     | `web/` scaffold, tokens and themes, shell, router, scope ⇄ URL, API client, DataTable, Chart, export, ⌘K, Express serving and `/legacy`, CI                                                                                                                                                                              | **Signed off 2026-10-01** (with the Anthropic and Canva audit fixes)                        |
-| **W1 Data**            | `legsOf` refactor, `position_facts` (migration 0019, built by refresh, measured), `analysis.js` (bridge, pivot, cube, timeline), scope filters, unified search, attribution research, goldens; from the Anthropic audit: one class across EC/EP labels (trap 50 proposal), one "kind" (direct, named SPV, fund interest) | **Signed off 2026-10-01** (STATUS archive)                                                  |
-| **W2 Company**         | Workbench: overview, holders, positions grid, changes + bridge, marks & classes + mark leadership, filings, position drawer                                                                                                                                                                                              | **Signed off 2026-10-01** (STATUS archive)                                                  |
-| **W3 Firm & Fund**     | Overview, investment timeline, book matrix, marks vs median, changes, bridge; X-Ray ported to the fund page                                                                                                                                                                                                              | **Signed off 2026-10-01** (STATUS archive)                                                  |
-| **W4 Cross-cutting**   | Explore pivot, Market movers and newly reported, Activity, Tracked & Watchlist, Compare                                                                                                                                                                                                                                  | **Signed off 2026-10-05** (pivot = `exposureAsOf`; drill legs = cell; F51–F53)              |
-| **W5 Retire & polish** | Batch → Compare; only Private Credit stays in Legacy; a11y audit, perf, docs                                                                                                                                                                                                                                             | **Built 2026-10-06**, awaiting sign-off (Lighthouse perf 95–98, a11y 98; axe 0; LIVE 31/31) |
+| Wave                   | Scope                                                                                                                                                                                                                                                                                                                    | Exit check                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| **W0 Foundations**     | `web/` scaffold, tokens and themes, shell, router, scope ⇄ URL, API client, DataTable, Chart, export, ⌘K, Express serving and `/legacy`, CI                                                                                                                                                                              | **Signed off 2026-10-01** (with the Anthropic and Canva audit fixes)           |
+| **W1 Data**            | `legsOf` refactor, `position_facts` (migration 0019, built by refresh, measured), `analysis.js` (bridge, pivot, cube, timeline), scope filters, unified search, attribution research, goldens; from the Anthropic audit: one class across EC/EP labels (trap 50 proposal), one "kind" (direct, named SPV, fund interest) | **Signed off 2026-10-01** (STATUS archive)                                     |
+| **W2 Company**         | Workbench: overview, holders, positions grid, changes + bridge, marks & classes + mark leadership, filings, position drawer                                                                                                                                                                                              | **Signed off 2026-10-01** (STATUS archive)                                     |
+| **W3 Firm & Fund**     | Overview, investment timeline, book matrix, marks vs median, changes, bridge; X-Ray ported to the fund page                                                                                                                                                                                                              | **Signed off 2026-10-01** (STATUS archive)                                     |
+| **W4 Cross-cutting**   | Explore pivot, Market movers and newly reported, Activity, Tracked & Watchlist, Compare                                                                                                                                                                                                                                  | **Signed off 2026-10-05** (pivot = `exposureAsOf`; drill legs = cell; F51–F53) |
+| **W5 Retire & polish** | Batch → Compare; only Private Credit stays in Legacy; a11y audit, perf, docs                                                                                                                                                                                                                                             | **Signed off 2026-10-06** (Lighthouse perf 95–98, a11y 98; axe 0; LIVE 31/31)  |
 
 **Period rule (it goes into DATA-QUALITY with W1):**
 
@@ -117,7 +117,7 @@ The full plan is in [plans/P6b-analyst-workspace.md](plans/P6b-analyst-workspace
 
 ---
 
-## Phase 6c: review remediation (before W5; plan: [plans/P6c-review-remediation.md](plans/P6c-review-remediation.md))
+## Phase 6c: review remediation (R1–R3 signed off 2026-10-05; plan: [plans/P6c-review-remediation.md](plans/P6c-review-remediation.md))
 
 **Entry gate:** W4 signed off; the staff engineering review of 2026-10-05 (findings F01–F18) checked against the code.
 

@@ -3,8 +3,9 @@
 Paste one at the start of a session. Prompts for finished phases are in
 [archive/SESSION-PROMPTS-done.md](archive/SESSION-PROMPTS-done.md).
 
-**Every prompt implies:** follow `CLAUDE.md`; work on a branch; check `npm test`'s exit code, not a pipe's; stop at
-the checkpoint for sign-off; update `docs/STATUS.md` before ending.
+**Every prompt implies:** follow `CLAUDE.md` (every warehouse write is a job, ADR 0009); work on a branch; check
+`npm test`'s exit code, not a pipe's; run `npm run build:web` then `npm run test:e2e` when the workspace changes; stop
+at the checkpoint for sign-off; update `docs/STATUS.md` before ending.
 
 ### Resume (any phase)
 
@@ -22,15 +23,27 @@ the checkpoint for sign-off; update `docs/STATUS.md` before ending.
 
 ### Phase 7: MCP server
 
-> Vantage v2 Phase 7. Read CLAUDE.md, docs/STATUS.md, ADR 0008 and docs/ROADMAP.md §Phase 7. Build mcp-server.js
+> Vantage v2 Phase 7. Read CLAUDE.md, docs/STATUS.md, ADR 0008, ADR 0009 and docs/ROADMAP.md §Phase 7. Build mcp-server.js
 > (stdio) over lib/services and lib/analytics (search, company exposure/history/activity/classes, fund, firm, market,
 > feed), opening the warehouse with openWarehouseReadOnly. Tools take an id or a name and return ids, mark dates and
-> accessions. Tests return golden numbers. Document `claude mcp add` in README.
+> accessions. Answers carry the generation they were read from (`db.generationOf`) and the basis (today's curation),
+> and the server reopens on a new generation like the web router. Tests return golden numbers. Document
+> `claude mcp add` in README.
 
 ### Phase 8: operations
 
-> Vantage v2 Phase 8. Read CLAUDE.md and docs/ROADMAP.md §Phase 8. Add backups, refresh alerting, the
-> monthly golden regression and `npm run doctor`.
+> Vantage v2 Phase 8. Read CLAUDE.md, docs/STATUS.md, ADR 0009, docs/ROADMAP.md §Phase 8 and the P8 items in
+> docs/plans/P6c-review-remediation.md (staff review F10/F11). Add:
+>
+> - backups of published generations with a restore drill on a clean checkout;
+> - a readiness endpoint apart from liveness (generation, data age, last job);
+> - binding to 127.0.0.1 unless `HOST` is set, and a validated `trust proxy`;
+> - async gzip and a byte-bounded memo;
+> - refresh alerting on a failed, partial or stuck job;
+> - the monthly golden regression and `npm run doctor`;
+> - a look at the intermittent test failures in STATUS Known issues.
+>
+> Install the nightly launchd job only with my explicit yes.
 
 ### Phase 9: public deployment
 
@@ -46,7 +59,7 @@ the checkpoint for sign-off; update `docs/STATUS.md` before ending.
 > - Dockerfile
 > - `/healthz`
 > - scheduled `npm run refresh` with a lock and health-check pings
-> - Litestream backups with a restore drill
+> - backups of the published generations (ADR 0009) with a restore drill
 > - Cache-Control plus CDN
 > - secrets in the host's store
 > - CI deploy
