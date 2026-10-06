@@ -1,7 +1,7 @@
 # Vantage v2 Status
 
-**Phase:** P6b (analyst workspace): W0–W3 signed off 2026-10-01; **W4 (cross-cutting) built 2026-10-05, awaiting
-sign-off**, on branch `v2-p6b-workspace` (pushed). P6 core signed off 2026-10-01. Wave results: [archive](archive/STATUS-history.md).
+**Phase:** P6b (analyst workspace): W0–W3 signed off 2026-10-01, **W4 signed off 2026-10-05; next W5 (retire &
+polish)**, paused for a separate check the user is running first. Branch `v2-p6b-workspace` (pushed). P6 core signed off 2026-10-01. Wave results: [archive](archive/STATUS-history.md).
 **Last updated:** 2026-10-05. Earlier results: [archive/STATUS-history.md](archive/STATUS-history.md).
 
 ## Phase tracker
@@ -9,7 +9,7 @@ sign-off**, on branch `v2-p6b-workspace` (pushed). P6 core signed off 2026-10-01
 - [x] P0–P5b: live fixes, warehouse, refresh, as-of, entities, identity, services, company and fund pages
       (signed off 2026-09-28..30; ROADMAP "Done")
 - [x] P6 core: analysis views (signed off 2026-10-01; remaining items in ROADMAP §6)
-- [ ] **P6b: analyst workspace**: W0–W3 signed off 2026-10-01; **W4 built, awaiting sign-off**; W5 after (ROADMAP §6b)
+- [ ] **P6b: analyst workspace**: W0–W4 signed off (2026-10-01, W4 2026-10-05); **W5 next** (ROADMAP §6b)
 - [ ] P7: MCP server (open now; the services exist)
 - [ ] P8: operations hardening (nightly job, backups, alerting, doctor)
 - [ ] P9: public deployment (hosting to decide as ADR 0006)
@@ -50,7 +50,7 @@ P6b W0–W3 are built and **signed off**; the next wave is **W4 (cross-cutting)*
 - **Firm and fund pages (W3):** `web/src/pages/book/` (BookOverview, Timeline, MarksVsOthers) shared by
   `pages/firm/` and `pages/fund/` (Fund X-Ray, Compare, Returns ported from v1). `ui/BridgeView.tsx` is the one
   bridge view. `firmChanges` is paged.
-- **Cross-cutting (W4, built 2026-10-05):** `web/src/pages/{Explore,Tracked,Compare}.tsx`, `pages/market/`
+- **Cross-cutting (W4, signed off 2026-10-05):** `web/src/pages/{Explore,Tracked,Compare}.tsx`, `pages/market/`
   (Movers, NewlyReported), Activity with the scope; services `analysis.{drill,movers,newlyReported,watchlist,compare}`;
   routes `/api/analysis/{drill,compare}`, `/api/market/{movers,new}`, `/api/watchlist`; tests
   `test/workspace-w4.test.js` (pivot = `exposureAsOf` for every private company; every drill's legs = its cell;
@@ -111,8 +111,8 @@ entities, 68,277 position-fact legs. `ingest_errors` empty. 2026Q3 bulk not post
 
 ## Open decisions (user)
 
-- **Sign off W4** ("sign off", or "continue" = sign off and build W5). Calls made under "v1 is the guidepost", open
-  to overrule: the watchlist lives in this browser (localStorage, per the plan; no server account); Compare keeps
+- **W5 is next, paused:** the user signed off W4 and is running a different check in a new session before W5 starts.
+  Ask what that check found before building W5. Calls made in W4 under "v1 is the guidepost", still open to overrule: the watchlist lives in this browser (localStorage, per the plan; no server account); Compare keeps
   v1 Batch's spread (dispersion) and mark age but not its per-fund charts (the company page has them); Market
   movers rank dollars (mark effect, net position flow), not percent (a percent of a start value misleads for a
   company first reported in the window: Anthropic $0.29B → $18.16B).
@@ -148,8 +148,8 @@ entities, 68,277 position-fact legs. `ingest_errors` empty. 2026Q3 bulk not post
 
 ## Next session
 
-> Resume Vantage v2 on branch `v2-p6b-workspace` (pushed). P6b W4 is built and awaiting sign-off; if the user signs
-> off ("continue"), build **W5 (retire & polish)**. Read CLAUDE.md, then docs/STATUS.md in full ("Where things
+> Resume Vantage v2 on branch `v2-p6b-workspace` (pushed). P6b W0–W4 are signed off; build **W5 (retire & polish)**
+> once the user's separate check (run in its own session after W4) is settled. Read CLAUDE.md, then docs/STATUS.md in full ("Where things
 > stand", "Handoff", Open decisions first), docs/ROADMAP.md §6b, docs/plans/P6b-analyst-workspace.md (Delivery, W5),
 > docs/DATA-QUALITY.md (display rules incl. drill, movers, newly reported) and docs/LESSONS.md.
 >
@@ -164,6 +164,9 @@ lint`, `npm run format:check`, `npm run test:web`, `npm run lint:web`, and the f
 > and stop for W5 sign-off.
 
 ## Log
+
+- **2026-10-05 (end):** W4 signed off by the user ("continue"). W5 paused at the user's request for a separate check
+  in a new session; no W5 work started.
 
 - **2026-10-05:** P6b W4 built: Explore pivot with cell drill (`/explore`, `/api/analysis/drill`), Market movers and
   newly reported, Activity with firm and fund filters, Tracked & Watchlist (localStorage, v1 import, Watch buttons),
