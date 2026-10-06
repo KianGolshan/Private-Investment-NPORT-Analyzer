@@ -23,7 +23,10 @@ function goldenWarehouse() {
   const { db } = openFixtureWarehouse();
   importAliases(db, readReview('aliases.csv'), { ids: readReview('company_ids.csv'), now: '2026-09-30T00:00:00Z' });
   importDisclosedExposure(db, readReview('disclosed_exposure.csv'));
-  importManagers(db, readReview('managers.csv'));
+  // firms from the committed ledger (manager_ids.csv), as the review import
+  // builds them; the fixture's exported managers table is an older snapshot
+  db.exec('DELETE FROM manager_advisers; DELETE FROM manager_registrants; DELETE FROM managers');
+  importManagers(db, readReview('managers.csv'), { ids: readReview('manager_ids.csv') });
   refreshFundAdvisers(db);
   resolveCompanies(db);
   rebuildEntities(db, identityUpkeep(db));

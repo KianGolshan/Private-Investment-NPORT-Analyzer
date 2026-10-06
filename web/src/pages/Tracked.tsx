@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { qs, useApi } from '../api/client';
 import type { Freshness, TrackedDashboard, UnifiedHit, WatchKind, WatchlistAnswer } from '../api/types';
 import {
@@ -14,7 +14,7 @@ import {
   signedNum,
   tone,
 } from '../lib/format';
-import { importV1, removeWatch, v1Entries, watchlist } from '../lib/watchlist';
+import { followRedirects, importV1, removeWatch, v1Entries, watchlist } from '../lib/watchlist';
 import { ScopeBar } from '../scope/ScopeBar';
 import { useParam, useScope } from '../scope/scope';
 import { Badge, Card, Empty, ErrorBox, Kpi, Loading, Tabs } from '../ui/bits';
@@ -112,6 +112,14 @@ function AddBox() {
 }
 
 type WRow = WatchlistAnswer['items'][number];
+// Why a saved item has no numbers (never shown as a zero).
+const STATUS_NOTE: Record<WRow['status']['state'], string> = {
+  live: '',
+  listed: 'listed company: not in the private warehouse',
+  merged: 'merged into another; moving it there',
+  dropped: 'dropped from the reviewed list',
+  unknown: 'no longer exists',
+};
 
 function Watchlist() {
   const [scope] = useScope();
@@ -129,6 +137,10 @@ function Watchlist() {
   const v1 = v1Entries();
   const [imported, setImported] = useState<string | null>(null);
   const d = w.data;
+  // a merged company or firm id moves to its successor (the list refetches)
+  useEffect(() => {
+    if (d) followRedirects(d.items);
+  }, [d]);
   const label = (r: WRow) => r.label ?? items.find(i => i.kind === r.kind && i.key === String(r.key))?.label ?? '';
   const columns: Column<WRow>[] = [
     {
@@ -142,8 +154,19 @@ function Watchlist() {
       id: 'name',
       header: 'Name',
       value: r => label(r),
-      render: r => <a href={hrefOf(r.kind, r.key, label(r))}>{label(r)}</a>,
-      exportAs: [{ header: 'Key', value: r => String(r.key) }],
+      render: r =>
+        r.status.state === 'live' ? (
+          <a href={hrefOf(r.kind, r.key, label(r))}>{label(r)}</a>
+        ) : (
+          <span>
+            {r.status.state === 'listed' ? <a href={hrefOf(r.kind, r.key, label(r))}>{label(r)}</a> : label(r)}{' '}
+            <span class="muted small">· {STATUS_NOTE[r.status.state]}</span>
+          </span>
+        ),
+      exportAs: [
+        { header: 'Key', value: r => String(r.key) },
+        { header: 'Status', value: r => (r.status.state === 'live' ? '' : STATUS_NOTE[r.status.state]) },
+      ],
       wrap: true,
     },
     { id: 'value', header: 'Value', value: r => r.value, num: true, render: r => moneyC(r.value) },
@@ -177,9 +200,11 @@ function Watchlist() {
       value: r => (r.kind === 'company' ? r.funds : r.companies),
       num: true,
       render: r =>
-        r.kind === 'company'
-          ? `${num(r.funds)} funds (${signedNum(r.funds - r.fundsYearAgo)})`
-          : `${num(r.companies)} companies${r.kind === 'firm' ? ` · ${num(r.funds)} funds` : ''}`,
+        r.funds == null
+          ? '—'
+          : r.kind === 'company'
+            ? `${num(r.funds)} funds (${signedNum(r.funds - (r.fundsYearAgo ?? 0))})`
+            : `${num(r.companies)} companies${r.kind === 'firm' ? ` · ${num(r.funds)} funds` : ''}`,
     },
     {
       id: 'remove',

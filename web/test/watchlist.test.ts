@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { importV1, isWatched, removeWatch, toggleWatch, v1Entries, watchlist } from '../src/lib/watchlist';
+import {
+  followRedirects,
+  importV1,
+  isWatched,
+  removeWatch,
+  toggleWatch,
+  v1Entries,
+  watchlist,
+} from '../src/lib/watchlist';
 
 // The watchlist keys by identity (company id, firm id, fund key), never by
 // name (trap 48), and imports only what v1 had resolved to a reviewed company.
@@ -42,5 +50,20 @@ describe('watchlist', () => {
     expect(importV1()).toEqual({ added: 1, skipped: 2 });
     expect(importV1()).toEqual({ added: 0, skipped: 2 });
     expect(isWatched('company', 1)).toBe(true);
+  });
+
+  it('a merged firm or company id moves to its successor, once; dropped ones stay (F08)', () => {
+    toggleWatch({ kind: 'firm', key: 3, label: 'Old firm' });
+    toggleWatch({ kind: 'firm', key: 7, label: 'Gone firm' });
+    toggleWatch({ kind: 'company', key: 40, label: 'Old co' });
+    toggleWatch({ kind: 'company', key: 5, label: 'Stripe' });
+    const moved = followRedirects([
+      { kind: 'firm', key: 3, status: { state: 'merged', successor: 9 } },
+      { kind: 'firm', key: 7, status: { state: 'dropped' } },
+      { kind: 'company', key: 40, status: { state: 'merged', successor: 5 } }, // already saved as 5
+    ]);
+    expect(moved).toBe(2);
+    expect(watchlist.value.map(x => `${x.kind}:${x.key}`)).toEqual(['firm:9', 'firm:7', 'company:5']);
+    expect(followRedirects([{ kind: 'firm', key: 3, status: { state: 'merged', successor: 9 } }])).toBe(0);
   });
 });

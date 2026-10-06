@@ -8,6 +8,8 @@ cache.db-shm
 warehouse.db
 warehouse.db-wal
 warehouse.db-shm
+warehouse.db.*
+generations/
 reports/
 web/node_modules/
 web/dist/

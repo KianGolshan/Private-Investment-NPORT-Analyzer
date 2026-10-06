@@ -151,8 +151,17 @@ npm run ingest:bulk -- --all
 ```
 
 That loads every quarter, which took about 14 minutes on 2026-09-28. After that, `--missing` loads only
-quarters not yet loaded, and `--quarter 2026q2` reloads a single quarter. Each quarter loads in one
-transaction and is logged in `ingest_log`. A failed run exits non-zero and changes nothing for that quarter.
+quarters not yet loaded, and `--quarter 2026q2` reloads a single quarter. Each quarter is logged in `ingest_log`.
+
+Every command that writes the warehouse runs as one job ([ADR 0009](docs/decisions/0009-published-generations.md)):
+it builds a copy, rebuilds everything derived, validates it and publishes it as a new generation
+(`generations/warehouse-<id>.db`; `warehouse.db` is a link to the published one). A failed job publishes nothing,
+and only one job runs at a time.
+
+```bash
+npm run warehouse                 # generations, the published one, the last job
+npm run warehouse -- --rollback   # republish the generation before the current one
+```
 
 Bulk data ends at the last quarter-end, so recent filings come from EDGAR directly:
 
@@ -167,13 +176,14 @@ interrupted and resumed. Filings that fail are listed in `ingest_errors` and ret
 run the refresh nightly, use the launchd or cron entry in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#refresh-lifecycle).
 
-Companies, aliases and parent firms are human-reviewed files in `data/review/`:
+Companies, aliases and parent firms are human-reviewed files in `data/review/`. Company and firm ids are permanent
+ledgers there (`company_ids.csv`, `manager_ids.csv`); the import writes them back.
 
 ```bash
 npm run ingest:ncen       # N-CEN advisers (parent firms)
 npm run seed:entities     # suggest data/review/{aliases,managers}.csv (--force to overwrite)
 npm run review:aliases    # import the reviewed files and re-resolve holdings
-npm run entities:report   # the review queue: unresolved value by company, conflicts (reports/entities/)
+npm run entities:report   # the review queue (reports/entities/); a job: it rebuilds the identity graph
 ```
 
 ### Tests

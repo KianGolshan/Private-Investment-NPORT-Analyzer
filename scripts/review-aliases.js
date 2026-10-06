@@ -8,31 +8,21 @@
 // Missing files are skipped. Any invalid row aborts that file's import. Company ids come from
 // company_ids.csv, which is rewritten after the import (new ids, retired ids with redirects).
 const path = require('path');
-const { openWarehouse } = require('../lib/warehouse/db');
 const { runReviewImport } = require('../lib/entities/review-import');
-const { claimRun } = require('../lib/warehouse/refresh');
+const { runJob } = require('../lib/warehouse/job');
 
-// Runs under the refresh lock (a 'curation' run), like the admin job: never
-// beside a refresh or another import.
-function main() {
+// A warehouse job of kind 'curation' (lib/warehouse/job.js), like the admin
+// job: never beside a refresh or another import, published whole or not at all.
+async function main() {
   const args = process.argv.slice(2);
   const dirAt = args.indexOf('--dir');
   const dir = dirAt >= 0 ? path.resolve(args[dirAt + 1]) : path.join(__dirname, '..', 'data', 'review');
-  const db = openWarehouse();
   const t = Date.now();
-  const runId = claimRun(db, new Date(), 'curation');
-  const finish = db.prepare('UPDATE refresh_runs SET finished_at = ?, status = ?, error = ? WHERE id = ?');
-  try {
-    runReviewImport(db, dir, { log: console.log });
-    finish.run(new Date().toISOString(), 'ok', null, runId);
-  } catch (err) {
-    finish.run(new Date().toISOString(), 'failed', String(err.message), runId);
-    throw err;
-  } finally {
-    db.pragma('wal_checkpoint(TRUNCATE)');
-    db.close();
-    console.log(`done in ${((Date.now() - t) / 1000).toFixed(1)} s`);
-  }
+  const r = await runJob('curation', db => runReviewImport(db, dir, { log: console.log }) && {}, { log: console.log });
+  console.log(`published generation ${r.generation} in ${((Date.now() - t) / 1000).toFixed(1)} s`);
 }
 
-main();
+main().catch(err => {
+  console.error(`review import failed: ${err.message}`);
+  process.exitCode = 1;
+});

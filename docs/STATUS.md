@@ -1,8 +1,8 @@
 # Vantage v2 Status
 
 **Phase:** P6b W0–W4 signed off (W4 2026-10-05). **P6c (review remediation) inserted before W5**: the user's
-separate check was a staff engineering review (F01–F18); plan approved 2026-10-05. **R1 built 2026-10-05, stopped for
-sign-off; R2 (publication) next.** Branch `v2-p6b-workspace` (pushed). P6 core signed off 2026-10-01. Wave results: [archive](archive/STATUS-history.md).
+separate check was a staff engineering review (F01–F18); plan approved 2026-10-05. R1 signed off 2026-10-05.
+**R2 (publication) built 2026-10-05, stopped for sign-off; R3 (assurance) next.** Branch `v2-p6b-workspace` (pushed). P6 core signed off 2026-10-01. Wave results: [archive](archive/STATUS-history.md).
 **Last updated:** 2026-10-05. Earlier results: [archive/STATUS-history.md](archive/STATUS-history.md).
 
 ## Phase tracker
@@ -114,6 +114,14 @@ entities, 68,277 position-fact legs. `ingest_errors` empty. 2026Q3 bulk not post
 
 ## Open decisions (user)
 
+- **P6c R2 calls (ADR 0009, open to overrule):** generation files plus a `warehouse.db` symlink, rather than
+  staged tables. Two generations kept (~1.8 GB on disk with the candidate). A job may not shrink filings, holdings,
+  companies or managers by more than 2% without `--allow-shrink`, and a quarter reload must keep 90% of its
+  filings. A refresh with queued filing failures publishes as `partial` and exits non-zero. Re-posts are detected
+  by size or Last-Modified (the SEC sends no ETag). Firm renames keep their id when the keys are identical.
+  `entities-report` is now a job (it always rebuilt identity).
+- **`data/review/manager_ids.csv` is new** (529 firms, ids as they were). Commit it with this wave.
+
 - **P6c R1 calls (open to overrule):**
   - _Mark observation unit (F06):_ one observation per fund × class × mark date at its lots' value / shares. Medians,
     low, high and fund counts are across funds. `severalMarks` counts funds whose own lots differ by more than 0.1%:
@@ -164,16 +172,38 @@ entities, 68,277 position-fact legs. `ingest_errors` empty. 2026Q3 bulk not post
 
 ## Next session
 
-> Resume Vantage v2 on branch `v2-p6b-workspace`. P6c R1 (staff review correctness/security) is built and waiting for
-> sign-off. On "continue", build **R2 (publication)** per docs/plans/P6c-review-remediation.md: `lib/warehouse/job.js`
-> `runJob` as the only write path (claim with heartbeat, candidate copy, `rebuildDerived`, validate, generation file +
-> pointer, keep the previous), readers reopen on a pointer change, `refreshId`/memo keyed to the opened generation,
-> F12 source validation and re-post detection, F08 manager id ledger (migration 0020, `data/review/manager_ids.csv`),
-> `generation_meta` (curation revision). Read CLAUDE.md, docs/STATUS.md (Open decisions: R1 calls),
-> docs/ROADMAP.md §6c, docs/DATA-QUALITY.md (trap 53) and docs/LESSONS.md first. Gates as in the plan's Verification
-> section; stop for R2 sign-off. W5 follows P6c.
+> Resume Vantage v2 on branch `v2-p6b-workspace`. P6c R1 is signed off; R2 (publication, ADR 0009) is built and
+> waiting for sign-off. On "continue", build **R3 (assurance)** per docs/plans/P6c-review-remediation.md:
+>
+> - a Playwright browser suite in CI (ask before installing browsers): tooltip payloads inert, the CSP header,
+>   freshness through a generation switch, CSV/XLSX contents, palette failure, drawer focus;
+> - F16: paged activity with `total`/`breakdown` over all matches, export scope labeled;
+> - F13: live routes carry `partial`/`failedSources`, and partial answers are not cached as complete;
+> - F17: a hand-reviewed oracle of ~30 raw rows;
+> - F14: temporal labels ("current curation and adviser mapping").
+>
+> Read CLAUDE.md (every write is a job now), docs/STATUS.md and docs/decisions/0009 first. Writers:
+> `npm run refresh` etc. publish generations; `npm run warehouse` shows them. Stop for R3 sign-off; W5 follows.
 
 ## Log
+
+- **2026-10-05 (P6c R2):** One write path and whole-generation publication (ADR 0009).
+  - **Write path:** `lib/warehouse/job.js` `runJob`: lock with heartbeat, candidate via the backup API,
+    `refresh.rebuildDerived` for every job, validation, `generation_meta`, then a symlink swap to
+    `generations/warehouse-<id>.db`. All writer scripts use it; `seed:entities` and `--status` read only.
+  - **Readers:** the router reopens on a new generation; `refreshId`, the ETag and the memo key follow the
+    generation; `/api/freshness` reports `generation` and `job`. `npm run warehouse` lists generations and does
+    `--rollback`.
+  - **F12:** required columns, non-empty tables, referential coverage and a 90% reload floor in bulk ingest;
+    re-posts detected by size or Last-Modified (checked live: no ETag, stable Last-Modified).
+  - **F08:** firm id ledger `manager_ids.csv` plus `manager_redirects`, rename by identical keys,
+    merged/dropped retirement, API 301/410, and the watchlist moves merged ids. Watchlist items now carry a status
+    (listed, merged, dropped show no numbers, never zero).
+  - **Live:** the first job (refresh #22) moved the old file to `generations/warehouse-0.db` and published
+    generation 22 in 47 s. The review import published 23 and seeded the ledger. `entities-report`, run while the
+    server was serving, published 24, and the server switched on its next request (Anthropic still 117 funds).
+  - **Gates:** `npm test` 559 tests, 528 pass, 0 fail, 31 skipped. Web 33/33. LIVE 31/31. Lint and format
+    clean. Bench p95 15.1 ms over 3,805 requests (load 4.6).
 
 - **2026-10-05 (P6c R1):** Correctness and security wave of the staff review, each fix with a failing-first test
   worked by hand:

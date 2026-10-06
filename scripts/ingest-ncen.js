@@ -1,41 +1,43 @@
 #!/usr/bin/env node
 // Loads Form N-CEN adviser data (lib/warehouse/ncen.js), then rebuilds each
-// fund's advisers (lib/entities/managers.js).
+// fund's advisers and everything derived from them, as one warehouse job.
 //
 //   npm run ingest:ncen                 # data sets not yet loaded, then the EDGAR top-up
 //   npm run ingest:ncen -- --all        # reload every data set
 //   npm run ingest:ncen -- --no-edgar   # data sets only
 //
-// Runs in the foreground; each data set is one transaction; resumable.
+// Runs in the foreground; resumable (data sets already loaded are skipped).
 require('dotenv').config();
-const { openWarehouse } = require('../lib/warehouse/db');
 const { refreshNcen } = require('../lib/warehouse/ncen');
-const { refreshFundAdvisers } = require('../lib/entities/managers');
+const { runJob } = require('../lib/warehouse/job');
 
+// A warehouse job (lib/warehouse/job.js): fund advisers and everything derived
+// from them are rebuilt, then published as a new generation, or nothing is.
 async function main() {
   const args = process.argv.slice(2);
-  const db = openWarehouse();
   const started = Date.now();
-  let failed = 0;
-  try {
-    const r = await refreshNcen(db, {
-      all: args.includes('--all'),
-      edgar: !args.includes('--no-edgar'),
-      log: console.log,
-    });
-    if (r.topUp) {
-      console.log(`EDGAR top-up: ${r.topUp.fetched} filings read, ${r.topUp.failed.length} failed`);
-      for (const f of r.topUp.failed) console.error(`  failed ${f.accession}: ${f.error}`);
-      failed = r.topUp.failed.length;
-    }
-    const m = refreshFundAdvisers(db);
-    console.log(`fund advisers: ${m.mapped} of ${m.funds} funds mapped`);
-  } finally {
-    db.pragma('wal_checkpoint(TRUNCATE)');
-    db.close();
-    console.log(`done in ${((Date.now() - started) / 60000).toFixed(1)} min`);
-  }
-  if (failed) process.exitCode = 1;
+  const r = await runJob(
+    'ingest-ncen',
+    async db => {
+      const n = await refreshNcen(db, {
+        all: args.includes('--all'),
+        edgar: !args.includes('--no-edgar'),
+        log: console.log,
+      });
+      const failed = n.topUp ? n.topUp.failed : [];
+      if (n.topUp) console.log(`EDGAR top-up: ${n.topUp.fetched} filings read, ${failed.length} failed`);
+      for (const f of failed) console.error(`  failed ${f.accession}: ${f.error}`);
+      return {
+        status: failed.length ? 'partial' : 'ok',
+        note: failed.length ? `${failed.length} N-CEN filing(s) failed` : null,
+      };
+    },
+    { log: console.log }
+  );
+  console.log(
+    `done in ${((Date.now() - started) / 60000).toFixed(1)} min; published generation ${r.generation} (${r.status})`
+  );
+  if (r.status !== 'ok') process.exitCode = 1;
 }
 
 main().catch(err => {

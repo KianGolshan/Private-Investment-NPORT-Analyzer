@@ -50,6 +50,31 @@ export function toggleWatch(item: { kind: WatchKind; key: string | number; label
   watchlist.value = isWatched(it.kind, it.key) ? watchlist.value.filter(x => !same(x, it)) : [...watchlist.value, it];
 }
 
+/**
+ * Moves saved items whose id was retired into another (a merged company or
+ * firm, staff review F08) to that id, once; an item already saved under the
+ * successor is simply dropped. Returns how many moved.
+ */
+export function followRedirects(
+  answers: { kind: WatchKind; key: string | number; status?: { state: string; successor?: number } }[]
+): number {
+  let moved = 0;
+  let list = watchlist.value;
+  for (const a of answers) {
+    if (a.status?.state !== 'merged' || a.status.successor == null) continue;
+    const from = { kind: a.kind, key: String(a.key) };
+    const to = { kind: a.kind, key: String(a.status.successor) };
+    const item = list.find(x => same(x, from));
+    if (!item) continue;
+    list = list.some(x => same(x, to))
+      ? list.filter(x => !same(x, from))
+      : list.map(x => (same(x, from) ? { ...x, ...to } : x));
+    moved++;
+  }
+  if (moved) watchlist.value = list;
+  return moved;
+}
+
 export function removeWatch(kind: WatchKind, key: string) {
   watchlist.value = watchlist.value.filter(x => !same(x, { kind, key }));
 }

@@ -10,7 +10,7 @@ require('dotenv').config();
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { openWarehouse } = require('../lib/warehouse/db');
+const { runJob } = require('../lib/warehouse/job');
 const { downloadQuarter } = require('../lib/warehouse/bulk-source');
 const { openZip, readTable } = require('../lib/warehouse/tsv-zip');
 const { isValidIsin } = require('../lib/warehouse/identifiers');
@@ -39,10 +39,19 @@ async function main() {
   const at = process.argv.indexOf('--max');
   const max = at >= 0 ? Number(process.argv[at + 1]) : 4;
   if (!(max > 0)) throw new Error('--max must be a positive number');
-  const db = openWarehouse();
   const t = Date.now();
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vantage-listing-'));
   try {
+    await runJob('backfill-listing', db => batch(db, { max, dir, t }), { log: console.log });
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+    console.log(`done in ${((Date.now() - t) / 60000).toFixed(1)} min`);
+  }
+}
+
+// One batch on the job's candidate warehouse.
+async function batch(db, { max, dir, t }) {
+  {
     const done = new Set(
       db
         .prepare('SELECT DISTINCT quarter FROM listing_evidence')
@@ -66,11 +75,8 @@ async function main() {
         fs.rmSync(zip.path, { force: true });
       }
     }
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-    db.close();
-    console.log(`done in ${((Date.now() - t) / 60000).toFixed(1)} min`);
   }
+  return {};
 }
 
 main().catch(err => {

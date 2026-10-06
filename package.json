@@ -18,6 +18,7 @@
     "ingest:bulk": "node scripts/ingest-bulk.js",
     "ingest:delta": "node scripts/ingest-delta.js",
     "refresh": "node scripts/refresh.js",
+    "warehouse": "node scripts/warehouse.js",
     "ingest:ncen": "node scripts/ingest-ncen.js",
     "seed:entities": "node scripts/seed-entities.js",
     "review:aliases": "node scripts/review-aliases.js",

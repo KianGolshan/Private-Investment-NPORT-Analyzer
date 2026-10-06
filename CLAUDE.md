@@ -44,12 +44,15 @@ marks, new positions, adds, reductions, exits and trends. Keep that goal in view
   User-Agent is required).
 - Ingest is idempotent and transactional (one transaction per quarter or batch), logs row counts to
   `ingest_log`, and fails loudly.
+- **Every write is a job** (`lib/warehouse/job.js` `runJob`, ADR 0009): lock, candidate copy, full derived
+  rebuild, validation, then a new published generation. A new writer goes through `runJob`; never open
+  `warehouse.db` read-write from a script.
 - **Background jobs must have a terminal state.** No orphaned wait or poll loops. A background wait must
   exit on success _and_ on failure. A leftover `until …; sleep` loop once ran for 5.5 hours.
 - Provenance: every stored row traces to `accession` + holding row (+ bulk quarter or `source='edgar'`).
 - Schema changes go in numbered migrations (`db/migrations/NNNN_*.sql`). No ORM.
-- Company ids are stable (ADR 0008): `data/review/company_ids.csv` is the ledger; the review import reads and
-  rewrites it. Never renumber or reuse an id.
+- Company and firm ids are stable (ADR 0008, 0009): `data/review/company_ids.csv` and `manager_ids.csv` are the
+  ledgers; the review import reads and rewrites them. Never renumber or reuse an id.
 - Keep the warehouse (`warehouse.db`) separate from the request cache (`cache.db`). Readers (web server,
   MCP server) open it with `openWarehouseReadOnly`; only jobs migrate or write.
 - The app answers private companies, funds, firms and the market from the warehouse (`lib/services`,
@@ -72,6 +75,7 @@ npm run test:web         # workspace typecheck + Vitest; npm run lint:web; npm r
 npm run ingest:bulk -- --missing   # load SEC bulk quarters not yet in warehouse.db (--all, --quarter 2026q2)
 npm run ingest:delta               # catch up on filings made after the newest bulk quarter (--since/--until)
 npm run refresh                    # nightly: new/re-posted bulk quarter(s), catch-up, N-CEN, entity upkeep
+npm run warehouse                  # published generations and the last job (-- --rollback: previous generation)
 npm run ingest:ncen                # N-CEN adviser data sets + EDGAR top-up (managers, ADR 0007)
 npm run seed:entities              # write data/review/{aliases,managers}.csv suggestions (--force to overwrite)
 npm run review:aliases             # import the reviewed CSVs, re-resolve holdings (under the refresh lock)

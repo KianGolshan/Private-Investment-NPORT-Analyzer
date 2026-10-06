@@ -902,13 +902,15 @@ export interface WatchlistAnswer extends Envelope {
     kind: WatchKind;
     key: number | string;
     label: string | null;
-    value: number;
-    funds: number;
-    companies: number;
-    valueYearAgo: number;
-    fundsYearAgo: number;
-    positionEffect: number;
-    markEffect: number;
+    /** live; listed (reviewed public); merged into `successor`; dropped; unknown id. Numbers are null unless live. */
+    status: { state: 'live' | 'listed' | 'merged' | 'dropped' | 'unknown'; successor?: number; name?: string };
+    value: number | null;
+    funds: number | null;
+    companies: number | null;
+    valueYearAgo: number | null;
+    fundsYearAgo: number | null;
+    positionEffect: number | null;
+    markEffect: number | null;
   }[];
 }
 

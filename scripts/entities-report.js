@@ -1,27 +1,39 @@
 #!/usr/bin/env node
 // The unresolved-value report: the entity review queue after every refresh
-// (lib/entities/report.js, ROADMAP §Phase 4.5). Rebuilds the identity graph in
-// warehouse.db, then writes
+// (lib/entities/report.js, ROADMAP §Phase 4.5). It WRITES the warehouse: it
+// rebuilds the identity graph, so it runs as a warehouse job (lib/warehouse/
+// job.js: lock, candidate, derived rebuild, a new generation). The nightly
+// refresh writes the same report; run this after a review import. Writes
 //
 //   reports/entities/unresolved.csv   private-candidate value resolving to no company, by component
 //   reports/entities/conflicts.csv    evidence edges a guard stopped (flagged, not merged)
 //
-//   node scripts/entities-report.js [--threshold 50]   # $M; components at or above it are flagged
+//   node scripts/entities-report.js [--threshold 50] [--out dir]   # $M; components at or above it are flagged
 const path = require('path');
-const { openWarehouse } = require('../lib/warehouse/db');
+const { runJob } = require('../lib/warehouse/job');
 const { writeEntityReport, overdue } = require('../lib/entities/report');
 
-const OUT = path.join(__dirname, '..', 'reports', 'entities');
+const DEFAULT_OUT = path.join(__dirname, '..', 'reports', 'entities');
 
-function main() {
+async function main() {
   const args = process.argv.slice(2);
   const at = args.indexOf('--threshold');
   const threshold = (at >= 0 ? Number(args[at + 1]) : 50) * 1e6;
   if (!(threshold > 0)) throw new Error('--threshold must be a positive number of $M');
-  const db = openWarehouse();
+  const outAt = args.indexOf('--out');
+  const OUT = outAt >= 0 ? path.resolve(args[outAt + 1]) : DEFAULT_OUT;
   const t = Date.now();
+  let written;
+  await runJob(
+    'entities-report',
+    db => {
+      written = writeEntityReport(db, OUT, { threshold });
+      return {};
+    },
+    { log: console.log }
+  );
   try {
-    const { up, report } = writeEntityReport(db, OUT, { threshold });
+    const { up, report } = written;
     const applied = up.graph.edges.filter(e => e.applied).length;
     console.log(
       `identity: ${up.graph.nodes.size} issuer keys, ${up.graph.edges.length} evidence edges (${applied} applied, ` +
@@ -55,9 +67,11 @@ function main() {
     );
     console.log(`wrote ${path.relative(process.cwd(), OUT)}/{unresolved,conflicts}.csv`);
   } finally {
-    db.close();
     console.log(`done in ${((Date.now() - t) / 1000).toFixed(1)} s`);
   }
 }
 
-main();
+main().catch(err => {
+  console.error(`entities report failed: ${err.message}`);
+  process.exitCode = 1;
+});

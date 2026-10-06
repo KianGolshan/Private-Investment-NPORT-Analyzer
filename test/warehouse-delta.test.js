@@ -15,7 +15,7 @@ const nock = require('nock');
 const { openWarehouse } = require('../lib/warehouse/db');
 const { ingestBulkZip } = require('../lib/warehouse/bulk-ingest');
 const { ingestDelta, parseFormIndex, indexQuarters, defaultSince } = require('../lib/warehouse/delta');
-const { refresh, claimRun, STALE_RUN_MS } = require('../lib/warehouse/refresh');
+const { refresh, claimRun, republishedQuarters, STALE_RUN_MS } = require('../lib/warehouse/refresh');
 
 const SEC = 'https://www.sec.gov';
 const BULK = path.join(__dirname, 'fixtures', 'bulk');
@@ -306,5 +306,25 @@ test('refresh: one run at a time; a run left "running" for over 2 hours is close
     { id: first, status: 'failed', error: 'abandoned: the process ended without finishing' },
     { id: later, status: 'running', error: null },
   ]);
+  db.close();
+});
+
+test('re-post detection: same size but a new Last-Modified is a re-post; unchanged validators are not (F12)', async () => {
+  const db = openWarehouse(':memory:');
+  db.prepare(
+    "INSERT INTO ingest_log (kind, quarter, zip_bytes, started_at, status) VALUES ('bulk', '2024q1', 446989787, 'x', 'ok')"
+  ).run();
+  const zipPath = '/files/dera/data/form-n-port-data-sets/2024q1_nport.zip';
+  const head = lastModified =>
+    nock(SEC).head(zipPath).reply(200, '', { 'Content-Length': '446989787', 'Last-Modified': lastModified });
+  // first check: nothing to compare the date with, size as loaded: not re-posted (recorded)
+  head('Fri, 19 Jul 2024 00:59:29 GMT');
+  assert.deepEqual(await republishedQuarters(db, ['2024q1'], { now: '2026-10-05T00:00:00Z' }), []);
+  head('Fri, 19 Jul 2024 00:59:29 GMT');
+  assert.deepEqual(await republishedQuarters(db, ['2024q1'], { now: '2026-10-06T00:00:00Z' }), []);
+  // the SEC re-posts at the same size: the date gives it away
+  head('Thu, 01 Oct 2026 12:00:00 GMT');
+  assert.deepEqual(await republishedQuarters(db, ['2024q1'], { now: '2026-10-07T00:00:00Z' }), ['2024q1']);
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM bulk_source_checks WHERE quarter = '2024q1'").get().n, 3);
   db.close();
 });

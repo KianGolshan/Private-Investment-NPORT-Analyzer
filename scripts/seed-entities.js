@@ -8,7 +8,7 @@
 // files, so a reviewed copy is never lost; pass --force to replace them.
 const fs = require('fs');
 const path = require('path');
-const { openWarehouse } = require('../lib/warehouse/db');
+const { openWarehouseReadOnly } = require('../lib/warehouse/db');
 const { toCsv } = require('../lib/entities/csv');
 const seed = require('../lib/entities/seed');
 const { buildIdentity, identityRows, fundFamilies } = require('../lib/entities/identity');
@@ -16,7 +16,7 @@ const { buildIdentity, identityRows, fundFamilies } = require('../lib/entities/i
 const OUT = path.join(__dirname, '..', 'data', 'review');
 
 function main() {
-  const db = openWarehouse();
+  const db = openWarehouseReadOnly();
   const t = Date.now();
   try {
     const asOf = db

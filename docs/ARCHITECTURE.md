@@ -139,11 +139,24 @@ Fund calendars are staggered, so "as of D" mixes mark dates. The UI always shows
 
 ## Refresh lifecycle
 
-- **Nightly** (`npm run refresh`, `lib/warehouse/refresh.js`):
-  1. Claim the run: refuse to start while another refresh is `running` (under 2 h old); close older
-     `running` rows as abandoned.
-  2. List the SEC's published bulk quarters and load any not yet loaded, plus any loaded quarter the SEC now
-     serves at a different size (re-posted, trap 41; one HEAD per quarter).
+- **Every write is a job** (`lib/warehouse/job.js`, ADR 0009). The refresh, ingests, N-CEN, the review import,
+  "make this a company", backfills and the entity report all:
+  1. take the job lock (`warehouse.db.lock`, heartbeat 30 s, stale after 10 min or when its process is gone);
+  2. copy the published generation to a candidate (SQLite backup API);
+  3. run, then rebuild every derived table (`refresh.rebuildDerived`);
+  4. validate (integrity, schema, row counts against the published generation, derived tables present);
+  5. publish `generations/warehouse-<id>.db` by swapping the `warehouse.db` symlink.
+
+  A failure publishes nothing. `warehouse.db.job.json` holds the last job's state, which `/api/freshness` reports
+  as `job`. `npm run warehouse` lists the generations; `-- --rollback` republishes the previous one.
+
+- **Nightly** (`npm run refresh`, `scripts/refresh.js` → `runJob('refresh', refreshIngest)`):
+  1. Run as a job (above). The job lock replaces the old `refresh_runs` claim; a `refresh_runs` row still records
+     the run in the generation it builds.
+  2. List the SEC's published bulk quarters and load any not yet loaded, plus any loaded quarter the SEC has
+     re-posted: a different size, or a new `Last-Modified` since the last check (trap 41; one HEAD per quarter,
+     recorded in `bulk_source_checks`; the SEC sends no ETag). A quarter's archive must have its required
+     columns, no empty tables, no rows outside its filings, and at least 90% of the last load's filings (F12).
      - Loading a quarter replaces the catch-up rows for every filing it covers (`INSERT OR REPLACE` on
        the accession cascades to holdings).
   3. Catch up on every NPORT-P / NPORT-P/A filed on or after the newest bulk filing date.
@@ -157,9 +170,10 @@ Fund calendars are staggered, so "as of D" mixes mark dates. The UI always shows
      2.6 s, 68k legs, ~31 MB; logged to `ingest_log` as kind `position-facts`; the review import rebuilds them too).
      Both ingest paths also write `filing_totals` and the
      capital-structure rows for every filing they load.
-  5. Write a `refresh_runs` row. A catch-up filing that predates bulk coverage but isn't in bulk (expected 0)
-     fails the run, as do catch-up and N-CEN failures.
-  6. Exit non-zero on any failure, so the scheduler can alert.
+  5. Finish the `refresh_runs` row and publish. A catch-up filing that predates bulk coverage but isn't in bulk
+     (expected 0), or catch-up and N-CEN failures, make the generation `partial` (published, labeled; the filings
+     retry next run).
+  6. Exit non-zero on any failure or partial run, so the scheduler can alert.
 - Catch-up safeguards, each added after a real failure (DATA-QUALITY traps 17–19):
   - 60 s timeout, with network errors retried twice.
   - Truncated `primary_doc.xml` falls back to the full submission `.txt`.
@@ -187,15 +201,15 @@ publishes the day's index overnight, and filings cluster about 60 days after eac
 ```
 
 Linux/cron equivalent: `15 6 * * * cd /path/to/repo && npm run --silent refresh >> logs/refresh.log 2>&1`.
-Check health with `sqlite3 warehouse.db "select * from refresh_runs order by id desc limit 5"` and
-`select * from ingest_errors`.
+Check health with `npm run warehouse` (generations and the last job), `cat warehouse.db.jobs.log`,
+`sqlite3 warehouse.db "select * from generation_meta order by id desc limit 5"` and `select * from ingest_errors`.
 
 ## Deployment (planned, Phase 9)
 
 - **Shape:** one always-on container or VM with a persistent volume.
   - The Express app serves reads from `warehouse.db` (after P5, visitors never call the SEC).
   - A scheduled `npm run refresh` on the same machine writes to it.
-  - WAL mode keeps reads non-blocking during refresh.
+  - Jobs build a candidate and publish a new generation file (ADR 0009); readers never see a half-built one.
 - **Around it:**
   - Litestream replication to object storage, for backup and restore-on-boot.
   - A dead-man's-switch health check on the nightly refresh.
@@ -286,7 +300,9 @@ lib/warehouse/fund-names.js        fund list + word index, rebuilt by refresh an
 lib/services/fund.js               fund search, canonical filings, X-Ray / compare / returns on the warehouse
 lib/analytics/peer.js              velocity, outliers, ledger, leaderboard (UMD; the browser loads /peer.js)
 lib/entities/review-import.js      the review import (npm run review:aliases and the admin job)
-lib/entities/make-company.js       "make this a company": review files + import under the refresh lock
+lib/entities/make-company.js       "make this a company": review files + import, run as a warehouse job
+lib/warehouse/job.js               runJob: the one write path (lock, candidate, derived rebuild, validate, publish)
+lib/warehouse/job-state.js         job file paths and the last job's state (read by /api/freshness)
 lib/api/admin.js                   POST /api/admin/companies (VANTAGE_ADMIN=1, local only; runs scripts/make-company.js)
 ```
 
@@ -394,8 +410,10 @@ Planned: `mcp-server.js` (P7) over the same services.
 
 ## Warehouse API (read-only, `lib/api/warehouse.js`)
 
-Every answer carries `source`, `refreshId` and mark dates; JSON over 2 KB is gzipped; the ETag is refresh id +
-build. A listed company answers its views only with `?stored=1`, labeled (trap 49).
+Every answer carries `source`, `refreshId` (the published generation it was read from, ADR 0009) and mark dates;
+JSON over 2 KB is gzipped; the ETag is generation id + build. `/api/freshness` adds `generation` (published at,
+curation and code revisions) and `job` (the last job's state). A retired firm id answers 301 to its successor or 410
+(`manager_ids.csv`). A listed company answers its views only with `?stored=1`, labeled (trap 49).
 
 ```
 /api/freshness                                   bulk quarter, newest filing and report dates, refresh time

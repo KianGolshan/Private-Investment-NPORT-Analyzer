@@ -13,16 +13,14 @@
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
-const { openWarehouse, defaultWarehousePath } = require('../lib/warehouse/db');
+const { defaultWarehousePath } = require('../lib/warehouse/db');
 const { ingestBulkZip } = require('../lib/warehouse/bulk-ingest');
 const { listAvailableQuarters } = require('../lib/warehouse/bulk-source');
 const { loadBulkQuarters, loadedBulkQuarters } = require('../lib/warehouse/refresh');
-const { entityUpkeep } = require('../lib/entities/upkeep');
-const { rebuildFundNames } = require('../lib/warehouse/fund-names');
-const { buildPositionFacts } = require('../lib/warehouse/position-facts');
+const { runJob } = require('../lib/warehouse/job');
 
 function parseArgs(argv) {
-  const opts = { quarters: [], all: false, missing: false, file: null, keepZip: false };
+  const opts = { quarters: [], all: false, missing: false, file: null, keepZip: false, allowShrink: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--quarter') opts.quarters.push(String(argv[++i] || '').toLowerCase());
@@ -30,6 +28,7 @@ function parseArgs(argv) {
     else if (a === '--missing') opts.missing = true;
     else if (a === '--file') opts.file = argv[++i];
     else if (a === '--keep-zip') opts.keepZip = true;
+    else if (a === '--allow-shrink') opts.allowShrink = true;
     else throw new Error(`unknown argument: ${a}`);
   }
   for (const q of opts.quarters) if (!/^\d{4}q[1-4]$/.test(q)) throw new Error(`bad quarter "${q}" (use e.g. 2026q2)`);
@@ -40,22 +39,27 @@ function parseArgs(argv) {
   return opts;
 }
 
+// A warehouse job (lib/warehouse/job.js): quarters load into a candidate copy,
+// every derived table is rebuilt, the candidate is validated and published as
+// a new generation, or nothing is. --allow-shrink: a re-load may replace a
+// quarter with fewer filings (refused by default, F12).
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const dbPath = defaultWarehousePath();
-  const db = openWarehouse(dbPath);
   const started = Date.now();
-  let results;
-  try {
-    if (opts.file) {
-      const stats = await ingestBulkZip(db, opts.file, {
-        quarter: opts.quarters[0],
-        sourceUrl: path.resolve(opts.file),
-        bytes: fs.statSync(opts.file).size,
-      });
-      console.log(`${stats.quarter}: ${stats.filings} filings, ${stats.rowsKept.toLocaleString()} holding rows kept`);
-      results = [stats];
-    } else {
+  const r = await runJob(
+    'ingest-bulk',
+    async db => {
+      if (opts.file) {
+        const stats = await ingestBulkZip(db, opts.file, {
+          quarter: opts.quarters[0],
+          sourceUrl: path.resolve(opts.file),
+          bytes: fs.statSync(opts.file).size,
+          allowShrink: opts.allowShrink,
+        });
+        console.log(`${stats.quarter}: ${stats.filings} filings, ${stats.rowsKept.toLocaleString()} holding rows kept`);
+        return { results: [stats] };
+      }
       let quarters = opts.quarters;
       if (opts.all || opts.missing) {
         const available = await listAvailableQuarters();
@@ -64,25 +68,22 @@ async function main() {
       }
       console.log(`Warehouse: ${dbPath}`);
       console.log(`Quarters to load (${quarters.length}): ${quarters.join(' ') || 'none'}`);
-      results = await loadBulkQuarters(db, quarters, { log: console.log, keepZip: opts.keepZip });
-    }
-    if (results.length) {
-      const e = entityUpkeep(db);
-      rebuildFundNames(db);
-      buildPositionFacts(db, { log: console.log });
-      console.log(
-        `entities: ${e.advisers.mapped}/${e.advisers.funds} funds with an adviser, ${e.companies.resolved} rows resolved`
-      );
-    }
-  } finally {
-    db.pragma('wal_checkpoint(TRUNCATE)');
-    db.close();
-  }
+      return {
+        results: await loadBulkQuarters(db, quarters, {
+          log: console.log,
+          keepZip: opts.keepZip,
+          allowShrink: opts.allowShrink,
+        }),
+      };
+    },
+    { dbPath, log: console.log, allowShrink: opts.allowShrink }
+  );
+  const { results } = r;
   const kept = results.reduce((n, s) => n + s.rowsKept, 0);
   const filings = results.reduce((n, s) => n + s.filings, 0);
   console.log(
     `Done: ${results.length} quarter(s), ${filings.toLocaleString()} filings, ${kept.toLocaleString()} holdings kept, ` +
-      `${((Date.now() - started) / 60000).toFixed(1)} min, warehouse ${(fs.statSync(dbPath).size / 1e6).toFixed(0)} MB`
+      `${((Date.now() - started) / 60000).toFixed(1)} min; published generation ${r.generation}`
   );
 }
 
