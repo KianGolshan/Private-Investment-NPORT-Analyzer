@@ -14,5 +14,15 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     },
+  },
+  {
+    // the browser suite's Node side: the e2e server and job helpers, the specs
+    files: ['e2e/**', 'playwright.config.ts'],
+    languageOptions: { globals: { ...globals.node } },
+  },
+  {
+    files: ['e2e/**/*.cjs'],
+    languageOptions: { sourceType: 'commonjs' },
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
   }
 );

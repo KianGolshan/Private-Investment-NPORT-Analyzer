@@ -1,3 +1,4 @@
+import { BASIS } from '../../ui/Basis';
 import { qs, useApi } from '../../api/client';
 import type { Freshness, NewlyReported as Answer } from '../../api/types';
 import { companyPath, fundPath, longDate, moneyC, num } from '../../lib/format';
@@ -107,6 +108,7 @@ export default function NewlyReported() {
           </div>
           <Card flush>
             <DataTable
+              basis={BASIS}
               columns={columns}
               rows={d.results}
               rowKey={r => String(r.companyId)}

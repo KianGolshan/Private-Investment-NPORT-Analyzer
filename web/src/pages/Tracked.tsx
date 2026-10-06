@@ -1,3 +1,4 @@
+import { BASIS } from '../ui/Basis';
 import { useEffect, useState } from 'preact/hooks';
 import { qs, useApi } from '../api/client';
 import type { Freshness, TrackedDashboard, UnifiedHit, WatchKind, WatchlistAnswer } from '../api/types';
@@ -264,6 +265,7 @@ function Watchlist() {
               </div>
               <Card flush>
                 <DataTable
+                  basis={BASIS}
                   columns={columns}
                   rows={d.items}
                   rowKey={r => `${r.kind}:${r.key}`}
@@ -364,6 +366,7 @@ function TrackedCompanies() {
           </div>
           <Card flush>
             <DataTable
+              basis={BASIS}
               columns={columns}
               rows={d.companies}
               rowKey={r => String(r.companyId)}

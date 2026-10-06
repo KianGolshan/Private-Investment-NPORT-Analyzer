@@ -5,7 +5,10 @@
 
 export interface Envelope {
   source: string;
+  /** The published warehouse generation the answer was read from (ADR 0009). */
   refreshId: number;
+  /** Cross-company answers: how history is read (today's curation and advisers, F14). */
+  basis?: { curationRev: string | null; companies: string; firms: string };
 }
 
 export interface Freshness extends Envelope {
@@ -13,6 +16,16 @@ export interface Freshness extends Envelope {
   newestFilingDate: string | null;
   newestReportDate: string | null;
   latestBulkQuarter: string | null;
+  /** The published generation (ADR 0009); null on a warehouse from before generations. */
+  generation?: {
+    id: number;
+    publishedAt: string;
+    status: string;
+    curationRev: string | null;
+    codeRev: string | null;
+  } | null;
+  /** The last warehouse job, apart from the data version. */
+  job?: { kind: string; status: string; startedAt: string; finishedAt: string | null; error: string | null } | null;
 }
 
 export interface Company {
@@ -397,6 +410,15 @@ export interface Feed extends Envelope {
   /** The firm and fund filters applied (P6b W4). */
   filters?: ScopeEcho['scope'];
   count: number;
+  /** Every match (F16); `events` is one page of them. */
+  total: number;
+  /** Events by type over every match; mark moves (unchanged shares) as markMoved. */
+  breakdown: Partial<
+    Record<'new' | 'added' | 'reduced' | 'mixed' | 'exited' | 'zeroed' | 'markMoved' | 'unchanged', number>
+  >;
+  offset: number;
+  limit: number;
+  truncated: boolean;
   events: ChangeEvent[];
 }
 
@@ -532,6 +554,9 @@ export interface FilingRows extends Envelope, ScopeEcho {
   from: string | null;
   to: string | null;
   count: number;
+  /** Distinct filings and funds over every matching row (not only the rows returned). */
+  filings: number;
+  funds: number;
   truncated: boolean;
   rows: FilingRow[];
 }

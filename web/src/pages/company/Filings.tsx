@@ -146,8 +146,8 @@ export default function Filings({ base, sq, name, newest, openPosition }: ViewPr
               value={num(d.count)}
               sub={d.truncated ? `the newest ${num(d.rows.length)} shown` : 'as filed'}
             />
-            <Kpi label="Filings" value={num(new Set(d.rows.map(r => r.accession)).size)} />
-            <Kpi label="Funds" value={num(new Set(d.rows.map(r => r.fundKey)).size)} />
+            <Kpi label="Filings" value={num(d.filings)} sub={d.truncated ? 'every matching row' : undefined} />
+            <Kpi label="Funds" value={num(d.funds)} sub={d.truncated ? 'every matching row' : undefined} />
           </div>
           <Card title="Stored rows" flush>
             <DataTable

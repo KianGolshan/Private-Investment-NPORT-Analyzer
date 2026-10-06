@@ -1,3 +1,4 @@
+import { BASIS } from '../../ui/Basis';
 import { useCallback } from 'preact/hooks';
 import { qs, useApi } from '../../api/client';
 import type { Freshness, Mover, Movers as MoversAnswer } from '../../api/types';
@@ -145,6 +146,7 @@ export default function Movers() {
             ).map(([title, rows, main]) => (
               <Card key={title} title={title} flush>
                 <DataTable
+                  basis={BASIS}
                   columns={cols(main)}
                   rows={[...rows]}
                   rowKey={r => String(r.companyId)}

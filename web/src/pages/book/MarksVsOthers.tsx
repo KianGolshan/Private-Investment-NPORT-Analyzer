@@ -1,3 +1,4 @@
+import { BASIS } from '../../ui/Basis';
 import { useMemo } from 'preact/hooks';
 import { qs, useApi } from '../../api/client';
 import type { MarksVsOthers as MarksT } from '../../api/types';
@@ -68,6 +69,7 @@ export function MarksVsOthers({ who, name, newest }: { who: Who; name: string; n
             flush
           >
             <DataTable
+              basis={BASIS}
               columns={[
                 {
                   id: 'company',

@@ -1,3 +1,4 @@
+import { BASIS } from '../../ui/Basis';
 import { useCallback, useMemo } from 'preact/hooks';
 import { qs, useApi } from '../../api/client';
 import type { Timeline as TimelineT } from '../../api/types';
@@ -173,6 +174,7 @@ export function Timeline({ who, name }: { who: Who; name: string }) {
           </Card>
           <Card title="By company" flush>
             <DataTable
+              basis={BASIS}
               columns={[
                 {
                   id: 'name',

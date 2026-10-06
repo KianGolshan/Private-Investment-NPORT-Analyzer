@@ -1,0 +1,881 @@
+{
+ "builtAt": "2026-10-06",
+ "source": "EDGAR primary_doc.xml",
+ "cases": [
+  {
+   "id": "class-multi-lot",
+   "why": "one class, several lots in one fund (F06): one observation per fund",
+   "company": "Databricks",
+   "pattern": "databricks",
+   "markDate": "2026-02-27",
+   "instrument": "Common",
+   "accessions": [
+    "0000940400-26-014719",
+    "0000940400-26-014713",
+    "0000940400-26-014717"
+   ]
+  },
+  {
+   "id": "class-six-funds",
+   "why": "Anthropic common at one date across six funds and two filer families (F06 regression)",
+   "company": "Anthropic",
+   "pattern": "anthropic",
+   "markDate": "2026-03-31",
+   "instrument": "Common",
+   "accessions": [
+    "0001410368-26-054494",
+    "0001410368-26-054509",
+    "0001410368-26-054489",
+    "0001193125-26-243966",
+    "0001410368-26-054534",
+    "0001410368-26-054521"
+   ]
+  },
+  {
+   "id": "class-two-filers",
+   "why": "Stripe Series H at 2026-03-31: Fidelity and Capital Group file the same class in their own words",
+   "company": "Stripe",
+   "pattern": "stripe",
+   "markDate": "2026-03-31",
+   "instrument": "Series H",
+   "accessions": [
+    "0000035402-26-003312",
+    "0001193125-26-243966",
+    "0000035402-26-003299",
+    "0000035402-26-003445",
+    "0000035402-26-003310",
+    "0000035402-26-003406"
+   ]
+  },
+  {
+   "id": "exit",
+   "why": "Fidelity OTC Portfolio files 2026-01-31 without Stripe: no longer reported, the whole prior value",
+   "company": "Stripe",
+   "pattern": "stripe",
+   "fundKey": null,
+   "prev": "0000035402-25-002966",
+   "cur": "0000035402-26-002031",
+   "accessions": [
+    "0000035402-25-002966",
+    "0000035402-26-002031"
+   ]
+  },
+  {
+   "id": "mark-move",
+   "why": "Growth Fund of America re-marks Stripe $41.42 -> $63.00 with the same shares: all mark, no position",
+   "company": "Stripe",
+   "pattern": "stripe",
+   "fundKey": "S000009228",
+   "prev": "0001193125-26-027715",
+   "cur": "0001193125-26-182055",
+   "accessions": [
+    "0001193125-26-027715",
+    "0001193125-26-182055"
+   ]
+  },
+  {
+   "id": "amendment",
+   "why": "an NPORT-P/A replaces its original: the amended filing is the one counted",
+   "company": "Anthropic",
+   "pattern": "anthropic",
+   "fundKey": "S000004071",
+   "markDate": "2026-03-31",
+   "accessions": [
+    "0000940400-26-036410"
+   ]
+  }
+ ],
+ "filings": {
+  "0000940400-26-014719": {
+   "accession": "0000940400-26-014719",
+   "cik": "887509",
+   "repPdDate": "2026-02-27",
+   "seriesId": "S000002520",
+   "regName": "BlackRock Capital Appreciation Fund, Inc.",
+   "inspected": 38,
+   "rows": [
+    {
+     "name": "DATABRICKS INC",
+     "title": "DATABRICKS INC",
+     "otherDesc": "INTERNAL",
+     "otherId": "BYDGD09P7",
+     "balance": "375170.00000000",
+     "units": "NS",
+     "valUSD": "67050382.40000000",
+     "pctVal": "1.905403466300",
+     "assetCat": "EC"
+    },
+    {
+     "name": "DATABRICKS INC",
+     "title": "DATABRICKS INC",
+     "otherDesc": "INTERNAL",
+     "otherId": "BYDDHT5E6",
+     "balance": "110367.00000000",
+     "units": "NS",
+     "valUSD": "19724790.24000000",
+     "pctVal": "0.560528998494",
+     "assetCat": "EC"
+    }
+   ],
+   "fundKey": "S000002520"
+  },
+  "0000940400-26-014713": {
+   "accession": "0000940400-26-014713",
+   "cik": "844779",
+   "repPdDate": "2026-02-27",
+   "seriesId": "S000001510",
+   "regName": "BlackRock Funds",
+   "inspected": 70,
+   "rows": [
+    {
+     "name": "DATABRICKS INC",
+     "title": "DATABRICKS INC",
+     "otherDesc": "INTERNAL",
+     "otherId": "BRW3XZNA8",
+     "balance": "319983.00000000",
+     "units": "NS",
+     "valUSD": "57187361.76000000",
+     "pctVal": "0.867317465819",
+     "assetCat": "EC"
+    },
+    {
+     "name": "DATABRICKS INC",
+     "title": "DATABRICKS INC",
+     "otherDesc": "INTERNAL",
+     "otherId": "BRWGL12L6",
+     "balance": "211425.00000000",
+     "units": "NS",
+     "valUSD": "37785876.00000000",
+     "pctVal": "0.573069804367",
+     "assetCat": "EC"
+    },
+    {
+     "name": "DATABRICKS INC",
+     "title": "DATABRICKS INC",
+     "otherDesc": "INTERNAL",
+     "otherId": "BRTXWTKF3",
+     "balance": "258450.00000000",
+     "units": "NS",
+     "valUSD": "46190184.00000000",
+     "pctVal": "0.700531587743",
+     "assetCat": "EC"
+    }
+   ],
+   "fundKey": "S000001510"
+  },
+  "0000940400-26-014717": {
+   "accession": "0000940400-26-014717",
+   "cik": "1097293",
+   "repPdDate": "2026-02-27",
+   "seriesId": "S000002344",
+   "regName": "BlackRock Large Cap Focus Growth Fund, Inc.",
+   "inspected": 38,
+   "rows": [
+    {
+     "name": "DATABRICKS INC",
+     "title": "DATABRICKS INC",
+     "otherDesc": "INTERNAL",
+     "otherId": "BYDGD09P7",
+     "balance": "141268.00000000",
+     "units": "NS",
+     "valUSD": "25247416.96000000",
+     "pctVal": "1.543175761604",
+     "assetCat": "EC"
+    },
+    {
+     "name": "DATABRICKS INC",
+     "title": "DATABRICKS INC",
+     "otherDesc": "INTERNAL",
+     "otherId": "BYDDHT5E6",
+     "balance": "41135.00000000",
+     "units": "NS",
+     "valUSD": "7351647.20000000",
+     "pctVal": "0.449348295110",
+     "assetCat": "EC"
+    }
+   ],
+   "fundKey": "S000002344"
+  },
+  "0001410368-26-054494": {
+   "accession": "0001410368-26-054494",
+   "cik": "1616678",
+   "repPdDate": "2026-03-31",
+   "seriesId": null,
+   "regName": "BlackRock Science &amp; Technology Trust",
+   "inspected": 103,
+   "rows": [
+    {
+     "name": "ANTHROPIC PBC",
+     "title": "ANTHROPIC PBC",
+     "otherDesc": "BlackRock Identifier",
+     "otherId": "BYDP5QT36",
+     "balance": "156064.00000000",
+     "units": "NS",
+     "valUSD": "40441863.13000000",
+     "pctVal": "2.954931062524",
+     "assetCat": "EC"
+    }
+   ],
+   "fundKey": "CIK1616678"
+  },
+  "0001410368-26-054509": {
+   "accession": "0001410368-26-054509",
+   "cik": "1768666",
+   "repPdDate": "2026-03-31",
+   "seriesId": null,
+   "regName": "BlackRock Science &amp; Technology Term Trust",
+   "inspected": 87,
+   "rows": [
+    {
+     "name": "ANTHROPIC PBC",
+     "title": "ANTHROPIC PBC",
+     "otherDesc": "BlackRock Identifier",
+     "otherId": "BYDP5QT36",
+     "balance": "156064.00000000",
+     "units": "NS",
+     "valUSD": "40441863.13000000",
+     "pctVal": "2.411120564342",
+     "assetCat": "EC"
+    }
+   ],
+   "fundKey": "CIK1768666"
+  },
+  "0001410368-26-054489": {
+   "accession": "0001410368-26-054489",
+   "cik": "1836057",
+   "repPdDate": "2026-03-31",
+   "seriesId": null,
+   "regName": "BlackRock Technology &amp; Private Equity Term Trust",
+   "inspected": 86,
+   "rows": [
+    {
+     "name": "ANTHROPIC PBC",
+     "title": "ANTHROPIC PBC",
+     "otherDesc": "BlackRock Identifier",
+     "otherId": "BYDP5QT36",
+     "balance": "120595.00000000",
+     "units": "NS",
+     "valUSD": "31250554.16000000",
+     "pctVal": "3.491437005228",
+     "assetCat": "EC"
+    }
+   ],
+   "fundKey": "CIK1836057"
+  },
+  "0001193125-26-243966": {
+   "accession": "0001193125-26-243966",
+   "cik": "729528",
+   "repPdDate": "2026-03-31",
+   "seriesId": "S000008791",
+   "regName": "AMERICAN FUNDS INSURANCE SERIES",
+   "inspected": 239,
+   "rows": [
+    {
+     "name": "ANTHROPIC PBC",
+     "title": "ANTHROPIC PBC CL F-1 PFD PP (PHYSICAL) (NOT LISTED OR TRADING)",
+     "otherDesc": "CGSymbol",
+     "otherId": "ECA408707",
+     "balance": "613792.00",
+     "units": "NS",
+     "valUSD": "159055849.23",
+     "pctVal": "0.3207131253",
+     "assetCat": "EP"
+    },
+    {
+     "name": "STRIPE LLC",
+     "title": "STRIPE LLC CL B PP (PHYSICAL) (NOT LISTED OR TRADING)",
+     "otherDesc": "CGSymbol",
+     "otherId": "ECS282034",
+     "balance": "168598.00",
+     "units": "NS",
+     "valUSD": "10621674.00",
+     "pctVal": "0.0214170701",
+     "assetCat": "EC"
+    },
+    {
+     "name": "STRIPE LLC",
+     "title": "STRIPE LLC PFD SER H 6.00% NON-CUM PP (PHYSICAL) (NOT LISTED OR TRADING)",
+     "otherDesc": "CGSymbol",
+     "otherId": "ECS283004",
+     "balance": "52656.00",
+     "units": "NS",
+     "valUSD": "3317328.00",
+     "pctVal": "0.0066889123",
+     "assetCat": "EP"
+    },
+    {
+     "name": "STRIPE LLC",
+     "title": "STRIPE LLC PFD SER I 6.00% NON-CUM PP (PHYSICAL) (NOT LISTED OR TRADING)",
+     "otherDesc": "CGSymbol",
+     "otherId": "ECS319964",
+     "balance": "2763342.00",
+     "units": "NS",
+     "valUSD": "174090546.00",
+     "pctVal": "0.3510284178",
+     "assetCat": "EP"
+    },
+    {
+     "name": "ANTHROPIC PBC",
+     "title": "ANTHROPIC PBC PP (PHYSICAL) (NOT LISTED OR TRADING)",
+     "otherDesc": "CGSymbol",
+     "otherId": "EDA341",
+     "balance": "117063.00",
+     "units": "NS",
+     "valUSD": "30335284.39",
+     "pctVal": "0.0611667154",
+     "assetCat": "EC"
+    },
+    {
+     "name": "ANTHROPIC PBC",
+     "title": "ANTHROPIC PBC CL G-1 PFD PP (PHYSICAL) (NOT LISTED OR TRADING)",
+     "otherDesc": "CGSymbol",
+     "otherId": "EPA8230",
+     "balance": "752374.00",
+     "units": "NS",
+     "valUSD": "194967489.81",
+     "pctVal": "0.3931237569",
+     "assetCat": "EP"
+    }
+   ],
+   "fundKey": "S000008791"
+  },
+  "0001410368-26-054534": {
+   "accession": "0001410368-26-054534",
+   "cik": "1864843",
+   "repPdDate": "2026-03-31",
+   "seriesId": null,
+   "regName": "BlackRock ESG Capital Allocation Term Trust",
+   "inspected": 1371,
+   "rows": [
+    {
+     "name": "ANTHROPIC PBC",
+     "title": "ANTHROPIC PBC",
+     "otherDesc": "BlackRock Identifier",
+     "otherId": "BYDP5QT36",
+     "balance": "4922.00000000",
+     "units": "NS",
+     "valUSD": "1275469.36000000",
+     "pctVal": "0.088089278587",
+     "assetCat": "EC"
+    },
+    {
+     "name": "ANTHROPIC SERIES G",
+     "title": "ANTHROPIC SERIES G",
+     "otherDesc": "BlackRock Identifier",
+     "otherId": "BYDXGRZL8",
+     "balance": "2921.00000000",
+     "units": "NS",
+     "valUSD": "756937.43000000",
+     "pctVal": "0.052277282571",
+     "assetCat": "EC"
+    }
+   ],
+   "fundKey": "CIK1864843"
+  },
+  "0001410368-26-054521": {
+   "accession": "0001410368-26-054521",
+   "cik": "835620",
+   "repPdDate": "2026-03-31",
+   "seriesId": "S000002866",
+   "regName": "BlackRock Strategic Global Bond Fund, Inc.",
+   "inspected": 3081,
+   "rows": [
+    {
+     "name": "ANTHROPIC PBC",
+     "title": "ANTHROPIC PBC",
+     "otherDesc": "BlackRock Identifier",
+     "otherId": "BYDP5QT36",
+     "balance": "2683.00000000",
+     "units": "NS",
+     "valUSD": "695262.96000000",
+     "pctVal": "0.079368864307",
+     "assetCat": "EC"
+    },
+    {
+     "name": "ANTHROPIC SERIES G",
+     "title": "ANTHROPIC SERIES G",
+     "otherDesc": "BlackRock Identifier",
+     "otherId": "BYDXGRZL8",
+     "balance": "818.00000000",
+     "units": "NS",
+     "valUSD": "211973.58000000",
+     "pctVal": "0.024198185831",
+     "assetCat": "EC"
+    }
+   ],
+   "fundKey": "S000002866"
+  },
+  "0000035402-26-003312": {
+   "accession": "0000035402-26-003312",
+   "cik": "24238",
+   "repPdDate": "2026-03-31",
+   "seriesId": "S000006037",
+   "regName": "Fidelity Contrafund",
+   "inspected": 428,
+   "rows": [
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC CLASS B PP",
+     "otherDesc": "Internal",
+     "otherId": "FEF583000",
+     "balance": "455600.00000000",
+     "units": "NS",
+     "valUSD": "28702800.00000000",
+     "pctVal": "0.018188927675",
+     "assetCat": "EC"
+    },
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC SER H PC PP",
+     "otherDesc": "Internal",
+     "otherId": "HDC397000",
+     "balance": "190300.00000000",
+     "units": "NS",
+     "valUSD": "11988900.00000000",
+     "pctVal": "0.007597350607",
+     "assetCat": "EP"
+    },
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC SER I PC PP",
+     "otherDesc": "Internal",
+     "otherId": "JRV517000",
+     "balance": "2114059.00000000",
+     "units": "NS",
+     "valUSD": "133185717.00000000",
+     "pctVal": "0.084399618640",
+     "assetCat": "EP"
+    }
+   ],
+   "fundKey": "S000006037"
+  },
+  "0000035402-26-003299": {
+   "accession": "0000035402-26-003299",
+   "cik": "24238",
+   "repPdDate": "2026-03-31",
+   "seriesId": "S000006036",
+   "regName": "Fidelity Contrafund",
+   "inspected": 456,
+   "rows": [
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC CLASS B PP",
+     "otherDesc": "Internal",
+     "otherId": "FEF583000",
+     "balance": "83200.00000000",
+     "units": "NS",
+     "valUSD": "5241600.00000000",
+     "pctVal": "0.022310250649",
+     "assetCat": "EC"
+    },
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC SER H PC PP",
+     "otherDesc": "Internal",
+     "otherId": "HDC397000",
+     "balance": "34900.00000000",
+     "units": "NS",
+     "valUSD": "2198700.00000000",
+     "pctVal": "0.009358506582",
+     "assetCat": "EP"
+    },
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC SER I PC PP",
+     "otherDesc": "Internal",
+     "otherId": "JRV517000",
+     "balance": "611900.00000000",
+     "units": "NS",
+     "valUSD": "38549700.00000000",
+     "pctVal": "0.164082240056",
+     "assetCat": "EP"
+    }
+   ],
+   "fundKey": "S000006036"
+  },
+  "0000035402-26-003445": {
+   "accession": "0000035402-26-003445",
+   "cik": "831016",
+   "repPdDate": "2026-03-31",
+   "seriesId": "S000007724",
+   "regName": "Variable Insurance Products Fund II",
+   "inspected": 453,
+   "rows": [
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC CLASS B PP",
+     "otherDesc": "Internal",
+     "otherId": "FEF583000",
+     "balance": "74500.00000000",
+     "units": "NS",
+     "valUSD": "4693500.00000000",
+     "pctVal": "0.017697577913",
+     "assetCat": "EC"
+    },
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC SER H PC PP",
+     "otherDesc": "Internal",
+     "otherId": "HDC397000",
+     "balance": "30400.00000000",
+     "units": "NS",
+     "valUSD": "1915200.00000000",
+     "pctVal": "0.007221561994",
+     "assetCat": "EP"
+    },
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC SER I PC PP",
+     "otherDesc": "Internal",
+     "otherId": "JRV517000",
+     "balance": "203647.00000000",
+     "units": "NS",
+     "valUSD": "12829761.00000000",
+     "pctVal": "0.048376626166",
+     "assetCat": "EP"
+    }
+   ],
+   "fundKey": "S000007724"
+  },
+  "0000035402-26-003310": {
+   "accession": "0000035402-26-003310",
+   "cik": "24238",
+   "repPdDate": "2026-03-31",
+   "seriesId": "S000057289",
+   "regName": "Fidelity Contrafund",
+   "inspected": 421,
+   "rows": [
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC CLASS B PP",
+     "otherDesc": "Internal",
+     "otherId": "FEF583000",
+     "balance": "75100.00000000",
+     "units": "NS",
+     "valUSD": "4731300.00000000",
+     "pctVal": "0.014095814161",
+     "assetCat": "EC"
+    },
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC SER H PC PP",
+     "otherDesc": "Internal",
+     "otherId": "HDC397000",
+     "balance": "29000.00000000",
+     "units": "NS",
+     "valUSD": "1827000.00000000",
+     "pctVal": "0.005443123977",
+     "assetCat": "EP"
+    },
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC SER I PC PP",
+     "otherDesc": "Internal",
+     "otherId": "JRV517000",
+     "balance": "321951.00000000",
+     "units": "NS",
+     "valUSD": "20282913.00000000",
+     "pctVal": "0.060428248536",
+     "assetCat": "EP"
+    }
+   ],
+   "fundKey": "S000057289"
+  },
+  "0000035402-26-003406": {
+   "accession": "0000035402-26-003406",
+   "cik": "24238",
+   "repPdDate": "2026-03-31",
+   "seriesId": "S000039220",
+   "regName": "Fidelity Contrafund",
+   "inspected": 458,
+   "rows": [
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC CLASS B PP",
+     "otherDesc": "Internal",
+     "otherId": "FEF583000",
+     "balance": "26700.00000000",
+     "units": "NS",
+     "valUSD": "1682100.00000000",
+     "pctVal": "0.012569459954",
+     "assetCat": "EC"
+    },
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC SER H PC PP",
+     "otherDesc": "Internal",
+     "otherId": "HDC397000",
+     "balance": "11500.00000000",
+     "units": "NS",
+     "valUSD": "724500.00000000",
+     "pctVal": "0.005413812339",
+     "assetCat": "EP"
+    },
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC SER I PC PP",
+     "otherDesc": "Internal",
+     "otherId": "JRV517000",
+     "balance": "128075.00000000",
+     "units": "NS",
+     "valUSD": "8068725.00000000",
+     "pctVal": "0.060293392645",
+     "assetCat": "EP"
+    }
+   ],
+   "fundKey": "S000039220"
+  },
+  "0000035402-25-002966": {
+   "accession": "0000035402-25-002966",
+   "cik": "754510",
+   "repPdDate": "2025-10-31",
+   "seriesId": "S000007191",
+   "regName": "Fidelity Securities Fund",
+   "inspected": 157,
+   "rows": [
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC CLASS B PP",
+     "otherDesc": "Internal",
+     "otherId": "FEF583000",
+     "balance": "91800.00000000",
+     "units": "NS",
+     "valUSD": "3536136.00000000",
+     "pctVal": "0.009773166256",
+     "assetCat": "EC"
+    },
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC SER H PC PP",
+     "otherDesc": "Internal",
+     "otherId": "HDC397000",
+     "balance": "315830.00000000",
+     "units": "NS",
+     "valUSD": "12165771.60000000",
+     "pctVal": "0.033623737461",
+     "assetCat": "EP"
+    }
+   ],
+   "fundKey": "S000007191"
+  },
+  "0000035402-26-002031": {
+   "accession": "0000035402-26-002031",
+   "cik": "754510",
+   "repPdDate": "2026-01-31",
+   "seriesId": "S000007191",
+   "regName": "Fidelity Securities Fund",
+   "inspected": 156,
+   "rows": [],
+   "fundKey": "S000007191"
+  },
+  "0001193125-26-027715": {
+   "accession": "0001193125-26-027715",
+   "cik": "44201",
+   "repPdDate": "2025-11-30",
+   "seriesId": "S000009228",
+   "regName": "Growth Fund of America",
+   "inspected": 333,
+   "rows": [
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC PFD SER H 6.00% NON-CUM PP (PHYSICAL) (NOT LISTED OR TRADING)",
+     "otherDesc": "CG Symbol",
+     "otherId": "ECS283004",
+     "balance": "376444.000000000000",
+     "units": "NS",
+     "valUSD": "15592310.480000000000",
+     "pctVal": "0.0045852522",
+     "assetCat": "EP"
+    },
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC PFD SER I 6.00% NON-CUM PP (PHYSICAL) (NOT LISTED OR TRADING)",
+     "otherDesc": "CG Symbol",
+     "otherId": "ECS319964",
+     "balance": "7098300.000000000000",
+     "units": "NS",
+     "valUSD": "294011586.000000000000",
+     "pctVal": "0.0864603925",
+     "assetCat": "EP"
+    },
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC CL B PP (DRS) (NOT LISTED OR TRADING)",
+     "otherDesc": "CG Symbol",
+     "otherId": "ECS327876",
+     "balance": "30538.000000000000",
+     "units": "NS",
+     "valUSD": "1264883.960000000000",
+     "pctVal": "0.0003719662",
+     "assetCat": "EC"
+    },
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC PFD SER BB-1 6.00% NON-CUM PP (DRS) (NOT LISTED OR TRADING)",
+     "otherDesc": "CG Symbol",
+     "otherId": "EPS6557",
+     "balance": "604130.000000000000",
+     "units": "NS",
+     "valUSD": "25023064.600000000000",
+     "pctVal": "0.0073585671",
+     "assetCat": "EP"
+    },
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC PFD SER BB 6.00% NON-CUM PP (DRS) (NOT LISTED OR TRADING)",
+     "otherDesc": "CG Symbol",
+     "otherId": "EPS6558",
+     "balance": "214287.000000000000",
+     "units": "NS",
+     "valUSD": "8875767.540000000000",
+     "pctVal": "0.0026101092",
+     "assetCat": "EP"
+    },
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC PFD SER G 6.00% NON-CUM PP (DRS) (NOT LISTED OR TRADING)",
+     "otherDesc": "CG Symbol",
+     "otherId": "EPS6617",
+     "balance": "396250.000000000000",
+     "units": "NS",
+     "valUSD": "16412675.000000000000",
+     "pctVal": "0.0048264980",
+     "assetCat": "EP"
+    },
+    {
+     "name": "STRIPE INC",
+     "title": "STRIPE INC CL B PP (PHYSICAL) (NOT LISTED OR TRADING)",
+     "otherDesc": "CG Symbol",
+     "otherId": "ECS282034",
+     "balance": "1123404.000000000000",
+     "units": "NS",
+     "valUSD": "46531393.680000000000",
+     "pctVal": "0.0136835511",
+     "assetCat": "EC"
+    }
+   ],
+   "fundKey": "S000009228"
+  },
+  "0001193125-26-182055": {
+   "accession": "0001193125-26-182055",
+   "cik": "44201",
+   "repPdDate": "2026-02-28",
+   "seriesId": "S000009228",
+   "regName": "Growth Fund of America",
+   "inspected": 339,
+   "rows": [
+    {
+     "name": "STRIPE LLC",
+     "title": "STRIPE LLC PFD SER BB-1 6.00% NON-CUM PP (DRS) (NOT LISTED OR TRADING)",
+     "otherDesc": "CGSymbol",
+     "otherId": "EPS6557",
+     "balance": "604130.000000000000",
+     "units": "NS",
+     "valUSD": "38060190.000000000000",
+     "pctVal": "0.0116020310",
+     "assetCat": "EP"
+    },
+    {
+     "name": "STRIPE LLC",
+     "title": "STRIPE LLC CL B PP (PHYSICAL) (NOT LISTED OR TRADING)",
+     "otherDesc": "CGSymbol",
+     "otherId": "ECS282034",
+     "balance": "1123404.000000000000",
+     "units": "NS",
+     "valUSD": "70774452.000000000000",
+     "pctVal": "0.0215744426",
+     "assetCat": "EC"
+    },
+    {
+     "name": "STRIPE LLC",
+     "title": "STRIPE LLC PFD SER H 6.00% NON-CUM PP (PHYSICAL) (NOT LISTED OR TRADING)",
+     "otherDesc": "CGSymbol",
+     "otherId": "ECS283004",
+     "balance": "376444.000000000000",
+     "units": "NS",
+     "valUSD": "23715972.000000000000",
+     "pctVal": "0.0072294290",
+     "assetCat": "EP"
+    },
+    {
+     "name": "STRIPE LLC",
+     "title": "STRIPE LLC PFD SER I 6.00% NON-CUM PP (PHYSICAL) (NOT LISTED OR TRADING)",
+     "otherDesc": "CGSymbol",
+     "otherId": "ECS319964",
+     "balance": "7098300.000000000000",
+     "units": "NS",
+     "valUSD": "447192900.000000000000",
+     "pctVal": "0.1363194948",
+     "assetCat": "EP"
+    },
+    {
+     "name": "STRIPE LLC",
+     "title": "STRIPE LLC CL B PP (DRS) (NOT LISTED OR TRADING)",
+     "otherDesc": "CGSymbol",
+     "otherId": "ECS327876",
+     "balance": "30538.000000000000",
+     "units": "NS",
+     "valUSD": "1923894.000000000000",
+     "pctVal": "0.0005864678",
+     "assetCat": "EC"
+    },
+    {
+     "name": "STRIPE LLC",
+     "title": "STRIPE LLC PFD SER BB 6.00% NON-CUM PP (DRS) (NOT LISTED OR TRADING)",
+     "otherDesc": "CGSymbol",
+     "otherId": "EPS6558",
+     "balance": "214287.000000000000",
+     "units": "NS",
+     "valUSD": "13500081.000000000000",
+     "pctVal": "0.0041152805",
+     "assetCat": "EP"
+    },
+    {
+     "name": "STRIPE LLC",
+     "title": "STRIPE LLC PFD SER G 6.00% NON-CUM PP (DRS) (NOT LISTED OR TRADING)",
+     "otherDesc": "CGSymbol",
+     "otherId": "EPS6617",
+     "balance": "396250.000000000000",
+     "units": "NS",
+     "valUSD": "24963750.000000000000",
+     "pctVal": "0.0076097939",
+     "assetCat": "EP"
+    }
+   ],
+   "fundKey": "S000009228"
+  },
+  "0000940400-26-036410": {
+   "accession": "0000940400-26-036410",
+   "cik": "276463",
+   "repPdDate": "2026-03-31",
+   "seriesId": "S000004071",
+   "regName": "BlackRock Bond Fund, Inc.",
+   "inspected": 8410,
+   "rows": [
+    {
+     "name": "ANTHROPIC SERIES G",
+     "title": "ANTHROPIC SERIES G",
+     "otherDesc": "INTERNAL",
+     "otherId": "BYDXGRZL8",
+     "balance": "16702.00000000",
+     "units": "NS",
+     "valUSD": "4328096.15000000",
+     "pctVal": "0.024328684019",
+     "assetCat": "EC"
+    },
+    {
+     "name": "ANTHROPIC PBC",
+     "title": "ANTHROPIC PBC",
+     "otherDesc": "INTERNAL",
+     "otherId": "BYDP5QT36",
+     "balance": "27805.00000000",
+     "units": "NS",
+     "valUSD": "7205287.60000000",
+     "pctVal": "0.040501680002",
+     "assetCat": "EP"
+    }
+   ],
+   "fundKey": "S000004071"
+  }
+ }
+}

@@ -1,3 +1,4 @@
+import { BASIS, BasisNote } from '../ui/Basis';
 import { qs, useApi } from '../api/client';
 import type { Envelope, Firm, Freshness } from '../api/types';
 import { firmPath, longDate, moneyC, num } from '../lib/format';
@@ -21,6 +22,7 @@ export default function Firms() {
             Funds map to firms by their adviser in N-CEN (current adviser). As of{' '}
             {firms.data ? longDate(firms.data.date) : '…'}.
           </p>
+          <BasisNote />
         </div>
         <span class="spacer" />
         <ScopeBar supports={{ asof: true }} newest={fresh.data?.newestReportDate ?? null} />
@@ -30,6 +32,7 @@ export default function Firms() {
       {firms.data && (
         <Card flush>
           <DataTable
+            basis={BASIS}
             columns={[
               {
                 id: 'name',

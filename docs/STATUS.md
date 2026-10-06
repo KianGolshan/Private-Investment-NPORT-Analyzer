@@ -1,8 +1,8 @@
 # Vantage v2 Status
 
 **Phase:** P6b W0–W4 signed off (W4 2026-10-05). **P6c (review remediation) inserted before W5**: the user's
-separate check was a staff engineering review (F01–F18); plan approved 2026-10-05. R1 signed off 2026-10-05.
-**R2 (publication) built 2026-10-05, stopped for sign-off; R3 (assurance) next.** Branch `v2-p6b-workspace` (pushed). P6 core signed off 2026-10-01. Wave results: [archive](archive/STATUS-history.md).
+separate check was a staff engineering review (F01–F18); plan approved 2026-10-05. R1 and R2 signed off 2026-10-05.
+**R3 (assurance) built 2026-10-05, stopped for sign-off; then W5 (retire & polish).** Branch `v2-p6b-workspace` (pushed). P6 core signed off 2026-10-01. Wave results: [archive](archive/STATUS-history.md).
 **Last updated:** 2026-10-05. Earlier results: [archive/STATUS-history.md](archive/STATUS-history.md).
 
 ## Phase tracker
@@ -11,7 +11,7 @@ separate check was a staff engineering review (F01–F18); plan approved 2026-10
       (signed off 2026-09-28..30; ROADMAP "Done")
 - [x] P6 core: analysis views (signed off 2026-10-01; remaining items in ROADMAP §6)
 - [ ] **P6b: analyst workspace**: W0–W4 signed off (2026-10-01, W4 2026-10-05); **W5 next** (ROADMAP §6b)
-- [ ] **P6c: review remediation** (R1 correctness/security → R2 publication → R3 assurance), then W5
+- [ ] **P6c: review remediation**: R1, R2 signed off; R3 built (2026-10-05), awaiting sign-off; then W5
       ([plan](plans/P6c-review-remediation.md))
 - [ ] P7: MCP server (open now; the services exist)
 - [ ] P8: operations hardening (nightly job, backups, alerting, doctor)
@@ -114,6 +114,13 @@ entities, 68,277 position-fact legs. `ingest_errors` empty. 2026Q3 bulk not post
 
 ## Open decisions (user)
 
+- **P6c R3 calls (open to overrule):** the feed pages at up to 3,000 per request (the Activity page asks for 500),
+  with `total`/`breakdown` over every match. Exports of a page carry their row range in the file name. A partial
+  live answer is never cached. The basis note ("today's reviewed list, current N-CEN adviser, applied to every
+  period") is on the market, explore, compare, firm, watchlist and activity views, and is a Basis column in their
+  exports. The browser suite runs Chromium only, locally and in CI. CI actions are now pinned by commit SHA with
+  `permissions: contents: read`.
+
 - **P6c R2 calls (ADR 0009, open to overrule):** generation files plus a `warehouse.db` symlink, rather than
   staged tables. Two generations kept (~1.8 GB on disk with the candidate). A job may not shrink filings, holdings,
   companies or managers by more than 2% without `--allow-shrink`, and a quarter reload must keep 90% of its
@@ -155,6 +162,10 @@ entities, 68,277 position-fact legs. `ingest_errors` empty. 2026Q3 bulk not post
 
 ## Known issues
 
+- `npm test` once failed "scope: firm, fund, class and kind filters equal a post-filter of the unfiltered answer"
+  in a full parallel run (2026-10-05, load ~5). It passed alone, in 2 more full runs and in 4 parallel stress runs
+  (not reproduced; the same family as the timing flakes below).
+
 - `test/prod-startup.test.js` "behind a proxy" failed with ECONNRESET in 2 of 3 full runs at load average 16–20
   (passes alone, passed at the W2 commit once). Likely the start-up warm-up blocking the event loop past the 5 s
   keep-alive timeout (the dashboard step, ~4.5 s cold). Flagged as its own task; not changed in W3.
@@ -172,20 +183,36 @@ entities, 68,277 position-fact legs. `ingest_errors` empty. 2026Q3 bulk not post
 
 ## Next session
 
-> Resume Vantage v2 on branch `v2-p6b-workspace`. P6c R1 is signed off; R2 (publication, ADR 0009) is built and
-> waiting for sign-off. On "continue", build **R3 (assurance)** per docs/plans/P6c-review-remediation.md:
+> Resume Vantage v2 on branch `v2-p6b-workspace`. P6c R1 and R2 are signed off; R3 (assurance) is built and waiting
+> for sign-off. On "continue", build **W5 (retire & polish)** per docs/ROADMAP.md §6b, plus the rest of F18:
 >
-> - a Playwright browser suite in CI (ask before installing browsers): tooltip payloads inert, the CSP header,
->   freshness through a generation switch, CSV/XLSX contents, palette failure, drawer focus;
-> - F16: paged activity with `total`/`breakdown` over all matches, export scope labeled;
-> - F13: live routes carry `partial`/`failedSources`, and partial answers are not cached as complete;
-> - F17: a hand-reviewed oracle of ~30 raw rows;
-> - F14: temporal labels ("current curation and adviser mapping").
+> - move v1 Batch and Watchlist users to Compare and Tracked; only Private Credit stays in Legacy;
+> - an axe audit and Lighthouse ≥ 90 for perf and a11y on Explore, company, firm and Market;
+> - a focus trap and return-to-trigger for the palette and drawer, and keyboard activation for clickable rows;
+> - trim the drill payload if needed; README v2 map and module map.
 >
-> Read CLAUDE.md (every write is a job now), docs/STATUS.md and docs/decisions/0009 first. Writers:
-> `npm run refresh` etc. publish generations; `npm run warehouse` shows them. Stop for R3 sign-off; W5 follows.
+> Read CLAUDE.md (every write is a job; `npm run test:e2e` after `npm run build:web`), docs/STATUS.md and
+> docs/plans/P6c-review-remediation.md. Extend `web/e2e` for the W5 a11y checks. Stop for W5 sign-off. After W5:
+> P7/P8 (F10/F11 items listed in ROADMAP).
 
 ## Log
+
+- **2026-10-05 (P6c R3):** Assurance.
+  - **Browser suite:** `web/e2e` (Playwright, Chromium), in CI as job `e2e`. It covers the strict CSP and six
+    routes without console errors, a failed search with retry, drawer focus/Escape/per-class lines, a session
+    seeing a new generation after a real job, a hostile company name inert in a tooltip, and the CSV formula
+    cell. A mutation check (escaping removed) fails the tooltip test with a live `<img onerror>` element.
+  - **Oracle (F17):** 6 cases, 19 filings of raw EDGAR rows (`test/fixtures/oracle`), with hand-picked class rows
+    and expected answers as plain arithmetic. The app agrees on class marks and fund counts (incl. Databricks
+    common 3 funds over 7 lots), exposure, an exit, a re-mark and an amendment.
+  - **F16:** the feed has `total`/`breakdown`/paging and the Activity page has a pager. Live: 2,752 changes in
+    2026-07..09 (no 92-day window exceeds 3,000 today); 6 pages of 500 concatenate to the 2,752. Company filing
+    rows count filings and funds over every row.
+  - **F13:** live routes return `partial`/`failedSources` and are not cached when partial; v1 says so.
+  - **F14:** `basis` on cross-company answers, `BasisNote`, Basis export column.
+  - **CI:** pinned actions, least privilege.
+  - **Gates:** `npm test` 569 tests (538 pass, 31 skipped; one unreproduced intermittent failure, Known issues).
+    Web 33/33. e2e 6/6. LIVE 31/31. Lint and format clean.
 
 - **2026-10-05 (P6c R2):** One write path and whole-generation publication (ADR 0009).
   - **Write path:** `lib/warehouse/job.js` `runJob`: lock with heartbeat, candidate via the backup API,

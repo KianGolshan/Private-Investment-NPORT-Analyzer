@@ -235,6 +235,9 @@ async function fetchSubmissionsAllPages(cikPadded) {
   });
   pushEntries(subResp.data.filings?.recent || {});
 
+  // An older page that fails is reported, not dropped silently (staff review
+  // F13): the caller marks its answer partial and does not cache it.
+  const failedPages = [];
   const files = subResp.data.filings?.files || [];
   for (const file of files) {
     try {
@@ -247,9 +250,10 @@ async function fetchSubmissionsAllPages(cikPadded) {
       pushEntries(pageResp.data);
     } catch (e) {
       console.error(`Submissions page error (${file.name}):`, e.message);
+      failedPages.push({ source: `submissions page ${file.name}`, error: e.message });
     }
   }
-  return { name: subResp.data.name || '', entries };
+  return { name: subResp.data.name || '', entries, failedPages };
 }
 
 // Strip trailing ticker/CIK parentheticals from EFTS display names,
@@ -564,10 +568,12 @@ app.get('/api/search-10q', async (req, res) => {
       }
 
       const historical = [];
+      const failedSources = [];
       for (const [cikStripped, name] of Object.entries(bdcCikName)) {
         try {
           const cikPadded = cikStripped.padStart(10, '0');
-          const { entries: allFilings } = await fetchSubmissionsAllPages(cikPadded);
+          const { entries: allFilings, failedPages } = await fetchSubmissionsAllPages(cikPadded);
+          for (const p of failedPages) failedSources.push({ ...p, source: `${name}: ${p.source}` });
           let count = 0;
           for (const f of allFilings) {
             if (!CREDIT_FORMS.includes(f.form)) continue;
@@ -591,6 +597,7 @@ app.get('/api/search-10q', async (req, res) => {
           await delay(50);
         } catch (e) {
           console.error('Filing history error for', name, e.message);
+          failedSources.push({ source: `${name} filing history`, error: e.message });
         }
       }
 
@@ -603,8 +610,11 @@ app.get('/api/search-10q', async (req, res) => {
         bdcFunds: [...new Set(Object.values(bdcCikName))].sort(),
         confirmed: confirmed.length,
         total: confirmed.length + historical.length,
+        partial: failedSources.length > 0,
+        failedSources,
       };
-      cache.setSearch(cacheKey, payload);
+      // a partial answer is shown, labeled, and asked for again next time
+      if (!payload.partial) cache.setSearch(cacheKey, payload);
       return payload;
     });
     res.json({ ...result, cached: false });
@@ -780,12 +790,12 @@ async function fetchFundNportHistory(cik) {
   return cache.withInFlight(cacheKey, async () => {
     await delay(50);
     const cikPadded = cik.padStart(10, '0');
-    const { name, entries } = await fetchSubmissionsAllPages(cikPadded);
+    const { name, entries, failedPages } = await fetchSubmissionsAllPages(cikPadded);
     const filings = entries
       .filter(f => f.form === 'NPORT-P' && f.accessionNumber)
       .map(f => ({ accession: f.accessionNumber, filingDate: f.filingDate || '', reportDate: f.reportDate || '' }));
-    const result = { cik, name: name || cik, filings };
-    cache.setSearch(cacheKey, result);
+    const result = { cik, name: name || cik, filings, failedSources: failedPages };
+    if (!failedPages.length) cache.setSearch(cacheKey, result);
     return result;
   });
 }
@@ -812,17 +822,20 @@ app.get('/api/search-fund', async (req, res) => {
     const data = await cache.withInFlight(cacheKey, async () => {
       const { ciks, totalMatches } = await lookupFundCiks(fund);
       const matches = [];
+      const failedSources = [];
       for (const cik of ciks) {
         try {
           const match = await fetchFundNportHistory(cik);
           if (match.filings.length) matches.push(match);
+          for (const p of match.failedSources || []) failedSources.push({ ...p, source: `CIK ${cik}: ${p.source}` });
           await delay(50);
         } catch (e) {
           console.error('Fund history error for CIK', cik, e.message);
+          failedSources.push({ source: `CIK ${cik} filing history`, error: e.message });
         }
       }
-      const payload = { matches, totalMatches };
-      cache.setSearch(cacheKey, payload);
+      const payload = { matches, totalMatches, partial: failedSources.length > 0, failedSources };
+      if (!payload.partial) cache.setSearch(cacheKey, payload);
       return payload;
     });
     res.json({ ...data, cached: false });
@@ -924,15 +937,27 @@ app.get('/api/fund-series', async (req, res) => {
       const multiSeries = Object.values(perDate).some(n => n > 1);
       if (!multiSeries) {
         const single = { cik, registrant: hist.name, multiSeries: false, series: [] };
-        cache.setSearch(cacheKey, single);
-        return single;
+        const failed = hist.failedSources || [];
+        if (!failed.length) cache.setSearch(cacheKey, single);
+        return { ...single, partial: failed.length > 0, failedSources: failed };
       }
 
       const newest = Math.max(...hist.filings.map(f => Date.parse(f.filingDate) || 0));
       const cohort = hist.filings
         .filter(f => (Date.parse(f.filingDate) || 0) >= newest - SERIES_COHORT_DAYS * 86400000)
         .slice(0, SERIES_COHORT_CAP);
-      const headers = await mapLimit(cohort, 4, f => fetchFilingHeader(cik, f.accession));
+      const failedSources = [...(hist.failedSources || [])];
+      const headers = await mapLimit(cohort, 4, f =>
+        fetchFilingHeader(cik, f.accession).catch(e => {
+          failedSources.push({ source: `filing header ${f.accession}`, error: e.message });
+          return null;
+        })
+      );
+      const partial = failedSources.length > 0;
+      const keep = v => {
+        if (!partial) cache.setSearch(cacheKey, v);
+        return { ...v, partial, failedSources };
+      };
       const seen = new Map();
       cohort.forEach((f, i) => {
         const h = headers[i];
@@ -951,14 +976,8 @@ app.get('/api/fund-series', async (req, res) => {
       // (real: SkyBridge G II Fund), and some real trusts' filings carry no
       // series id at all (Stone Ridge Trust V) — with fewer than two
       // identifiable funds there is nothing to choose between.
-      if (series.length < 2) {
-        const single = { cik, registrant: hist.name, multiSeries: false, series: [] };
-        cache.setSearch(cacheKey, single);
-        return single;
-      }
-      const result = { cik, registrant: hist.name, multiSeries: true, series };
-      cache.setSearch(cacheKey, result);
-      return result;
+      if (series.length < 2) return keep({ cik, registrant: hist.name, multiSeries: false, series: [] });
+      return keep({ cik, registrant: hist.name, multiSeries: true, series });
     });
     res.json({ ...payload, cached: false });
   } catch (error) {

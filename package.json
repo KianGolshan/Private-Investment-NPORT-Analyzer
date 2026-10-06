@@ -26,6 +26,7 @@
     "bench": "node scripts/bench.js",
     "build:web": "npm --prefix web run build",
     "test:web": "npm --prefix web run typecheck && npm --prefix web test",
+    "test:e2e": "npm --prefix web run e2e",
     "lint:web": "npm --prefix web run lint",
     "dev:web": "npm --prefix web run dev"
   },

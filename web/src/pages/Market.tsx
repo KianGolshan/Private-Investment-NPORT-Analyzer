@@ -1,3 +1,4 @@
+import { BASIS, BasisNote } from '../ui/Basis';
 import { lazy } from 'preact-iso';
 import { useCallback } from 'preact/hooks';
 import { qs, useApi } from '../api/client';
@@ -93,6 +94,7 @@ function Top() {
           As of {scope.asof ? longDate(scope.asof) : 'the newest filings'}: each fund's latest N-PORT on or before that
           date. Funds report on staggered fiscal quarters, so mark dates differ by fund.
         </p>
+        <BasisNote />
         <span class="spacer" />
         <ScopeBar supports={{ asof: true }} newest={fresh.data?.newestReportDate ?? null} />
       </div>
@@ -116,6 +118,7 @@ function Top() {
             </Card>
             <Card title="All private companies" flush>
               <DataTable
+                basis={BASIS}
                 columns={columns}
                 rows={d.results}
                 rowKey={r => String(r.companyId)}

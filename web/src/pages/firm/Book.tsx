@@ -1,3 +1,4 @@
+import { BASIS } from '../../ui/Basis';
 import { useCallback, useMemo } from 'preact/hooks';
 import type { FirmBook } from '../../api/types';
 import { escapeHtml, companyPath, fundPath, money, moneyC, num, pctOfNav, price, share } from '../../lib/format';
@@ -118,6 +119,7 @@ export function Book({ id, book: b, newest }: { id: number; book: FirmBook; newe
       {view === 'company' && (
         <Card flush>
           <DataTable<Pos>
+            basis={BASIS}
             columns={[
               {
                 id: 'fund',
@@ -187,6 +189,7 @@ export function Book({ id, book: b, newest }: { id: number; book: FirmBook; newe
       {view === 'fund' && (
         <Card flush>
           <DataTable
+            basis={BASIS}
             columns={[
               {
                 id: 'fund',

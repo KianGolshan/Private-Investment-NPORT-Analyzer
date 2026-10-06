@@ -196,6 +196,8 @@ npm run format     # apply Prettier formatting
 
 ```bash
 npm run test:live  # opt-in: real SEC, real filings, real UI → backend → EDGAR (a few minutes)
+npm run test:web   # the workspace: typecheck + Vitest
+npm run test:e2e   # the workspace in Chromium (Playwright) on the golden warehouse; npm run build:web first
 ```
 
 The suite has several layers, each testing something the others structurally
@@ -220,6 +222,16 @@ can't reach:
   CUSIPs, "N/A" issuer names, multi-series trusts, and six-plus real BDC
   10-Q layouts). These are the regression tests for bugs only real data
   exposed.
+- `test/oracle.test.js` — an independent oracle: raw rows read straight from
+  EDGAR's `primary_doc.xml` (`test/fixtures/oracle/`, rebuilt by its
+  `build-oracle.js`), the class rows picked by hand, every expected answer
+  plain arithmetic; the app must agree (class marks, exposure, an exit, a
+  re-mark, an amendment).
+- `test/job.test.js` — the one write path: generations, failure, validation,
+  the lock, the server switching generations, rollback, the CLI writers.
+- `web/e2e/` — the analyst workspace in a real browser (Playwright): the
+  script policy, tooltip payloads inert, a session seeing a new generation,
+  CSV formula safety, search failure, the position drawer.
 - `test/prod-startup.test.js` — real child processes: production refuses to
   start without a user agent, X-Forwarded-For handling, rate limits, legacy
   cache files.

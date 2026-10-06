@@ -181,3 +181,12 @@ test('v1 CSV: text a spreadsheet would run as a formula opens as text; numbers s
     ['\'=HYPERLINK("x")', "'+1+1", "'-2+3", "'@SUM(A1)", 'Stripe, Inc.', '-12.5', '-1,234', '1.5', '']
   );
 });
+
+test('v1: a partial live answer names what failed; a complete one adds nothing (F13)', async () => {
+  const { window } = await loadApp({ fetchImpl: backend(), exportLibs: true });
+  assert.equal(window.partialNote({ filings: [] }), '');
+  assert.match(
+    window.partialNote({ partial: true, failedSources: [{ source: 'Ares Capital filing history', error: 'timeout' }] }),
+    /Incomplete: 1 SEC source\(s\) failed \(Ares Capital filing history\); search again to retry\./
+  );
+});

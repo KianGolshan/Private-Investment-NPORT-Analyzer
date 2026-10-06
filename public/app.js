@@ -2476,6 +2476,15 @@ function setVal(id, v) {
 // with = + - @, a tab or a carriage return, and is not a plain number) gets a
 // leading apostrophe, so a name from a filing opens as text (staff review F09).
 // The same rule as web/src/lib/export.ts.
+// The server marks a live answer partial when an SEC source failed (staff
+// review F13); the analyst sees which, rather than a quietly short list.
+function partialNote(data) {
+  if (!data || !data.partial) return '';
+  const list = (data.failedSources || []).slice(0, 3).map(f => f.source);
+  const more = (data.failedSources || []).length - list.length;
+  return ` Incomplete: ${(data.failedSources || []).length} SEC source(s) failed (${list.join('; ')}${more > 0 ? `; ${more} more` : ''}); search again to retry.`;
+}
+
 function csvText(v) {
   const s = v == null ? '' : String(v);
   return /^[=+\-@\t\r]/.test(s) && !/^[-+]?[\d,]*\.?\d+(?:[eE][-+]?\d+)?%?$/.test(s) ? `'${s}` : s;
@@ -2570,7 +2579,8 @@ async function searchPrivateCredit() {
     if (!data.filings?.length) {
       hideLoading();
       return showMsg(
-        'No BDC 10-Q or 10-K filings found for that issuer. The company may not be held by any reporting BDC, or try a more specific name.',
+        'No BDC 10-Q or 10-K filings found for that issuer. The company may not be held by any reporting BDC, or try a more specific name.' +
+          esc(partialNote(data)),
         'error'
       );
     }
@@ -2583,8 +2593,9 @@ async function searchPrivateCredit() {
 
     if (data.bdcFunds?.length) {
       showMsg(
-        `Found ${data.bdcFunds.length} BDC fund(s) holding this issuer (${data.confirmed} confirmed filings). Parsing…`,
-        'info'
+        `Found ${data.bdcFunds.length} BDC fund(s) holding this issuer (${data.confirmed} confirmed filings). Parsing…` +
+          esc(partialNote(data)),
+        data.partial ? 'error' : 'info'
       );
     }
 
@@ -3455,6 +3466,7 @@ async function onXraySeriesChange() {
         fileDate: f.filingDate || '',
       }));
       filings.sort((a, b) => dateCmp(b.period || b.fileDate, a.period || a.fileDate));
+      if (data.partial && filings.length) showMsg(esc(partialNote(data).trim()), 'error');
     }
     hideLoading();
     if (!filings.length) return showMsg('No NPORT-P filings found for this fund.', 'error');
@@ -3579,7 +3591,8 @@ async function searchFundXrayLive(fund, mySearchGen, notice) {
 
     if (!filings.length) {
       return showMsg(
-        'No NPORT-P filings found for that fund name. Try the fund’s exact registrant name as it appears on EDGAR (e.g. "SmallCap World Fund Inc", not just "SmallCap").',
+        'No NPORT-P filings found for that fund name. Try the fund’s exact registrant name as it appears on EDGAR (e.g. "SmallCap World Fund Inc", not just "SmallCap").' +
+          esc(partialNote(data)),
         'error'
       );
     }

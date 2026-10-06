@@ -249,3 +249,31 @@ test('routes: drill, movers and newly reported answer through the API; bad input
   await request(app).get('/api/analysis/drill?rows=class&key=Series%20G').expect(400);
   await request(app).get('/api/market/movers?from=2026-06-30&to=2025-06-30').expect(400);
 });
+
+test('feed paging (F16): pages add up to every match; total and breakdown count every match, not the page', async () => {
+  const q = '/api/feed?since=2026-07-01&until=2026-09-30&all=1';
+  const whole = (await api(q)).body;
+  assert.ok(whole.total > 40, `enough events to page (${whole.total})`);
+  assert.equal(whole.truncated, false);
+  const pages = [];
+  for (let offset = 0; offset < whole.total; offset += 17) {
+    const p = (await api(`${q}&limit=17&offset=${offset}`)).body;
+    assert.equal(p.total, whole.total);
+    assert.deepEqual(p.breakdown, whole.breakdown);
+    assert.equal(p.truncated, true);
+    pages.push(...p.events);
+  }
+  const key = e => `${e.accession}:${e.companyId}`;
+  assert.deepEqual(pages.map(key), whole.events.map(key));
+  // the breakdown, recounted by hand from every event
+  const recount = {};
+  for (const e of whole.events) {
+    const k = e.label === 'mark moved' ? 'markMoved' : e.type;
+    recount[k] = (recount[k] || 0) + 1;
+  }
+  assert.deepEqual(whole.breakdown, recount);
+  assert.equal(
+    Object.values(whole.breakdown).reduce((a, b) => a + b, 0),
+    whole.total
+  );
+});

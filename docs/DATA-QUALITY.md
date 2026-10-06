@@ -118,6 +118,16 @@ every refresh (`lib/warehouse/reclassify.js`), which also moves each filing's to
 - **Periods:** levels are as of the period end; changes are dated by each fund's own mark date and summed over the
   window ("changes in filings with mark dates in …"); a mark date is never relabeled to a quarter end.
 - The quarter still being filed is partial.
+- **History is read with today's curation** (P6c R3, staff review F14): which companies are private and which firm a
+  fund belongs to are today's reviewed list and each fund's current adviser, applied to every period. Market,
+  analysis, firm, watchlist and feed answers carry `basis` (with the generation's curation revision), the views say it
+  (`BasisNote`), and their exports add a Basis column. A company that has since listed drops out of earlier periods
+  (survivorship); a watchlist item for a listed, merged or dropped id shows its status, never a zero.
+- **Counts cover every match, lists may be pages** (F16): the activity feed returns `total` and `breakdown` over all
+  matches and pages `events`; the company filing rows count filings and funds over every row. Exports of a page are
+  labeled with their row range.
+- **Partial live answers say so** (F13): a live route whose SEC source failed returns `partial` and `failedSources`
+  and is not cached; the palette shows a failed search with a retry, never "no match".
 
 ## Open questions
 

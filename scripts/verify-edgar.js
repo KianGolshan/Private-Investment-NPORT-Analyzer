@@ -14,6 +14,47 @@
 require('dotenv').config();
 const { secGet } = require('../lib/warehouse/delta');
 
+// The raw holdings of one filing whose name or title matches `re`, read straight
+// from primary_doc.xml with regular expressions (never parsers.js: an
+// independent reading for golden checks and the test oracle, staff review F17).
+// Returns the filing header, the rows, and how many holdings were inspected.
+async function rawHoldings(cik, accession, re) {
+  const url = `https://www.sec.gov/Archives/edgar/data/${cik}/${accession.replace(/-/g, '')}/primary_doc.xml`;
+  const xml = String(await secGet(url));
+  // a tag with or without attributes or a namespace prefix
+  const open = t => `<(?:\\w+:)?${t}(?:\\s[^>]*)?>`;
+  const tag = t => (xml.match(new RegExp(`${open(t)}([^<]+)`)) || [])[1];
+  const rows = [];
+  let inspected = 0;
+  for (const m of xml.matchAll(/<(?:\w+:)?invstOrSec(?:\s[^>]*)?>([\s\S]*?)<\/(?:\w+:)?invstOrSec>/g)) {
+    const b = m[1];
+    inspected++;
+    const g = t => (b.match(new RegExp(`${open(t)}([^<]*)<`)) || [])[1];
+    if (!re.test(g('name') || '') && !re.test(g('title') || '')) continue;
+    const other = b.match(/<other[^>]*otherDesc="([^"]*)"[^>]*value="([^"]*)"/) || [];
+    rows.push({
+      name: g('name'),
+      title: g('title'),
+      otherDesc: other[1] || null,
+      otherId: other[2] || null,
+      balance: g('balance'),
+      units: g('units'),
+      valUSD: g('valUSD'),
+      pctVal: g('pctVal'),
+      assetCat: (b.match(/<assetCat>([^<]*)/) || b.match(/assetConditional desc="([^"]*)"/) || [])[1] || null,
+    });
+  }
+  return {
+    accession,
+    cik: String(cik),
+    repPdDate: tag('repPdDate'),
+    seriesId: tag('seriesId') || null,
+    regName: tag('regName'),
+    inspected,
+    rows,
+  };
+}
+
 async function main() {
   const [cik, pattern, ...accessions] = process.argv.slice(2);
   if (!cik || !pattern || !accessions.length) {
@@ -23,38 +64,24 @@ async function main() {
   const re = new RegExp(pattern, 'i');
   const problems = [];
   for (const acc of accessions) {
-    const url = `https://www.sec.gov/Archives/edgar/data/${cik}/${acc.replace(/-/g, '')}/primary_doc.xml`;
-    const xml = String(await secGet(url));
-    // a tag with or without attributes or a namespace prefix
-    const open = t => `<(?:\\w+:)?${t}(?:\\s[^>]*)?>`;
-    const tag = t => (xml.match(new RegExp(`${open(t)}([^<]+)`)) || [])[1];
-    console.log(`\n== ${acc} repPdDate=${tag('repPdDate')} series=${tag('seriesId')} registrant=${tag('regName')}`);
-    let inspected = 0;
-    let matched = 0;
-    for (const m of xml.matchAll(/<(?:\w+:)?invstOrSec(?:\s[^>]*)?>([\s\S]*?)<\/(?:\w+:)?invstOrSec>/g)) {
-      const b = m[1];
-      inspected++;
-      const g = t => (b.match(new RegExp(`${open(t)}([^<]*)<`)) || [])[1];
-      if (!re.test(g('name') || '') && !re.test(g('title') || '')) continue;
-      matched++;
-      const other = (b.match(/<other[^>]*otherDesc="([^"]*)"[^>]*value="([^"]*)"/) || []).slice(1).join(' ');
-      const cat = (b.match(/<assetCat>([^<]*)/) || b.match(/assetConditional desc="([^"]*)"/) || [])[1];
+    const f = await rawHoldings(cik, acc, re);
+    console.log(`\n== ${acc} repPdDate=${f.repPdDate} series=${f.seriesId} registrant=${f.regName}`);
+    for (const r of f.rows)
       console.log(
         [
-          g('name'),
-          g('title'),
-          `id:${other}`,
-          `bal:${g('balance')}`,
-          g('units'),
-          `val:${g('valUSD')}`,
-          `pct:${g('pctVal')}`,
-          cat,
+          r.name,
+          r.title,
+          `id:${[r.otherDesc, r.otherId].filter(Boolean).join(' ')}`,
+          `bal:${r.balance}`,
+          r.units,
+          `val:${r.valUSD}`,
+          `pct:${r.pctVal}`,
+          r.assetCat,
         ].join(' | ')
       );
-    }
-    console.log(`-- ${acc}: ${matched} of ${inspected} holdings match /${pattern}/i`);
-    if (!inspected) problems.push(`${acc}: no holdings read (not an N-PORT primary_doc.xml, or an unknown layout)`);
-    else if (!matched) problems.push(`${acc}: no holding matches /${pattern}/i`);
+    console.log(`-- ${acc}: ${f.rows.length} of ${f.inspected} holdings match /${pattern}/i`);
+    if (!f.inspected) problems.push(`${acc}: no holdings read (not an N-PORT primary_doc.xml, or an unknown layout)`);
+    else if (!f.rows.length) problems.push(`${acc}: no holding matches /${pattern}/i`);
   }
   if (problems.length) {
     for (const p of problems) console.error(`FAILED ${p}`);
@@ -62,7 +89,10 @@ async function main() {
   }
 }
 
-main().catch(err => {
-  console.error(err.message);
-  process.exit(1);
-});
+if (require.main === module)
+  main().catch(err => {
+    console.error(err.message);
+    process.exit(1);
+  });
+
+module.exports = { rawHoldings };

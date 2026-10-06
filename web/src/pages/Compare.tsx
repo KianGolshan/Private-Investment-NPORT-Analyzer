@@ -1,3 +1,4 @@
+import { BASIS, BasisNote } from '../ui/Basis';
 import { useCallback, useMemo, useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
 import { qs, useApi } from '../api/client';
@@ -223,6 +224,7 @@ export default function Compare() {
             range, and per-share marks as filed: at each mark date, the median of the funds that filed the class that
             day. Marks are not split-adjusted across funds.
           </p>
+          <BasisNote />
         </div>
       </div>
       <div class="row wrap">
@@ -263,6 +265,7 @@ export default function Compare() {
             <>
               <Card title="Summary" flush>
                 <DataTable
+                  basis={BASIS}
                   columns={columns}
                   rows={d.results}
                   rowKey={r => String(r.key)}
@@ -294,6 +297,7 @@ export default function Compare() {
               </div>
               <Card title="Value by period" flush>
                 <DataTable
+                  basis={BASIS}
                   columns={periodCols}
                   rows={periodRows}
                   rowKey={x => x.p.to}

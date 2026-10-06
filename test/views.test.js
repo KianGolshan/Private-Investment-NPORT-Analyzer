@@ -309,3 +309,16 @@ test('markStats: a fund with several lots is one observation at value / shares (
   ]);
   assert.deepEqual(s, { funds: 3, median: 12, low: 11.5, high: 20, severalMarks: 1 });
 });
+
+test('cross-company answers say how they read history; company answers do not need to (F14)', async () => {
+  for (const url of [
+    '/api/market/top?date=2026-06-30',
+    '/api/firms',
+    '/api/analysis/pivot?rows=company&from=2026-01-01&to=2026-06-30',
+  ]) {
+    const b = (await api(url)).body;
+    assert.match(b.basis?.companies || '', /today's reviewed list/, url);
+    assert.match(b.basis?.firms || '', /current adviser/, url);
+  }
+  assert.equal((await api(`/api/companies/${idOf('Stripe')}/exposure?date=2026-06-30`)).body.basis, undefined);
+});

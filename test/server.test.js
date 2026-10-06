@@ -642,3 +642,37 @@ test('GET /api/fund-xray-returns: a fetch failure is reported as success:false',
   assert.equal(res.status, 200);
   assert.equal(res.body.success, false);
 });
+
+// Staff review F13: an older submissions page that fails makes the answer
+// partial (named, not hidden) and it is not cached as complete.
+test('GET /api/search-fund: a failed older submissions page is reported as partial and not cached', async () => {
+  const atom = (cik, name) => `<?xml version="1.0" encoding="ISO-8859-1" ?>
+    <feed xmlns="http://www.w3.org/2005/Atom"><company-info><cik>${cik}</cik><conformed-name>${name}</conformed-name></company-info></feed>`;
+  const submissions = {
+    name: 'Partial Test Trust',
+    filings: {
+      recent: {
+        form: ['NPORT-P'],
+        accessionNumber: ['0000000000-26-000001'],
+        filingDate: ['2026-07-15'],
+        reportDate: ['2026-06-30'],
+      },
+      files: [{ name: 'CIK0000000777-submissions-001.json' }],
+    },
+  };
+  for (let round = 0; round < 2; round++) {
+    nock(SEC)
+      .get('/cgi-bin/browse-edgar')
+      .query(q => q.company === 'Partial Test Trust')
+      .reply(200, atom('0000000777', 'Partial Test Trust'), { 'Content-Type': 'application/atom+xml' });
+    nock(DATA_SEC).get('/submissions/CIK0000000777.json').reply(200, submissions);
+    nock(DATA_SEC).get('/submissions/CIK0000000777-submissions-001.json').times(3).reply(404, 'gone');
+    const res = await request(app).get('/api/search-fund?fund=Partial Test Trust');
+    assert.equal(res.status, 200);
+    assert.equal(res.body.cached, false, `round ${round}: a partial answer is never served from cache`);
+    assert.equal(res.body.partial, true);
+    assert.match(res.body.failedSources[0].source, /CIK 777: submissions page CIK0000000777-submissions-001\.json/);
+    assert.equal(res.body.matches[0].filings.length, 1);
+  }
+  nock.cleanAll();
+});

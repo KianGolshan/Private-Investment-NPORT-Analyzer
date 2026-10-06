@@ -1,3 +1,4 @@
+import { BASIS } from '../../ui/Basis';
 import { useCallback, useMemo } from 'preact/hooks';
 import { qs, useApi } from '../../api/client';
 import type { Bridge, Pivot } from '../../api/types';
@@ -210,6 +211,7 @@ export function BookOverview({ who, name, newest }: { who: Who; name: string; ne
       {p && (
         <Card title={`By company, ${p.periods[i0]?.label ?? ''} – ${p.periods[i1]?.label ?? ''}`} flush>
           <DataTable
+            basis={BASIS}
             columns={columns}
             rows={rows}
             rowKey={r => String(r.key)}

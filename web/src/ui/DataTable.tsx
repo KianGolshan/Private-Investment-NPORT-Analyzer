@@ -43,6 +43,8 @@ interface Props<T> {
   /** The total row, computed from the rows shown (after the filter box). */
   totals?: (rows: T[]) => Partial<Record<string, ComponentChildren>>;
   exportName?: string;
+  /** Written as a last "Basis" column in the export: how the numbers read history (F14). */
+  basis?: string;
   filterPlaceholder?: string;
   maxHeight?: number;
   onRowClick?: (row: T) => void;
@@ -92,11 +94,13 @@ export function DataTable<T>(p: Props<T>) {
   }, [p.rows, p.columns, sort, filter]);
 
   const exportCols = useMemo(
-    () =>
-      p.columns.flatMap(c =>
+    () => [
+      ...p.columns.flatMap(c =>
         c.noExport ? [] : [{ header: c.header, value: c.value } as ExportColumn<T>, ...(c.exportAs ?? [])]
       ),
-    [p.columns]
+      ...(p.basis ? [{ header: 'Basis', value: () => p.basis } as ExportColumn<T>] : []),
+    ],
+    [p.columns, p.basis]
   );
 
   const groups = useMemo(() => {

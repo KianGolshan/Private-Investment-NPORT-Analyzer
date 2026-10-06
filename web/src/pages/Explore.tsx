@@ -1,3 +1,4 @@
+import { BASIS, BasisNote } from '../ui/Basis';
 import { useCallback, useMemo } from 'preact/hooks';
 import { qs, useApi } from '../api/client';
 import type { Drill, DrillEvent, Freshness, Pivot, PivotMetric } from '../api/types';
@@ -264,6 +265,7 @@ export default function Explore() {
             filings whose mark dates fall in the period; a mark date is never moved to a quarter end. Click any cell for
             the filings behind it.
           </p>
+          <BasisNote />
         </div>
       </div>
       <div class="row wrap">
@@ -394,6 +396,7 @@ export default function Explore() {
           )}
           <Card title="Table" flush>
             <DataTable
+              basis={BASIS}
               columns={columns}
               rows={shown}
               rowKey={r => String(r.key)}
@@ -524,6 +527,7 @@ function DrillView({
             </span>
           </div>
           <DataTable
+            basis={BASIS}
             columns={columns}
             rows={d.events}
             rowKey={(e, i) => `${e.fundKey}|${e.companyId}|${e.accession ?? e.markDate}|${i}`}
