@@ -1,8 +1,8 @@
 # Vantage v2 Status
 
 **Phase:** P6b W0–W4 signed off (W4 2026-10-05). **P6c (review remediation) inserted before W5**: the user's
-separate check was a staff engineering review (F01–F18); plan approved 2026-10-05. R1 and R2 signed off 2026-10-05.
-**R3 (assurance) built 2026-10-05, stopped for sign-off; then W5 (retire & polish).** Branch `v2-p6b-workspace` (pushed). P6 core signed off 2026-10-01. Wave results: [archive](archive/STATUS-history.md).
+separate check was a staff engineering review (F01–F18); plan approved 2026-10-05. R1–R3 signed off 2026-10-05.
+**W5 (retire & polish) next; not started** (only its scope was read). Branch `v2-p6b-workspace` (pushed). P6 core signed off 2026-10-01. Wave results: [archive](archive/STATUS-history.md).
 **Last updated:** 2026-10-05. Earlier results: [archive/STATUS-history.md](archive/STATUS-history.md).
 
 ## Phase tracker
@@ -11,7 +11,7 @@ separate check was a staff engineering review (F01–F18); plan approved 2026-10
       (signed off 2026-09-28..30; ROADMAP "Done")
 - [x] P6 core: analysis views (signed off 2026-10-01; remaining items in ROADMAP §6)
 - [ ] **P6b: analyst workspace**: W0–W4 signed off (2026-10-01, W4 2026-10-05); **W5 next** (ROADMAP §6b)
-- [ ] **P6c: review remediation**: R1, R2 signed off; R3 built (2026-10-05), awaiting sign-off; then W5
+- [x] **P6c: review remediation**: R1–R3 signed off 2026-10-05; W5 next
       ([plan](plans/P6c-review-remediation.md))
 - [ ] P7: MCP server (open now; the services exist)
 - [ ] P8: operations hardening (nightly job, backups, alerting, doctor)
@@ -183,8 +183,7 @@ entities, 68,277 position-fact legs. `ingest_errors` empty. 2026Q3 bulk not post
 
 ## Next session
 
-> Resume Vantage v2 on branch `v2-p6b-workspace`. P6c R1 and R2 are signed off; R3 (assurance) is built and waiting
-> for sign-off. On "continue", build **W5 (retire & polish)** per docs/ROADMAP.md §6b, plus the rest of F18:
+> Resume Vantage v2 on branch `v2-p6b-workspace`. P6c R1–R3 are signed off. Build **W5 (retire & polish)** per docs/ROADMAP.md §6b, plus the rest of F18:
 >
 > - move v1 Batch and Watchlist users to Compare and Tracked; only Private Credit stays in Legacy;
 > - an axe audit and Lighthouse ≥ 90 for perf and a11y on Explore, company, firm and Market;
