@@ -1,8 +1,8 @@
 # Vantage v2 Status
 
 **Phase:** **P6e** (follow-ups from the Codex verification review of 2026-10-06, V01–V11) on branch
-`v2-p6e-verification`. W1 is signed off; **W2 is built and awaiting sign-off**. Then a PR to `main` (merged by the
-user). Everything through P6d is on `main`.
+`v2-p6e-verification`. **W1 and W2 are signed off**; the PR to `main` is open for the user to merge. Open: the V11
+Finastra live re-run (needs the user's yes). Next phase after the merge: the user picks P7 (MCP) or P8 (operations).
 
 ## Phase tracker
 
@@ -12,7 +12,7 @@ user). Everything through P6d is on `main`.
 - [x] P6b: analyst workspace, W0–W5 (signed off 2026-10-01..06; ROADMAP §6b)
 - [x] P6c: review remediation R1–R3 (signed off 2026-10-05; [plan](plans/P6c-review-remediation.md), ADR 0009)
 - [x] P6d: full-stack review remediation, W1–W3 (signed off 2026-10-06; ROADMAP §6d, ADR 0009 amendment)
-- [ ] P6e: Codex verification follow-ups (ROADMAP §6e; W1 signed off, W2 built 2026-10-06)
+- [x] P6e: Codex verification follow-ups, W1–W2 (signed off 2026-10-06; V11 re-run pending the user's yes)
 - [ ] P7: MCP server (open; the services exist)
 - [ ] P8: operations hardening (nightly job, backups and restore drill, readiness, alerting, doctor; F10/F11 items)
 - [ ] P9: public deployment (hosting to decide as ADR 0006; capacity envelope, shared SEC budget)
@@ -212,6 +212,8 @@ and 29 a refresh built by `main` (e5eca00, curation tree `eae566e`, clean). The 
 > `npm run refresh` at session start.
 
 ## Log
+
+- **2026-10-06:** P6e W2 signed off; PR to `main` opened.
 
 - **2026-10-06 (P6e W2):** W1 signed off ("continue"). W2 built:
   - **V05:** `job.warning` in freshness; the client refreshes `/api/freshness` in place when only the job changed; a
