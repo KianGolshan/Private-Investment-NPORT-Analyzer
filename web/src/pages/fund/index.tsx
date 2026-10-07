@@ -86,7 +86,13 @@ export default function Fund() {
               {ch.loading && !ch.data && <Loading rows={6} />}
               {ch.data && (
                 <Card flush>
-                  <ChangesTable events={ch.data.events} withCompany withFund={false} exportName={`${key}-changes`} />
+                  <ChangesTable
+                    events={ch.data.events}
+                    source={ch.data}
+                    withCompany
+                    withFund={false}
+                    exportName={`${key}-changes`}
+                  />
                 </Card>
               )}
             </>
@@ -94,6 +100,7 @@ export default function Fund() {
           {current === 'filings' && (
             <Card flush>
               <DataTable
+                source={d}
                 columns={[
                   {
                     id: 'reportDate',

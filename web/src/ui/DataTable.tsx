@@ -8,7 +8,7 @@ import {
   type VirtualizerOptions,
 } from '@tanstack/virtual-core';
 import { exportCsv, exportXlsx, type ExportColumn } from '../lib/export';
-import { useProvenance } from './Basis';
+import type { Envelope } from '../api/types';
 
 // The one table: sortable, groupable, filterable, virtualized when long, and
 // exportable from the same column definitions (the file matches the screen).
@@ -20,6 +20,11 @@ export interface Column<T> {
   value: (row: T) => string | number | boolean | null | undefined;
   /** What the cell shows (defaults to the raw value). */
   render?: (row: T) => ComponentChildren;
+  /**
+   * A value withheld for this row (e.g. returns without usable lots): the cell shows "—" and the export
+   * writes nothing, so screen and file never disagree (Codex verification V08, LESSONS 39).
+   */
+  hidden?: (row: T) => boolean;
   num?: boolean;
   /** Extra export-only columns (e.g. accession beside a linked date). */
   exportAs?: ExportColumn<T>[];
@@ -46,6 +51,8 @@ interface Props<T> {
   exportName?: string;
   /** Written as a last "Basis" column in the export: how the numbers read history (F14). */
   basis?: string;
+  /** The answer the rows came from: its generation and curation label the export (Codex verification V07). */
+  source?: Pick<Envelope, 'refreshId' | 'basis'> | null;
   filterPlaceholder?: string;
   maxHeight?: number;
   onRowClick?: (row: T) => void;
@@ -62,6 +69,16 @@ function compare(a: unknown, b: unknown): number {
   if (b == null) return -1;
   if (typeof a === 'number' && typeof b === 'number') return a - b;
   return String(a).localeCompare(String(b), 'en', { numeric: true, sensitivity: 'base' });
+}
+
+// "generation 29, curation sha256 <full digest>" for an answer, or '' without one.
+export function sourceOf(a: Pick<Envelope, 'refreshId' | 'basis'> | null | undefined): string {
+  if (!a) return '';
+  const gen = a.basis?.generation ?? a.refreshId;
+  const parts = [gen != null ? `generation ${gen}` : ''];
+  if (a.basis?.curationDigest) parts.push(`curation sha256 ${a.basis.curationDigest}`);
+  else if (a.basis?.curationRev) parts.push(`curation ${a.basis.curationRev}`);
+  return parts.filter(Boolean).join(', ');
 }
 
 export function DataTable<T>(p: Props<T>) {
@@ -94,11 +111,20 @@ export function DataTable<T>(p: Props<T>) {
     return out;
   }, [p.rows, p.columns, sort, filter]);
 
-  const source = useProvenance(!!p.basis);
+  // From the rows' own answer, never a separate "latest" fetch (LESSONS 39).
+  const source = sourceOf(p.source);
   const exportCols = useMemo(
     () => [
       ...p.columns.flatMap(c =>
-        c.noExport ? [] : [{ header: c.header, value: c.value } as ExportColumn<T>, ...(c.exportAs ?? [])]
+        c.noExport
+          ? []
+          : [
+              {
+                header: c.header,
+                value: c.hidden ? (r: T) => (c.hidden!(r) ? null : c.value(r)) : c.value,
+              } as ExportColumn<T>,
+              ...(c.exportAs ?? []),
+            ]
       ),
       ...(p.basis
         ? [
@@ -175,7 +201,7 @@ export function DataTable<T>(p: Props<T>) {
     >
       {p.columns.map(c => (
         <td key={c.id} class={c.num ? 'num' : c.wrap ? 'wrap' : ''}>
-          {c.render ? c.render(r) : (c.value(r) ?? '—')}
+          {c.hidden?.(r) ? '—' : c.render ? c.render(r) : (c.value(r) ?? '—')}
         </td>
       ))}
     </tr>

@@ -120,6 +120,7 @@ export function Book({ id, book: b, newest }: { id: number; book: FirmBook; newe
         <Card flush>
           <DataTable<Pos>
             basis={BASIS}
+            source={b}
             columns={[
               {
                 id: 'fund',
@@ -190,6 +191,7 @@ export function Book({ id, book: b, newest }: { id: number; book: FirmBook; newe
         <Card flush>
           <DataTable
             basis={BASIS}
+            source={b}
             columns={[
               {
                 id: 'fund',

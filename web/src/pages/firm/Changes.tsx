@@ -122,6 +122,7 @@ export function FirmChanges({ id, name, newest }: { id: number; name: string; ne
           >
             <ChangesTable
               events={d.events}
+              source={d}
               withCompany
               exportName={`${name}-changes-${d.since}-${d.until}-p${page + 1}`}
             />

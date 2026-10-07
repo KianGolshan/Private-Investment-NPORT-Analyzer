@@ -109,6 +109,7 @@ export default function NewlyReported() {
           <Card flush>
             <DataTable
               basis={BASIS}
+              source={d}
               columns={columns}
               rows={d.results}
               rowKey={r => String(r.companyId)}

@@ -138,6 +138,7 @@ export default function Activity() {
           <Card flush>
             <ChangesTable
               events={d.events}
+              source={d}
               withCompany
               exportName={`feed-${d.since}-${d.until}${d.truncated ? `-rows-${first}-${last}-of-${d.total}` : ''}`}
             />

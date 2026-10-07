@@ -231,6 +231,7 @@ export default function Holders({ base, sq, name, newest, openPosition }: ViewPr
     list && list.length > 0 ? (
       <Card title={`${title} (${list.length})`} actions={<span class="muted small">{note}</span>} flush>
         <DataTable
+          source={d}
           columns={[
             {
               id: 'fund',
@@ -309,6 +310,7 @@ export default function Holders({ base, sq, name, newest, openPosition }: ViewPr
           </div>
           <Card title={`Holders as of ${longDate(d.date)}`} flush>
             <DataTable
+              source={d}
               columns={columns}
               rows={rows}
               rowKey={r => `${r.h.fundKey}:${r.rowKey}`}

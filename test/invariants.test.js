@@ -43,3 +43,30 @@ test('nothing opens the published warehouse write-capable outside a job', () => 
   );
   assert.deepEqual(found, [], 'use openWarehouseReadOnly for the published warehouse');
 });
+
+// V07 (LESSONS 39): an export's labels come from the answer its rows came from.
+// The table and export code never fetch metadata of their own.
+test('the table and export code never fetch their own metadata', () => {
+  const found = hits(
+    ['web/src/ui/DataTable.tsx', 'web/src/lib/export.ts'],
+    /useApi|fetch\(|useProvenance|['"`]\/api\//
+  );
+  assert.deepEqual(found, [], 'pass the answer to DataTable as `source`');
+});
+
+// V07, all tables (LESSONS 39): every exported table names the answer its rows
+// came from, so its file carries that generation (and curation, where the answer
+// has a basis). A new <DataTable exportName=…> or <ChangesTable> without
+// `source` fails here.
+test('every exported table passes the answer its rows came from as `source`', () => {
+  const missing = [];
+  for (const f of tracked(['web/src'])) {
+    const text = read(f);
+    for (const m of text.matchAll(/<(DataTable|ChangesTable)\b[\s\S]*?\/>/g)) {
+      const tag = m[0];
+      const exports = m[1] === 'ChangesTable' || /\bexportName=/.test(tag);
+      if (exports && !/\bsource=\{/.test(tag)) missing.push(`${f}:${text.slice(0, m.index).split('\n').length}`);
+    }
+  }
+  assert.deepEqual(missing, [], 'add source={answer} to these tables');
+});

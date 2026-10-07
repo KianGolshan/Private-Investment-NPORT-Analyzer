@@ -37,11 +37,25 @@ function adopt(rid: unknown): boolean {
   return true;
 }
 
+// Per-URL updates of a cached answer without a new generation: the last job's
+// state moves on its own (running, failed, published with warnings; Codex
+// verification V05), so /api/freshness is refreshed in place and its views
+// re-render.
+const urlListeners = new Map<string, Set<(body: unknown) => void>>();
+function replaceCached(url: string, body: unknown): void {
+  cache.set(url, body);
+  for (const fn of [...(urlListeners.get(url) ?? [])]) fn(body);
+}
+
 /** Asks the server which generation it serves, outside the answer cache. */
 export async function revalidate(): Promise<void> {
   try {
     const res = await fetch('/api/freshness', { cache: 'no-store', headers: { Accept: 'application/json' } });
-    if (res.ok) adopt(((await res.json()) as { refreshId?: number }).refreshId);
+    if (!res.ok) return;
+    const body = (await res.json()) as { refreshId?: number; job?: unknown };
+    const before = cache.get('/api/freshness') as { job?: unknown } | undefined;
+    if (adopt(body.refreshId) && JSON.stringify(before?.job) !== JSON.stringify(body.job))
+      replaceCached('/api/freshness', body);
   } catch {
     // offline or the server is restarting: try again on the next trigger
   }
@@ -118,6 +132,15 @@ export function useApi<T>(url: string | null): ApiState<T> {
     return onGeneration(() => setGen(g => g + 1));
   }, []);
   useEffect(() => {
+    if (!url) return;
+    const fn = (body: unknown) => setState({ data: body as T, error: null, loading: false });
+    const set = urlListeners.get(url) ?? urlListeners.set(url, new Set()).get(url)!;
+    set.add(fn);
+    return () => {
+      set.delete(fn);
+    };
+  }, [url]);
+  useEffect(() => {
     if (!url) {
       shown.current = null;
       setState({ data: null, error: null, loading: false });
@@ -154,4 +177,5 @@ export function clearApiCache(): void {
   cache.clear();
   cacheRefreshId = null;
   listeners.clear();
+  urlListeners.clear();
 }

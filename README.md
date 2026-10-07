@@ -509,4 +509,4 @@ file (`cache.db`, gitignored, created automatically on first run):
 | [SheetJS](https://sheetjs.com/) 0.20.3 | Excel export (SheetJS's own CDN — it no longer publishes to npm/cdnjs, whose 0.18.5 has open advisories; SRI-pinned) |
 | [jsPDF](https://github.com/parallax/jsPDF) 4.2 + [jsPDF-AutoTable](https://github.com/simonbengtsson/jsPDF-AutoTable) 5.0 | PDF export (jsDelivr, SRI-pinned) |
 
-Dev tooling: `eslint` + `prettier` for linting/formatting, `nodemon` for auto-reload, `nock` + `supertest` for testing the server against mocked HTTP, `jsdom` for running the actual frontend (`public/app.js`) in tests.
+Dev tooling: `eslint` + `prettier` for linting/formatting, `node --watch` (`npm run dev`) for auto-reload, `nock` + `supertest` for testing the server against mocked HTTP, `jsdom` for running the actual frontend (`public/app.js`) in tests.

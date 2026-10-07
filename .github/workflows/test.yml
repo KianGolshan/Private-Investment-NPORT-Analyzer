@@ -50,6 +50,10 @@ jobs:
       - run: npm audit --omit=dev --audit-level=high
       - run: npm audit --omit=dev --audit-level=high
         working-directory: web
+      # Development and build tools too (Codex verification V09): clean since nodemon gave way to node --watch.
+      - run: npm audit --audit-level=high
+      - run: npm audit --audit-level=high
+        working-directory: web
 
   web:
     runs-on: ubuntu-latest

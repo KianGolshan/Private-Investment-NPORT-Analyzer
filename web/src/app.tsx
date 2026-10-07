@@ -76,6 +76,30 @@ function MobileNav() {
   );
 }
 
+// The last warehouse job, when it needs attention (Codex verification V05): the
+// data version alone cannot show a running, failed or warning job.
+function JobPill({ job }: { job: Freshness['job'] }) {
+  if (!job) return null;
+  const [tone, text, title] =
+    job.status === 'running'
+      ? ['info', 'Job running', `${job.kind} started ${job.startedAt}`]
+      : job.status === 'failed'
+        ? [
+            'neg',
+            'Last job failed',
+            `${job.kind}: ${job.error ?? 'failed'}; the data shown is the last published generation`,
+          ]
+        : job.warning
+          ? ['warn', 'Published with warnings', `${job.kind}: ${job.warning}`]
+          : [null, null, null];
+  if (!tone) return null;
+  return (
+    <span class={`badge ${tone}`} role="status" title={title ?? undefined}>
+      {text}
+    </span>
+  );
+}
+
 function Topbar({ onSearch }: { onSearch: () => void }) {
   const fresh = useApi<Freshness>('/api/freshness');
   const f = fresh.data;
@@ -89,6 +113,7 @@ function Topbar({ onSearch }: { onSearch: () => void }) {
         <kbd>⌘K</kbd>
       </button>
       <span class="spacer" />
+      <JobPill job={f?.job} />
       {f && (
         <span
           class="muted small hide-sm"

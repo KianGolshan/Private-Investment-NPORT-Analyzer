@@ -283,6 +283,7 @@ export default function Compare() {
               <Card title="Summary" flush>
                 <DataTable
                   basis={BASIS}
+                  source={d}
                   columns={columns}
                   rows={d.results}
                   rowKey={r => String(r.key)}
@@ -315,6 +316,7 @@ export default function Compare() {
               <Card title="Value by period" flush>
                 <DataTable
                   basis={BASIS}
+                  source={d}
                   columns={periodCols}
                   rows={periodRows}
                   rowKey={x => x.p.to}

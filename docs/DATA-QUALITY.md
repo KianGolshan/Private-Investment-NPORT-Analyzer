@@ -97,7 +97,7 @@ every refresh (`lib/warehouse/reclassify.js`), which also moves each filing's to
   fund dropping out for want of a filing. Position facts (migration 0019) hold these legs for private companies.
 - **Scope:** firm, fund, class and kind filters narrow the rows every answer is built on (`services/scope.js`), so a
   filtered answer equals a post-filter of the unfiltered one; a class includes its segregated lines (trap 52).
-- **Mark leadership** (`marks.markLeadership`): a firm "first filed" a per-share level when its own mark moved
+- **Mark leadership** (`marks.markLeadership`): a firm is "first at mark date" for a per-share level when its own mark moved
   over 0.5% to it before any other firm's did (levels within 0.5%); every adopter shows its previous mark date,
   because staggered calendars decide who can file first. It compares firms, so it always reads every firm. Never
   "led" or "followed" as a cause (F49).
