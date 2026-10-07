@@ -9,11 +9,10 @@
 // starting new work after that long, so each run is a timed batch. Refuses to
 // run while a refresh is running. Exits non-zero if any filing failed.
 require('dotenv').config();
-const fs = require('fs');
-const { openWarehouse, defaultWarehousePath } = require('../lib/warehouse/db');
+const { openWarehouseReadOnly, defaultWarehousePath } = require('../lib/warehouse/db');
+const { runJob } = require('../lib/warehouse/job');
 const { downloadQuarter } = require('../lib/warehouse/bulk-source');
 const { fetchFilingRows } = require('../lib/warehouse/delta');
-const { STALE_RUN_MS } = require('../lib/warehouse/refresh');
 const {
   backfillBulkTotals,
   backfillEdgarTotals,
@@ -49,49 +48,55 @@ function status(db) {
   );
 }
 
+// --status only reads. --bulk / --edgar run as a warehouse job
+// (lib/warehouse/job.js): the job lock, a validated candidate, a new generation.
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const dbPath = defaultWarehousePath();
-  const db = openWarehouse(dbPath);
   const started = Date.now();
-  const deadline = started + opts.maxMinutes * 60000;
-  try {
-    const running = db
-      .prepare("SELECT id, started_at FROM refresh_runs WHERE status = 'running'")
-      .all()
-      .filter(r => Date.now() - Date.parse(r.started_at) < STALE_RUN_MS);
-    if (running.length) throw new Error(`refresh #${running[0].id} is running; try again when it finishes`);
-    if (opts.bulk) {
-      const r = await backfillBulkTotals(db, {
-        download: downloadQuarter,
-        quarters: opts.quarters.length ? opts.quarters : null,
-        deadline,
-        log: console.log,
-      });
-      console.log(`bulk: ${r.done.length} quarter(s) done, ${r.left} left`);
+  if (!opts.bulk && !opts.edgar) {
+    const db = openWarehouseReadOnly(dbPath);
+    try {
+      status(db);
+    } finally {
+      db.close();
     }
-    if (opts.edgar) {
-      const r = await backfillEdgarTotals(db, {
-        fetchRows: fetchFilingRows,
-        concurrency: opts.concurrency,
-        deadline,
-        log: console.log,
-      });
-      console.log(`catch-up: ${r.loaded} of ${r.todo} filings done, ${r.failed.length} failed, ${r.left} left`);
-      for (const m of r.keptMismatch) {
-        console.log(`  kept-row mismatch ${m.accession}: stored ${m.stored}, re-read ${m.reread}`);
-      }
-      for (const f of r.failed) console.log(`  failed ${f.accession}: ${f.error}`);
-      if (r.failed.length || r.keptMismatch.length) process.exitCode = 1;
-    }
-    status(db);
-  } finally {
-    db.pragma('wal_checkpoint(TRUNCATE)');
-    db.close();
+    return;
   }
-  console.log(
-    `${((Date.now() - started) / 60000).toFixed(1)} min; warehouse ${(fs.statSync(dbPath).size / 1e6).toFixed(1)} MB`
+  const deadline = started + opts.maxMinutes * 60000;
+  const r = await runJob(
+    'backfill-totals',
+    async db => {
+      let failed = 0;
+      if (opts.bulk) {
+        const b = await backfillBulkTotals(db, {
+          download: downloadQuarter,
+          quarters: opts.quarters.length ? opts.quarters : null,
+          deadline,
+          log: console.log,
+        });
+        console.log(`bulk: ${b.done.length} quarter(s) done, ${b.left} left`);
+      }
+      if (opts.edgar) {
+        const e = await backfillEdgarTotals(db, {
+          fetchRows: fetchFilingRows,
+          concurrency: opts.concurrency,
+          deadline,
+          log: console.log,
+        });
+        console.log(`catch-up: ${e.loaded} of ${e.todo} filings done, ${e.failed.length} failed, ${e.left} left`);
+        for (const m of e.keptMismatch)
+          console.log(`  kept-row mismatch ${m.accession}: stored ${m.stored}, re-read ${m.reread}`);
+        for (const f of e.failed) console.log(`  failed ${f.accession}: ${f.error}`);
+        failed = e.failed.length + e.keptMismatch.length;
+      }
+      status(db);
+      return { status: failed ? 'partial' : 'ok', note: failed ? `${failed} filing(s) failed or mismatched` : null };
+    },
+    { dbPath, log: console.log }
   );
+  if (r.status !== 'ok') process.exitCode = 1;
+  console.log(`${((Date.now() - started) / 60000).toFixed(1)} min; published generation ${r.generation}`);
 }
 
 main().catch(err => {

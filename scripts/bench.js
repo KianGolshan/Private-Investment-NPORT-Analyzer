@@ -12,7 +12,10 @@
 // the ROADMAP search cases plus each tracked company's name, and the 20 largest
 // unreviewed names (info, exposure); P5b: v1's Top Funds names through the fund
 // search, and the 60 funds with the largest stored book in their newest filing
-// (info, X-Ray, compare with the prior filing, returns over 8 filings).
+// (info, X-Ray, compare with the prior filing, returns over 8 filings). P6 and
+// P6b W1: each tracked company's analysis views, scope filters, bridge and one
+// position history; the 12 firms with the most holding funds (Fidelity first)
+// for book, changes, bridge, timeline and pivot; market-wide pivots; unified search.
 const { openWarehouseReadOnly } = require('../lib/warehouse/db');
 const { TOP_FUND_GROUPS } = require('../public/fund-groups');
 
@@ -33,8 +36,25 @@ function requests() {
        FROM fund_names n WHERE n.filings >= 2 ORDER BY rows DESC, n.fund_key LIMIT 60`
     )
     .all();
+  // P6 and P6b W1: the 12 largest firms (Fidelity, BlackRock, Capital Group, …) and one fund per tracked company.
+  const newest = db.prepare('SELECT MAX(as_of) d FROM company_stats').get().d;
+  const firmsTop = db
+    .prepare(
+      `SELECT ma.manager_id id, COUNT(DISTINCT p.fund_key) n FROM position_facts p
+       JOIN fund_advisers fa ON fa.fund_key = p.fund_key AND fa.role = 'adviser'
+       JOIN manager_advisers ma ON ma.file_num = fa.file_num GROUP BY 1 ORDER BY n DESC LIMIT 12`
+    )
+    .all()
+    .map(r => r.id);
+  const positions = db
+    .prepare(
+      `SELECT company_id, fund_key FROM position_facts WHERE company_id IN (SELECT company_id FROM tracked_companies)
+       GROUP BY company_id HAVING fund_key = MAX(fund_key) ORDER BY company_id`
+    )
+    .all();
   db.close();
   const enc = encodeURIComponent;
+  const yearAgo = new Date(Date.parse(newest) - 365 * 86400000).toISOString().slice(0, 10);
   return [
     ...[...SEARCHES, ...tracked.map(c => c.name)].map(q => ['search', `/api/search?q=${enc(q)}`]),
     ...tracked.map(c => ['company', `/api/companies/${c.id}`]),
@@ -49,6 +69,87 @@ function requests() {
     ...funds.map(f => ['fund xray', `/api/funds/${enc(f.fund_key)}/xray`]),
     ...funds.map(f => ['fund compare', `/api/funds/${enc(f.fund_key)}/compare`]),
     ...funds.map(f => ['fund returns', `/api/funds/${enc(f.fund_key)}/returns`]),
+    // P6 analysis views
+    ...tracked.map(c => ['activity', `/api/companies/${c.id}/activity`]),
+    ...tracked.map(c => ['trend', `/api/companies/${c.id}/trend`]),
+    ...tracked.map(c => ['classes', `/api/companies/${c.id}/classes`]),
+    ...tracked.map(c => ['marks', `/api/companies/${c.id}/marks`]),
+    ['firms', '/api/firms'],
+    ...firmsTop.map(id => ['firm book', `/api/firms/${id}`]),
+    ...firmsTop.map(id => ['firm changes', `/api/firms/${id}/changes`]),
+    ['market top', '/api/market/top'],
+    // P6b W1: scope filters, bridge, positions, pivot, timeline, unified search
+    ...tracked.map(c => ['exposure ?firm', `/api/companies/${c.id}/exposure?firm=${firmsTop[0]}`]),
+    ...tracked.map(c => ['activity ?firm', `/api/companies/${c.id}/activity?firm=${firmsTop[0]}`]),
+    ...tracked.map(c => ['bridge', `/api/companies/${c.id}/bridge`]),
+    ...tracked.map(c => ['bridge ?kind', `/api/companies/${c.id}/bridge?kind=direct&from=${yearAgo}`]),
+    ...positions.map(p => ['positions', `/api/companies/${p.company_id}/positions/${enc(p.fund_key)}`]),
+    ...firmsTop.map(id => ['firm bridge', `/api/analysis/bridge?firm=${id}`]),
+    ...firmsTop.map(id => ['firm timeline', `/api/analysis/timeline?firm=${id}`]),
+    ...firmsTop.map(id => ['firm pivot', `/api/analysis/pivot?rows=company&period=quarter&firm=${id}`]),
+    ['pivot', '/api/analysis/pivot?rows=firm&period=quarter'],
+    ['pivot', '/api/analysis/pivot?rows=company&period=month'],
+    ['pivot', '/api/analysis/pivot?rows=fund&period=year&from=2019-12-31'],
+    ['bridge all', '/api/analysis/bridge'],
+    // P6b W3: firm and fund pages
+    ...firmsTop.map(id => ['firm marks', `/api/analysis/marks?firm=${id}`]),
+    ...firmsTop.map(id => ['firm changes page', `/api/firms/${id}/changes?limit=500`]),
+    ...funds.slice(0, 20).map(f => ['fund timeline', `/api/analysis/timeline?fund=${enc(f.fund_key)}`]),
+    ...funds.slice(0, 20).map(f => ['fund marks', `/api/analysis/marks?fund=${enc(f.fund_key)}`]),
+    // P6b W2: the company workbench
+    ...tracked.map(c => ['legs', `/api/companies/${c.id}/legs`]),
+    ...tracked.map(c => ['rows', `/api/companies/${c.id}/rows`]),
+    ...tracked.map(c => ['leadership', `/api/companies/${c.id}/leadership`]),
+    ...tracked.map(c => [
+      'company pivot',
+      `/api/analysis/pivot?company=${c.id}&rows=firm&period=quarter&from=2019-09-30`,
+    ]),
+    // P6b W4: Explore drill, Market movers and newly reported, scoped feed, watchlist, Compare
+    ...['value', 'positionEffect', 'mark', 'holders'].map(m => [
+      'drill total',
+      `/api/analysis/drill?rows=firm&metric=${m}&from=${yearAgo}&to=${newest}`,
+    ]),
+    ...firmsTop.map(id => [
+      'drill firm',
+      `/api/analysis/drill?rows=firm&key=${id}&metric=positionEffect&from=${yearAgo}&to=${newest}`,
+    ]),
+    ...tracked.map(c => [
+      'drill company',
+      `/api/analysis/drill?rows=company&key=${c.id}&metric=value&from=${yearAgo}&to=${newest}`,
+    ]),
+    ['pivot tracked', '/api/analysis/pivot?rows=company&period=quarter&tracked=1'],
+    ['pivot class', '/api/analysis/pivot?rows=class&period=quarter'],
+    ['movers', '/api/market/movers'],
+    ['movers', `/api/market/movers?from=2019-12-31&to=${newest}`],
+    ['movers tracked', '/api/market/movers?tracked=1'],
+    ['newly reported', '/api/market/new'],
+    ['newly reported', `/api/market/new?from=2019-12-31&to=${newest}`],
+    ...firmsTop.map(id => ['feed ?firm', `/api/feed?all=1&firm=${id}`]),
+    [
+      'watchlist',
+      `/api/watchlist?company=${tracked
+        .slice(0, 100)
+        .map(c => c.id)
+        .join(',')}&firm=${firmsTop.join(',')}`,
+    ],
+    [
+      'compare companies',
+      `/api/analysis/compare?rows=company&${tracked
+        .slice(0, 5)
+        .map(c => `key=${c.id}`)
+        .join('&')}`,
+    ],
+    [
+      'compare firms',
+      `/api/analysis/compare?rows=firm&${firmsTop
+        .slice(0, 5)
+        .map(id => `key=${id}`)
+        .join('&')}`,
+    ],
+    ...[...SEARCHES, 'Fidelity', 'Capital Group', 'Growth Fund of America', 'Anthropic Series G'].map(q => [
+      'search all',
+      `/api/search?q=${enc(q)}&kinds=company,entity,firm,fund,class`,
+    ]),
   ];
 }
 

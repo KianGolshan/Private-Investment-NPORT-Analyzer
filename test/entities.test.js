@@ -533,3 +533,79 @@ test('the committed review files import cleanly, and every issuer_key alias is a
   }
   db.close();
 });
+
+// Staff review F08: firm ids are permanent. The review's reproduction (import a
+// firm, remove every mapping, import a different firm) reused id 1.
+test('firm ids: never reused; a rename keeps the id; a merge redirects; a clean rebuild from the ledger keeps every id', () => {
+  const { importManagers, managerIdRows } = require('../lib/entities/review');
+  const db = openWarehouse(':memory:');
+  const row = (manager, key, kind = 'adviser') => ({ manager, kind, key });
+  const ids = () =>
+    Object.fromEntries(
+      db
+        .prepare('SELECT name, id FROM managers')
+        .all()
+        .map(r => [r.name, r.id])
+    );
+  importManagers(db, [row('Original review firm', '801-1')]);
+  assert.deepEqual(ids(), { 'Original review firm': 1 });
+  importManagers(db, []);
+  importManagers(db, [row('Different review firm', '801-2')]);
+  assert.deepEqual(ids(), { 'Different review firm': 2 }, 'id 1 is retired, never handed out again');
+  assert.deepEqual(db.prepare('SELECT old_id, new_id, reason FROM manager_redirects').all(), [
+    { old_id: 1, new_id: null, reason: 'dropped' },
+  ]);
+  // a rename (same keys under a new name) keeps the id
+  importManagers(db, [
+    row('Different Review Firm LLC', '801-2'),
+    row('Third', '801-3'),
+    row('Third', '123', 'registrant'),
+  ]);
+  assert.deepEqual(ids(), { 'Different Review Firm LLC': 2, Third: 3 });
+  // a merge: Third's keys move to firm 2; id 3 redirects there
+  importManagers(db, [row('Different Review Firm LLC', '801-2'), row('Different Review Firm LLC', '801-3')]);
+  assert.deepEqual(db.prepare('SELECT new_id, reason FROM manager_redirects WHERE old_id = 3').get(), {
+    new_id: 2,
+    reason: 'merged',
+  });
+  // a clean rebuild from the ledger reproduces every id and redirect
+  const ledger = managerIdRows(db).map(r => ({ ...r, id: String(r.id), successor: String(r.successor) }));
+  const fresh = openWarehouse(':memory:');
+  importManagers(
+    fresh,
+    [row('Different Review Firm LLC', '801-2'), row('Different Review Firm LLC', '801-3'), row('New', '801-9')],
+    { ids: ledger }
+  );
+  assert.deepEqual(
+    Object.fromEntries(
+      fresh
+        .prepare('SELECT name, id FROM managers')
+        .all()
+        .map(r => [r.name, r.id])
+    ),
+    { 'Different Review Firm LLC': 2, New: 4 }
+  );
+  assert.deepEqual(fresh.prepare('SELECT old_id, new_id FROM manager_redirects ORDER BY old_id').all(), [
+    { old_id: 1, new_id: null },
+    { old_id: 3, new_id: 2 },
+  ]);
+});
+
+test('firm ids: the API answers a merged id with 301 and a dropped one with 410 (F08)', async () => {
+  const express = require('express');
+  const request = require('supertest');
+  const { importManagers } = require('../lib/entities/review');
+  const { warehouseRouter } = require('../lib/api/warehouse');
+  const db = openWarehouse(':memory:');
+  const row = (manager, key) => ({ manager, kind: 'adviser', key });
+  importManagers(db, [row('A', '801-1'), row('B', '801-2'), row('C', '801-3')]);
+  importManagers(db, [row('A', '801-1'), row('A', '801-2')]); // B merged into A, C dropped
+  const app = express();
+  app.use(
+    '/api',
+    warehouseRouter(() => db)
+  );
+  const moved = await request(app).get('/api/firms/2/changes?since=2026-01-01').expect(301);
+  assert.equal(moved.headers.location, '/api/firms/1/changes?since=2026-01-01');
+  assert.match((await request(app).get('/api/firms/3').expect(410)).body.error, /firm 3 \(C\) was dropped/);
+});

@@ -14,7 +14,7 @@
    onXrayCompareSelectChange, runFundXrayCompare, doXrayCompareExportCSV, doXrayCompareExportExcel,
    doXrayCompareExportPDF, selectIndexedFund, sortBasketLeaderboard, runXrayReturns, onXraySeriesChange,
    openCandidate, onSecurityInput, applyAsOf, loadLiveDebt, confirmWatchlistMatch, makeThisACompany */
-/* global VantageFundGroups, VantagePeer */
+/* global VantageFundGroups, VantagePeer, attachCompanyViews, loadMarket, loadFeed, loadFirms, openFirm, loadTracked */
 
 // ── State ──────────────────────────────────────────────────────────────────
 // Bumped at the start of searchNPORT/searchPrivateCredit/searchFundXray (the
@@ -204,6 +204,9 @@ function applyURLParams() {
   if (company) return openCompany(Number(company[1]), { date: params.get('date') || undefined });
   const named = window.location.pathname.match(/^\/name\/(.+)$/);
   if (named) return openEntity(decodeURIComponent(named[1]), { date: params.get('date') || undefined });
+  // /firm/<manager id>[?date=…]: a firm's private book (P6).
+  const firmPath = window.location.pathname.match(/^\/firm\/(\d+)/);
+  if (firmPath) return openFirm(Number(firmPath[1]), { date: params.get('date') || undefined });
   // /fund/<fund key>[?accession=…]: the fund page on the warehouse (P5b).
   const fundLink = window.location.pathname.match(/^\/fund\/(.+)$/);
   if (fundLink) {
@@ -224,16 +227,19 @@ function applyURLParams() {
     document.getElementById('securityInput').value = security;
     if (['25', '50', '100'].includes(limit)) document.getElementById('filingLimit').value = limit;
     searchNPORT();
-  } else if (['batch', 'credit', 'watchlist', 'xray'].includes(tab)) {
+  } else if (['batch', 'credit', 'watchlist', 'xray', 'market', 'firms'].includes(tab)) {
     // No search term to auto-run (e.g. ?tab=credit with no issuer) — still
     // switch to the tab the link named, rather than silently staying on
     // Single Security with no indication the link was incomplete.
     switchTab(tab, { skipUrlReset: true });
   }
 }
+// v1 lives at /legacy now (P6b W5): its links must stay there, never land on
+// the workspace at /. A page opened at / (the tests, an unbuilt checkout) keeps /.
+const legacyBase = () => (window.location.pathname.startsWith('/legacy') ? '/legacy' : '/');
 function updateURLParams(params) {
   const url = new URL(window.location.href);
-  url.pathname = '/'; // leaving a /company/, /name/ or /fund/ permalink
+  url.pathname = legacyBase(); // leaving a /company/, /name/ or /fund/ permalink
   url.search = '';
   Object.entries(params).forEach(([k, v]) => {
     if (v) url.searchParams.set(k, v);
@@ -280,23 +286,31 @@ function handleAboutTabTrap(e) {
 }
 
 // ── Tab management ─────────────────────────────────────────────────────────
+// Each tab button names its panel (aria-controls="<tab>Tab").
 function switchTab(tab, { skipUrlReset } = {}) {
-  const tabNames = ['single', 'batch', 'credit', 'watchlist', 'xray'];
-  document.querySelectorAll('.tab').forEach((el, i) => {
-    const active = tabNames[i] === tab;
+  document.querySelectorAll('.tab').forEach(el => {
+    const active = el.getAttribute('aria-controls') === `${tab}Tab`;
     el.classList.toggle('active', active);
     el.setAttribute('aria-selected', active ? 'true' : 'false');
   });
-  document.getElementById('singleTab').classList.toggle('active', tab === 'single');
-  document.getElementById('batchTab').classList.toggle('active', tab === 'batch');
-  document.getElementById('creditTab').classList.toggle('active', tab === 'credit');
-  document.getElementById('watchlistTab').classList.toggle('active', tab === 'watchlist');
-  document.getElementById('xrayTab').classList.toggle('active', tab === 'xray');
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.toggle('active', el.id === `${tab}Tab`));
   clearResults();
   // Skipped when applyURLParams() is driving the tab switch on page load —
   // it still has incoming ?security=/?issuer= params to read and act on.
-  if (!skipUrlReset) window.history.replaceState({}, '', '/');
+  if (!skipUrlReset)
+    window.history.replaceState(
+      {},
+      '',
+      tab === 'market' || tab === 'firms' ? `${legacyBase()}?tab=${tab}` : legacyBase()
+    );
   if (tab === 'watchlist') renderWatchlist();
+  // The analysis tabs load on first visit (public/views.js).
+  if (tab === 'market' && !document.getElementById('marketContainer').innerHTML.trim()) {
+    loadMarket();
+    loadFeed();
+    loadTracked();
+  }
+  if (tab === 'firms' && !skipUrlReset && !document.getElementById('firmsContainer').innerHTML.trim()) loadFirms();
 }
 
 // ── Company page on the warehouse (Phase 5a, ADR 0008) ─────────────────────
@@ -306,7 +320,9 @@ function switchTab(tab, { skipUrlReset } = {}) {
 // candidates are listed with their evidence and how they matched. Listed
 // companies, debt, and names the warehouse has never seen run v1's live
 // EDGAR flow (searchNPORTLive), labeled "live, not warehoused".
-const STRONG_MATCH = ['exact', 'normalized'];
+// The search service marks the one result that may open by itself (strong):
+// an exact or normalized name, or the only name starting with the typed words.
+const isStrong = (results, top = results?.[0]) => !!top?.strong;
 const EDGAR_ARCHIVE = 'https://www.sec.gov/Archives/edgar/data/';
 let adminMode = false; // /api/config: this viewer may run admin actions (local, VANTAGE_ADMIN=1)
 let currentCompany = null; // { kind: 'company' | 'unreviewed', ref, name, head }
@@ -336,8 +352,13 @@ const matchText = m => `${MATCH_TEXT[m.how] || m.how}: ${m.via} “${m.text}”`
 function setCompanyHTML(html) {
   document.getElementById('companyContainer').innerHTML = html;
 }
-function showSourceNotice(text) {
-  setCompanyHTML(`<div class="alert alert-info"><strong>Live, not warehoused</strong>${esc(text)}</div>`);
+function showSourceNotice(text, storedLink) {
+  const stored = storedLink
+    ? ` <a href="#" onclick="openCompany(${Number(storedLink.id)}, { stored: true });return false;">Private-era marks and restricted rows (warehouse)</a>${
+        storedLink.listing ? ` · listed rows first seen ${esc(storedLink.listing.firstQuarter)}` : ''
+      }`
+    : '';
+  setCompanyHTML(`<div class="alert alert-info"><strong>Live, not warehoused</strong>${esc(text)}${stored}</div>`);
 }
 
 async function searchNPORT() {
@@ -363,7 +384,7 @@ async function searchNPORT() {
         : ''
     );
   const [top] = results;
-  if (STRONG_MATCH.includes(top.match.how) || results.length === 1) return openSearchResult(top, results.slice(1));
+  if (isStrong(results)) return openSearchResult(top, results.slice(1));
   renderCandidates(security, results);
 }
 
@@ -428,7 +449,10 @@ function hideSuggestions() {
   if (box) box.style.display = 'none';
 }
 
-async function openCompany(id, { others = [], date, knownAsOf } = {}) {
+// stored: a listed company's stored rows (its private-era marks, then
+// restricted or lock-up rows), shown only on request and labeled; its current
+// holdings come from the live path.
+async function openCompany(id, { others = [], date, knownAsOf, stored = false } = {}) {
   hideSuggestions();
   const mySearchGen = ++searchGeneration;
   clearResults();
@@ -436,12 +460,14 @@ async function openCompany(id, { others = [], date, knownAsOf } = {}) {
   try {
     const head = await fetchJSON(`/api/companies/${enc(id)}`);
     if (mySearchGen !== searchGeneration) return;
-    if (head.answeredBy.source === 'live') {
+    if (head.answeredBy.source === 'live' && !stored) {
       hideLoading();
       document.getElementById('securityInput').value = head.company.name;
-      return searchNPORTLive(head.company.name, `${head.company.name} is ${head.answeredBy.reason}.`);
+      return searchNPORTLive(head.company.name, `${head.company.name} is ${head.answeredBy.reason}.`, {
+        storedLink: { id: head.company.id, listing: head.stored?.listing },
+      });
     }
-    currentCompany = { kind: 'company', ref: head.company.id, name: head.company.name, head, others };
+    currentCompany = { kind: 'company', ref: head.company.id, name: head.company.name, head, others, stored };
     await loadCompanyPage(mySearchGen, { date, knownAsOf });
   } catch (err) {
     hideLoading();
@@ -457,6 +483,8 @@ async function openEntity(key, { others = [], date, knownAsOf } = {}) {
   try {
     const head = await fetchJSON(`/api/entities/${enc(key)}`);
     if (mySearchGen !== searchGeneration) return;
+    // A name a review has since made a company (the API redirected to it).
+    if (head.company) return openCompany(head.company.id, { others, date, knownAsOf });
     if (head.answeredBy.source === 'live') {
       hideLoading();
       return searchNPORTLive(head.entity.name, `"${head.entity.name}" looks ${head.answeredBy.reason}.`);
@@ -526,9 +554,10 @@ async function loadCompanyPage(mySearchGen, { date, knownAsOf } = {}) {
   const q = new URLSearchParams();
   if (date) q.set('date', date);
   if (knownAsOf) q.set('knownAsOf', knownAsOf);
+  if (c.stored) q.set('stored', '1');
   const [exposure, history] = await Promise.all([
     fetchJSON(`${apiBase(c)}/exposure?${q}`),
-    fetchJSON(`${apiBase(c)}/history`),
+    fetchJSON(`${apiBase(c)}/history${c.stored ? '?stored=1' : ''}`),
   ]);
   if (mySearchGen !== searchGeneration) return;
   hideLoading();
@@ -537,6 +566,7 @@ async function loadCompanyPage(mySearchGen, { date, knownAsOf } = {}) {
   document.getElementById('securityInput').value = c.name;
   window.history.replaceState({}, '', companyPath(c) + (date ? `?date=${enc(date)}` : ''));
   renderCompanyPage();
+  if (typeof attachCompanyViews === 'function') attachCompanyViews(c);
   const buckets = historyToBuckets(history);
   allResults = { mode: 'single', single: buckets };
   if (nonEmptyBuckets(buckets).length) {
@@ -553,7 +583,7 @@ async function loadCompanyPage(mySearchGen, { date, knownAsOf } = {}) {
 function historyToBuckets(history) {
   const buckets = { equity: {}, debt: {}, derivative: {}, indirect: {} };
   for (const f of history.funds || []) {
-    const fund = f.seriesName || f.registrant || f.fundKey;
+    const fund = f.label || f.seriesName || f.registrant || f.fundKey; // unique per answer (two funds can share a name)
     for (const s of f.series) {
       const type = buckets[s.instrumentType] ? s.instrumentType : 'equity';
       for (const p of s.points) {
@@ -562,6 +592,7 @@ function historyToBuckets(history) {
           issuer: s.issuerName,
           title: s.title,
           seriesName: f.seriesName,
+          fundKey: f.fundKey,
           shares: p.balance,
           marketValue: p.valueUsd,
           pricePerShare: p.pricePerShare,
@@ -604,16 +635,19 @@ function positionText(p) {
   return `${esc(p.instrumentLabel || p.title || '')} · ${qty}${price ? ' @ ' + price : ''}${p.viaSpv ? ' ' + badge('indirect', 'badge-muted') : ''}`;
 }
 
+// Conviction: the position as a share of the fund's net assets, as filed.
+const convictionOf = h => (h.positions || []).reduce((s, p) => s + (p.pctNav || 0), 0);
+
 function holdersTableHTML(rows, { showValue = true, lastHeld = false } = {}) {
   if (!rows.length) return '';
   return `<div class="table-wrap"><table>
-    <thead><tr><th>Fund</th><th>Mark date</th>${showValue ? '<th class="right">Value</th><th>Positions</th>' : ''}${lastHeld ? '<th>Last reported</th>' : ''}<th>Filing</th></tr></thead>
+    <thead><tr><th>Fund</th><th>Mark date</th>${showValue ? '<th class="right">Value</th><th class="right" title="The position as a share of the fund\'s net assets, as filed">% of fund</th><th>Positions</th>' : ''}${lastHeld ? '<th>Last reported</th>' : ''}<th>Filing</th></tr></thead>
     <tbody>${rows
       .map(
         h => `<tr>
-      <td>${esc(h.seriesName || h.registrant || h.fundKey)}<div class="fund-meta">${esc(h.registrant || '')}</div></td>
+      <td><a href="/fund/${enc(h.fundKey)}">${esc(h.fundLabel || h.seriesName || h.registrant || h.fundKey)}</a><div class="fund-meta">${esc(h.registrant || '')}</div></td>
       <td>${esc(h.markDate)}</td>
-      ${showValue ? `<td class="right">${fmtCompactCurrency(h.value ?? 0)}</td><td>${(h.positions || []).map(positionText).join('<br>')}${h.label && h.label !== 'indirect' ? ' ' + badge(h.label, 'badge-muted') : ''}</td>` : ''}
+      ${showValue ? `<td class="right">${fmtCompactCurrency(h.value ?? 0)}</td><td class="right">${convictionOf(h) ? convictionOf(h).toFixed(2) + '%' : '—'}</td><td>${(h.positions || []).map(positionText).join('<br>')}${h.label && h.label !== 'indirect' ? ' ' + badge(h.label, 'badge-muted') : ''}</td>` : ''}
       ${lastHeld ? `<td>${esc(h.lastHeldDate || '—')} ${accessionLink(h.cik, h.lastHeldAccession)}</td>` : ''}
       <td>${accessionLink(h.cik, h.accession)}</td>
     </tr>`
@@ -632,6 +666,13 @@ function renderCompanyPage() {
     : badge('Unreviewed', 'badge-warn') + badge(head.entity.category, 'badge-muted');
   const brands =
     isCompany && head.brands.length ? `Also filed as ${head.brands.map(b => esc(b.brand)).join(', ')}. ` : '';
+  const storedNote = c.stored
+    ? `<div class="alert alert-warning"><strong>Listed company: stored rows only</strong>${esc(x.stored?.note || '')}${
+        x.stored?.listing
+          ? ` Listed rows first seen in ${esc(x.stored.listing.firstQuarter)} (listing evidence covers ${esc(x.stored.listing.evidenceSince)} on).`
+          : ''
+      } <a href="#" onclick="openCompany(${Number(c.ref)});return false;">Current holdings (live EDGAR)</a></div>`
+    : '';
   const unreviewedNote = isCompany
     ? ''
     : `<div class="alert alert-warning"><strong>Unreviewed</strong>These rows name no reviewed company. They are grouped by the filers' own evidence (names, ids, marks) and shown as filed; a reviewer has not confirmed what they are.${head.entity.linkedCompanyIds.length ? ' Filing evidence links them to a reviewed company.' : ''}</div>`;
@@ -647,9 +688,10 @@ function renderCompanyPage() {
   setCompanyHTML(`<div class="results-section company-page">
     <div class="company-head">
       <h2>${esc(c.name)} ${status}</h2>
-      <div class="fund-meta">${brands}Reported by funds from ${esc(hist.firstMarkDate || '—')} to ${esc(hist.lastMarkDate || '—')}. Source: SEC N-PORT warehouse, refresh #${esc(x.refreshId)}.</div>
+      <div class="fund-meta">${brands}Reported by funds from ${esc(hist.firstMarkDate || '—')} to ${esc(hist.lastMarkDate || '—')}. Source: SEC N-PORT warehouse, refresh #${esc(x.refreshId)}.${isCompany ? ` <a href="/api/companies/${enc(c.ref)}/feed.xml" title="An Atom feed of this company's position changes and mark moves">Feed</a>` : ''}</div>
       ${others}
     </div>
+    ${storedNote}
     ${unreviewedNote}
     ${!isCompany && adminMode ? makeCompanyFormHTML(head.entity) : ''}
     <div class="search-row">
@@ -669,6 +711,7 @@ function renderCompanyPage() {
     ${x.zeroValue.length ? `<h3>Reported at $0</h3>${holdersTableHTML(x.zeroValue)}` : ''}
     ${x.exited.length ? `<h3>No longer reported</h3><div class="hint">The fund's latest filing on or before ${esc(x.date)} no longer lists the company.</div>${holdersTableHTML(x.exited, { showValue: false, lastHeld: true })}` : ''}
     <div id="liveDebtContainer"></div>
+    <div id="companyViewsSlot"></div>
     <h3>History</h3>
   </div>`);
 }
@@ -679,7 +722,7 @@ function applyAsOf() {
   const date = document.getElementById('asOfDate').value;
   const knownAsOf = document.getElementById('knownAsOf').checked ? date : undefined;
   const open = c.kind === 'company' ? openCompany : openEntity;
-  return open(c.ref, { others: c.others, date, knownAsOf });
+  return open(c.ref, { others: c.others, date, knownAsOf, stored: c.stored });
 }
 
 // Debt stays on live EDGAR (ADR 0008): v1's per-filing flow, debt rows only.
@@ -707,10 +750,10 @@ async function loadLiveDebt() {
 // ── Single search, live EDGAR (v1) ─────────────────────────────────────────
 // Listed companies, debt and names the warehouse has never seen. notice: why
 // the live path is answering (shown as "Live, not warehoused").
-async function searchNPORTLive(security, notice) {
+async function searchNPORTLive(security, notice, { storedLink } = {}) {
   const mySearchGen = ++searchGeneration;
   clearResults();
-  if (notice) showSourceNotice(notice);
+  if (notice) showSourceNotice(notice, storedLink);
   showLoading('Searching SEC EDGAR...');
 
   try {
@@ -802,7 +845,7 @@ async function resolveName(name) {
   try {
     const { results } = await fetchJSON('/api/search?q=' + enc(name) + '&limit=5');
     const top = results?.[0];
-    if (!top || !(STRONG_MATCH.includes(top.match?.how) || results.length === 1)) return null;
+    if (!isStrong(results)) return null;
     return top.type === 'company'
       ? { kind: 'company', ref: top.id, name: top.name }
       : { kind: 'unreviewed', ref: top.key, name: top.name };
@@ -2046,7 +2089,7 @@ function doExportCSV() {
     );
   }
 
-  const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+  const csv = rows.map(r => r.map(c => '"' + csvText(c).replace(/"/g, '""') + '"').join(',')).join('\n');
   downloadBlob(csv, 'text/csv', `nport_${allResults.mode}_${today()}.csv`);
 }
 
@@ -2437,6 +2480,24 @@ function setVal(id, v) {
 // Filename-safe text ("Fidelity Advisor Growth Fund" → "Fidelity_Advisor_Growth_Fund").
 // cleanId (below) encodes every symbol as its char code to keep DOM ids
 // collision-free, which made real export names read "Fidelity_32_Advisor_32_...".
+// A CSV cell's text. Text that a spreadsheet would read as a formula (it starts
+// with = + - @, a tab or a carriage return, and is not a plain number) gets a
+// leading apostrophe, so a name from a filing opens as text (staff review F09).
+// The same rule as web/src/lib/export.ts.
+// The server marks a live answer partial when an SEC source failed (staff
+// review F13); the analyst sees which, rather than a quietly short list.
+function partialNote(data) {
+  if (!data || !data.partial) return '';
+  const list = (data.failedSources || []).slice(0, 3).map(f => f.source);
+  const more = (data.failedSources || []).length - list.length;
+  return ` Incomplete: ${(data.failedSources || []).length} SEC source(s) failed (${list.join('; ')}${more > 0 ? `; ${more} more` : ''}); search again to retry.`;
+}
+
+function csvText(v) {
+  const s = v == null ? '' : String(v);
+  return /^[=+\-@\t\r]/.test(s) && !/^[-+]?[\d,]*\.?\d+(?:[eE][-+]?\d+)?%?$/.test(s) ? `'${s}` : s;
+}
+
 function fileNamePart(s) {
   return String(s || '')
     .replace(/[^A-Za-z0-9]+/g, '_')
@@ -2526,7 +2587,8 @@ async function searchPrivateCredit() {
     if (!data.filings?.length) {
       hideLoading();
       return showMsg(
-        'No BDC 10-Q or 10-K filings found for that issuer. The company may not be held by any reporting BDC, or try a more specific name.',
+        'No BDC 10-Q or 10-K filings found for that issuer. The company may not be held by any reporting BDC, or try a more specific name.' +
+          esc(partialNote(data)),
         'error'
       );
     }
@@ -2539,8 +2601,9 @@ async function searchPrivateCredit() {
 
     if (data.bdcFunds?.length) {
       showMsg(
-        `Found ${data.bdcFunds.length} BDC fund(s) holding this issuer (${data.confirmed} confirmed filings). Parsing…`,
-        'info'
+        `Found ${data.bdcFunds.length} BDC fund(s) holding this issuer (${data.confirmed} confirmed filings). Parsing…` +
+          esc(partialNote(data)),
+        data.partial ? 'error' : 'info'
       );
     }
 
@@ -3047,7 +3110,7 @@ function doCreditExportCSV() {
       ])
     )
   );
-  const csv = rows.map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
+  const csv = rows.map(r => r.map(c => '"' + csvText(c).replace(/"/g, '""') + '"').join(',')).join('\n');
   downloadBlob(csv, 'text/csv', `private_credit_${today()}.csv`);
 }
 
@@ -3272,7 +3335,7 @@ function resolveWatchlist() {
         if (!Array.isArray(results)) continue;
         const top = results[0];
         found =
-          top && (STRONG_MATCH.includes(top.match?.how) || results.length === 1)
+          top && isStrong(results)
             ? top.type === 'company'
               ? { kind: 'company', ref: top.id, matched: top.name }
               : { kind: 'unreviewed', ref: top.key, matched: top.name }
@@ -3411,6 +3474,7 @@ async function onXraySeriesChange() {
         fileDate: f.filingDate || '',
       }));
       filings.sort((a, b) => dateCmp(b.period || b.fileDate, a.period || a.fileDate));
+      if (data.partial && filings.length) showMsg(esc(partialNote(data).trim()), 'error');
     }
     hideLoading();
     if (!filings.length) return showMsg('No NPORT-P filings found for this fund.', 'error');
@@ -3535,7 +3599,8 @@ async function searchFundXrayLive(fund, mySearchGen, notice) {
 
     if (!filings.length) {
       return showMsg(
-        'No NPORT-P filings found for that fund name. Try the fund’s exact registrant name as it appears on EDGAR (e.g. "SmallCap World Fund Inc", not just "SmallCap").',
+        'No NPORT-P filings found for that fund name. Try the fund’s exact registrant name as it appears on EDGAR (e.g. "SmallCap World Fund Inc", not just "SmallCap").' +
+          esc(partialNote(data)),
         'error'
       );
     }
@@ -3694,9 +3759,9 @@ function buildXraySnapshotHTML(xray, filing, opts) {
         wh
           ? `
       <div class="stat-box">
-        <div class="stat-label">v1 Figure (Level 3)</div>
+        <div class="stat-label">Level-3 Figure</div>
         <div class="stat-value sm">${fmtCompactCurrency(xray.v1Level3.valueUSD)}</div>
-        <div class="stat-sub">${xray.v1Level3.rows} holdings at fair-value Level 3, not debt</div>
+        <div class="stat-sub">${xray.v1Level3.rows} holdings at fair-value Level 3, not debt (the older rule)</div>
       </div>`
           : ''
       }
@@ -3704,7 +3769,8 @@ function buildXraySnapshotHTML(xray, filing, opts) {
 
   if (wh)
     html +=
-      '<div class="alert alert-info">Private equity = an equity-type holding (common or preferred stock, a warrant, or an SPV / fund vehicle) in a company whose status is private, from the reviewed company list, not from the fair-value level: filers mark real private companies at Level 1 or 2 too. Names not reviewed yet count when they look private and are labeled "unreviewed"; listed companies\' restricted rows and names that look listed are shown apart below with the reason. Bonds and loans are never private equity; they appear in the capital structure. v1\'s Level-3 figure for the same filing is shown for comparison. Totals and % of holdings value cover every row of the filing.</div>';
+      '<div class="alert alert-info">Private equity = an equity-type holding (common or preferred stock, a warrant, or an SPV / fund vehicle) in a company whose status is private, from the reviewed company list, not from the fair-value level: filers mark real private companies at Level 1 or 2 too. Names not reviewed yet count when they look private and are labeled "unreviewed"; listed companies\' restricted rows and names that look listed are shown apart below with the reason. Bonds and loans (including loans a filer reports as "other") are never private equity; they appear in the capital structure. The Level-3 figure is the older fair-value rule, for comparison. Totals and % of holdings value cover every row of the filing.</div>' +
+      privateKindsHTML(xray);
   else
     html +=
       '<div class="alert alert-info">Private equity = an equity-type interest (common/preferred stock, a warrant, or an indirect/SPV vehicle) that this filing marks at SEC fair-value hierarchy Level 3 — valued with unobservable inputs, meaning there\'s no real market for it — not an external judgment call. Bonds/loans are excluded even at Level 3, since they\'re creditor claims, not equity. A "restricted" flag alone does NOT qualify a holding here: a foreign-ownership-restricted but still publicly-traded stock (Level 2) is excluded, since it trades in an observable market and simply isn\'t privately held. A publicly-traded wrapper around a private company (e.g. a listed vehicle tracking it) will also show as public here, since the fund itself marks it at a quoted price.</div>';
@@ -3779,6 +3845,8 @@ function buildXraySnapshotHTML(xray, filing, opts) {
 
   html += capitalStructureHTML(xray);
   if (opts.exportKey !== 'prior') html += xrayReturnsPanelHTML();
+  if (wh && opts.exportKey !== 'prior' && xray.fund?.fundKey)
+    html += `<div class="export-row"><button class="btn btn-secondary" onclick="loadFundChanges(${esc(JSON.stringify(xray.fund.fundKey))})">Private-company changes, filing by filing</button></div><div id="fundChangesBox"></div>`;
 
   html += `<div class="export-row">
     <button class="btn btn-green" onclick="doXrayExportCSV('${esc(opts.exportKey || 'current')}')">Export CSV</button>
@@ -3787,6 +3855,19 @@ function buildXraySnapshotHTML(xray, filing, opts) {
   </div>`;
   html += '</div>';
   return html;
+}
+
+// The private book by what it holds: operating companies, interests in other
+// funds, and opaque vehicles (a fund of funds is mostly the second).
+function privateKindsHTML(xray) {
+  const kinds = Object.values(xray.privateByKind || {}).filter(k => k.rows);
+  if (!kinds.length) return '';
+  return `<div class="stats-grid">${kinds
+    .map(
+      k =>
+        `<div class="stat-box"><div class="stat-label">${esc(k.label)}</div><div class="stat-value sm">${fmtCompactCurrency(k.valueUSD)}</div><div class="stat-sub">${fmtNum(k.rows)} holding(s)</div></div>`
+    )
+    .join('')}</div>`;
 }
 
 // A holding's name on the fund page: linked to its company page (curated) or
@@ -3980,7 +4061,7 @@ function doXrayExportCSV(key) {
   const data = xraySnapshotExportRows(key);
   if (!data) return;
   const csv = [data.header, ...data.rows]
-    .map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(','))
+    .map(r => r.map(c => '"' + csvText(c).replace(/"/g, '""') + '"').join(','))
     .join('\n');
   const datePart = data.reportDate ? `_${fileNamePart(data.reportDate)}` : '';
   downloadBlob(csv, 'text/csv', `fund_xray_${fileNamePart(data.fundName || 'fund')}${datePart}_${today()}.csv`);
@@ -4476,7 +4557,7 @@ function doXrayCompareExportCSV() {
   const data = xrayCompareExportRows();
   if (!data) return;
   const csv = [data.header, ...data.rows]
-    .map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(','))
+    .map(r => r.map(c => '"' + csvText(c).replace(/"/g, '""') + '"').join(','))
     .join('\n');
   downloadBlob(csv, 'text/csv', `fund_xray_compare_${fileNamePart(data.fundName || 'fund')}_${today()}.csv`);
 }

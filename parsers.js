@@ -35,6 +35,9 @@ function extractIdString(val) {
 // via mergeAttrs, so some nested fields (derivCat, assetCat inside
 // assetConditional) keep mixed case while their parent elements are
 // lowercase — both casings are checked below defensively.
+const OTHER_DEBT_WORDS =
+  /\b(MCA(-\d+)?|HEI|home equity (investment|contract)s?|personal loans?|consumer loans?|promissory notes?|(senior|mezzanine|direct) debt|debt tranche|CLO debt|residential mortgage[- ]backed|ABS-mortgage backed|fixed investment contract|funding agreement)\b/i;
+
 function classifyInstrument(inv, pricePerShare, _valUSD) {
   // 1. Derivative (warrants/options/etc.) — structural signal, takes
   //    precedence over assetCat since a warrant is still tagged assetCat:EC
@@ -74,6 +77,20 @@ function classifyInstrument(inv, pricePerShare, _valUSD) {
   const assetConditional = inv.assetconditional || inv.assetConditional;
   const conditionalCat = String(assetConditional?.assetCat || assetConditional?.assetcat || '').toUpperCase();
   if (assetConditional && (conditionalCat === 'OTHER' || assetConditional.desc)) {
+    // Loans and contracts filed under OTHER (DATA-QUALITY trap 45): the
+    // filer's own description says so ("MCA-1", "HEI", "Personal Loans",
+    // "Promissory Note", "Senior Debt", "CLO Debt"…). CLO equity and residual
+    // tranches stay indirect.
+    const desc = String(assetConditional.desc || '');
+    if (OTHER_DEBT_WORDS.test(desc) && !/equity|residual/i.test(desc)) {
+      const pa = String(inv.units || '').toUpperCase() === 'PA';
+      return {
+        instrumentType: 'debt',
+        instrumentLabel: parseDebtLabel(inv.title),
+        chartValue: pa ? pricePerShare * 100 : pricePerShare,
+        chartUnit: pa ? 'pct_of_par' : 'usd_per_unit',
+      };
+    }
     const vehicle = String(inv.name || inv.title || '')
       .split('(')[0]
       .trim();
@@ -267,7 +284,13 @@ function extractHoldings(xml, securitySearchTerm) {
       // title itself as a last resort.
       const otherIdValue =
         extractIdString(inv.identifiers?.other?.value) || String(inv.identifiers?.other?.value || '').trim();
-      const instrumentKey = instrumentKeyOf({ otherId: otherIdValue, cusip, title, name });
+      const instrumentKey = instrumentKeyOf({
+        otherId: otherIdValue,
+        cusip,
+        title,
+        name,
+        assetCat: inv.assetCat || inv.assetcat,
+      });
 
       holdings.push({
         name,
@@ -429,7 +452,13 @@ function extractAllHoldings(xml) {
 
       const otherIdValue =
         extractIdString(inv.identifiers?.other?.value) || String(inv.identifiers?.other?.value || '').trim();
-      const instrumentKey = instrumentKeyOf({ otherId: otherIdValue, cusip, title, name });
+      const instrumentKey = instrumentKeyOf({
+        otherId: otherIdValue,
+        cusip,
+        title,
+        name,
+        assetCat: inv.assetCat || inv.assetcat,
+      });
 
       holdings.push({
         name,
@@ -703,8 +732,14 @@ function usableCusip(raw) {
 // else a real CUSIP, else the title, else the name. The warehouse keys a
 // (fund, instrument) series the same way (lib/analytics/asof.js), which
 // follows renames such as "STRIPE INC" -> "STRIPE LLC" (DATA-QUALITY trap 10).
-function instrumentKeyOf({ otherId, cusip, title, name }) {
-  return otherId || usableCusip(cusip) || title || name;
+// A title is not unique: a fund can file common (EC) and preferred (EP) stock
+// under one title with no id (Nuveen Winslow's "Anthropic PBC", trap 47), so a
+// title key carries the asset category when it is EC or EP.
+function instrumentKeyOf({ otherId, cusip, title, name, assetCat }) {
+  const id = otherId || usableCusip(cusip);
+  if (id) return id;
+  const cat = String(assetCat || '').toUpperCase();
+  return (title || name) + (cat === 'EC' || cat === 'EP' ? `|${cat}` : '');
 }
 function cusipKeyOf(h) {
   return usableCusip(h.cusip);

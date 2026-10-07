@@ -2,27 +2,41 @@
 
 An internal tool for analyzing SEC NPORT-P filings to track and compare private investment valuations across institutional funds. Search by company name or ticker to see how different funds mark the same asset over time.
 
-> **Vantage v2 is in progress.** The data layer is built (Phases 0–4.5): an SEC-verified local warehouse
-> with complete N-PORT history since 2019Q4, a nightly refresh from EDGAR, an as-of engine (amendments,
-> exits and dead funds handled), companies resolved from filing evidence, parent firms from Form N-CEN, and
-> a tracked list of 180 private companies. **Since Phase 5 the app reads the warehouse**: Single Security,
-> Batch, Watchlist and Fund X-Ray answer private companies and funds from every filing since 2019Q4, with mark
-> dates, accessions and amendments handled; listed companies and debt still come from live EDGAR, labeled.
-> Phase 6 adds the new analysis views, Phase 7 an MCP server. Some sections below still describe v1's live flow.
-> - Plan and phase checkpoints: [docs/ROADMAP.md](docs/ROADMAP.md)
-> - Progress: [docs/STATUS.md](docs/STATUS.md)
-> - Design: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-> - Data rules: [docs/DATA-QUALITY.md](docs/DATA-QUALITY.md)
-> - Lessons learned so far: [docs/LESSONS.md](docs/LESSONS.md)
-> - Verified figures: [docs/GOLDEN-NUMBERS.md](docs/GOLDEN-NUMBERS.md)
-> - Decisions: [docs/decisions/](docs/decisions/)
-> - Prompts for resuming work: [docs/SESSION-PROMPTS.md](docs/SESSION-PROMPTS.md)
-> - Rules for contributors and AI sessions: [CLAUDE.md](CLAUDE.md)
+> **Vantage v2** answers from an SEC-verified local warehouse: complete N-PORT history since 2019Q4, a nightly refresh
+> from EDGAR published as whole, validated generations, an as-of engine (amendments, exits, dead funds, $0 positions
+> handled), companies resolved from filing evidence, parent firms from Form N-CEN, and a tracked list of 180 private
+> companies. The analyst workspace (`web/`, served at `/`) is organized by **security → issuer → fund → manager**:
 >
-> **Known limits of today's app, measured on real data** (details in [docs/DATA-QUALITY.md](docs/DATA-QUALITY.md)):
-> - The live path (listed companies, debt, names the warehouse cannot match) still parses at most the 100 newest matching filings. Private companies and funds come from the warehouse, with no such limit (Phase 5).
-> - Fund X-Ray now counts a holding as private by the company's reviewed status, not its fair-value level (v1's Level-3 figure is shown beside it).
-> - Fixed in Phase 0: duplicate filings (about 21% of hits), look-alike name matches ("Revolut" matching Revolution Medicines), relevance-ranked instead of newest filings on popular names, and filings that mention a name only in a trust-wide attachment. Search now matches whole words or an exact ticker.
+> | Where | What |
+> | --- | --- |
+> | ⌘K (anywhere) | one search over companies, unreviewed names, firms, funds and classes |
+> | `/` Market | top private companies as of any date, movers (mark and position effects), newly reported |
+> | `/company/<id>` | overview and bridge, holders, positions grid, changes, marks & share classes (spreads, leadership), filings; `?pos=<fund>` opens one fund's position history |
+> | `/fund/<key>` | a fund's private book (X-Ray), timeline, marks vs others, compare, mark-implied returns |
+> | `/firm/<id>`, `/firms` | a manager's book, timeline, fund × company matrix, marks vs others, changes |
+> | `/explore` | pivot of firm, fund, company or class × month, quarter or year; every cell drills to its filings |
+> | `/activity` | changes in newly filed reports, by firm and fund, paged |
+> | `/compare` | 2–5 companies, firms, funds or classes side by side (replaces v1 Batch) |
+> | `/tracked` | the tracked list and your watchlist (replaces v1 Watchlist; imports it) |
+> | `/legacy` | v1, now only Private Credit Analysis (BDC 10-Q/10-K schedules) |
+>
+> Every view is scoped from the URL (firm, fund, class, kind, as-of date or range), every chart has a table twin, and
+> every export carries mark dates, accessions and how it reads history (today's reviewed list and advisers).
+> Listed companies and debt come from live EDGAR, labeled; a listed company's private-era marks open on request.
+> The sections below "What It Does" describe v1's live flow, which remains for listed companies and Private Credit.
+>
+> - Plan: [docs/ROADMAP.md](docs/ROADMAP.md) · Progress: [docs/STATUS.md](docs/STATUS.md) · Design:
+>   [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Data rules: [docs/DATA-QUALITY.md](docs/DATA-QUALITY.md) ·
+>   Verified figures: [docs/GOLDEN-NUMBERS.md](docs/GOLDEN-NUMBERS.md) · Decisions: [docs/decisions/](docs/decisions/)
+>   · How we work: [docs/LESSONS.md](docs/LESSONS.md), [CLAUDE.md](CLAUDE.md) · History: [docs/archive/](docs/archive/)
+>
+> **Known limits, measured on real data:**
+>
+> - The live path (listed companies, debt, names the warehouse cannot match) parses at most the newest 250
+>   matching filings (25–250, selectable). Private companies, funds and firms come from the warehouse with no limit.
+> - A fund's "private" book follows the company's reviewed status, not its fair-value level (the Level-3 figure is
+>   shown beside it). Loans a filer reports as "other" (merchant cash advances, personal loans…) count as debt.
+> - Filings arrive about 60 days after each report date, so the newest month is always partial.
 
 ---
 
@@ -31,7 +45,7 @@ An internal tool for analyzing SEC NPORT-P filings to track and compare private 
 Institutional funds registered with the SEC are required to file NPORT-P reports disclosing their portfolio holdings quarterly. Vantage queries the SEC EDGAR database in real time, parses the raw XML filings, and extracts price-per-share data for any security you search — letting you see how different funds value the same private company across reporting periods.
 
 **Use cases:**
-- Compare marks on private investments across funds (e.g., Anthropic, OpenAI, SpaceX)
+- Compare marks on private investments across funds (e.g., Anthropic, OpenAI, Stripe)
 - Track valuation trends over time
 - Identify divergence in how funds price the same asset
 - Export data for further analysis
@@ -91,6 +105,8 @@ down.
 git clone https://github.com/KianGolshan/Private-Investment-NPORT-Analyzer.git
 cd Private-Investment-NPORT-Analyzer
 npm install
+npm --prefix web install      # the analyst workspace (Vite + Preact + TypeScript)
+npm run build:web             # builds web/dist, which the server serves at /
 ```
 
 ### Configure
@@ -124,6 +140,11 @@ For development with auto-reload:
 npm run dev
 ```
 
+The analyst workspace (`web/`) is served at `/` once built (`npm run build:web`); v1's tabbed page stays at
+`/legacy`. Without a build, `/` serves v1 as before. To work on the workspace with hot reload, run the server and
+`npm run dev:web` (Vite on port 5173, proxying `/api` to the server; set `VANTAGE_API` if it is not on port 3000).
+Workspace checks: `npm run test:web` (typecheck and Vitest) and `npm run lint:web`.
+
 ### Build and refresh the data warehouse (Vantage v2)
 
 The v2 warehouse loads the SEC's quarterly N-PORT bulk datasets (2019Q4 onward) into a local
@@ -135,8 +156,17 @@ npm run ingest:bulk -- --all
 ```
 
 That loads every quarter, which took about 14 minutes on 2026-09-28. After that, `--missing` loads only
-quarters not yet loaded, and `--quarter 2026q2` reloads a single quarter. Each quarter loads in one
-transaction and is logged in `ingest_log`. A failed run exits non-zero and changes nothing for that quarter.
+quarters not yet loaded, and `--quarter 2026q2` reloads a single quarter. Each quarter is logged in `ingest_log`.
+
+Every command that writes the warehouse runs as one job ([ADR 0009](docs/decisions/0009-published-generations.md)):
+it builds a copy, rebuilds everything derived, validates it and publishes it as a new generation
+(`generations/warehouse-<id>.db`; `warehouse.db` is a link to the published one). A failed job publishes nothing,
+and only one job runs at a time.
+
+```bash
+npm run warehouse                 # generations, the published one, the last job
+npm run warehouse -- --rollback   # republish the generation before the current one
+```
 
 Bulk data ends at the last quarter-end, so recent filings come from EDGAR directly:
 
@@ -151,13 +181,14 @@ interrupted and resumed. Filings that fail are listed in `ingest_errors` and ret
 run the refresh nightly, use the launchd or cron entry in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#refresh-lifecycle).
 
-Companies, aliases and parent firms are human-reviewed files in `data/review/`:
+Companies, aliases and parent firms are human-reviewed files in `data/review/`. Company and firm ids are permanent
+ledgers there (`company_ids.csv`, `manager_ids.csv`); the import writes them back.
 
 ```bash
 npm run ingest:ncen       # N-CEN advisers (parent firms)
 npm run seed:entities     # suggest data/review/{aliases,managers}.csv (--force to overwrite)
 npm run review:aliases    # import the reviewed files and re-resolve holdings
-npm run entities:report   # the review queue: unresolved value by company, conflicts (reports/entities/)
+npm run entities:report   # the review queue (reports/entities/); a job: it rebuilds the identity graph
 ```
 
 ### Tests
@@ -170,6 +201,8 @@ npm run format     # apply Prettier formatting
 
 ```bash
 npm run test:live  # opt-in: real SEC, real filings, real UI → backend → EDGAR (a few minutes)
+npm run test:web   # the workspace: typecheck + Vitest
+npm run test:e2e   # the workspace in Chromium (Playwright) on the golden warehouse; npm run build:web first
 ```
 
 The suite has several layers, each testing something the others structurally
@@ -194,6 +227,16 @@ can't reach:
   CUSIPs, "N/A" issuer names, multi-series trusts, and six-plus real BDC
   10-Q layouts). These are the regression tests for bugs only real data
   exposed.
+- `test/oracle.test.js` — an independent oracle: raw rows read straight from
+  EDGAR's `primary_doc.xml` (`test/fixtures/oracle/`, rebuilt by its
+  `build-oracle.js`), the class rows picked by hand, every expected answer
+  plain arithmetic; the app must agree (class marks, exposure, an exit, a
+  re-mark, an amendment).
+- `test/job.test.js` — the one write path: generations, failure, validation,
+  the lock, the server switching generations, rollback, the CLI writers.
+- `web/e2e/` — the analyst workspace in a real browser (Playwright): the
+  script policy, tooltip payloads inert, a session seeing a new generation,
+  CSV formula safety, search failure, the position drawer.
 - `test/prod-startup.test.js` — real child processes: production refuses to
   start without a user agent, X-Forwarded-For handling, rate limits, legacy
   cache files.
@@ -211,7 +254,7 @@ can't reach:
 
 ### Single Security
 
-1. Enter a company name (e.g., `Anthropic`, `OpenAI`, `SpaceX`) or ticker in the search box
+1. Enter a company name (e.g., `Anthropic`, `OpenAI`, `Stripe`) or ticker in the search box
 2. Choose how many filings to process (25 / 50 / 100 / 250) — the **most recent** matching filings are kept
 3. Click **Search NPORT Filings**
 4. Results show a price-per-share trend chart and a table of holdings broken down by fund. If EDGAR matched more filings than you chose to parse, the result message says so ("Parsed the 50 most recent of 837 matching filings") — a capped run never passes for complete coverage
@@ -349,10 +392,15 @@ as a failure count rather than being silently dropped.
 ├── cache.js            # SQLite-backed cache for parsed filings and search results
 ├── public/
 │   ├── index.html     # Single-page frontend (HTML + CSS; CDN scripts SRI-pinned)
-│   ├── app.js          # Frontend logic (search, rendering, charts, export)
+│   ├── app.js          # Frontend logic (search, company and fund pages, charts, export)
+│   ├── views.js        # Analysis views: activity, trend, share classes, market, feed, firms
 │   └── splits.js       # Stock-split detection, shared by browser and server
 ├── test/               # Unit, integration, jsdom UI and opt-in live tests, with real-filing fixtures
-├── lib/warehouse/      # v2 warehouse: SQLite connection + migrations, bulk-dataset ingest, id validation
+├── lib/warehouse/      # v2 warehouse: migrations, bulk and EDGAR ingest, refresh, fund identity
+├── lib/entities/       # companies, aliases, identity graph, review import, managers
+├── lib/analytics/      # as-of engine, position changes, peer statistics
+├── lib/services/       # company, fund, firm, market, marks, search, dashboard (shared by server and MCP)
+├── lib/api/            # read-only warehouse routes; local admin route
 ├── db/migrations/      # Numbered SQL migrations for warehouse.db
 ├── scripts/            # CLI jobs (ingest-bulk.js, ingest-delta.js, refresh.js)
 ├── docs/               # v2 roadmap, status, architecture, data-quality rules, golden numbers, ADRs
@@ -365,6 +413,10 @@ as a failure count rather than being silently dropped.
 ```
 
 ### API Routes
+
+The warehouse routes (`/api/search`, `/api/companies/…`, `/api/entities/…`, `/api/funds/…`, `/api/firms/…`,
+`/api/market/…`, `/api/feed`, `/api/freshness`) are listed in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#warehouse-api-read-only-libapiwarehousejs). The live-path routes:
 
 | Route | Method | Description |
 |-------|--------|-------------|

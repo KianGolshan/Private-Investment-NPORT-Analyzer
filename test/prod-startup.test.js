@@ -123,6 +123,51 @@ test('in development X-Forwarded-For is ignored (a client cannot dodge the limit
   }
 });
 
+// Staff full-stack review R11: X-Forwarded-For is trusted only where the origin
+// cannot be reached directly (a loopback HOST) or TRUST_PROXY says so.
+test('production on a public HOST without TRUST_PROXY ignores X-Forwarded-For and says why', async () => {
+  const { child, port } = await startServer({
+    NODE_ENV: 'production',
+    SEC_USER_AGENT: 'Test Suite test@example.com',
+    HOST: '0.0.0.0',
+  });
+  let err = '';
+  child.stderr.on('data', d => (err += d));
+  try {
+    let limited = 0;
+    for (let i = 0; i < 215; i++) {
+      const r = await get(port, '/api/config', { 'X-Forwarded-For': `10.0.1.${i % 250}` });
+      if (r.status === 429) limited++;
+    }
+    assert.ok(limited >= 5, `a spoofed header must not reset the limit on an exposed origin (limited ${limited})`);
+    assert.match(err, /no TRUST_PROXY: X-Forwarded-For is ignored/);
+  } finally {
+    child.kill();
+  }
+});
+
+test('TRUST_PROXY must be a hop count', () => {
+  const r = spawnSync(process.execPath, [SERVER], {
+    env: baseEnv({ SEC_USER_AGENT: 'Test Suite test@example.com', TRUST_PROXY: 'yes' }),
+    encoding: 'utf8',
+    timeout: 15000,
+  });
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /TRUST_PROXY must be a hop count/);
+});
+
+test('SEC pacing: negative or unreadable is the default, 0 only outside production, never under 100 ms in production', () => {
+  const { minIntervalMs } = require('../lib/edgar');
+  assert.equal(minIntervalMs(undefined, false), 110);
+  assert.equal(minIntervalMs('-5', false), 110);
+  assert.equal(minIntervalMs('abc', false), 110);
+  assert.equal(minIntervalMs('0', false), 0);
+  assert.equal(minIntervalMs('250', false), 250);
+  assert.equal(minIntervalMs('0', true), 100);
+  assert.equal(minIntervalMs('-1', true), 110);
+  assert.equal(minIntervalMs('150', true), 150);
+});
+
 test('a cache.db written by an older parser version is not served (version is part of the key) and does not crash start-up', async () => {
   const dbPath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'vantage-cache-')), 'cache.db');
   const db = new Database(dbPath);

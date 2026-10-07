@@ -19,6 +19,7 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..', '..');
 const rawHtml = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8');
 const appJsSource = fs.readFileSync(path.join(ROOT, 'public', 'app.js'), 'utf8');
+const viewsSource = fs.readFileSync(path.join(ROOT, 'public', 'views.js'), 'utf8');
 const splitsSource = fs.readFileSync(path.join(ROOT, 'public', 'splits.js'), 'utf8');
 const peerSource = fs.readFileSync(path.join(ROOT, 'lib', 'analytics', 'peer.js'), 'utf8');
 const fundGroupsSource = fs.readFileSync(path.join(ROOT, 'public', 'fund-groups.js'), 'utf8');
@@ -98,6 +99,7 @@ async function loadApp({ fetchImpl, url = 'http://localhost/', exportLibs = fals
   vm.runInContext(peerSource, context, { filename: 'lib/analytics/peer.js' });
   vm.runInContext(fundGroupsSource, context, { filename: 'public/fund-groups.js' });
   vm.runInContext(appJsSource, context, { filename: 'public/app.js' });
+  vm.runInContext(viewsSource, context, { filename: 'public/views.js' });
 
   // app.js's module-level state (TOP_FUND_GROUPS, xrayFilings, xraySnapshots,
   // currentXrayCompare, xrayCompareMode, ...) is declared with const/let, so

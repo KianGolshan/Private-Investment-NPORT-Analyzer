@@ -8,11 +8,9 @@
 // Resumable (already-loaded filings are skipped); failures are listed in
 // ingest_errors, retried next run, and make this exit non-zero.
 require('dotenv').config();
-const fs = require('fs');
-const { openWarehouse, defaultWarehousePath } = require('../lib/warehouse/db');
+const { defaultWarehousePath } = require('../lib/warehouse/db');
 const { ingestDelta, defaultSince } = require('../lib/warehouse/delta');
-const { entityUpkeep } = require('../lib/entities/upkeep');
-const { rebuildFundNames } = require('../lib/warehouse/fund-names');
+const { runJob } = require('../lib/warehouse/job');
 
 function parseArgs(argv) {
   const opts = { since: null, until: null, concurrency: 3 };
@@ -27,35 +25,42 @@ function parseArgs(argv) {
   return opts;
 }
 
+// A warehouse job (lib/warehouse/job.js): every derived table is rebuilt and
+// the result is published as a new generation, or nothing is.
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const dbPath = defaultWarehousePath();
-  const db = openWarehouse(dbPath);
   const started = Date.now();
-  try {
-    const since = opts.since || defaultSince(db);
-    if (!since) throw new Error('no bulk data yet: run npm run ingest:bulk -- --all first, or pass --since');
-    const stats = await ingestDelta(db, { since, until: opts.until, concurrency: opts.concurrency, log: console.log });
-    const e = entityUpkeep(db);
-    rebuildFundNames(db);
-    console.log(
-      `entities: ${e.advisers.mapped}/${e.advisers.funds} funds with an adviser, ${e.companies.resolved} rows resolved`
-    );
-    console.log(
-      `Done: ${stats.loaded} filings loaded, ${stats.rowsKept.toLocaleString()} holdings kept, ` +
-        `${stats.failed} failed, ${((Date.now() - started) / 60000).toFixed(1)} min`
-    );
-    if (stats.failed) {
-      for (const e of db.prepare('SELECT accession, error, attempts FROM ingest_errors ORDER BY accession').all()) {
-        console.log(`  failed ${e.accession}: ${e.error} (attempt ${e.attempts})`);
-      }
-      process.exitCode = 1;
-    }
-  } finally {
-    db.pragma('wal_checkpoint(TRUNCATE)');
-    db.close();
+  const r = await runJob(
+    'ingest-delta',
+    async db => {
+      const since = opts.since || defaultSince(db);
+      if (!since) throw new Error('no bulk data yet: run npm run ingest:bulk -- --all first, or pass --since');
+      const stats = await ingestDelta(db, {
+        since,
+        until: opts.until,
+        concurrency: opts.concurrency,
+        log: console.log,
+      });
+      const errors = db.prepare('SELECT accession, error, attempts FROM ingest_errors ORDER BY accession').all();
+      return {
+        status: stats.failed ? 'partial' : 'ok',
+        note: stats.failed ? `${stats.failed} filing(s) failed` : null,
+        stats,
+        errors,
+      };
+    },
+    { dbPath, log: console.log }
+  );
+  const { stats } = r;
+  console.log(
+    `Done: ${stats.loaded} filings loaded, ${stats.rowsKept.toLocaleString()} holdings kept, ` +
+      `${stats.failed} failed, ${((Date.now() - started) / 60000).toFixed(1)} min; published generation ${r.generation}`
+  );
+  if (stats.failed) {
+    for (const e of r.errors) console.log(`  failed ${e.accession}: ${e.error} (attempt ${e.attempts})`);
+    process.exitCode = 1;
   }
-  console.log(`Warehouse: ${dbPath} (${(fs.statSync(dbPath).size / 1e6).toFixed(0)} MB)`);
 }
 
 main().catch(err => {

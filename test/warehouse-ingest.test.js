@@ -291,3 +291,102 @@ test('ingest: a bad quarter label or unreadable zip fails loudly and is logged a
   assert.ok(failed[0].error);
   db.close();
 });
+
+// Staff review F12: a malformed but readable archive must fail before it
+// replaces a quarter. Variants of the real fixture zip, one table changed.
+async function mutatedZip(changes) {
+  const yauzl = require('yauzl');
+  const yazl = require('yazl');
+  const os = require('os');
+  const files = await new Promise((resolve, reject) =>
+    yauzl.open(ZIP, { lazyEntries: true }, (err, zip) => {
+      if (err) return reject(err);
+      const out = {};
+      zip.on('entry', e =>
+        zip.openReadStream(e, (er, s) => {
+          if (er) return reject(er);
+          const chunks = [];
+          s.on('data', c => chunks.push(c));
+          s.on('end', () => {
+            out[e.fileName] = Buffer.concat(chunks).toString('utf8');
+            zip.readEntry();
+          });
+        })
+      );
+      zip.on('end', () => resolve(out));
+      zip.readEntry();
+    })
+  );
+  const z = new yazl.ZipFile();
+  for (const [name, text] of Object.entries(files))
+    z.addBuffer(Buffer.from(changes[name] ? changes[name](text) : text), name);
+  z.end();
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'vantage-zip-')), 'q.zip');
+  await new Promise((resolve, reject) =>
+    z.outputStream.pipe(fs.createWriteStream(file)).on('close', resolve).on('error', reject)
+  );
+  return file;
+}
+const dropColumn = col => text => {
+  const lines = text.split('\n');
+  const i = lines[0].split('\t').indexOf(col);
+  return lines
+    .map(l =>
+      l
+        .split('\t')
+        .filter((_, j) => j !== i)
+        .join('\t')
+    )
+    .join('\n');
+};
+
+test('F12: a dropped column or an empty table fails the quarter; the stored quarter is untouched', async () => {
+  const db = openWarehouse(':memory:');
+  await ingestBulkZip(db, ZIP, { quarter: '2026q2', sourceUrl: 'fixture' });
+  const before = db.prepare('SELECT COUNT(*) n FROM holdings').get().n;
+  const noValue = await mutatedZip({ 'FUND_REPORTED_HOLDING.tsv': dropColumn('CURRENCY_VALUE') });
+  await assert.rejects(
+    ingestBulkZip(db, noValue, { quarter: '2026q2' }),
+    /FUND_REPORTED_HOLDING.tsv: missing column\(s\) CURRENCY_VALUE/
+  );
+  const empty = await mutatedZip({ 'SUBMISSION.tsv': text => text.split('\n')[0] + '\n' });
+  await assert.rejects(ingestBulkZip(db, empty, { quarter: '2026q2' }), /SUBMISSION.tsv: 0 row\(s\)/);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM holdings').get().n, before);
+  assert.deepEqual(
+    db
+      .prepare("SELECT status FROM ingest_log WHERE kind = 'bulk' ORDER BY id")
+      .all()
+      .map(r => r.status),
+    ['ok', 'failed', 'failed']
+  );
+});
+
+test('F12: a re-load with markedly fewer filings than the last good load is refused unless expected', async () => {
+  const db = openWarehouse(':memory:');
+  await ingestBulkZip(db, ZIP, { quarter: '2026q2', sourceUrl: 'fixture' });
+  const filings = db.prepare('SELECT COUNT(*) n FROM filings').get().n;
+  // keep half the filings, with only their holdings
+  const keep = new Set();
+  const half = await mutatedZip({
+    'SUBMISSION.tsv': text => {
+      const [head, ...rows] = text.trim().split('\n');
+      const kept = rows.slice(0, Math.ceil(rows.length / 2));
+      for (const r of kept) keep.add(r.split('\t')[head.split('\t').indexOf('ACCESSION_NUMBER')]);
+      return [head, ...kept].join('\n') + '\n';
+    },
+    'FUND_REPORTED_HOLDING.tsv': text => {
+      const [head, ...rows] = text.trim().split('\n');
+      const at = head.split('\t').indexOf('ACCESSION_NUMBER');
+      return [head, ...rows.filter(r => keep.has(r.split('\t')[at]))].join('\n') + '\n';
+    },
+  });
+  // holdings of a filing the archive does not list: inconsistent, refused
+  const orphaned = await mutatedZip({
+    'SUBMISSION.tsv': text => text.trim().split('\n').slice(0, 2).join('\n') + '\n',
+  });
+  await assert.rejects(ingestBulkZip(db, orphaned, { quarter: '2026q2', allowShrink: true }), /belong to no filing/);
+  await assert.rejects(ingestBulkZip(db, half, { quarter: '2026q2' }), /refusing to replace the quarter/);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM filings').get().n, filings);
+  const r = await ingestBulkZip(db, half, { quarter: '2026q2', allowShrink: true });
+  assert.ok(r.filings < filings);
+});

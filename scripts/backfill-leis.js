@@ -11,7 +11,7 @@ require('dotenv').config();
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { openWarehouse } = require('../lib/warehouse/db');
+const { runJob } = require('../lib/warehouse/job');
 const { downloadQuarter } = require('../lib/warehouse/bulk-source');
 const { backfillLeisFromZip, backfillEdgarLeis, doneQuarters } = require('../lib/warehouse/lei-backfill');
 
@@ -21,9 +21,14 @@ async function main() {
   const maxAt = args.indexOf('--max');
   const max = maxAt >= 0 ? Number(args[maxAt + 1]) : Infinity;
   if (!(max > 0)) throw new Error('--max must be a positive number');
-  const db = openWarehouse();
   const started = Date.now();
-  try {
+  await runJob('backfill-leis', db => backfill(db, { edgar, max }), { log: console.log });
+  console.log(`done in ${((Date.now() - started) / 60000).toFixed(1)} min`);
+}
+
+// One batch on the job's candidate warehouse.
+async function backfill(db, { edgar, max }) {
+  {
     if (edgar) {
       const r = await backfillEdgarLeis(db, { log: console.log });
       console.log(`EDGAR: ${r.listed - r.failed.length}/${r.listed} filings updated`);
@@ -31,7 +36,7 @@ async function main() {
         for (const f of r.failed) console.error(`  failed ${f.accession}: ${f.error}`);
         process.exitCode = 1;
       }
-      return;
+      return { status: r.failed.length ? 'partial' : 'ok' };
     }
     const done = doneQuarters(db);
     const quarters = db
@@ -56,11 +61,8 @@ async function main() {
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
-  } finally {
-    db.pragma('wal_checkpoint(TRUNCATE)');
-    db.close();
-    console.log(`done in ${((Date.now() - started) / 60000).toFixed(1)} min`);
   }
+  return {};
 }
 
 main().catch(err => {

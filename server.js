@@ -25,21 +25,28 @@ const app = express();
 // needed at all. Without this, cors() with no options reflects any Origin
 // header back with credentials-less wildcard access, letting any external
 // website's JS call these SEC-proxying endpoints on a visitor's behalf.
-// Security headers. script-src must allow 'unsafe-inline' because the UI wires
-// its buttons with inline onclick attributes, but it still pins every script
-// ORIGIN to this server plus the two SRI-pinned CDNs in index.html, and
-// connect-src 'self' keeps page JS from sending data anywhere but this API.
-const CSP = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.sheetjs.com",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
-  "connect-src 'self'",
-  "object-src 'none'",
-  "base-uri 'none'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-].join('; ');
+// Security headers. The analyst workspace (web/dist) loads only its own
+// module scripts, so its policy allows scripts from this server alone (staff
+// review F01: no inline script can run even if markup slipped through). v1 at
+// /legacy wires its buttons with inline onclick attributes, so its page alone
+// gets 'unsafe-inline', still pinned to this server plus the two SRI-pinned
+// CDNs in public/index.html. connect-src 'self' keeps page JS from sending data
+// anywhere but this API. A CSP applies to the document, so the legacy policy is
+// set on the legacy HTML responses only.
+const cspOf = scripts =>
+  [
+    "default-src 'self'",
+    `script-src ${scripts}`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "connect-src 'self'",
+    "object-src 'none'",
+    "base-uri 'none'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ].join('; ');
+const CSP = cspOf("'self'");
+const LEGACY_CSP = cspOf("'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.sheetjs.com");
 app.disable('x-powered-by');
 app.use((_req, res, next) => {
   res.set({
@@ -50,26 +57,58 @@ app.use((_req, res, next) => {
   });
   next();
 });
+const sendLegacy = res => res.set('Content-Security-Policy', LEGACY_CSP).sendFile(LEGACY_INDEX);
 // lib/analytics/peer.js is shared with the browser, like public/splits.js (P5b).
 app.get('/peer.js', (_req, res) => res.sendFile(path.join(__dirname, 'lib', 'analytics', 'peer.js')));
-app.use(express.static('public'));
-// Permalinks (ADR 0008): the page itself; app.js reads the path.
-app.get(['/company/:ref', '/name/:key', '/fund/:key'], (_req, res) =>
-  res.sendFile(path.join(__dirname, 'public', 'index.html'))
-);
+// The analyst workspace (web/, built into web/dist) is the app when it has been
+// built; v1's tabbed page stays at /legacy until each tab is replaced (P6b). An
+// unbuilt checkout (tests, CI before `npm run build:web`) serves v1 at / as before.
+const LEGACY_INDEX = path.join(__dirname, 'public', 'index.html');
+const WEB_DIST = path.join(__dirname, 'web', 'dist');
+const WEB_INDEX = path.join(WEB_DIST, 'index.html');
+const webBuilt = () => require('fs').existsSync(WEB_INDEX);
+const APP_ROUTES = [
+  '/',
+  '/company/:ref',
+  '/name/:key',
+  '/fund/:key',
+  '/firm/:id',
+  '/firms',
+  '/activity',
+  '/explore',
+  '/tracked',
+  '/compare',
+];
+app.get('/legacy', (_req, res) => sendLegacy(res));
+app.get(APP_ROUTES, (_req, res) => (webBuilt() ? res.sendFile(WEB_INDEX) : sendLegacy(res)));
+app.use('/assets', express.static(path.join(WEB_DIST, 'assets'), { immutable: true, maxAge: '1y', index: false }));
+app.use(express.static('public', { index: false }));
 
 const USER_AGENT = process.env.SEC_USER_AGENT || '';
 const EFFECTIVE_USER_AGENT = USER_AGENT || 'Vantage internal-tool@localhost';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
-// Only trust X-Forwarded-For in production, where a public deployment is
-// expected to sit behind a reverse proxy/load balancer — otherwise
-// express-rate-limit's per-IP bucketing keys off req.ip, which resolves to
-// the proxy's own address for every visitor when trust proxy is unset,
-// collapsing the 200 req/min cap below into one shared budget for every
-// user instead of one per visitor. Left off in local/dev, where there's no
-// proxy and trusting a client-supplied header would let it spoof req.ip.
-if (IS_PRODUCTION) app.set('trust proxy', 1);
+// Where the server listens (staff full-stack review R11): loopback unless HOST
+// says otherwise, so the origin is reachable only through a proxy on this host.
+const HOST = process.env.HOST || '127.0.0.1';
+const LOOPBACK = ['127.0.0.1', '::1', 'localhost'].includes(HOST);
+// X-Forwarded-For is trusted only where a client cannot set it itself: a proxy
+// in front of a loopback-only origin. Behind a proxy, express-rate-limit's
+// per-IP buckets need the forwarded address (else every visitor shares the
+// proxy's one budget); without one, trusting the header lets a client spoof
+// req.ip. TRUST_PROXY=<hops> declares the topology explicitly (0 = never). In
+// production with no TRUST_PROXY: 1 hop on a loopback origin, none on a public
+// one (with a warning at start-up). Development never trusts it.
+const TRUST_PROXY = (() => {
+  const raw = process.env.TRUST_PROXY;
+  if (raw !== undefined && raw !== '') {
+    const n = Number(raw);
+    if (!Number.isInteger(n) || n < 0) throw new Error(`TRUST_PROXY must be a hop count (0, 1, 2, ...), got "${raw}"`);
+    return n;
+  }
+  return IS_PRODUCTION && LOOPBACK ? 1 : 0;
+})();
+if (TRUST_PROXY) app.set('trust proxy', TRUST_PROXY);
 
 if (!USER_AGENT) {
   console.warn('\n⚠️  WARNING: SEC_USER_AGENT not set.');
@@ -209,6 +248,9 @@ async function fetchSubmissionsAllPages(cikPadded) {
   });
   pushEntries(subResp.data.filings?.recent || {});
 
+  // An older page that fails is reported, not dropped silently (staff review
+  // F13): the caller marks its answer partial and does not cache it.
+  const failedPages = [];
   const files = subResp.data.filings?.files || [];
   for (const file of files) {
     try {
@@ -221,9 +263,10 @@ async function fetchSubmissionsAllPages(cikPadded) {
       pushEntries(pageResp.data);
     } catch (e) {
       console.error(`Submissions page error (${file.name}):`, e.message);
+      failedPages.push({ source: `submissions page ${file.name}`, error: e.message });
     }
   }
-  return { name: subResp.data.name || '', entries };
+  return { name: subResp.data.name || '', entries, failedPages };
 }
 
 // Strip trailing ticker/CIK parentheticals from EFTS display names,
@@ -538,10 +581,12 @@ app.get('/api/search-10q', async (req, res) => {
       }
 
       const historical = [];
+      const failedSources = [];
       for (const [cikStripped, name] of Object.entries(bdcCikName)) {
         try {
           const cikPadded = cikStripped.padStart(10, '0');
-          const { entries: allFilings } = await fetchSubmissionsAllPages(cikPadded);
+          const { entries: allFilings, failedPages } = await fetchSubmissionsAllPages(cikPadded);
+          for (const p of failedPages) failedSources.push({ ...p, source: `${name}: ${p.source}` });
           let count = 0;
           for (const f of allFilings) {
             if (!CREDIT_FORMS.includes(f.form)) continue;
@@ -565,6 +610,7 @@ app.get('/api/search-10q', async (req, res) => {
           await delay(50);
         } catch (e) {
           console.error('Filing history error for', name, e.message);
+          failedSources.push({ source: `${name} filing history`, error: e.message });
         }
       }
 
@@ -577,8 +623,11 @@ app.get('/api/search-10q', async (req, res) => {
         bdcFunds: [...new Set(Object.values(bdcCikName))].sort(),
         confirmed: confirmed.length,
         total: confirmed.length + historical.length,
+        partial: failedSources.length > 0,
+        failedSources,
       };
-      cache.setSearch(cacheKey, payload);
+      // a partial answer is shown, labeled, and asked for again next time
+      if (!payload.partial) cache.setSearch(cacheKey, payload);
       return payload;
     });
     res.json({ ...result, cached: false });
@@ -754,12 +803,12 @@ async function fetchFundNportHistory(cik) {
   return cache.withInFlight(cacheKey, async () => {
     await delay(50);
     const cikPadded = cik.padStart(10, '0');
-    const { name, entries } = await fetchSubmissionsAllPages(cikPadded);
+    const { name, entries, failedPages } = await fetchSubmissionsAllPages(cikPadded);
     const filings = entries
       .filter(f => f.form === 'NPORT-P' && f.accessionNumber)
       .map(f => ({ accession: f.accessionNumber, filingDate: f.filingDate || '', reportDate: f.reportDate || '' }));
-    const result = { cik, name: name || cik, filings };
-    cache.setSearch(cacheKey, result);
+    const result = { cik, name: name || cik, filings, failedSources: failedPages };
+    if (!failedPages.length) cache.setSearch(cacheKey, result);
     return result;
   });
 }
@@ -786,17 +835,20 @@ app.get('/api/search-fund', async (req, res) => {
     const data = await cache.withInFlight(cacheKey, async () => {
       const { ciks, totalMatches } = await lookupFundCiks(fund);
       const matches = [];
+      const failedSources = [];
       for (const cik of ciks) {
         try {
           const match = await fetchFundNportHistory(cik);
           if (match.filings.length) matches.push(match);
+          for (const p of match.failedSources || []) failedSources.push({ ...p, source: `CIK ${cik}: ${p.source}` });
           await delay(50);
         } catch (e) {
           console.error('Fund history error for CIK', cik, e.message);
+          failedSources.push({ source: `CIK ${cik} filing history`, error: e.message });
         }
       }
-      const payload = { matches, totalMatches };
-      cache.setSearch(cacheKey, payload);
+      const payload = { matches, totalMatches, partial: failedSources.length > 0, failedSources };
+      if (!payload.partial) cache.setSearch(cacheKey, payload);
       return payload;
     });
     res.json({ ...data, cached: false });
@@ -898,15 +950,27 @@ app.get('/api/fund-series', async (req, res) => {
       const multiSeries = Object.values(perDate).some(n => n > 1);
       if (!multiSeries) {
         const single = { cik, registrant: hist.name, multiSeries: false, series: [] };
-        cache.setSearch(cacheKey, single);
-        return single;
+        const failed = hist.failedSources || [];
+        if (!failed.length) cache.setSearch(cacheKey, single);
+        return { ...single, partial: failed.length > 0, failedSources: failed };
       }
 
       const newest = Math.max(...hist.filings.map(f => Date.parse(f.filingDate) || 0));
       const cohort = hist.filings
         .filter(f => (Date.parse(f.filingDate) || 0) >= newest - SERIES_COHORT_DAYS * 86400000)
         .slice(0, SERIES_COHORT_CAP);
-      const headers = await mapLimit(cohort, 4, f => fetchFilingHeader(cik, f.accession));
+      const failedSources = [...(hist.failedSources || [])];
+      const headers = await mapLimit(cohort, 4, f =>
+        fetchFilingHeader(cik, f.accession).catch(e => {
+          failedSources.push({ source: `filing header ${f.accession}`, error: e.message });
+          return null;
+        })
+      );
+      const partial = failedSources.length > 0;
+      const keep = v => {
+        if (!partial) cache.setSearch(cacheKey, v);
+        return { ...v, partial, failedSources };
+      };
       const seen = new Map();
       cohort.forEach((f, i) => {
         const h = headers[i];
@@ -925,14 +989,8 @@ app.get('/api/fund-series', async (req, res) => {
       // (real: SkyBridge G II Fund), and some real trusts' filings carry no
       // series id at all (Stone Ridge Trust V) — with fewer than two
       // identifiable funds there is nothing to choose between.
-      if (series.length < 2) {
-        const single = { cik, registrant: hist.name, multiSeries: false, series: [] };
-        cache.setSearch(cacheKey, single);
-        return single;
-      }
-      const result = { cik, registrant: hist.name, multiSeries: true, series };
-      cache.setSearch(cacheKey, result);
-      return result;
+      if (series.length < 2) return keep({ cik, registrant: hist.name, multiSeries: false, series: [] });
+      return keep({ cik, registrant: hist.name, multiSeries: true, series });
     });
     res.json({ ...payload, cached: false });
   } catch (error) {
@@ -1139,8 +1197,14 @@ app.get('/api/fund-xray-returns', async (req, res) => {
 // drive `app` in-process via supertest without opening a real socket.
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`\n✅ Vantage running at http://localhost:${PORT}`);
+  app.listen(PORT, HOST, () => {
+    console.log(`\n✅ Vantage running at http://${HOST.includes(':') ? `[${HOST}]` : HOST}:${PORT}`);
+    if (IS_PRODUCTION && !LOOPBACK && process.env.TRUST_PROXY === undefined)
+      console.warn(
+        `   Listening on ${HOST} with no TRUST_PROXY: X-Forwarded-For is ignored, so behind a proxy every visitor ` +
+          'shares one rate-limit bucket. Set TRUST_PROXY to the number of proxies in front, only if clients cannot ' +
+          'reach this port directly.'
+      );
     console.log(`   User-Agent: ${EFFECTIVE_USER_AGENT}\n`);
     warehouseApi.warm().then(w => {
       console.log(

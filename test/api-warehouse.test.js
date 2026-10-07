@@ -45,6 +45,47 @@ test('API goldens: Anthropic A1 72 / $5.93B, A2 117 / $17.26B, A4 knownAsOf 82 /
   assert.equal(Math.round(magnitude.value / 1e5) / 10, 235.7);
   const fundrise = a2.disclosedExposure.find(d => d.accession === '0001867090-26-000109');
   assert.match(fundrise.basis, /Greater than 20%/);
+  assert.equal(fundrise.filingDate, '2026-08-28');
+  // F07 (staff review): the range obeys knownAsOf (filed 2026-08-28) and the as-of rule.
+  const fr = body => body.disclosedExposure.filter(d => d.accession === '0001867090-26-000109').length;
+  const at = async q => (await api(`/api/companies/${id}/exposure?${q}`).expect(200)).body;
+  assert.equal(fr(a4), 0); // known 2026-06-30: not filed yet
+  assert.equal(fr(await at('date=2026-06-30&knownAsOf=2019-01-01')), 0);
+  assert.equal(fr(await at('date=2026-06-30&knownAsOf=2026-08-27')), 0);
+  assert.equal(fr(await at('date=2026-06-30&knownAsOf=2026-08-28')), 1);
+  assert.equal(fr(await at('date=2026-10-31')), 1); // 123 days after 06-30
+  assert.equal(fr(await at('date=2026-11-01')), 0); // 124 days: the fund is inactive
+});
+
+test('R13: an impossible calendar date is a 400, not a silent roll-over to the next month', async () => {
+  const id = idOf('Anthropic');
+  for (const d of ['2026-02-31', '2025-02-29', '2026-04-31'])
+    assert.match((await api(`/api/companies/${id}/exposure?date=${d}`).expect(400)).body.error, /ISO date/);
+  await api(`/api/companies/${id}/exposure?date=2024-02-29`).expect(200);
+  await api('/api/market/top?date=2026-02-31').expect(400);
+});
+
+test('R07: a same-date amendment supersedes a disclosed range until it is re-curated', () => {
+  const Database = require('better-sqlite3');
+  const { disclosedExposure } = require('../lib/services/company');
+  const copy = new Database(db.serialize());
+  const id = idOf('Anthropic');
+  const ranges = (date, knownAsOf) => disclosedExposure(copy, id, date, { knownAsOf }).map(d => d.accession);
+  assert.deepEqual(ranges('2026-06-30'), ['0001867090-26-000109']);
+  // a synthetic NPORT-P/A for the same fund and report date, filed 2026-09-15
+  const cols = copy
+    .prepare('PRAGMA table_info(filings)')
+    .all()
+    .map(c => c.name);
+  const set = { accession: "'0001867090-26-900001'", form: "'NPORT-P/A'", filing_date: "'2026-09-15'" };
+  copy.exec(
+    `INSERT INTO filings (${cols.join(', ')}) SELECT ${cols.map(c => set[c] ?? c).join(', ')}
+     FROM filings WHERE accession = '0001867090-26-000109'`
+  );
+  assert.deepEqual(ranges('2026-06-30'), [], 'the original range no longer counts');
+  assert.deepEqual(ranges('2026-06-30', '2026-09-14'), ['0001867090-26-000109'], 'known before the amendment');
+  assert.deepEqual(ranges('2026-06-30', '2026-09-15'), []);
+  copy.close();
 });
 
 test('API goldens: Stripe A5 49 / 35 / 34 / 37 and Databricks A6 120 / $6.22B', async () => {
@@ -122,15 +163,20 @@ test('API ids: a merged id redirects to its successor, a dropped id is gone, bad
 });
 
 test('API caching: the ETag is the refresh id plus the build; a matching If-None-Match gets 304', async () => {
-  const r = await api('/api/freshness').expect(200);
+  const r = await api('/api/search?q=anthropic').expect(200);
   assert.ok(r.headers.etag.startsWith('W/"r' + r.body.refreshId + '-'), r.headers.etag);
-  await api('/api/freshness').set('If-None-Match', r.headers.etag).expect(304);
+  await api('/api/search?q=anthropic').set('If-None-Match', r.headers.etag).expect(304);
   // A new build (a deploy, or a restart after a code change) never matches the old ETag.
   const next = express().use(
     '/api',
     warehouseRouter(() => db, { build: 'next' })
   );
-  await request(next).get('/api/freshness').set('If-None-Match', r.headers.etag).expect(200);
+  await request(next).get('/api/search?q=anthropic').set('If-None-Match', r.headers.etag).expect(200);
+  // /freshness carries the last job's state, which moves without a new generation
+  // (review R08): the generation ETag never answers it with a 304
+  const f = await api('/api/freshness').set('If-None-Match', r.headers.etag).expect(200);
+  assert.equal(f.headers['cache-control'], 'no-store');
+  assert.ok(!String(f.headers.etag || '').startsWith('W/"r'), 'no generation ETag on /freshness');
 });
 
 test('API read-only: a missing or behind warehouse gives 503, never a new file; the server opens it read-only', async () => {
@@ -164,4 +210,64 @@ test('API read-only: a missing or behind warehouse gives 503, never a new file; 
   assert.match(server, /warehouseRouter\(\(\) => openWarehouseReadOnly\(\)\)/);
   assert.doesNotMatch(server, /openWarehouse\(/);
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+// ── Post-P5 review fixes ────────────────────────────────────────────────────
+
+test('history labels: two funds with one name stay two funds (Capital World Growth & Income, F17)', async () => {
+  const h = (await api(`/api/companies/${idOf('Anthropic')}/history`).expect(200)).body;
+  const labels = h.funds.map(f => f.label);
+  assert.equal(new Set(labels).size, labels.length, 'every fund label is unique');
+  const cwgi = h.funds.filter(f => f.seriesName === 'Capital World Growth & Income Fund');
+  assert.deepEqual(cwgi.map(f => f.fundKey).sort(), ['S000009001', 'S000013710']);
+  assert.ok(cwgi.some(f => f.label === 'Capital World Growth & Income Fund (AMERICAN FUNDS INSURANCE SERIES)'));
+  const x = (await api(`/api/companies/${idOf('Anthropic')}/exposure?date=2026-06-30`).expect(200)).body;
+  const named = [...x.holdings, ...x.exited].map(f => f.fundLabel);
+  assert.equal(new Set(named).size, named.length);
+});
+
+test('listed companies: stored rows answer only on request, labeled, with exits as "not in stored rows" (SpaceX)', async () => {
+  const id = idOf('Space Exploration Technologies');
+  const head = (await api(`/api/companies/${id}`).expect(200)).body;
+  assert.equal(head.answeredBy.source, 'live');
+  assert.match(head.stored.note, /private-era marks/);
+  const h = (await api(`/api/companies/${id}/history?stored=1`).expect(200)).body;
+  assert.equal(h.source, 'warehouse');
+  assert.ok(h.funds.length > 0, 'SpaceX has stored rows');
+  assert.equal(h.stored.label, 'stored rows of a listed company');
+  const x = (await api(`/api/companies/${id}/exposure?date=2026-06-30&stored=1`).expect(200)).body;
+  for (const e of x.exited) assert.equal(e.label, 'not in stored rows (may be listed stock now)');
+});
+
+test('search: only a strong match opens by itself', async () => {
+  const top = async q => (await api(`/api/search?q=${encodeURIComponent(q)}`).expect(200)).body.results[0];
+  assert.equal((await top('Anthropic')).strong, true); // exact
+  assert.equal((await top('Open AI')).strong, true); // normalized
+  const similar = await top('Databriks');
+  assert.deepEqual([similar.name, similar.match.how, similar.strong], ['Databricks', 'similar', false]);
+});
+
+test('unreviewed names: a key a review gave to a company answers 301 to the company', async () => {
+  const { db: d, app: a } = goldenWarehouse();
+  const e = d
+    .prepare("SELECT key, keys FROM unreviewed_entities WHERE active = 1 AND category = 'company' ORDER BY key LIMIT 1")
+    .get();
+  // What a review import leaves behind: the entity inactive, its key an alias of a company.
+  d.prepare('UPDATE unreviewed_entities SET active = 0 WHERE key = ?').run(e.key);
+  d.prepare("INSERT INTO companies (id, name, status) VALUES (9001, 'Reviewed Since', 'private')").run();
+  d.prepare(
+    "INSERT INTO company_aliases (company_id, kind, pattern, via_spv, source) VALUES (9001, 'issuer_key', ?, 0, 't')"
+  ).run(JSON.parse(e.keys)[0]);
+  const r = await request(a)
+    .get(`/api/entities/${encodeURIComponent(e.key)}/history`)
+    .expect(301);
+  assert.equal(r.headers.location, '/api/companies/9001/history');
+});
+
+test('API answers are gzipped for clients that accept it', async () => {
+  const r = await api(`/api/companies/${idOf('Anthropic')}/history`)
+    .set('Accept-Encoding', 'gzip')
+    .expect(200);
+  assert.equal(r.headers['content-encoding'], 'gzip');
+  assert.ok(r.body.funds.length > 0);
 });

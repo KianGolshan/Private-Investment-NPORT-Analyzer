@@ -9,8 +9,8 @@
 // { error, status }) and exits non-zero on failure.
 require('dotenv').config();
 const path = require('path');
-const { openWarehouse } = require('../lib/warehouse/db');
 const { makeCompany } = require('../lib/entities/make-company');
+const { runJob } = require('../lib/warehouse/job');
 
 function parseArgs(argv) {
   const opts = { dir: path.join(__dirname, '..', 'data', 'review'), status: 'private', track: 'N' };
@@ -27,21 +27,27 @@ function parseArgs(argv) {
   return opts;
 }
 
-function main() {
-  let db;
+// A warehouse job of kind 'curation': a lock conflict is 409, and nothing is
+// published unless the import and validation succeed. The decision is written
+// to a staged copy of the reviewed files, which reach --dir only after the
+// publish (lib/warehouse/job.js curationDir).
+async function main() {
   try {
     const opts = parseArgs(process.argv.slice(2));
-    db = openWarehouse();
-    const r = makeCompany(db, { ...opts, log: (...m) => console.error(...m) });
-    console.log(JSON.stringify(r));
+    const log = (...m) => console.error(...m);
+    let made;
+    await runJob(
+      'curation',
+      (db, { runId, curationDir }) => {
+        made = makeCompany(db, { ...opts, dir: curationDir, log, runId });
+        return {};
+      },
+      { log, curationDir: opts.dir }
+    );
+    console.log(JSON.stringify(made));
   } catch (err) {
     console.log(JSON.stringify({ error: err.message, status: err.status || 500 }));
     process.exitCode = 1;
-  } finally {
-    if (db) {
-      db.pragma('wal_checkpoint(TRUNCATE)');
-      db.close();
-    }
   }
 }
 

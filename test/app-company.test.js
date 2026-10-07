@@ -58,8 +58,10 @@ test('company page: Anthropic at 2026-06-30 shows 117 funds / $17.26B with mark 
   );
   assert.match(gfa.textContent, /2026-05-31/);
   assert.match(gfa.textContent, /\$4\.98B/);
+  // The fund links to its fund page; the filing links to EDGAR.
+  assert.equal(gfa.querySelector('a').getAttribute('href'), '/fund/S000009228');
   assert.equal(
-    gfa.querySelector('a').getAttribute('href'),
+    gfa.querySelector('a[href^="https://www.sec.gov/"]').getAttribute('href'),
     'https://www.sec.gov/Archives/edgar/data/44201/000119312526323081/'
   );
   // F11: Magnitude's SPV is labeled indirect; F22: Fundrise's range in the filing's words.
@@ -152,4 +154,31 @@ test('routing: a name the warehouse has never seen runs the live path, labeled',
   await new Promise(r => window.setTimeout(r, 50));
   assert.match(text(document, 'companyContainer'), /Live, not warehoused.*No company or reported name/);
   assert.ok(calls.some(u => u.startsWith('/api/search-nport?security=Zzqx')));
+});
+
+test('company page: two funds that share a name are two lines, never one (Capital World Growth & Income, F17)', async () => {
+  const { window, document } = await loadApp({ fetchImpl: backend() });
+  await openAt(window, document, 'Anthropic');
+  const equity = window.__state.allResults.single.equity;
+  const cwgi = Object.keys(equity).filter(k => k.startsWith('Capital World Growth & Income Fund'));
+  assert.equal(cwgi.length, 2, cwgi.join(' | '));
+  for (const k of cwgi) assert.equal(new Set(equity[k].map(r => r.fundKey)).size, 1, k);
+});
+
+test('company page: a similar spelling lists candidates instead of opening by itself', async () => {
+  const { window, document } = await loadApp({ fetchImpl: backend() });
+  await openAt(window, document, 'Databriks');
+  const page = text(document, 'companyContainer');
+  assert.match(page, /Several names match "Databriks"/);
+  assert.match(page, /similar spelling/);
+});
+
+test('company page: a listed company opens on the live path with a link to its stored rows (SpaceX is public)', async () => {
+  const { window, document } = await loadApp({ fetchImpl: backend() });
+  await window.openCompany(idOf('Space Exploration Technologies'));
+  assert.match(text(document, 'companyContainer'), /Private-era marks and restricted rows \(warehouse\)/);
+  await window.openCompany(idOf('Space Exploration Technologies'), { stored: true });
+  const page = text(document, 'companyContainer');
+  assert.match(page, /Listed company: stored rows only/);
+  assert.match(page, /Current holdings \(live EDGAR\)/);
 });

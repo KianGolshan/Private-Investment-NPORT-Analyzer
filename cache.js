@@ -67,6 +67,8 @@
 // individual bumps covered was not recorded.
 // v17: extractHoldings matches the search term on word boundaries (no more
 //      REVOLUTION MEDICINES under "Revolut") and tickers exactly.
+// v18: loans filed as OTHER are debt (trap 45); a title-keyed instrument
+//      carries EC/EP (trap 47).
 // Any future change gets its own line here.
 //
 // Rows written under an older PARSE_VERSION can never be read again (the
@@ -76,7 +78,7 @@
 const path = require('path');
 const Database = require('better-sqlite3');
 
-const PARSE_VERSION = 17;
+const PARSE_VERSION = 18;
 // `|| 60 * 60 * 1000` would silently discard an operator's explicit
 // SEARCH_CACHE_TTL_MS=0 (disable search caching entirely) and fall back to
 // the 1-hour default, since 0 is falsy — Number.isFinite tells "0" apart

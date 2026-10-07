@@ -1,5 +1,5 @@
 {
-  "name": "nport-analyzer",
+  "name": "vantage",
   "version": "1.0.0",
   "description": "Vantage - private investment exposure and valuation marks extracted from SEC filings",
   "main": "server.js",
@@ -18,11 +18,17 @@
     "ingest:bulk": "node scripts/ingest-bulk.js",
     "ingest:delta": "node scripts/ingest-delta.js",
     "refresh": "node scripts/refresh.js",
+    "warehouse": "node scripts/warehouse.js",
     "ingest:ncen": "node scripts/ingest-ncen.js",
     "seed:entities": "node scripts/seed-entities.js",
     "review:aliases": "node scripts/review-aliases.js",
     "entities:report": "node scripts/entities-report.js",
-    "bench": "node scripts/bench.js"
+    "bench": "node scripts/bench.js",
+    "build:web": "npm --prefix web run build",
+    "test:web": "npm --prefix web run typecheck && npm --prefix web test",
+    "test:e2e": "npm --prefix web run e2e",
+    "lint:web": "npm --prefix web run lint",
+    "dev:web": "npm --prefix web run dev"
   },
   "dependencies": {
     "axios": "^1.6.7",

@@ -168,6 +168,10 @@
     .tab.active { color: var(--navy); border-bottom-color: var(--gold); background: var(--navy-pale); border-radius: 6px 6px 0 0; }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
+    .panel-block { margin: 14px 0 6px; }
+    .panel-block h2 { font-size: 18px; margin: 4px 0 10px; color: var(--navy); }
+    .view-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 8px; }
+    .chart-wrap { position: relative; margin: 10px 0 16px; }
     @media (max-width: 480px) {
       .tab { padding: 9px 14px; font-size: 13.5px; }
     }
@@ -178,6 +182,7 @@
     .input-group.narrow { flex: 0 0 175px; }
     label { display: block; margin-bottom: 5px; font-size: 13px; font-weight: 500; color: var(--gray-700); }
     .hint { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+    .moved-notice { margin: 0 0 16px; padding: 10px 14px; border-left: 3px solid var(--gold); background: var(--navy-pale); font-size: 13.5px; line-height: 1.6; }
     /* Company page (Phase 5a) */
     .input-group { position: relative; }
     .suggest { display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 20; background: white; border: 1px solid var(--gray-200); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,.08); max-height: 360px; overflow-y: auto; }
@@ -507,6 +512,7 @@
     </div>
     <button class="about-trigger" onclick="openAbout()">About</button>
   </div>
+  <div id="freshnessBanner" class="hint"></div>
 
   <div id="configWarning" class="alert alert-warning" style="display:none;">
     <strong>User-Agent Not Configured</strong>
@@ -542,15 +548,30 @@
 
   <!-- Tabs -->
   <div class="tabs" role="tablist">
-    <button class="tab active" role="tab" aria-selected="true"  aria-controls="singleTab"    onclick="switchTab('single')">Single Security</button>
-    <button class="tab"        role="tab" aria-selected="false" aria-controls="batchTab"      onclick="switchTab('batch')">Batch Search</button>
-    <button class="tab"        role="tab" aria-selected="false" aria-controls="creditTab"     onclick="switchTab('credit')">Private Credit Analysis</button>
-    <button class="tab"        role="tab" aria-selected="false" aria-controls="watchlistTab"  onclick="switchTab('watchlist')">Watchlist</button>
-    <button class="tab"        role="tab" aria-selected="false" aria-controls="xrayTab"       onclick="switchTab('xray')">Fund X-Ray</button>
+    <!-- P6b W5: every tab but Private Credit moved to the analyst workspace at / (see #movedNotice).
+         Their code stays for the v1 regression tests; the buttons are hidden. -->
+    <button class="tab retired" hidden role="tab" aria-selected="false" aria-controls="singleTab"    onclick="switchTab('single')">Single Security</button>
+    <button class="tab retired" hidden role="tab" aria-selected="false" aria-controls="marketTab"     onclick="switchTab('market')">Market &amp; What's New</button>
+    <button class="tab retired" hidden role="tab" aria-selected="false" aria-controls="firmsTab"      onclick="switchTab('firms')">Firms</button>
+    <button class="tab retired" hidden role="tab" aria-selected="false" aria-controls="batchTab"      onclick="switchTab('batch')">Batch Search</button>
+    <button class="tab active"         role="tab" aria-selected="true"  aria-controls="creditTab"     onclick="switchTab('credit')">Private Credit Analysis</button>
+    <button class="tab retired" hidden role="tab" aria-selected="false" aria-controls="watchlistTab"  onclick="switchTab('watchlist')">Watchlist</button>
+    <button class="tab retired" hidden role="tab" aria-selected="false" aria-controls="xrayTab"       onclick="switchTab('xray')">Fund X-Ray</button>
+  </div>
+
+  <!-- Where the retired v1 tabs went (P6b W5) -->
+  <div id="movedNotice" class="moved-notice" role="note">
+    <strong>Everything but Private Credit has moved to the <a href="/">analyst workspace</a>.</strong>
+    Single Security → search any company with <a href="/">⌘K</a> ·
+    Market &amp; What's New → <a href="/">Market</a> and <a href="/activity">Activity</a> ·
+    Firms → <a href="/firms">Firms</a> ·
+    Batch Search → <a href="/compare">Compare</a> ·
+    Watchlist → <a href="/tracked">Tracked &amp; Watchlist</a> (it imports this browser's v1 watchlist) ·
+    Fund X-Ray → any fund's page (search its name).
   </div>
 
   <!-- Single tab -->
-  <div id="singleTab" class="tab-content active" role="tabpanel">
+  <div id="singleTab" class="tab-content" role="tabpanel">
     <div class="search-row">
       <div class="input-group">
         <label for="securityInput">Security Ticker or Name</label>
@@ -560,7 +581,7 @@
         <div id="searchSuggest" class="suggest" role="listbox"></div>
       </div>
       <div class="input-group narrow">
-        <label for="filingLimit">Max Filings</label>
+        <label for="filingLimit" title="Private companies answer from every stored filing; this limit applies only to live EDGAR searches (listed companies, debt, unknown names)">Live EDGAR filings</label>
         <select id="filingLimit">
           <option value="25">25 — Faster</option>
           <option value="50" selected>50 — Balanced</option>
@@ -568,7 +589,7 @@
           <option value="250">250 — Exhaustive (slow on first run)</option>
         </select>
       </div>
-      <button class="btn btn-primary" id="searchBtn" onclick="searchNPORT()">Search NPORT Filings</button>
+      <button class="btn btn-primary" id="searchBtn" onclick="searchNPORT()">Search</button>
       <button class="btn btn-secondary" onclick="quickAddToWatchlist('securityInput')" title="Save this issuer to your watchlist for one-click re-runs later">+ Watchlist</button>
     </div>
 
@@ -598,6 +619,44 @@
   </div>
 
   <!-- Batch tab -->
+  <div id="marketTab" class="tab-content" role="tabpanel">
+    <div class="panel-block">
+      <h2>Private companies held by funds</h2>
+      <div class="search-row">
+        <div class="input-group narrow"><label for="marketDate">As of</label><input type="date" id="marketDate"></div>
+        <label class="check"><input type="checkbox" id="marketTracked"> Tracked companies only</label>
+        <button class="btn btn-primary" onclick="loadMarket()">Update</button>
+      </div>
+    </div>
+    <div id="marketContainer"></div>
+    <div class="panel-block">
+      <h2>Tracked companies</h2>
+      <div class="hint">The tracked list: holders and value now and a year earlier, the 12-month change in each fund's own split-adjusted per-share mark (median across funds), the spread of the most-held class's marks at its newest date, and funds carrying a stale mark.</div>
+    </div>
+    <div id="trackedContainer"></div>
+    <div class="panel-block">
+      <h2>What's new</h2>
+      <div class="hint">Position changes and mark moves in the N-PORT filings made since a date: first reported, added, reduced, no longer reported, reported at $0.</div>
+      <div class="search-row">
+        <div class="input-group narrow"><label for="feedSince">Filed since</label><input type="date" id="feedSince"></div>
+        <label class="check"><input type="checkbox" id="feedAll"> All reviewed private companies (not only tracked)</label>
+        <button class="btn btn-primary" onclick="loadFeed()">Update</button>
+      </div>
+    </div>
+    <div id="feedContainer"></div>
+  </div>
+
+  <div id="firmsTab" class="tab-content" role="tabpanel">
+    <div class="panel-block">
+      <h2>Firms</h2>
+      <div class="search-row">
+        <div class="input-group"><label for="firmQuery">Firm name</label><input type="text" id="firmQuery" placeholder="e.g. Fidelity, Capital Group, T. Rowe" onkeydown="if (event.key === 'Enter') loadFirms()"></div>
+        <button class="btn btn-primary" onclick="loadFirms()">Search</button>
+      </div>
+    </div>
+    <div id="firmsContainer"></div>
+  </div>
+
   <div id="batchTab" class="tab-content" role="tabpanel">
     <div class="search-row" style="align-items: flex-start;">
       <div class="input-group">
@@ -607,7 +666,7 @@
       </div>
       <div style="display:flex; flex-direction:column; gap:10px;">
         <div class="input-group narrow">
-          <label for="batchFilingLimit">Max Filings Each</label>
+          <label for="batchFilingLimit" title="Applies only to names answered live from EDGAR">Live EDGAR filings each</label>
           <select id="batchFilingLimit">
             <option value="25" selected>25 — Faster</option>
             <option value="50">50 — Balanced</option>
@@ -629,7 +688,7 @@
   </div>
 
   <!-- Private Credit tab -->
-  <div id="creditTab" class="tab-content" role="tabpanel">
+  <div id="creditTab" class="tab-content active" role="tabpanel">
     <div class="search-row">
       <div class="input-group">
         <label for="creditIssuerInput">Issuer Name</label>
@@ -692,7 +751,7 @@
       <button class="btn btn-primary" id="xrayBtn" onclick="searchFundXray()">Search Fund</button>
     </div>
     <div class="alert alert-info" style="margin-top:4px; margin-bottom:0;">
-      Opens a fund's own NPORT-P filings from the warehouse (every filing since 2019Q4; an amendment replaces the filing it amends) and identifies its private EQUITY interests — common/preferred stock, warrants, and indirect/SPV vehicles — in companies whose status is private in the reviewed company list, whatever fair-value level the filer used. Names not reviewed yet are labeled "unreviewed"; bonds and loans appear only in the capital structure. v1's Level-3 figure is shown beside each filing for comparison. If the warehouse is unavailable, the fund is looked up live on EDGAR with v1's rules.
+      Opens a fund's own NPORT-P filings from the warehouse (every filing since 2019Q4; an amendment replaces the filing it amends) and identifies its private EQUITY interests — common/preferred stock, warrants, and indirect/SPV vehicles — in companies whose status is private in the reviewed company list, whatever fair-value level the filer used. Names not reviewed yet are labeled "unreviewed"; bonds and loans appear only in the capital structure. The older fair-value Level-3 figure is shown beside each filing for comparison. If the warehouse is unavailable, the fund is looked up live on EDGAR with the Level-3 rule.
     </div>
 
     <div class="date-filter-panel" id="xraySelectorPanel" style="display:none;">
@@ -740,7 +799,7 @@
 
     <div class="search-row" style="margin-top: 8px;">
       <div class="input-group narrow">
-        <label for="watchlistFilingLimit">Max Filings Each</label>
+        <label for="watchlistFilingLimit" title="Applies only to names answered live from EDGAR">Live EDGAR filings each</label>
         <select id="watchlistFilingLimit">
           <option value="25" selected>25 — Faster</option>
           <option value="50">50 — Balanced</option>
@@ -774,5 +833,6 @@
   <script src="/peer.js"></script>
   <script src="/fund-groups.js"></script>
   <script src="/app.js"></script>
+  <script src="/views.js"></script>
 </body>
 </html>

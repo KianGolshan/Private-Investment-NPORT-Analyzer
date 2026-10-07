@@ -19,7 +19,7 @@ const { importAliases } = require('../lib/entities/review');
 const { resolveCompanies } = require('../lib/entities/resolve');
 const { rebuildEntities } = require('../lib/entities/entities');
 const { identityUpkeep } = require('../lib/entities/report');
-const { claimRun } = require('../lib/warehouse/refresh');
+const { claimRun, STALE_CURATION_MS } = require('../lib/warehouse/refresh');
 const { makeCompany } = require('../lib/entities/make-company');
 const { adminRouter, isLocalRequest, runMakeCompanyJob } = require('../lib/api/admin');
 const company = require('../lib/services/company');
@@ -90,7 +90,8 @@ test('make this a company: Verily Life Sciences becomes a company with the next 
   );
   // The name is a company now: search finds it as one, and it is no longer unreviewed.
   assert.equal(search(db, 'Verily Life Sciences')[0].type, 'company');
-  assert.equal(company.findUnreviewed(db, 'VERILY HEALTH').active, false);
+  // Its old unreviewed key now leads to the company (links and watchlists keep working).
+  assert.deepEqual(company.findUnreviewed(db, 'VERILY HEALTH').redirect, { kind: 'company', id: next });
   // The run is recorded under the lock as a curation, finished ok.
   assert.deepEqual(db.prepare('SELECT kind, status FROM refresh_runs WHERE id = ?').get(r.runId), {
     kind: 'curation',
@@ -140,6 +141,8 @@ test('make this a company: a failing import restores the review files and fails 
   );
   const run = db.prepare("SELECT status FROM refresh_runs WHERE kind = 'curation' ORDER BY id DESC").get();
   assert.equal(run.status, 'failed');
+  // The warehouse went back to the files: no company holds the name's rows.
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM companies WHERE name = 'Verily Life Sciences'").get().n, 0);
   assert.doesNotThrow(() => claimRun(db), 'the lock is released');
 });
 
@@ -161,8 +164,14 @@ test('admin route: refused without the flag, from a non-local or proxied address
     .send(body)
     .expect(403);
   assert.equal(ran, 0);
-  assert.equal(isLocalRequest({ headers: {}, socket: { remoteAddress: '10.0.0.5' } }), false);
-  assert.equal(isLocalRequest({ headers: {}, socket: { remoteAddress: '::1' } }), true);
+  const local = { host: 'localhost:3000' };
+  assert.equal(isLocalRequest({ headers: local, socket: { remoteAddress: '10.0.0.5' } }), false);
+  assert.equal(isLocalRequest({ headers: local, socket: { remoteAddress: '::1' } }), true);
+  // DNS rebinding: a page on another site re-pointed at 127.0.0.1 still sends its own Host.
+  assert.equal(
+    isLocalRequest({ headers: { host: 'evil.example:3000' }, socket: { remoteAddress: '127.0.0.1' } }),
+    false
+  );
   const ok = await request(mount(true)).post('/api/admin/companies').set('X-Vantage-Admin', '1').send(body).expect(201);
   assert.equal(ok.body.company.id, 900);
   assert.equal(ran, 1);
@@ -242,4 +251,14 @@ test('the page: a local admin sees "Make this a company" on an unreviewed name, 
   });
   await new Promise(r => plain.window.setTimeout(r, 150));
   assert.equal(plain.document.getElementById('makeCompanyBtn'), null);
+});
+
+test('lock: a curation job killed at its 10-minute timeout stops blocking after 15 minutes, a refresh after 2 hours', () => {
+  const db = reviewedWarehouse();
+  const t0 = new Date('2026-10-01T00:00:00Z');
+  claimRun(db, t0, 'curation');
+  assert.throws(() => claimRun(db, new Date(t0.getTime() + STALE_CURATION_MS - 1000)), /already running/);
+  const next = claimRun(db, new Date(t0.getTime() + STALE_CURATION_MS + 1000));
+  assert.throws(() => claimRun(db, new Date(t0.getTime() + STALE_CURATION_MS + 60 * 60 * 1000)), /already running/);
+  db.prepare("UPDATE refresh_runs SET status = 'ok' WHERE id = ?").run(next);
 });

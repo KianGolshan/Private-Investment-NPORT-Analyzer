@@ -172,3 +172,21 @@ test('fund page exports: v1 X-Ray columns plus mark date, accession, source and 
   assert.equal(cmp[1][cmp[1].length - 2], '0001193125-26-182055');
   assert.equal(cmp[1][cmp[1].length - 1], 'warehouse');
 });
+
+test('v1 CSV: text a spreadsheet would run as a formula opens as text; numbers stay as filed (F09)', async () => {
+  const { window } = await loadApp({ fetchImpl: backend(), exportLibs: true });
+  const cells = ['=HYPERLINK("x")', '+1+1', '-2+3', '@SUM(A1)', 'Stripe, Inc.', '-12.5', '-1,234', 1.5, null];
+  assert.deepEqual(
+    cells.map(c => window.csvText(c)),
+    ['\'=HYPERLINK("x")', "'+1+1", "'-2+3", "'@SUM(A1)", 'Stripe, Inc.', '-12.5', '-1,234', '1.5', '']
+  );
+});
+
+test('v1: a partial live answer names what failed; a complete one adds nothing (F13)', async () => {
+  const { window } = await loadApp({ fetchImpl: backend(), exportLibs: true });
+  assert.equal(window.partialNote({ filings: [] }), '');
+  assert.match(
+    window.partialNote({ partial: true, failedSources: [{ source: 'Ares Capital filing history', error: 'timeout' }] }),
+    /Incomplete: 1 SEC source\(s\) failed \(Ares Capital filing history\); search again to retry\./
+  );
+});

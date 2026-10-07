@@ -83,6 +83,12 @@ capital_structure_rows(accession, row_key, issuer_key, …holdings columns)  -- 
 fund_names(fund_key, cik, series_id, series_name, registrant, first/last_report_date, last_accession, filings)
 fund_search (FTS5 words: every series and registrant name a fund filed under)  -- P5b
 -- refresh_runs.kind: refresh | curation (the admin job takes the refresh lock, P5b)
+position_facts(fund_key, company_id, accession, report_date, filing_date, next_report_date, prev_accession,
+               prev_report_date, event, change, instrument_key, rekeyed_from, merged_keys, class_label, kind, unit,
+               balance, prev_balance, value, prev_value, price, prev_price, split, position_effect, mark_effect,
+               other_effect, pct_nav, …)   -- P6b W1 (0019): one row per activity leg of a fund in a private company;
+                                           -- as of D = SUM(value) where report_date <= D < next_report_date, within
+                                           -- 123 days; derived, rebuilt by every refresh and curation run
 -- views
 canonical_filings        -- one per (fund_key, report_date); latest filing_date wins
 fund_filing_timeline     -- all canonical filings per fund
@@ -133,24 +139,45 @@ Fund calendars are staggered, so "as of D" mixes mark dates. The UI always shows
 
 ## Refresh lifecycle
 
-- **Nightly** (`npm run refresh`, `lib/warehouse/refresh.js`):
-  1. Claim the run: refuse to start while another refresh is `running` (under 2 h old); close older
-     `running` rows as abandoned.
-  2. List the SEC's published bulk quarters and load any not yet loaded, plus any loaded quarter the SEC now
-     serves at a different size (re-posted, trap 41; one HEAD per quarter).
+- **Every write is a job** (`lib/warehouse/job.js`, ADR 0009). The refresh, ingests, N-CEN, the review import,
+  "make this a company", backfills and the entity report all:
+  1. take the job lock (`warehouse.db.lock` with an owner token, heartbeat 30 s; taken over when its process is
+     gone, or after 10 min without a heartbeat from another host; checked again before publishing);
+  2. copy the published generation to a candidate (SQLite backup API);
+  3. run, then rebuild every derived table (`refresh.rebuildDerived`);
+  4. validate (integrity, schema, row counts against the published generation, derived tables present);
+  5. publish `generations/warehouse-<id>.db` (read-only on disk; the id from `generations/SEQUENCE`, never
+     reused) by swapping the `warehouse.db` symlink: the commit point. A job given the reviewed files works on a
+     staged copy, which is stored in the generation (`curation_snapshot`) and written back only after the publish.
+
+  A failure publishes nothing. `warehouse.db.job.json` holds the last job's state, which `/api/freshness` reports
+  as `job`. `npm run warehouse` lists the generations; `-- --rollback` republishes the previous contents as a new generation (`--to <id>` for any kept one), and
+  `-- --sync-curation` writes the published curation snapshot back to `data/review`.
+
+- **Nightly** (`npm run refresh`, `scripts/refresh.js` → `runJob('refresh', refreshIngest)`):
+  1. Run as a job (above). The job lock replaces the old `refresh_runs` claim; a `refresh_runs` row still records
+     the run in the generation it builds.
+  2. List the SEC's published bulk quarters and load any not yet loaded, plus any loaded quarter the SEC has
+     re-posted: a different size, or a new `Last-Modified` since the last check (trap 41; one HEAD per quarter,
+     recorded in `bulk_source_checks`; the SEC sends no ETag). A quarter's archive must have its required
+     columns, no empty tables, no rows outside its filings, and at least 90% of the last load's filings (F12).
      - Loading a quarter replaces the catch-up rows for every filing it covers (`INSERT OR REPLACE` on
        the accession cascades to holdings).
   3. Catch up on every NPORT-P / NPORT-P/A filed on or after the newest bulk filing date.
      - Filings already stored are skipped.
      - Earlier failures in `ingest_errors` are retried.
-  4. Entity upkeep (fund advisers, company resolution), then the identity graph and the review queue
+  4. Re-derive stored OTHER rows' instrument type under today's rule (trap 45, `lib/warehouse/reclassify.js`;
+     a no-op unless the rule changed). Entity upkeep (fund advisers, company resolution), then the identity graph and the review queue
      (`reports/entities/unresolved.csv`, `conflicts.csv`; P4.5), then unreviewed entities, their row tags,
      `company_stats` and the search index (`lib/entities/entities.js`, P5a), then the fund list and fund-name
-     index (`lib/warehouse/fund-names.js`, P5b). Both ingest paths also write `filing_totals` and the
+     index (`lib/warehouse/fund-names.js`, P5b), then the position facts (`lib/warehouse/position-facts.js`, P6b W1;
+     2.6 s, 68k legs, ~31 MB; logged to `ingest_log` as kind `position-facts`; the review import rebuilds them too).
+     Both ingest paths also write `filing_totals` and the
      capital-structure rows for every filing they load.
-  5. Write a `refresh_runs` row. A catch-up filing that predates bulk coverage but isn't in bulk (expected 0)
-     fails the run, as do catch-up and N-CEN failures.
-  6. Exit non-zero on any failure, so the scheduler can alert.
+  5. Finish the `refresh_runs` row and publish. A catch-up filing that predates bulk coverage but isn't in bulk
+     (expected 0), or catch-up and N-CEN failures, make the generation `partial` (published, labeled; the filings
+     retry next run).
+  6. Exit non-zero on any failure or partial run, so the scheduler can alert.
 - Catch-up safeguards, each added after a real failure (DATA-QUALITY traps 17–19):
   - 60 s timeout, with network errors retried twice.
   - Truncated `primary_doc.xml` falls back to the full submission `.txt`.
@@ -178,15 +205,15 @@ publishes the day's index overnight, and filings cluster about 60 days after eac
 ```
 
 Linux/cron equivalent: `15 6 * * * cd /path/to/repo && npm run --silent refresh >> logs/refresh.log 2>&1`.
-Check health with `sqlite3 warehouse.db "select * from refresh_runs order by id desc limit 5"` and
-`select * from ingest_errors`.
+Check health with `npm run warehouse` (generations and the last job), `cat warehouse.db.jobs.log`,
+`sqlite3 warehouse.db "select * from generation_meta order by id desc limit 5"` and `select * from ingest_errors`.
 
 ## Deployment (planned, Phase 9)
 
 - **Shape:** one always-on container or VM with a persistent volume.
   - The Express app serves reads from `warehouse.db` (after P5, visitors never call the SEC).
   - A scheduled `npm run refresh` on the same machine writes to it.
-  - WAL mode keeps reads non-blocking during refresh.
+  - Jobs build a candidate and publish a new generation file (ADR 0009); readers never see a half-built one.
 - **Around it:**
   - Litestream replication to object storage, for backup and restore-on-boot.
   - A dead-man's-switch health check on the nightly refresh.
@@ -212,11 +239,13 @@ Check health with `sqlite3 warehouse.db "select * from refresh_runs order by id 
 - First catch-up: ≤90 min.
 - Nightly: ≤5 min.
 - API and MCP p95: <200 ms.
-- Warehouse size: ≤600 MB (raised from 500 MB on 2026-09-30; measured 364 MB at P1, 513 MB after P4.5, 542.7 MB after P5b).
+- Warehouse size: ≤1 GB (raised from 600 MB on 2026-10-01 by Claude under the user's "fix everything"; growth is
+  25–30 MB per bulk quarter and the only prunable tables were 9–34 MB; measured 364 MB at P1, 542.7 MB after P5b,
+  544.0 MB on 2026-10-01, 574.7 MB with the P6b W1 position facts).
 
 ## Module map
 
-Built so far (P1–P4.5):
+Built in P1–P4.5 (later additions follow below, by wave):
 
 ```
 lib/edgar.js                       fetchWithRetry, pace (moved from server.js; shared by server and jobs)
@@ -275,13 +304,165 @@ lib/warehouse/fund-names.js        fund list + word index, rebuilt by refresh an
 lib/services/fund.js               fund search, canonical filings, X-Ray / compare / returns on the warehouse
 lib/analytics/peer.js              velocity, outliers, ledger, leaderboard (UMD; the browser loads /peer.js)
 lib/entities/review-import.js      the review import (npm run review:aliases and the admin job)
-lib/entities/make-company.js       "make this a company": review files + import under the refresh lock
+lib/entities/make-company.js       "make this a company": review files + import, run as a warehouse job
+lib/warehouse/job.js               runJob: the one write path (lock, candidate, derived rebuild, validate, publish)
+lib/warehouse/job-state.js         job file paths and the last job's state (read by /api/freshness)
 lib/api/admin.js                   POST /api/admin/companies (VANTAGE_ADMIN=1, local only; runs scripts/make-company.js)
 ```
 
-Planned:
+Built in P6 (2026-10-01):
 
 ```
-lib/services/{manager,marks,feed}.js   P6: firm pages, mark series, what's-new feed
-mcp-server.js             P7 (after P5a)
+lib/warehouse/reclassify.js        re-derives stored OTHER rows' instrument type each refresh (trap 45)
+lib/analytics/asof.js              + exposureSeries (as-of at many dates, one read), monthEnds, keepCanonical,
+                                   privateRowsOf
+lib/analytics/activity.js          position changes per fund filing: companyActivity (a company in every fund),
+                                   fundChanges (a fund, a firm's funds, or every filing made since a date)
+lib/services/errors.js             ServiceError and shared input checks
+lib/services/memo.js               whole-warehouse answers kept until the next refresh run
+lib/services/market.js             top private companies as of D, by country, the what's-new feed
+lib/services/firm.js               firms (N-CEN adviser, registrant fallback), firm book, firm marks, firm changes
+lib/services/marks.js              share classes as of D, per-class mark history, stale marks
+lib/services/dashboard.js          the tracked-list dashboard
+public/views.js                    company Activity / Trend / Share classes; Market & What's New; Firms
+```
+
+Built in P6b W0 (2026-10-01), the analyst workspace (`web/`, Vite + Preact + TypeScript, ESM; its own
+`package.json`; built into `web/dist`, which `server.js` serves at `/` and the app routes, with v1 at `/legacy`):
+
+```
+web/src/app.tsx                    shell: sidebar, top bar (⌘K, freshness, theme, density), mobile nav, routes (preact-iso)
+web/src/api/{client,types}.ts      one fetch path: cache per refresh id, abort on change (useApi); response types
+web/src/scope/{scope.ts,ScopeBar}  the URL-only scope (asof | from..to, firm, fund, class, kind); Back/Forward work
+web/src/ui/DataTable.tsx           sort, filter, group, totals, row virtualization (TanStack virtual-core), CSV/XLSX
+                                   from the same column definitions
+web/src/ui/Chart.tsx, echarts.ts   ECharts (modular, lazy chunk), colors from the CSS tokens (theme.ts), redraws on theme
+web/src/ui/CommandPalette.tsx      one search: companies and unreviewed names (/api/search), firms, funds; ranked by match
+web/src/ui/ChangesTable.tsx        position changes worded as filed (first reported, added, reduced, no longer reported…)
+web/src/lib/{format,export,prefs}  formatting (one copy), exports (SheetJS lazy), theme/density preferences
+web/src/pages/                     Market, Company (overview, holders, changes, marks), Firms, Firm, Fund, Activity
+web/src/styles/{tokens,base}.css   design tokens (light, dark, compact) and shared components
+```
+
+Built in P6b W1 (2026-10-01), the analysis data layer:
+
+```
+lib/analytics/activity.js          + walkPosition (the one per-fund walk behind companyActivity and the facts),
+                                   movedWithinClass (trap 52), rekeyed across labels (trap 51)
+lib/warehouse/position-facts.js    builds position_facts from the walk (factsOf: also any one subject's rows on demand)
+lib/services/scope.js              firm / fund / class / kind filters: one predicate for rows, one for fact legs
+lib/services/analysis.js           bridge, pivot (firm|fund|company|class × month|quarter|year), timeline (firm|fund),
+                                   positionHistory; private companies from the table, other subjects and class/kind
+                                   filters by walking the subject's rows (same legs; a test holds them equal)
+lib/services/search.js             + unifiedSearch: companies, unreviewed names, firms, funds, share classes
+web/src/ui/CommandPalette.tsx      one call to the unified search
+```
+
+Built in P6b W2 (2026-10-01), the company workbench (`web/src/pages/company/`, replacing `pages/Company.tsx`):
+
+```
+index.tsx           header (status, brands, holders, value + sparkline, firms, latest mark by class), tabs, drawer
+Overview.tsx        value by firm | fund | class at each month or quarter end (pivot), funds holding, brush = range
+Holders.tsx         holders as of D within the scope, each fund's change since its prior filing (/legs), grouping
+Positions.tsx       fund × mark-month heatmap: value, shares, $/share, Δ value; a cell opens the drawer
+Changes.tsx         the bridge (waterfall + steps), position vs mark effect by quarter, the ledger
+Marks.tsx           per-firm marks over the band, spreads, gaps within a filing, stale marks, mark leadership
+Filings.tsx         the stored rows behind every number, as filed
+PositionDrawer.tsx  ?pos=<fund>: one fund's legs at every filing; split-adjusted per-share line
+shared.tsx          filter pickers from the unfiltered answer, kind badge, the view props
+```
+
+Services added: `analysis.legsAt`, `company.filingRows`, `marks.markLeadership`. Every tab sends the scope to the
+server (`scope.scopeParams`); nothing filters on the client.
+
+Built in P6b W3 (2026-10-01), firm and fund pages (`web/src/pages/firm/`, `pages/fund/`, shared `pages/book/`,
+replacing `pages/Firm.tsx` and `pages/Fund.tsx`):
+
+```
+book/BookOverview.tsx   private book by company at each period end (pivot), companies and funds holding, the bridge
+                        for the range and position vs mark effect by quarter, a by-company table
+book/Timeline.tsx       investment timeline: a bar per company while held, event marks (/api/analysis/timeline)
+book/MarksVsOthers.tsx  each class against other funds' median at the same mark date (/api/analysis/marks)
+firm/index.tsx          Overview · Timeline · Book (by company, by fund, company × fund matrix) · Marks · Changes
+firm/Changes.tsx        the paged ledger (500 per page, type filter; counts and totals over all)
+fund/index.tsx          Overview · X-Ray · Compare · Returns · Timeline · Marks · Changes · Filings
+fund/XRay.tsx           Fund X-Ray from v1: private book at any filing, compare (prior / a year earlier), returns
+ui/BridgeView.tsx       the bridge waterfall, steps and period effects (company, firm and fund pages)
+```
+
+Services added: `analysis.marksVsOthers` (+ `marksByDate`, warmed at start); `firm.firmChanges` paged.
+
+Built in P6b W4 (2026-10-05), the cross-cutting pages:
+
+```
+Explore.tsx             /explore: pivot rows (firm, fund, company, class) × month | quarter | year, every metric,
+                        heatmap + table with totals; any cell drills to its legs (?dk=<row key or _>&dp=<period>)
+market/Movers.tsx       Market ?view=movers: largest mark effects and net position flows over a range
+market/NewlyReported.tsx  Market ?view=new: companies whose first stored holding falls in the range
+Activity.tsx            the feed by filing date with the scope's firm and fund filters (FirmPicker)
+Tracked.tsx             /tracked: the viewer's watchlist (lib/watchlist.ts, localStorage; v1 import) and the
+                        tracked-company dashboard
+Compare.tsx             /compare: 2–5 companies, firms, funds or classes; value per period, effects, median marks
+scope/FirmPicker.tsx    adds a firm to the scope; scope.useSetParams sets several URL params in one step
+ui/bits.tsx WatchButton ☆ Watch on company, firm and fund page heads
+```
+
+Services added (`lib/services/analysis.js`): `drill` (the legs behind one pivot cell; they sum to it), `movers`,
+`newlyReported`, `watchlist`, `compare`; `pivot` takes `keys` and `tracked`; `market.feed` takes `funds`.
+
+Added in P6c and W5 (2026-10-05/06):
+
+```
+lib/warehouse/job.js, job-state.js   runJob, the one write path; generations, lock, validation (ADR 0009)
+lib/services/classes.js fundMarks    one mark observation per fund x class x date (F06)
+web/src/api/client.ts   generation revalidation (focus, visibility, 5 min); views refetch on a new generation
+web/src/ui/useDialog.ts focus trap, Escape, focus back to the trigger (palette, position drawer)
+web/src/ui/Basis.tsx    how cross-company views read history (today's curation and advisers); Basis export column
+web/src/pages/company/markLines.ts   per-class, per-lineage split-adjusted marks for the position drawer
+web/src/lib/export.ts csvText        spreadsheet-formula-safe CSV text; format.ts escapeHtml for chart tooltips
+web/e2e/                Playwright suite (app.spec.ts, a11y.spec.ts with axe) on the golden warehouse
+test/oracle.test.js     raw-EDGAR oracle (test/fixtures/oracle, scripts/verify-edgar.js rawHoldings)
+public/ (v1, /legacy)   only Private Credit Analysis is shown; the retired tabs link to their replacements
+```
+
+ECharts loads after the page's load event, when the browser is idle (`ui/Chart.tsx`): the text and tables paint first.
+
+Planned: `mcp-server.js` (P7) over the same services.
+
+## Warehouse API (read-only, `lib/api/warehouse.js`)
+
+Every answer carries `source`, `refreshId` (the published generation it was read from, ADR 0009) and mark dates;
+JSON over 2 KB is gzipped; the ETag is generation id + build. `/api/freshness` adds `generation` (published at,
+curation and code revisions) and `job` (the last job's state). A retired firm id answers 301 to its successor or 410
+(`manager_ids.csv`). A listed company answers its views only with `?stored=1`, labeled (trap 49).
+
+```
+/api/freshness                                   bulk quarter, newest filing and report dates, refresh time
+/api/search?q=[&kinds=company,entity,firm,fund,class]   ranked matches with match reason; `strong` on the one that
+                                                 may open; with kinds, one list over all of them (P6b W1)
+/api/companies/:id[/exposure|/history|/activity|/trend|/classes|/marks|/stale|/feed.xml]
+/api/companies/:id/bridge?from=&to=              start, first reported, added, reduced, no longer reported, mark,
+                                                 value only, started / stopped filing, end; reconciled to the cent
+/api/companies/:id/positions/:fundKey[?instrument=]   one fund's legs at every filing
+/api/companies/:id/legs?date=                    each fund's legs in force at D (its change since its prior filing)
+/api/companies/:id/rows?from=&to=                the stored rows as filed (canonical filings; at most 20,000)
+/api/companies/:id/leadership[?instrument=]      per class: who first filed each new per-share level, lags
+  every company view takes ?firm=&fund=&class=&kind= (lists: repeated or comma-separated) and echoes `scope`
+/api/entities/:issuerKey[/…same views]           unreviewed names; a resolved key answers 301
+/api/market/top?date=&tracked=1                  private companies as of D
+/api/market/countries?date=   /api/market/tracked?date=   /api/feed?since=&until=&all=1
+/api/firms?date=&q=   /api/firms/:id?date=   /api/firms/:id/marks/:companyId
+/api/firms/:id/changes?since=&until=&types=&company=&limit=&offset=   paged (default 500, at most 2,000)
+/api/funds?q=   /api/funds/:key[/xray|/compare|/returns|/changes]
+/api/analysis/bridge?from=&to=[&company=|&entity=][&firm=&fund=&class=&kind=]   (class, kind need a subject)
+/api/analysis/pivot?rows=firm|fund|company|class&period=month|quarter|year&from=&to=&limit=[&company=…&firm=…]
+/api/analysis/timeline?firm=|fund=               per company: spans held, value now, events by mark date
+/api/analysis/marks?firm=|fund=[&date=]          each class held vs other funds' median at the same mark date
+/api/analysis/drill?rows=&key=&metric=&from=&to=[&tracked=1&firm=&fund=&company=]   the legs behind one pivot
+                                                 cell (no key = the total row), grouped by filing; 200 largest
+/api/analysis/compare?rows=company|firm|fund|class&key=…&key=…&period=&from=&to=   2 to 5 keys (class: id:label)
+/api/market/movers?from=&to=&tracked=1&limit=    mark effect and net position flow per company, top each way
+/api/market/new?from=&to=                        companies first reported (first stored holding) in the window
+/api/watchlist?company=&firm=&fund=&date=        each item now and a year earlier, the year's effects (≤100 each)
+  /api/feed takes ?firm=&fund= (echoed as `filters`); /api/analysis/pivot takes ?tracked=1
 ```

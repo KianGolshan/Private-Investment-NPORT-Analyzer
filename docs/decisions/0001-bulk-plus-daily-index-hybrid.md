@@ -30,4 +30,9 @@ The live app finds filings through EDGAR full-text search and parses only the 10
 
 - Every question is answered from one local store in milliseconds. The SEC rate limit only affects refresh
   jobs.
-- The warehouse always trails EDGAR by at most one nightly run.
+- The warehouse trails EDGAR by the index's own lag plus one nightly run. The SEC updates the full index
+  nightly and rebuilds the quarterly indexes weekly, with corrections and deletions, so a filing made today is
+  not listed until the index catches up (amended P6d, staff full-stack review R12).
+- The catch-up finds missing accessions. A filing that fails is retried on every run (up to 5 attempts) even
+  after the window moves past it. A same-accession correction or an EDGAR deletion is not reconciled; a bulk
+  re-post (trap 41) is. Periodic reconciliation is a P8 item.

@@ -285,6 +285,21 @@ test('static frontend: index.html and app.js are served; unknown static paths 40
   assert.equal((await request(app).get('/nope.js')).status, 404);
 });
 
+test('the workspace (web/dist) serves at / and its routes when built; v1 stays at /legacy', async () => {
+  const fs2 = require('fs');
+  const built = fs2.existsSync(path.join(__dirname, '..', 'web', 'dist', 'index.html'));
+  const legacy = await request(app).get('/legacy');
+  assert.equal(legacy.status, 200);
+  assert.match(legacy.text, /src="\/app.js"/, 'v1 page at /legacy');
+  for (const p of ['/', '/company/5-stripe', '/firm/9', '/firms', '/activity', '/fund/S000009228']) {
+    const res = await request(app).get(p);
+    assert.equal(res.status, 200, p);
+    assert.match(res.text, /<title>Vantage/i, p);
+    if (built) assert.match(res.text, /type="module"/, `${p} is the workspace`);
+  }
+  assert.equal((await request(app).get('/assets/nope.js')).status, 404);
+});
+
 test('static frontend: no source maps, env files, or server code are exposed under /', async () => {
   for (const p of ['/.env', '/server.js', '/parsers.js', '/cache.db', '/package.json']) {
     assert.equal((await request(app).get(p)).status, 404, p);
@@ -514,9 +529,15 @@ test('upstream HTTP-client errors reach the client as a status summary, not inte
 });
 
 test('security headers: CSP pins script origins, framing and MIME sniffing are blocked', async () => {
+  // v1's page alone allows inline handlers; everything else (the workspace, the API) allows scripts from self only (F01)
+  const legacy = (await request(app).get('/legacy')).headers['content-security-policy'] || '';
+  assert.match(legacy, /script-src 'self' 'unsafe-inline' https:\/\/cdn\.jsdelivr\.net https:\/\/cdn\.sheetjs\.com/);
+  const api = (await request(app).get('/peer.js')).headers['content-security-policy'] || '';
+  assert.match(api, /script-src 'self';/);
   const res = await request(app).get('/');
   const csp = res.headers['content-security-policy'] || '';
-  assert.match(csp, /script-src 'self' 'unsafe-inline' https:\/\/cdn\.jsdelivr\.net https:\/\/cdn\.sheetjs\.com/);
+  const built = fs.existsSync(path.join(__dirname, '..', 'web', 'dist', 'index.html'));
+  assert.match(csp, built ? /script-src 'self';/ : /script-src 'self' 'unsafe-inline'/);
   assert.match(csp, /connect-src 'self'/);
   assert.match(csp, /frame-ancestors 'none'/);
   assert.equal(res.headers['x-content-type-options'], 'nosniff');
