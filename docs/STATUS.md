@@ -1,8 +1,8 @@
 # Vantage v2 Status
 
-**Phase:** **P6d** (remediation of the 2026-10-06 staff full-stack review, R01–R20). W1 and W2 are signed off.
-**W3 (operations and assurance) is built and awaiting sign-off**; it is the last P6d wave. P6b and P6c are complete
-and signed off.
+**Phase:** P6b, P6c and **P6d** (remediation of the 2026-10-06 staff full-stack review, R01–R20) are **complete and
+signed off** (W3 on 2026-10-06). **Next: the user chooses** among P7 (MCP server), P8 (operations) and a PR of
+`v2-p6b-workspace` to main.
 Branch `v2-p6b-workspace` (pushed, in sync).
 **Last updated:** 2026-10-06. Earlier results: [archive/STATUS-history.md](archive/STATUS-history.md).
 
@@ -13,7 +13,7 @@ Branch `v2-p6b-workspace` (pushed, in sync).
 - [x] P6 core: analysis views (signed off 2026-10-01; remaining items in ROADMAP §6)
 - [x] P6b: analyst workspace, W0–W5 (signed off 2026-10-01..06; ROADMAP §6b)
 - [x] P6c: review remediation R1–R3 (signed off 2026-10-05; [plan](plans/P6c-review-remediation.md), ADR 0009)
-- [ ] P6d: full-stack review remediation (ROADMAP §6d; W1–W2 signed off, W3 built 2026-10-06, awaiting sign-off)
+- [x] P6d: full-stack review remediation, W1–W3 (signed off 2026-10-06; ROADMAP §6d, ADR 0009 amendment)
 - [ ] P7: MCP server (open; the services exist)
 - [ ] P8: operations hardening (nightly job, backups and restore drill, readiness, alerting, doctor; F10/F11 items)
 - [ ] P9: public deployment (hosting to decide as ADR 0006; capacity envelope, shared SEC budget)
@@ -125,16 +125,19 @@ code. The files are read-only on disk.
 
 ## Open decisions (user)
 
-- **Sign off P6d W3** (calls made, open to overrule):
-  - **Proxy trust:** X-Forwarded-For is trusted in production only on a loopback `HOST` (the default), or as
-    `TRUST_PROXY` says. A public `HOST` with no `TRUST_PROXY` ignores the header and warns at start-up.
-  - **SEC pacing:** never under 100 ms in production; 0 stays allowed for the offline tests.
-  - **Retries:** failed filings are retried up to 5 times, then reported by `npm run warehouse`.
-  - **Exports:** carry a `Source` column (generation and curation digest) beside `Basis`.
-  - **Dev-only advisories:** the 4 high advisories in dev dependencies (nodemon's braces/chokidar chain,
-    source-map-js) are left for a later lockfile pass; CI audits the deployed dependencies only.
-- **After P6d:** P7 (MCP server), P8 (operations) or a PR to main. No PR is open; `v2-phase6` and `v2-p6b-workspace`
-  are pushed.
+- **Next phase:** P7 (MCP server), P8 (operations) or a PR to main. No PR is open. `v2-p6b-workspace` is the only
+  feature branch; it contains `main` and the former `v2-phase6` (deleted 2026-10-06).
+- **P6d calls still open to overrule:**
+  - rollback as a new generation;
+  - no takeover of a live local job;
+  - staged curation with `--sync-curation`;
+  - N-CEN drift fails the load;
+  - empty-section filings are a warning (trap 55);
+  - "reported at $0" kept for a zero+exit position;
+  - proxy trust only on a loopback `HOST` or by `TRUST_PROXY`;
+  - 5 retry attempts;
+  - the export `Source` column;
+  - 4 dev-only advisories (nodemon chain, source-map-js) left for a lockfile pass.
 - **Install the nightly refresh** (launchd entry in ARCHITECTURE §Refresh lifecycle)? Not installed; until then run
   `npm run refresh` at session start. P8's 30-day unattended run cannot start before it.
 - **Calls still open to overrule** (details in the archive's "Decisions as recorded at W5 sign-off"):
@@ -193,16 +196,17 @@ code. The files are read-only on disk.
 
 ## Next session
 
-> Resume Vantage v2 on branch `v2-p6b-workspace` (pushed). Phase **P6d** (2026-10-06 full-stack review remediation,
-> ROADMAP §6d): W1 and W2 are signed off; W3 is built and awaiting sign-off. After the sign-off, ask the user what
-> comes next:
+> Resume Vantage v2 on branch `v2-p6b-workspace` (pushed; the only feature branch). P6b, P6c and P6d are complete and
+> signed off. Ask the user which comes next:
 >
-> - **P7 (MCP server)**: ROADMAP §7.
-> - **P8 (operations)**: ROADMAP §8, now with the review's carried items:
+> - **P7 (MCP server)**: ROADMAP §7; the services exist.
+> - **P8 (operations)**: ROADMAP §8, including the review's carried items:
 >   - off-host backup and a restore drill;
 >   - crash drills at the publication boundary;
 >   - correction and deletion reconciliation;
->   - bench RSS and event-loop lag.
+>   - bench RSS and event-loop lag;
+>   - the intermittent test failures under load;
+>   - the nightly launchd job (only with the user's yes).
 > - **A PR of `v2-p6b-workspace` to main**: only when the user says so.
 >
 > Read CLAUDE.md, this file and docs/ROADMAP.md first. Gates: `npm test`, `npm run lint`, `npm run format:check`,
@@ -210,6 +214,9 @@ code. The files are read-only on disk.
 > `npm run refresh` at session start.
 
 ## Log
+
+- **2026-10-06:** P6d W3 signed off; P6d complete. Git cleaned up: `v2-phase6` deleted (fully contained in
+  `v2-p6b-workspace`), remote refs pruned, stray build artifacts removed.
 
 - **2026-10-06 (P6d W3):** W2 signed off ("continue"). W3 built:
   - R10: proxy-addr 2.0.8 (lockfile only) and a CI step `npm audit --omit=dev --audit-level=high` for root and web;
