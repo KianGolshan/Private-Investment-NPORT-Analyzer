@@ -70,9 +70,11 @@ export function XRay({ fund, name }: Props) {
               label="Private value"
               value={moneyC(d.privateValueUSD)}
               sub={
-                d.privatePctOfNetAssets == null
-                  ? 'share of net assets not reported'
-                  : `${share(d.privatePctOfNetAssets / 100)} of net assets`
+                d.privatePctOfNetAssets != null
+                  ? `${share(d.privatePctOfNetAssets / 100)} of net assets`
+                  : d.privatePctOfHoldingsValue != null
+                    ? `${share(d.privatePctOfHoldingsValue / 100)} of holdings value (net assets not positive)`
+                    : 'share of net assets not reported'
               }
             />
             <Kpi
@@ -174,7 +176,11 @@ export function XRay({ fund, name }: Props) {
           </Card>
           {d.truncated && (
             <div class="notice warn">
-              The filing has {num(d.truncated.rows)} rows; the newest {num(d.truncated.shown)} private rows are shown.
+              Lists are cut to the largest {num(d.truncated.shown)} rows by value: {num(d.privateHoldings.length)} of{' '}
+              {num(d.truncated.privateHoldings)} private rows
+              {d.truncated.notPrivate > d.notPrivate.length &&
+                ` and ${num(d.notPrivate.length)} of ${num(d.truncated.notPrivate)} rows that are not private`}{' '}
+              are shown. The totals above cover every row.
             </div>
           )}
           {d.notPrivate.length > 0 && (

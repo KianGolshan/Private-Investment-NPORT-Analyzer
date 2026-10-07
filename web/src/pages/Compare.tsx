@@ -6,7 +6,7 @@ import type { Compare as Answer, Freshness, UnifiedHit } from '../api/types';
 import { escapeHtml, companyPath, firmPath, fundPath, money, moneyC, moneyDelta, tone } from '../lib/format';
 import { ScopeBar } from '../scope/ScopeBar';
 import { isRange, useScope, useSetParams } from '../scope/scope';
-import { Card, Empty, ErrorBox, Loading, Segmented } from '../ui/bits';
+import { Badge, Card, Empty, ErrorBox, Loading, Segmented } from '../ui/bits';
 import { Chart } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
 import { baseOption, type ChartTheme } from '../ui/theme';
@@ -31,7 +31,15 @@ const addYears = (iso: string, n: number) => {
   d.setUTCFullYear(d.getUTCFullYear() + n);
   return d.toISOString().slice(0, 10);
 };
-const sum = (xs: number[]) => xs.reduce((t, v) => t + v, 0);
+const nameOf = (r: Row) => r.label ?? String(r.key);
+// null when nothing is known (a subject that is not live), never a plausible 0
+const sum = (xs: (number | null)[]) => (xs.some(v => v != null) ? xs.reduce<number>((t, v) => t + (v ?? 0), 0) : null);
+const STATE_LABEL = {
+  unknown: 'not in the warehouse',
+  listed: 'listed: no private book',
+  merged: 'merged',
+  dropped: 'dropped',
+} as const;
 
 function hrefOf(rows: Rows, r: Row): string {
   if (rows === 'firm') return firmPath(Number(r.key));
@@ -80,7 +88,9 @@ export default function Compare() {
         tooltip: { ...b.tooltip, valueFormatter: (v: number) => moneyC(v) },
         xAxis: { type: 'category', data: d?.periods.map(p => p.label) ?? [], ...b.xAxisDefaults },
         yAxis: { type: 'value', ...b.yAxisDefaults, axisLabel: { ...b.yAxisDefaults.axisLabel, formatter: moneyC } },
-        series: (d?.results ?? []).map(r => ({ type: 'line', name: r.label, data: r.value, symbolSize: 5 })),
+        series: (d?.results ?? [])
+          .filter(r => r.status.state === 'live')
+          .map(r => ({ type: 'line', name: nameOf(r), data: r.value, symbolSize: 5 })),
       };
     },
     [d]
@@ -125,7 +135,14 @@ export default function Compare() {
         id: 'name',
         header: KINDS.find(k => k.id === rows)!.one,
         value: r => r.label,
-        render: r => <a href={hrefOf(rows, r)}>{r.label}</a>,
+        render: r =>
+          r.status.state === 'live' ? (
+            <a href={hrefOf(rows, r)}>{r.label}</a>
+          ) : (
+            <span>
+              {r.label ?? String(r.key)} <Badge tone="warn">{STATE_LABEL[r.status.state]}</Badge>
+            </span>
+          ),
         exportAs: [{ header: 'Key', value: r => String(r.key) }],
         wrap: true,
       },
@@ -206,7 +223,7 @@ export default function Compare() {
     { id: 'period', header: 'Period end', value: x => x.p.to },
     ...(d?.results ?? []).map(r => ({
       id: String(r.key),
-      header: String(r.label),
+      header: nameOf(r),
       value: (x: { i: number }) => r.value[x.i],
       num: true,
       render: (x: { i: number }) => moneyC(r.value[x.i]),
@@ -251,7 +268,7 @@ export default function Compare() {
         <Picker
           kind={rows}
           keys={keys}
-          labels={new Map((d?.results ?? []).map(r => [String(r.key), String(r.label)]))}
+          labels={new Map((d?.results ?? []).map(r => [String(r.key), nameOf(r)]))}
           onChange={setKeys}
         />
       </Card>

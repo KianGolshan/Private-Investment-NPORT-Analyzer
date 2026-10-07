@@ -261,6 +261,31 @@ test('tracked dashboard: holders now and a year earlier equal exposureAsOf for e
   assert.ok(stripe.markChange12mPct > 0 && stripe.markChangeFunds > 0);
 });
 
+test('R14: dashboard fund counts are distinct funds, and a past date never reads later filings', () => {
+  const Database = require('better-sqlite3');
+  const { trackedDashboard } = require('../lib/services/dashboard');
+  const { staleMarks } = require('../lib/services/marks');
+  const { companyHistory } = require('../lib/analytics/asof');
+  const D = '2026-03-31';
+  const copy = new Database(db.serialize());
+  const before = trackedDashboard(copy, { date: D });
+  for (const c of before.companies) {
+    const funds = new Set(companyHistory(copy, { companyId: c.companyId }).map(f => f.fundKey));
+    assert.ok(c.markChangeFunds <= funds.size, `${c.name}: counts funds, not fund × class series`);
+    const stale = staleMarks(copy, { companyId: c.companyId }, { asOf: D }).stale;
+    assert.equal(c.staleFunds, new Set(stale.map(x => x.fundKey)).size, c.name);
+  }
+  // later filings arrive: drop everything after D and the past answer is the same
+  const truncated = new Database(db.serialize());
+  truncated.pragma('foreign_keys = ON');
+  truncated.prepare('DELETE FROM filings WHERE report_date > ?').run(D);
+  const cut = trackedDashboard(truncated, { date: D });
+  const pick = r => r.companies.map(c => [c.name, c.staleFunds, c.markChangeFunds, c.funds]);
+  assert.deepEqual(pick(cut), pick(before));
+  copy.close();
+  truncated.close();
+});
+
 test('stale marks: every flagged series really repeats its mark while the class median moved', async () => {
   const id = idOf('Databricks');
   const st = (await api(`/api/companies/${id}/stale?min=2`)).body;

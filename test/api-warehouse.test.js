@@ -57,6 +57,37 @@ test('API goldens: Anthropic A1 72 / $5.93B, A2 117 / $17.26B, A4 knownAsOf 82 /
   assert.equal(fr(await at('date=2026-11-01')), 0); // 124 days: the fund is inactive
 });
 
+test('R13: an impossible calendar date is a 400, not a silent roll-over to the next month', async () => {
+  const id = idOf('Anthropic');
+  for (const d of ['2026-02-31', '2025-02-29', '2026-04-31'])
+    assert.match((await api(`/api/companies/${id}/exposure?date=${d}`).expect(400)).body.error, /ISO date/);
+  await api(`/api/companies/${id}/exposure?date=2024-02-29`).expect(200);
+  await api('/api/market/top?date=2026-02-31').expect(400);
+});
+
+test('R07: a same-date amendment supersedes a disclosed range until it is re-curated', () => {
+  const Database = require('better-sqlite3');
+  const { disclosedExposure } = require('../lib/services/company');
+  const copy = new Database(db.serialize());
+  const id = idOf('Anthropic');
+  const ranges = (date, knownAsOf) => disclosedExposure(copy, id, date, { knownAsOf }).map(d => d.accession);
+  assert.deepEqual(ranges('2026-06-30'), ['0001867090-26-000109']);
+  // a synthetic NPORT-P/A for the same fund and report date, filed 2026-09-15
+  const cols = copy
+    .prepare('PRAGMA table_info(filings)')
+    .all()
+    .map(c => c.name);
+  const set = { accession: "'0001867090-26-900001'", form: "'NPORT-P/A'", filing_date: "'2026-09-15'" };
+  copy.exec(
+    `INSERT INTO filings (${cols.join(', ')}) SELECT ${cols.map(c => set[c] ?? c).join(', ')}
+     FROM filings WHERE accession = '0001867090-26-000109'`
+  );
+  assert.deepEqual(ranges('2026-06-30'), [], 'the original range no longer counts');
+  assert.deepEqual(ranges('2026-06-30', '2026-09-14'), ['0001867090-26-000109'], 'known before the amendment');
+  assert.deepEqual(ranges('2026-06-30', '2026-09-15'), []);
+  copy.close();
+});
+
 test('API goldens: Stripe A5 49 / 35 / 34 / 37 and Databricks A6 120 / $6.22B', async () => {
   const stripe = idOf('Stripe');
   const counts = [];

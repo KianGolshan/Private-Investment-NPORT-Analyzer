@@ -723,7 +723,9 @@ export interface Xray extends Envelope {
     privateValueUSD: number;
     privateByKind: Record<'company' | 'fund' | 'vehicle', { label: string; rows: number; valueUSD: number }>;
     totalValueUSD: number;
+    /** null unless the filing reports positive net assets (never total value under this label) */
     privatePctOfNetAssets: number | null;
+    privatePctOfHoldingsValue: number | null;
     listedValueUSD: number;
     debtValueUSD: number;
     byCountry: Record<string, number>;
@@ -732,7 +734,7 @@ export interface Xray extends Envelope {
     capitalStructure: {
       issuer: string;
       totalValueUSD: number;
-      pctOfNetAssets: number;
+      pctOfNetAssets: number | null;
       byType: Record<string, number>;
       debtPctOfExposure: number;
       weightedDebtCouponPct: number | null;
@@ -746,7 +748,8 @@ export interface Xray extends Envelope {
         maturity: string | null;
       }[];
     }[];
-    truncated: { rows: number; shown: number } | null;
+    /** lists cut to the `shown` largest rows by value; the counts are the full lists' (lib/services/fund.js forDisplay) */
+    truncated: { shown: number; privateHoldings: number; notPrivate: number } | null;
   };
 }
 
@@ -928,7 +931,7 @@ export interface WatchlistAnswer extends Envelope {
     key: number | string;
     label: string | null;
     /** live; listed (reviewed public); merged into `successor`; dropped; unknown id. Numbers are null unless live. */
-    status: { state: 'live' | 'listed' | 'merged' | 'dropped' | 'unknown'; successor?: number; name?: string };
+    status: SubjectStatus;
     value: number | null;
     funds: number | null;
     companies: number | null;
@@ -960,6 +963,13 @@ export interface TrackedDashboard extends Envelope {
   }[];
 }
 
+/** What a saved or compared subject is now (lib/services/analysis.js watchStatus). */
+export interface SubjectStatus {
+  state: 'live' | 'listed' | 'merged' | 'dropped' | 'unknown';
+  successor?: number;
+  name?: string;
+}
+
 export interface CompareMark {
   markDate: string;
   median: number;
@@ -977,11 +987,14 @@ export interface Compare extends Envelope {
   periods: Pivot['periods'];
   metrics: PivotMetric[];
   count: number;
-  results: (PivotCells & {
+  /** A subject that is not live (unknown, listed, merged, dropped) has null numbers, never zeros (review R15). */
+  results: (Record<PivotMetric, (number | null)[]> & {
+    startValue: number | null;
+    status: SubjectStatus;
     key: string | number;
     label: string | null;
-    companies: number;
-    funds: number;
+    companies: number | null;
+    funds: number | null;
     oldestMark: string | null;
     newestMark: string | null;
     markClass?: string;

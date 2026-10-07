@@ -234,3 +234,54 @@ test('F05: the whole position at $0 keeps its shares; recovery from $0 is a mark
   // a class still at $0 on both sides is not a leg
   assert.ok(!back.instruments.some(l => l.instrumentKey === 'A1'));
 });
+
+// P6d W2 (staff full-stack review R06): one class still listed at $0 beside a
+// class no longer listed at all. The absent class left (position effect); only
+// the class at $0 is a mark move. Every leg is asserted, not just the totals,
+// which balance either way.
+const legOf = (ev, key) => {
+  const l = ev.instruments.find(x => x.instrumentKey === key);
+  return l && [l.change, l.positionEffect.toFixed(2), l.markEffect.toFixed(2)];
+};
+
+test('R06: a class at $0 beside a class no longer reported: mark move and exit; the position is at $0', () => {
+  // A: 100 sh x $1 stays at $0; B: 200 sh x $1 is gone from the filing
+  const prev = [zrow('A1', 'X CORP COMMON A', 100, 100), zrow('B1', 'X CORP SERIES B PFD', 200, 200)];
+  const ev = diffPosition(prev, [zrow('A1', 'X CORP COMMON A', 100, 0)]);
+  assert.deepEqual(legOf(ev, 'A1'), ['reported at $0', '0.00', '-100.00']);
+  assert.deepEqual(legOf(ev, 'B1'), ['class no longer reported', '-200.00', '0.00']);
+  assert.equal(ev.type, 'zeroed');
+});
+
+test('R06: a class re-keyed on its way to $0 is a mark move, not an exit', () => {
+  const prev = [zrow('A1', 'X CORP COMMON A', 100, 100)];
+  const ev = diffPosition(prev, [zrow('A9', 'X CORP COMMON A', 100, 0)]);
+  assert.deepEqual(legOf(ev, 'A9'), ['reported at $0', '0.00', '-100.00']);
+  assert.equal(ev.instruments.find(l => l.instrumentKey === 'A9').rekeyedFrom, 'A1');
+  assert.equal(ev.type, 'zeroed');
+});
+
+test('R06: every prior class gone, a new line at $0 (Monitronics 2023-10-31): legs exit, the position is at $0', () => {
+  // real shape: 65,182 sh CUSIP 609453105 at $6.52 (0001752724-23-213580), then only
+  // "MONITRONICS" 902AKWII7 1,565 sh at $0 (0001752724-23-290691)
+  const prev = [zrow('609453105', 'Monitronics International Inc', 65182, 6.52)];
+  const ev = diffPosition(prev, [zrow('902AKWII7', 'MONITRONICS', 1565, 0)]);
+  assert.deepEqual(legOf(ev, '609453105'), ['class no longer reported', '-6.52', '0.00']);
+  assert.equal(ev.instruments.length, 1);
+  assert.equal(ev.type, 'zeroed');
+});
+
+test('R06: no row at $0 left, only rows that do not count: the position is no longer reported', () => {
+  const prev = [zrow('A1', 'X CORP COMMON A', 100, 100)];
+  const debt = { ...zrow('D1', 'X CORP TERM LOAN', 1000, 990), instrument_type: 'debt', counts: false };
+  const ev = diffPosition(prev, [debt]);
+  assert.deepEqual(legOf(ev, 'A1'), ['class no longer reported', '-100.00', '0.00']);
+  assert.equal(ev.type, 'exited');
+});
+
+test('R06: a partial class exit beside a priced class stays exit + mark (control)', () => {
+  const prev = [zrow('A1', 'X CORP COMMON A', 100, 100), zrow('B1', 'X CORP SERIES B PFD', 200, 200)];
+  const ev = diffPosition(prev, [zrow('A1', 'X CORP COMMON A', 100, 150)]);
+  assert.deepEqual(legOf(ev, 'A1'), ['unchanged', '0.00', '50.00']);
+  assert.deepEqual(legOf(ev, 'B1'), ['class no longer reported', '-200.00', '0.00']);
+});

@@ -277,3 +277,46 @@ test('feed paging (F16): pages add up to every match; total and breakdown count 
     whole.total
   );
 });
+
+test('R15: compare and the watchlist show unknown subjects as unknown, never as a zero history', async () => {
+  const live = idOf('Anthropic');
+  const c = (
+    await api(`/api/analysis/compare?rows=company&key=${live}&key=999999&key=999998&from=2025-06-30&to=2026-06-30`)
+  ).body;
+  const [a, x, y] = c.results;
+  assert.equal(a.status.state, 'live');
+  assert.ok(a.value.at(-1) > 0);
+  for (const r of [x, y]) {
+    assert.equal(r.status.state, 'unknown');
+    assert.ok(
+      r.value.every(v => v === null),
+      'no zero line for a company that does not exist'
+    );
+    assert.equal(r.funds, null);
+    assert.equal(r.startValue, null);
+  }
+  const funds = (
+    await api('/api/analysis/compare?rows=fund&key=S000009228&key=S999999999&from=2025-06-30&to=2026-06-30')
+  ).body.results;
+  assert.deepEqual(
+    funds.map(r => r.status.state),
+    ['live', 'unknown']
+  );
+  const cls = (
+    await api(
+      `/api/analysis/compare?rows=class&key=${live}:No%20Such%20Class&key=${idOf('Stripe')}:Common%20B&from=2025-06-30&to=2026-06-30`
+    )
+  ).body.results;
+  assert.deepEqual(
+    cls.map(r => r.status.state),
+    ['unknown', 'live']
+  );
+  const w = (await api('/api/watchlist?fund=S999999999,s000009228')).body.items;
+  assert.deepEqual(
+    w.map(i => [i.key, i.status.state, i.value === null]),
+    [
+      ['S999999999', 'unknown', true],
+      ['S000009228', 'live', false],
+    ]
+  );
+});

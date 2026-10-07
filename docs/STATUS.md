@@ -1,7 +1,7 @@
 # Vantage v2 Status
 
-**Phase:** **P6d** (remediation of the 2026-10-06 staff full-stack review, R01–R20). **W1 (publication) is built and
-awaiting sign-off**; W2 (answers) and W3 (operations) follow. P6b and P6c are complete and signed off.
+**Phase:** **P6d** (remediation of the 2026-10-06 staff full-stack review, R01–R20). W1 (publication) signed off;
+**W2 (answers) is built and awaiting sign-off**; W3 (operations) follows. P6b and P6c are complete and signed off.
 Branch `v2-p6b-workspace` (pushed, in sync).
 **Last updated:** 2026-10-06. Earlier results: [archive/STATUS-history.md](archive/STATUS-history.md).
 
@@ -12,7 +12,7 @@ Branch `v2-p6b-workspace` (pushed, in sync).
 - [x] P6 core: analysis views (signed off 2026-10-01; remaining items in ROADMAP §6)
 - [x] P6b: analyst workspace, W0–W5 (signed off 2026-10-01..06; ROADMAP §6b)
 - [x] P6c: review remediation R1–R3 (signed off 2026-10-05; [plan](plans/P6c-review-remediation.md), ADR 0009)
-- [ ] P6d: full-stack review remediation (ROADMAP §6d; W1 built 2026-10-06, awaiting sign-off)
+- [ ] P6d: full-stack review remediation (ROADMAP §6d; W1 signed off, W2 built 2026-10-06, awaiting sign-off)
 - [ ] P7: MCP server (open; the services exist)
 - [ ] P8: operations hardening (nightly job, backups and restore drill, readiness, alerting, doctor; F10/F11 items)
 - [ ] P9: public deployment (hosting to decide as ADR 0006; capacity envelope, shared SEC budget)
@@ -101,14 +101,14 @@ The analyst workspace is served at `/`; the route map is at the top of the [READ
 | API p95, all routes            | <200ms               | 13.5–16.1 ms over 3,805 requests (W5, load 3.2); drill total 382 KB JSON = 48.8 KB gzipped |
 | Lighthouse perf / a11y         | ≥90                  | Market 96/98, Explore 97/98, company 98/98, firm 95/98 (W5)                                |
 | Accessibility (axe, WCAG 2.1)  | 0 serious            | 0 findings of any impact, 10 views × light/dark                                            |
-| Suite                          | green                | 583 backend (552 pass, 31 skipped, 0 fail); web 35/35; e2e 27/27; LIVE 31/31 (W5)          |
+| Suite                          | green                | 594 backend (563 pass, 31 skipped, 0 fail); web 37/37; e2e 27/27; LIVE 31/31 (W5)          |
 | Full backfill / first catch-up | —                    | 13.6 min / 26.9 min (P1, P2)                                                               |
 
-## Warehouse state (generation 26, 2026-10-06)
+## Warehouse state (generation 27, 2026-10-06)
 
 Schema at migration 0021. Generation 25 is a refresh (nothing new) and generation 26 a no-change review import. 26 is
-the first generation with a curation snapshot (digest `327a4489…`, curation tree `eae566e`, clean). Both files are
-read-only on disk.
+the first generation with a curation snapshot (digest `327a4489…`, curation tree `eae566e`, clean). Generation 27 is a
+refresh that publishes the R06 rule (one leg re-attributed, F54). The files are read-only on disk.
 
 - 355,007 N-PORT filings: bulk 2019Q4–2026Q2 plus catch-up through filings of 2026-10-05.
 - 1.165M private-candidate rows.
@@ -123,14 +123,17 @@ read-only on disk.
 
 ## Open decisions (user)
 
-- **Sign off P6d W1** (calls made, open to overrule):
-  - a rollback republishes the older contents as a new generation, so ids only increase and the browser needs no
-    change; `--to <id>` undoes one;
-  - a live job on this host is never taken over (remove the lock by hand after a crash with pid reuse);
-  - reviewed files are staged and written back after the publish;
-  - a crash in between blocks curation jobs until `--sync-curation`;
-  - an N-CEN data set with an unknown adviser type fails the whole load;
-  - published files are made read-only.
+- **Sign off P6d W2** (calls made, open to overrule):
+  - R06: a position whose classes are all gone but which still has a row at $0 keeps the event "reported at $0",
+    while each gone class is an exit leg;
+  - R07: a same-date amendment hides a disclosed range until it is re-curated (none today);
+  - R13:
+    - a missing holdings section is stored as filed, not rejected (real final and $0-net-asset filings omit it);
+    - a new one that follows private holdings is a job warning, not a failure (trap 55);
+    - the X-Ray shows "of holdings value (net assets not positive)" in place of a substituted denominator;
+  - R14: `markChangeFunds` and `staleFunds` count distinct funds; staleness is read as of the dashboard date;
+  - R15: compare and the watchlist return a status, with null numbers for any subject that is not live (unknown
+    fund, class, company or firm).
 - **After P6d:** P7 (MCP server), P8 (operations) or a PR to main. No PR is open; `v2-phase6` and `v2-p6b-workspace`
   are pushed.
 - **Install the nightly refresh** (launchd entry in ARCHITECTURE §Refresh lifecycle)? Not installed; until then run
@@ -192,26 +195,42 @@ read-only on disk.
 ## Next session
 
 > Resume Vantage v2 on branch `v2-p6b-workspace` (pushed). Phase **P6d**: remediation of the 2026-10-06 staff
-> full-stack review. The plan, verdicts and waves are in ROADMAP §6d.
+> full-stack review (ROADMAP §6d). W1 is signed off; W2 is built and awaiting sign-off.
 >
-> - If the user signs off W1, build **W2 (answers)**:
->   - R06: in the zeroed branch of `lib/analytics/activity.js`, an absent class is an exit; take a
->     `position_facts` before/after diff, verify real events with `verify-edgar.js`, add them to GOLDEN-NUMBERS
->     F54+, and add a DATA-QUALITY trap;
->   - R07: a disclosure must match its canonical accession; query the live warehouse and re-curate;
->   - R13: strict ISO dates, X-Ray `pct_nav` null and the denominator basis; check real empty N-PORT XML first;
->   - R14: distinct funds and an as-of `staleMarks`;
->   - R15: subject status for compare and fund watch items;
->   - R16: the X-Ray `truncated` contract.
-> - Then **W3**: proxy-addr 2.0.8 and a CI audit, `TRUST_PROXY`/`HOST`/pacing floor, the `ingest_errors` retry queue,
->   `/freshness` without a 304, the curation digest in exports and basis, and one rebuild per import (the import
->   takes 47–83 s now).
+> If the user signs off W2, build **W3**:
+>
+> - R10: `npm audit fix` (proxy-addr 2.0.8), plus a CI step `npm audit --omit=dev --audit-level=high` for root and web;
+> - R11: a `TRUST_PROXY` env in place of the unconditional `trust proxy 1`, a `HOST` env (default 127.0.0.1), and a
+>   `SEC_MIN_INTERVAL_MS` floor of 100;
+> - R12: `ingestDelta` retries `ingest_errors` (attempts < 5) wherever they fall relative to the index window;
+> - R08: `/freshness` skips the generation ETag;
+> - R18: `curation_digest` in `basis` and in exports;
+> - R20: drop the duplicate rebuild in `runReviewImport` (import 47–83 s now);
+> - docs (ADR 0001 note on the nightly index lag).
 >
 > Read CLAUDE.md, this file and docs/ROADMAP.md first. Gates: `npm test`, `npm run lint`, `npm run format:check`,
 > `npm run test:web`, `npm run lint:web`, `npm run build:web` then `npm run test:e2e`, `npm run test:live`; run
 > `npm run refresh` at session start.
 
 ## Log
+
+- **2026-10-06 (P6d W2):** W1 signed off ("continue"). W2 built:
+  - R06: in the zeroed branch, a gone class is an exit leg (position) and a class re-keyed to $0 is paired. The
+    warehouse-wide `position_facts` diff found 1 changed leg of 68,277, $6.52 moved from mark to position (Monitronics,
+    Goldman Sachs Multi-Manager Non-Core Fixed Income, 2023-10-31, verified on raw EDGAR, F54, trap 54);
+  - R07: a disclosed range needs its own accession to be the canonical filing (all 11 live ranges already are);
+  - R13: strict calendar dates (2026-02-31 is a 400); X-Ray `pct_nav` is null when not filed and there is no
+    net-asset substitution.
+    - Real empty filings checked: 339 have no rows. Guinness Atkinson (final filing), Guggenheim ($0 net assets) and
+      BMO 2020-11-30 ($1.9B, plain omission) all lack `<invstOrSecs>`.
+    - Rejecting them would be wrong; none follows private-company rows today.
+    - Jobs now warn on a new one (trap 55).
+  - R14: distinct funds, and as-of staleness;
+  - R15: subject status in compare and the watchlist; the Compare page shows "not in the warehouse";
+  - R16: X-Ray `truncated` type and notice ("largest N rows by value").
+
+  Every new regression fails on the old code. Backend 563/0/31 skipped; web 37/37; e2e 27/27. Live: refresh →
+  generation 27. Browser: Compare with id 999999 shows a status badge and dashes; GFA X-Ray renders.
 
 - **2026-10-06 (P6d W1):** the staff full-stack review checked against the code. All seven P1 findings were confirmed;
   R10, R11 and R17 are deployment concerns, and R02 follows from R01. W1 built:

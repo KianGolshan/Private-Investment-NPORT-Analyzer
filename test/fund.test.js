@@ -214,3 +214,18 @@ test('X-Ray: the private book splits into operating companies, fund interests an
   const gfa = fund.xray(db, GFA, F2);
   assert.equal(gfa.privateByKind.company.valueUSD, gfa.privateValueUSD);
 });
+
+test('R13: an unfiled percent of net assets stays null, and no net assets means no "of net assets" share', () => {
+  const Database = require('better-sqlite3');
+  const copy = new Database(db.serialize());
+  const x0 = fund.xray(copy, GFA, F2);
+  const row = x0.privateHoldings[0].rowKey;
+  copy.prepare('UPDATE holdings SET pct_nav = NULL WHERE row_key = ? AND accession = ?').run(row, F2);
+  copy.prepare('UPDATE filings SET net_assets = 0 WHERE accession = ?').run(F2);
+  const x = fund.xray(copy, GFA, F2);
+  assert.equal(x.privateHoldings.find(h => h.rowKey === row).pctOfNetAssets, null);
+  assert.equal(x.privatePctOfNetAssets, null);
+  assert.ok(x.privatePctOfHoldingsValue > 0, 'the share of holdings value is its own field');
+  assert.ok(x0.privatePctOfNetAssets > 0);
+  copy.close();
+});

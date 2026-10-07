@@ -274,6 +274,49 @@ test('after the commit point, a cleanup failure is a warning on a published job,
   assert.ok(g1.generation < r.generation);
 });
 
+test('a job that adds a filing with no holdings after private holdings publishes with a warning (R13, trap 55)', async () => {
+  const { dbPath } = tmpWarehouse();
+  const r = await runJob(
+    'ingest-delta',
+    db => {
+      // a fund with private rows at one canonical filing and a later filing
+      const f = db
+        .prepare(
+          `SELECT c.accession, c.fund_key, c.report_date FROM canonical_filings c
+           WHERE EXISTS (SELECT 1 FROM holdings h JOIN companies co ON co.id = h.company_id
+                         WHERE h.accession = c.accession AND co.status = 'private')
+             AND EXISTS (SELECT 1 FROM filings g WHERE g.fund_key = c.fund_key AND g.report_date > date(c.report_date, '+1 day'))
+           ORDER BY c.report_date LIMIT 1`
+        )
+        .get();
+      const cols = db
+        .prepare('PRAGMA table_info(filings)')
+        .all()
+        .map(c => c.name);
+      const set = {
+        accession: "'0009999999-26-000001'",
+        report_date: `date('${f.report_date}', '+1 day')`,
+        net_assets: '1000000',
+        source: "'edgar'",
+      };
+      db.exec(
+        `INSERT INTO filings (${cols.join(', ')}) SELECT ${cols.map(c => set[c] ?? c).join(', ')}
+         FROM filings WHERE accession = '${f.accession}'`
+      );
+      db.exec(`INSERT INTO filing_totals (accession, rows, value_usd, rows_listed, value_listed, rows_debt, value_debt,
+               rows_l3_equity, value_l3_equity) VALUES ('0009999999-26-000001', 0, 0, 0, 0, 0, 0, 0, 0)`);
+      return {};
+    },
+    { dbPath }
+  );
+  assert.equal(r.status, 'ok');
+  assert.match(r.warning, /1 filing\(s\) with no holdings section.*trap 55.*0009999999-26-000001/);
+  assert.match(jobState(dbPath).warning, /trap 55/);
+  // the next job does not repeat a warning for a filing already published
+  const again = await runJob('curation', () => ({}), { dbPath });
+  assert.equal(again.warning, undefined);
+});
+
 const REVIEW = path.join(__dirname, '..', 'data', 'review');
 function reviewCopy() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vantage-review-'));
