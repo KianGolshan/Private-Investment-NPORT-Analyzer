@@ -22,7 +22,7 @@ async function main() {
   const t = Date.now();
   const r = await runJob(
     'curation',
-    (db, { curationDir }) => runReviewImport(db, curationDir, { log: console.log }) && {},
+    (db, { curationDir }) => runReviewImport(db, curationDir, { log: console.log, rebuild: 'none' }) && {},
     { log: console.log, curationDir: dir }
   );
   console.log(`published generation ${r.generation} in ${((Date.now() - t) / 1000).toFixed(1)} s`);

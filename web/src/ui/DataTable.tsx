@@ -8,6 +8,7 @@ import {
   type VirtualizerOptions,
 } from '@tanstack/virtual-core';
 import { exportCsv, exportXlsx, type ExportColumn } from '../lib/export';
+import { useProvenance } from './Basis';
 
 // The one table: sortable, groupable, filterable, virtualized when long, and
 // exportable from the same column definitions (the file matches the screen).
@@ -93,14 +94,21 @@ export function DataTable<T>(p: Props<T>) {
     return out;
   }, [p.rows, p.columns, sort, filter]);
 
+  const source = useProvenance(!!p.basis);
   const exportCols = useMemo(
     () => [
       ...p.columns.flatMap(c =>
         c.noExport ? [] : [{ header: c.header, value: c.value } as ExportColumn<T>, ...(c.exportAs ?? [])]
       ),
-      ...(p.basis ? [{ header: 'Basis', value: () => p.basis } as ExportColumn<T>] : []),
+      ...(p.basis
+        ? [
+            { header: 'Basis', value: () => p.basis } as ExportColumn<T>,
+            // the generation and the exact reviewed files behind the rows (review R18)
+            ...(source ? [{ header: 'Source', value: () => source } as ExportColumn<T>] : []),
+          ]
+        : []),
     ],
-    [p.columns, p.basis]
+    [p.columns, p.basis, source]
   );
 
   const groups = useMemo(() => {

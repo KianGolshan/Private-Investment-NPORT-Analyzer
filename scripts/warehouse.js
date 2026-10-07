@@ -30,6 +30,26 @@ function main() {
     console.log(
       `${g.published ? '*' : ' '} generation ${String(g.id).padStart(4)}  ${(g.bytes / 1e6).toFixed(1)} MB  ${path.relative(process.cwd(), g.file)}`
     );
+  // filings that failed MAX_ATTEMPTS times are no longer retried (lib/warehouse/delta.js, review R12)
+  if (gens.length) {
+    const Database = require('better-sqlite3');
+    const db = new Database(gens.find(g => g.published)?.file || gens[0].file, { readonly: true });
+    try {
+      const stuck = db
+        .prepare('SELECT accession, error FROM ingest_errors WHERE attempts >= 5 ORDER BY accession')
+        .all();
+      if (stuck.length)
+        console.log(
+          `${stuck.length} filing(s) failed 5 times and are no longer retried: ` +
+            stuck
+              .slice(0, 10)
+              .map(r => `${r.accession} (${r.error})`)
+              .join(', ')
+        );
+    } finally {
+      db.close();
+    }
+  }
   const j = jobState(dbPath);
   if (j)
     console.log(

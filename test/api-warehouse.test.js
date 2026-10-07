@@ -163,15 +163,20 @@ test('API ids: a merged id redirects to its successor, a dropped id is gone, bad
 });
 
 test('API caching: the ETag is the refresh id plus the build; a matching If-None-Match gets 304', async () => {
-  const r = await api('/api/freshness').expect(200);
+  const r = await api('/api/search?q=anthropic').expect(200);
   assert.ok(r.headers.etag.startsWith('W/"r' + r.body.refreshId + '-'), r.headers.etag);
-  await api('/api/freshness').set('If-None-Match', r.headers.etag).expect(304);
+  await api('/api/search?q=anthropic').set('If-None-Match', r.headers.etag).expect(304);
   // A new build (a deploy, or a restart after a code change) never matches the old ETag.
   const next = express().use(
     '/api',
     warehouseRouter(() => db, { build: 'next' })
   );
-  await request(next).get('/api/freshness').set('If-None-Match', r.headers.etag).expect(200);
+  await request(next).get('/api/search?q=anthropic').set('If-None-Match', r.headers.etag).expect(200);
+  // /freshness carries the last job's state, which moves without a new generation
+  // (review R08): the generation ETag never answers it with a 304
+  const f = await api('/api/freshness').set('If-None-Match', r.headers.etag).expect(200);
+  assert.equal(f.headers['cache-control'], 'no-store');
+  assert.ok(!String(f.headers.etag || '').startsWith('W/"r'), 'no generation ETag on /freshness');
 });
 
 test('API read-only: a missing or behind warehouse gives 503, never a new file; the server opens it read-only', async () => {

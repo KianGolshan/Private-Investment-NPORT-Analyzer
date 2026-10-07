@@ -369,6 +369,16 @@ test('curation: a published job writes its files back and records the exact snap
   assert.match(meta.curation_digest, /^[0-9a-f]{64}$/);
   const snap = read(dbPath, "SELECT content FROM curation_snapshot WHERE name = 'aliases.csv'");
   assert.ok(Buffer.from(snap.content).equals(fs.readFileSync(path.join(dir, 'aliases.csv'))));
+  // answers and their basis name the exact curation (R18)
+  const app = express();
+  app.use(
+    '/api',
+    warehouseRouter(() => openWarehouseReadOnly(dbPath))
+  );
+  const f = (await request(app).get('/api/freshness').expect(200)).body;
+  assert.equal(f.generation.curationDigest, meta.curation_digest);
+  const top = (await request(app).get('/api/market/top').expect(200)).body;
+  assert.deepEqual([top.basis.generation, top.basis.curationDigest], [r.generation, meta.curation_digest]);
   // a crash after the publish, before the write-back: the next curation job refuses until synced
   fs.writeFileSync(path.join(dir, '.pending-publish.json'), JSON.stringify({ generation: r.generation, files: [] }));
   fs.writeFileSync(path.join(dir, 'note.txt'), 'lost');

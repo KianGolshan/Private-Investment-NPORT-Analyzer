@@ -174,6 +174,35 @@ test('ingestDelta: a failed filing is recorded, retried next run, and cleared on
   db.close();
 });
 
+test('ingestDelta: an earlier failure is retried after the index window moves past it, up to 5 attempts (R12)', async () => {
+  const db = openWarehouse(':memory:');
+  const bad = '0002048251-26-004683';
+  const entry = ENTRIES.find(e => e.accession === bad);
+  mockIndex();
+  mockXml({ skip: [bad] });
+  await ingestDelta(db, { since: '2026-04-01', until: '2026-06-30' });
+  assert.equal(db.prepare('SELECT attempts FROM ingest_errors WHERE accession = ?').get(bad).attempts, 1);
+  // the next window starts after the failed filing's date: the index no longer lists it
+  const after = new Date(Date.parse(entry.filingDate) + 86400000).toISOString().slice(0, 10);
+  mockIndex();
+  nock(SEC)
+    .get(`/Archives/edgar/data/${entry.cik}/${bad.replace(/-/g, '')}/primary_doc.xml`)
+    .reply(200, fs.readFileSync(path.join(BULK, 'xml', `${bad}.xml`), 'utf8'));
+  const later = await ingestDelta(db, { since: after, until: '2026-06-30' });
+  assert.equal(later.retried, 1);
+  assert.equal(later.loaded, 1);
+  assert.ok(db.prepare('SELECT 1 FROM filings WHERE accession = ?').get(bad));
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM ingest_errors').get().n, 0);
+  // a filing that failed 5 times stays queued for review and is not fetched again
+  db.prepare(
+    "INSERT INTO ingest_errors (accession, cik, filing_date, form, error, attempts, last_attempt_at) VALUES ('0000000001-26-000001', '1', '2026-04-02', 'NPORT-P', 'HTTP 404', 5, '2026-10-06')"
+  ).run();
+  mockIndex();
+  const capped = await ingestDelta(db, { since: after, until: '2026-06-30' });
+  assert.equal(capped.retried, 0);
+  db.close();
+});
+
 test('ingestDelta: a dropped connection (real: EPIPE / stalled socket) is retried instead of failing the filing', async () => {
   const db = openWarehouse(':memory:');
   const flaky = '0002048251-26-002806';

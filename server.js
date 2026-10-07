@@ -88,14 +88,27 @@ const USER_AGENT = process.env.SEC_USER_AGENT || '';
 const EFFECTIVE_USER_AGENT = USER_AGENT || 'Vantage internal-tool@localhost';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
-// Only trust X-Forwarded-For in production, where a public deployment is
-// expected to sit behind a reverse proxy/load balancer — otherwise
-// express-rate-limit's per-IP bucketing keys off req.ip, which resolves to
-// the proxy's own address for every visitor when trust proxy is unset,
-// collapsing the 200 req/min cap below into one shared budget for every
-// user instead of one per visitor. Left off in local/dev, where there's no
-// proxy and trusting a client-supplied header would let it spoof req.ip.
-if (IS_PRODUCTION) app.set('trust proxy', 1);
+// Where the server listens (staff full-stack review R11): loopback unless HOST
+// says otherwise, so the origin is reachable only through a proxy on this host.
+const HOST = process.env.HOST || '127.0.0.1';
+const LOOPBACK = ['127.0.0.1', '::1', 'localhost'].includes(HOST);
+// X-Forwarded-For is trusted only where a client cannot set it itself: a proxy
+// in front of a loopback-only origin. Behind a proxy, express-rate-limit's
+// per-IP buckets need the forwarded address (else every visitor shares the
+// proxy's one budget); without one, trusting the header lets a client spoof
+// req.ip. TRUST_PROXY=<hops> declares the topology explicitly (0 = never). In
+// production with no TRUST_PROXY: 1 hop on a loopback origin, none on a public
+// one (with a warning at start-up). Development never trusts it.
+const TRUST_PROXY = (() => {
+  const raw = process.env.TRUST_PROXY;
+  if (raw !== undefined && raw !== '') {
+    const n = Number(raw);
+    if (!Number.isInteger(n) || n < 0) throw new Error(`TRUST_PROXY must be a hop count (0, 1, 2, ...), got "${raw}"`);
+    return n;
+  }
+  return IS_PRODUCTION && LOOPBACK ? 1 : 0;
+})();
+if (TRUST_PROXY) app.set('trust proxy', TRUST_PROXY);
 
 if (!USER_AGENT) {
   console.warn('\n⚠️  WARNING: SEC_USER_AGENT not set.');
@@ -1184,8 +1197,14 @@ app.get('/api/fund-xray-returns', async (req, res) => {
 // drive `app` in-process via supertest without opening a real socket.
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`\n✅ Vantage running at http://localhost:${PORT}`);
+  app.listen(PORT, HOST, () => {
+    console.log(`\n✅ Vantage running at http://${HOST.includes(':') ? `[${HOST}]` : HOST}:${PORT}`);
+    if (IS_PRODUCTION && !LOOPBACK && process.env.TRUST_PROXY === undefined)
+      console.warn(
+        `   Listening on ${HOST} with no TRUST_PROXY: X-Forwarded-For is ignored, so behind a proxy every visitor ` +
+          'shares one rate-limit bucket. Set TRUST_PROXY to the number of proxies in front, only if clients cannot ' +
+          'reach this port directly.'
+      );
     console.log(`   User-Agent: ${EFFECTIVE_USER_AGENT}\n`);
     warehouseApi.warm().then(w => {
       console.log(

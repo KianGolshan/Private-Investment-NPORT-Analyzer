@@ -10,14 +10,28 @@ import type { Freshness } from '../api/types';
 export const BASIS =
   "Private companies are today's reviewed list and a firm is each fund's current N-CEN adviser, applied to every period";
 
+/** Which data and which reviewed files an answer came from, for notes and exports (review R18). */
+export function provenance(f: Freshness | null | undefined): string {
+  const g = f?.generation;
+  if (!g) return '';
+  const cur = g.curationDigest
+    ? `curation sha256 ${g.curationDigest.slice(0, 12)}`
+    : g.curationRev
+      ? `curation ${g.curationRev.slice(0, 7)}${g.curationRev.endsWith('+dirty') ? ' with unsaved edits' : ''}`
+      : '';
+  return [`generation ${g.id}`, cur].filter(Boolean).join(', ');
+}
+
+export function useProvenance(on = true): string {
+  return provenance(useApi<Freshness>(on ? '/api/freshness' : null).data);
+}
+
 export function BasisNote() {
-  const fresh = useApi<Freshness>('/api/freshness');
-  const rev = fresh.data?.generation?.curationRev;
+  const p = useProvenance();
   return (
     <p class="muted small" style={{ margin: 0 }}>
       {BASIS}
-      {rev ? ` (curation ${rev.slice(0, 7)}${rev.endsWith('+dirty') ? ', with unsaved edits' : ''})` : ''}. A company
-      that has since listed is not counted in earlier periods.
+      {p ? ` (${p})` : ''}. A company that has since listed is not counted in earlier periods.
     </p>
   );
 }

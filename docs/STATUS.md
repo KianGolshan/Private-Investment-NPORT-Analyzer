@@ -1,7 +1,8 @@
 # Vantage v2 Status
 
-**Phase:** **P6d** (remediation of the 2026-10-06 staff full-stack review, R01–R20). W1 (publication) signed off;
-**W2 (answers) is built and awaiting sign-off**; W3 (operations) follows. P6b and P6c are complete and signed off.
+**Phase:** **P6d** (remediation of the 2026-10-06 staff full-stack review, R01–R20). W1 and W2 are signed off.
+**W3 (operations and assurance) is built and awaiting sign-off**; it is the last P6d wave. P6b and P6c are complete
+and signed off.
 Branch `v2-p6b-workspace` (pushed, in sync).
 **Last updated:** 2026-10-06. Earlier results: [archive/STATUS-history.md](archive/STATUS-history.md).
 
@@ -12,7 +13,7 @@ Branch `v2-p6b-workspace` (pushed, in sync).
 - [x] P6 core: analysis views (signed off 2026-10-01; remaining items in ROADMAP §6)
 - [x] P6b: analyst workspace, W0–W5 (signed off 2026-10-01..06; ROADMAP §6b)
 - [x] P6c: review remediation R1–R3 (signed off 2026-10-05; [plan](plans/P6c-review-remediation.md), ADR 0009)
-- [ ] P6d: full-stack review remediation (ROADMAP §6d; W1 signed off, W2 built 2026-10-06, awaiting sign-off)
+- [ ] P6d: full-stack review remediation (ROADMAP §6d; W1–W2 signed off, W3 built 2026-10-06, awaiting sign-off)
 - [ ] P7: MCP server (open; the services exist)
 - [ ] P8: operations hardening (nightly job, backups and restore drill, readiness, alerting, doctor; F10/F11 items)
 - [ ] P9: public deployment (hosting to decide as ADR 0006; capacity envelope, shared SEC budget)
@@ -101,14 +102,15 @@ The analyst workspace is served at `/`; the route map is at the top of the [READ
 | API p95, all routes            | <200ms               | 13.5–16.1 ms over 3,805 requests (W5, load 3.2); drill total 382 KB JSON = 48.8 KB gzipped |
 | Lighthouse perf / a11y         | ≥90                  | Market 96/98, Explore 97/98, company 98/98, firm 95/98 (W5)                                |
 | Accessibility (axe, WCAG 2.1)  | 0 serious            | 0 findings of any impact, 10 views × light/dark                                            |
-| Suite                          | green                | 594 backend (563 pass, 31 skipped, 0 fail); web 37/37; e2e 27/27; LIVE 31/31 (W5)          |
+| Suite                          | green                | 598 backend (567 pass, 31 skipped, 0 fail); web 37/37; e2e 27/27; LIVE 31/31 (W5)          |
 | Full backfill / first catch-up | —                    | 13.6 min / 26.9 min (P1, P2)                                                               |
 
-## Warehouse state (generation 27, 2026-10-06)
+## Warehouse state (generation 28, 2026-10-06)
 
 Schema at migration 0021. Generation 25 is a refresh (nothing new) and generation 26 a no-change review import. 26 is
 the first generation with a curation snapshot (digest `327a4489…`, curation tree `eae566e`, clean). Generation 27 is a
-refresh that publishes the R06 rule (one leg re-attributed, F54). The files are read-only on disk.
+refresh that publishes the R06 rule (one leg re-attributed, F54), and 28 a no-change review import under the W3
+code. The files are read-only on disk.
 
 - 355,007 N-PORT filings: bulk 2019Q4–2026Q2 plus catch-up through filings of 2026-10-05.
 - 1.165M private-candidate rows.
@@ -123,17 +125,14 @@ refresh that publishes the R06 rule (one leg re-attributed, F54). The files are 
 
 ## Open decisions (user)
 
-- **Sign off P6d W2** (calls made, open to overrule):
-  - R06: a position whose classes are all gone but which still has a row at $0 keeps the event "reported at $0",
-    while each gone class is an exit leg;
-  - R07: a same-date amendment hides a disclosed range until it is re-curated (none today);
-  - R13:
-    - a missing holdings section is stored as filed, not rejected (real final and $0-net-asset filings omit it);
-    - a new one that follows private holdings is a job warning, not a failure (trap 55);
-    - the X-Ray shows "of holdings value (net assets not positive)" in place of a substituted denominator;
-  - R14: `markChangeFunds` and `staleFunds` count distinct funds; staleness is read as of the dashboard date;
-  - R15: compare and the watchlist return a status, with null numbers for any subject that is not live (unknown
-    fund, class, company or firm).
+- **Sign off P6d W3** (calls made, open to overrule):
+  - **Proxy trust:** X-Forwarded-For is trusted in production only on a loopback `HOST` (the default), or as
+    `TRUST_PROXY` says. A public `HOST` with no `TRUST_PROXY` ignores the header and warns at start-up.
+  - **SEC pacing:** never under 100 ms in production; 0 stays allowed for the offline tests.
+  - **Retries:** failed filings are retried up to 5 times, then reported by `npm run warehouse`.
+  - **Exports:** carry a `Source` column (generation and curation digest) beside `Basis`.
+  - **Dev-only advisories:** the 4 high advisories in dev dependencies (nodemon's braces/chokidar chain,
+    source-map-js) are left for a later lockfile pass; CI audits the deployed dependencies only.
 - **After P6d:** P7 (MCP server), P8 (operations) or a PR to main. No PR is open; `v2-phase6` and `v2-p6b-workspace`
   are pushed.
 - **Install the nightly refresh** (launchd entry in ARCHITECTURE §Refresh lifecycle)? Not installed; until then run
@@ -194,25 +193,39 @@ refresh that publishes the R06 rule (one leg re-attributed, F54). The files are 
 
 ## Next session
 
-> Resume Vantage v2 on branch `v2-p6b-workspace` (pushed). Phase **P6d**: remediation of the 2026-10-06 staff
-> full-stack review (ROADMAP §6d). W1 is signed off; W2 is built and awaiting sign-off.
+> Resume Vantage v2 on branch `v2-p6b-workspace` (pushed). Phase **P6d** (2026-10-06 full-stack review remediation,
+> ROADMAP §6d): W1 and W2 are signed off; W3 is built and awaiting sign-off. After the sign-off, ask the user what
+> comes next:
 >
-> If the user signs off W2, build **W3**:
->
-> - R10: `npm audit fix` (proxy-addr 2.0.8), plus a CI step `npm audit --omit=dev --audit-level=high` for root and web;
-> - R11: a `TRUST_PROXY` env in place of the unconditional `trust proxy 1`, a `HOST` env (default 127.0.0.1), and a
->   `SEC_MIN_INTERVAL_MS` floor of 100;
-> - R12: `ingestDelta` retries `ingest_errors` (attempts < 5) wherever they fall relative to the index window;
-> - R08: `/freshness` skips the generation ETag;
-> - R18: `curation_digest` in `basis` and in exports;
-> - R20: drop the duplicate rebuild in `runReviewImport` (import 47–83 s now);
-> - docs (ADR 0001 note on the nightly index lag).
+> - **P7 (MCP server)**: ROADMAP §7.
+> - **P8 (operations)**: ROADMAP §8, now with the review's carried items:
+>   - off-host backup and a restore drill;
+>   - crash drills at the publication boundary;
+>   - correction and deletion reconciliation;
+>   - bench RSS and event-loop lag.
+> - **A PR of `v2-p6b-workspace` to main**: only when the user says so.
 >
 > Read CLAUDE.md, this file and docs/ROADMAP.md first. Gates: `npm test`, `npm run lint`, `npm run format:check`,
 > `npm run test:web`, `npm run lint:web`, `npm run build:web` then `npm run test:e2e`, `npm run test:live`; run
 > `npm run refresh` at session start.
 
 ## Log
+
+- **2026-10-06 (P6d W3):** W2 signed off ("continue"). W3 built:
+  - R10: proxy-addr 2.0.8 (lockfile only) and a CI step `npm audit --omit=dev --audit-level=high` for root and web;
+  - R11: a `HOST` env (default 127.0.0.1; Vite's proxy now targets 127.0.0.1), `TRUST_PROXY` hop count, and an
+    `SEC_MIN_INTERVAL_MS` floor;
+  - R12: `ingest_errors` retried outside the index window (attempts < 5); ADR 0001 states the index lag and what
+    is not reconciled;
+  - R08: `/freshness` has no generation ETag;
+  - R18: `curationDigest` in freshness, `basis`, the basis note and export `Source` columns;
+  - R20: `runReviewImport` takes `rebuild`; jobs no longer run the derived chain twice. The live import took
+    56.1 s against 47.0 s before, under load 3–8, so no gain was measured.
+
+  Backend 567/0/31 skipped; web 37/37; e2e 27/27. Live: no-change import → generation 28. Browser: the server on
+  127.0.0.1, and the basis note shows generation 28 and digest `327a448900d2`.
+  - `npm audit fix --omit=dev` pruned dev dependencies from `node_modules`; restored with `npm ci`.
+  - One prod-startup run failed at load 22 (known flake) and passed on rerun.
 
 - **2026-10-06 (P6d W2):** W1 signed off ("continue"). W2 built:
   - R06: in the zeroed branch, a gone class is an exit leg (position) and a class re-keyed to $0 is paired. The

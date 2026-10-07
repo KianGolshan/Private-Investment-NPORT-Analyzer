@@ -8,7 +8,13 @@ export interface Envelope {
   /** The published warehouse generation the answer was read from (ADR 0009). */
   refreshId: number;
   /** Cross-company answers: how history is read (today's curation and advisers, F14). */
-  basis?: { curationRev: string | null; companies: string; firms: string };
+  basis?: {
+    generation: number | null;
+    curationRev: string | null;
+    curationDigest: string | null;
+    companies: string;
+    firms: string;
+  };
 }
 
 export interface Freshness extends Envelope {
@@ -22,6 +28,8 @@ export interface Freshness extends Envelope {
     publishedAt: string;
     status: string;
     curationRev: string | null;
+    /** sha256 of the exact data/review files the generation reflects (curation_snapshot) */
+    curationDigest: string | null;
     codeRev: string | null;
   } | null;
   /** The last warehouse job, apart from the data version. */

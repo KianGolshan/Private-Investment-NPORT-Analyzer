@@ -45,6 +45,11 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
+      # Deployed dependencies, root and web (staff full-stack review R10): a high or
+      # critical advisory fails the build until the lockfile is updated and reviewed.
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm audit --omit=dev --audit-level=high
+        working-directory: web
 
   web:
     runs-on: ubuntu-latest
