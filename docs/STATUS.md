@@ -1,8 +1,8 @@
 # Vantage v2 Status
 
 **Phase:** **P6e** (follow-ups from the Codex verification review of 2026-10-06, V01–V11) on branch
-`v2-p6e-verification`. **W1 and W2 are signed off**; the PR to `main` is open for the user to merge. Open: the V11
-Finastra live re-run (needs the user's yes). Next phase after the merge: the user picks P7 (MCP) or P8 (operations).
+`v2-p6e-verification`. **W1 and W2 are signed off**; PR #7 to `main` is open for the user to merge. V11 is closed (the
+Finastra live test passes alone in 35 s). **Next, after the merge: P8 (operations)**, the user's choice.
 
 ## Phase tracker
 
@@ -12,7 +12,7 @@ Finastra live re-run (needs the user's yes). Next phase after the merge: the use
 - [x] P6b: analyst workspace, W0–W5 (signed off 2026-10-01..06; ROADMAP §6b)
 - [x] P6c: review remediation R1–R3 (signed off 2026-10-05; [plan](plans/P6c-review-remediation.md), ADR 0009)
 - [x] P6d: full-stack review remediation, W1–W3 (signed off 2026-10-06; ROADMAP §6d, ADR 0009 amendment)
-- [x] P6e: Codex verification follow-ups, W1–W2 (signed off 2026-10-06; V11 re-run pending the user's yes)
+- [x] P6e: Codex verification follow-ups, W1–W2 (signed off 2026-10-06; V11 closed)
 - [ ] P7: MCP server (open; the services exist)
 - [ ] P8: operations hardening (nightly job, backups and restore drill, readiness, alerting, doctor; F10/F11 items)
 - [ ] P9: public deployment (hosting to decide as ADR 0006; capacity envelope, shared SEC budget)
@@ -213,7 +213,9 @@ and 29 a refresh built by `main` (e5eca00, curation tree `eae566e`, clean). The 
 
 ## Log
 
-- **2026-10-06:** P6e W2 signed off; PR to `main` opened.
+- **2026-10-06:** P6e W2 signed off; PR #7 to `main` opened. V11: the Finastra private-credit live test, run alone at a
+  load of 3.0, **passed in 35.2 s** (deadline 420 s). Codex's 564 s timeout was at a load of about 23, with suites
+  overlapping, so it was machine contention, not an app defect. Next phase: P8 (user's choice).
 
 - **2026-10-06 (P6e W2):** W1 signed off ("continue"). W2 built:
   - **V05:** `job.warning` in freshness; the client refreshes `/api/freshness` in place when only the job changed; a
