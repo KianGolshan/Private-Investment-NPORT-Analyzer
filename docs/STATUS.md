@@ -1,7 +1,7 @@
 # Vantage v2 Status
 
-**Phase:** P6b (analyst workspace) and P6c (staff review remediation) are **complete and signed off** (W5 on
-2026-10-06). **Next: the user chooses** among P7 (MCP server), P8 (operations) and a PR of `v2-p6b-workspace` to main.
+**Phase:** **P6d** (remediation of the 2026-10-06 staff full-stack review, R01–R20). **W1 (publication) is built and
+awaiting sign-off**; W2 (answers) and W3 (operations) follow. P6b and P6c are complete and signed off.
 Branch `v2-p6b-workspace` (pushed, in sync).
 **Last updated:** 2026-10-06. Earlier results: [archive/STATUS-history.md](archive/STATUS-history.md).
 
@@ -12,6 +12,7 @@ Branch `v2-p6b-workspace` (pushed, in sync).
 - [x] P6 core: analysis views (signed off 2026-10-01; remaining items in ROADMAP §6)
 - [x] P6b: analyst workspace, W0–W5 (signed off 2026-10-01..06; ROADMAP §6b)
 - [x] P6c: review remediation R1–R3 (signed off 2026-10-05; [plan](plans/P6c-review-remediation.md), ADR 0009)
+- [ ] P6d: full-stack review remediation (ROADMAP §6d; W1 built 2026-10-06, awaiting sign-off)
 - [ ] P7: MCP server (open; the services exist)
 - [ ] P8: operations hardening (nightly job, backups and restore drill, readiness, alerting, doctor; F10/F11 items)
 - [ ] P9: public deployment (hosting to decide as ADR 0006; capacity envelope, shared SEC budget)
@@ -100,25 +101,37 @@ The analyst workspace is served at `/`; the route map is at the top of the [READ
 | API p95, all routes            | <200ms               | 13.5–16.1 ms over 3,805 requests (W5, load 3.2); drill total 382 KB JSON = 48.8 KB gzipped |
 | Lighthouse perf / a11y         | ≥90                  | Market 96/98, Explore 97/98, company 98/98, firm 95/98 (W5)                                |
 | Accessibility (axe, WCAG 2.1)  | 0 serious            | 0 findings of any impact, 10 views × light/dark                                            |
-| Suite                          | green                | 570 backend (538 pass, 31 skipped, 0 fail on rerun); web 34/34; e2e 27/27; LIVE 31/31      |
+| Suite                          | green                | 583 backend (552 pass, 31 skipped, 0 fail); web 35/35; e2e 27/27; LIVE 31/31 (W5)          |
 | Full backfill / first catch-up | —                    | 13.6 min / 26.9 min (P1, P2)                                                               |
 
-## Warehouse state (generation 24, 2026-10-06)
+## Warehouse state (generation 26, 2026-10-06)
 
-Schema at migration 0020.
+Schema at migration 0021. Generation 25 is a refresh (nothing new) and generation 26 a no-change review import. 26 is
+the first generation with a curation snapshot (digest `327a4489…`, curation tree `eae566e`, clean). Both files are
+read-only on disk.
 
 - 355,007 N-PORT filings: bulk 2019Q4–2026Q2 plus catch-up through filings of 2026-10-05.
 - 1.165M private-candidate rows.
 - 806 companies: 302 private, 504 public; 180 tracked.
 - 529 firms (ledger `manager_ids.csv`), 18,852 funds, 71,835 unreviewed entities.
 - 68,277 position-fact legs.
+- 198,326 N-CEN adviser rows (now in the shrink check).
 - `ingest_errors` empty. 2026Q3 bulk not posted yet.
-- The published generation 24 records curation `83d1d8c+dirty`: built before `manager_ids.csv` was committed. The
-  next job records it clean.
+- Generation 24 (now pruned) had been switched to WAL mode at 19:42:53 on 2026-10-05, two minutes after it was
+  published. Its WAL was empty, and no current script opens the warehouse read-write. Generations are now 0444 on
+  disk (ADR 0009 amendment).
 
 ## Open decisions (user)
 
-- **Next phase:** P7 (MCP server), P8 (operations) or a PR to main. No PR is open; `v2-phase6` and `v2-p6b-workspace`
+- **Sign off P6d W1** (calls made, open to overrule):
+  - a rollback republishes the older contents as a new generation, so ids only increase and the browser needs no
+    change; `--to <id>` undoes one;
+  - a live job on this host is never taken over (remove the lock by hand after a crash with pid reuse);
+  - reviewed files are staged and written back after the publish;
+  - a crash in between blocks curation jobs until `--sync-curation`;
+  - an N-CEN data set with an unknown adviser type fails the whole load;
+  - published files are made read-only.
+- **After P6d:** P7 (MCP server), P8 (operations) or a PR to main. No PR is open; `v2-phase6` and `v2-p6b-workspace`
   are pushed.
 - **Install the nightly refresh** (launchd entry in ARCHITECTURE §Refresh lifecycle)? Not installed; until then run
   `npm run refresh` at session start. P8's 30-day unattended run cannot start before it.
@@ -178,20 +191,44 @@ Schema at migration 0020.
 
 ## Next session
 
-> Resume Vantage v2 on branch `v2-p6b-workspace` (pushed). P6b and P6c are complete and signed off. Ask the user
-> which comes next:
+> Resume Vantage v2 on branch `v2-p6b-workspace` (pushed). Phase **P6d**: remediation of the 2026-10-06 staff
+> full-stack review. The plan, verdicts and waves are in ROADMAP §6d.
 >
-> - **P7 (MCP server)**: ROADMAP §7; open, the services exist.
-> - **P8 (operations)**: ROADMAP §8, plus the F10/F11 items. These are a readiness endpoint, binding to
->   127.0.0.1 by default, async gzip, a byte-bounded memo, a backup restore drill from a kept generation, alerts, the
->   intermittent test failures, and the nightly launchd job (only with the user's yes).
-> - **A PR of `v2-p6b-workspace` to main**: only when the user says so.
+> - If the user signs off W1, build **W2 (answers)**:
+>   - R06: in the zeroed branch of `lib/analytics/activity.js`, an absent class is an exit; take a
+>     `position_facts` before/after diff, verify real events with `verify-edgar.js`, add them to GOLDEN-NUMBERS
+>     F54+, and add a DATA-QUALITY trap;
+>   - R07: a disclosure must match its canonical accession; query the live warehouse and re-curate;
+>   - R13: strict ISO dates, X-Ray `pct_nav` null and the denominator basis; check real empty N-PORT XML first;
+>   - R14: distinct funds and an as-of `staleMarks`;
+>   - R15: subject status for compare and fund watch items;
+>   - R16: the X-Ray `truncated` contract.
+> - Then **W3**: proxy-addr 2.0.8 and a CI audit, `TRUST_PROXY`/`HOST`/pacing floor, the `ingest_errors` retry queue,
+>   `/freshness` without a 304, the curation digest in exports and basis, and one rebuild per import (the import
+>   takes 47–83 s now).
 >
 > Read CLAUDE.md, this file and docs/ROADMAP.md first. Gates: `npm test`, `npm run lint`, `npm run format:check`,
 > `npm run test:web`, `npm run lint:web`, `npm run build:web` then `npm run test:e2e`, `npm run test:live`; run
 > `npm run refresh` at session start.
 
 ## Log
+
+- **2026-10-06 (P6d W1):** the staff full-stack review checked against the code. All seven P1 findings were confirmed;
+  R10, R11 and R17 are deployment concerns, and R02 follows from R01. W1 built:
+  - generation ids from `generations/SEQUENCE`, and rollback as a new generation (R01, R02);
+  - a lock token, `assertOwned` before the publish, and no takeover of a live local job (R03);
+  - N-CEN required columns, adviser-type domain and orphan check, plus `ncen_advisers` in the shrink check (R04;
+    the real 2026q2 data set loads: 501 filings, 3,959 rows);
+  - staged curation with `curation_snapshot` and digest, written back after the publish (R05, R18);
+  - post-commit warnings instead of failure, and fsync (R09);
+  - 0444 generations.
+
+  Verification:
+  - 13 new regressions fail on c697a12;
+  - backend 552/0/31 skipped; web 35/35;
+  - on a clone of the live warehouse: job 25, rollback 26, review import 27 (82.5 s, files unchanged), job 28, then
+    rollback 29; the open company page followed 28 and 29 without a reload;
+  - live: refresh → generation 25, review import → 26.
 
 - **2026-10-06:** W5 signed off by the user; P6b and P6c complete. STATUS shortened to the current state: the P6b W1–W5
   and P6c log, the pre-W4 snapshot and the decisions as recorded moved verbatim to the archive.

@@ -13,7 +13,15 @@ const request = require('supertest');
 const { goldenWarehouse } = require('./helpers/warehouseApp');
 const { openWarehouseReadOnly, generationOf } = require('../lib/warehouse/db');
 const { warehouseRouter } = require('../lib/api/warehouse');
-const { runJob, rollback, generations, jobState, acquireLock, publishedFile } = require('../lib/warehouse/job');
+const {
+  runJob,
+  rollback,
+  generations,
+  jobState,
+  acquireLock,
+  publishedFile,
+  syncCuration,
+} = require('../lib/warehouse/job');
 
 // The golden warehouse as a plain file, the way every warehouse looked before
 // generations (refresh run 1 ok).
@@ -46,10 +54,12 @@ test('a job publishes a new generation; the pre-generation file is kept for roll
   const meta = read(dbPath, 'SELECT * FROM generation_meta WHERE id = ?', r.generation);
   assert.equal(meta.kind, 'curation');
   assert.equal(meta.status, 'ok');
-  assert.equal(read(dbPath, 'SELECT status FROM refresh_runs WHERE id = ?', r.generation).status, 'ok');
+  assert.equal(meta.run_id, r.runId);
+  assert.equal(read(dbPath, 'SELECT status FROM refresh_runs WHERE id = ?', r.runId).status, 'ok');
   assert.equal(jobState(dbPath).status, 'ok');
   // published generations are immutable files with no WAL beside them
   assert.equal(read(dbPath, 'PRAGMA journal_mode').journal_mode, 'delete');
+  assert.equal(fs.statSync(publishedFile(dbPath)).mode & 0o777, 0o444, 'read-only on disk');
   assert.ok(!fs.readdirSync(path.join(dir, 'generations')).some(f => /candidate|-wal$/.test(f)));
 });
 
@@ -133,8 +143,8 @@ test('the web server switches to a new generation on the next request; its versi
   assert.equal(c.job.status, 'failed');
 });
 
-test('rollback publishes the generation before the current one; two generations are kept', async () => {
-  const { dbPath } = tmpWarehouse();
+test('rollback republishes the previous contents as a new generation; ids never repeat (R01)', async () => {
+  const { dir, dbPath } = tmpWarehouse();
   const g1 = await runJob('curation', () => ({}), { dbPath });
   const g2 = await runJob('curation', db => db.exec(RENAME) && {}, { dbPath });
   const g3 = await runJob('curation', () => ({}), { dbPath });
@@ -146,9 +156,192 @@ test('rollback publishes the generation before the current one; two generations 
     ]
   );
   assert.ok(g1.generation < g2.generation);
+  const gen3File = publishedFile(dbPath);
   const r = rollback(dbPath);
-  assert.deepEqual([r.from, r.to], [g3.generation, g2.generation]);
-  assert.equal(generations(dbPath).find(g => g.published).id, g2.generation);
+  assert.equal(r.from, g3.generation);
+  assert.equal(r.restores, g2.generation);
+  assert.ok(r.to > g3.generation, 'a rollback is a new, higher generation');
+  assert.equal(generations(dbPath).find(g => g.published).id, r.to);
+  const meta = read(dbPath, 'SELECT kind, restores FROM generation_meta WHERE id = ?', r.to);
+  assert.deepEqual({ ...meta }, { kind: 'rollback', restores: g2.generation });
+  assert.ok(read(dbPath, 'SELECT id FROM companies WHERE name = ?', 'Anthropic (renamed in a job)'), "g2's contents");
+  // the next job gets an id never used before, and no published file is overwritten
+  const g4 = await runJob('curation', () => ({}), { dbPath });
+  const ids = [g1, g2, g3].map(g => g.generation).concat([r.to, g4.generation]);
+  assert.equal(new Set(ids).size, ids.length);
+  assert.ok(g4.generation > r.to);
+  assert.notEqual(publishedFile(dbPath), gen3File);
+  assert.equal(fs.readFileSync(path.join(dir, 'generations', 'SEQUENCE'), 'utf8').trim(), String(g4.generation));
+});
+
+test('rollback: a second rollback has nothing older to go to; --to undoes it', async () => {
+  const { dbPath } = tmpWarehouse();
+  await runJob('curation', () => ({}), { dbPath });
+  const g2 = await runJob('curation', db => db.exec(RENAME) && {}, { dbPath });
+  const r = rollback(dbPath);
+  assert.throws(() => rollback(dbPath), /no earlier generation/);
+  const back = rollback(dbPath, { to: g2.generation });
+  assert.equal(back.restores, g2.generation);
+  assert.ok(back.to > r.to);
+  assert.ok(read(dbPath, 'SELECT id FROM companies WHERE name = ?', 'Anthropic (renamed in a job)'));
+});
+
+test('a reader that misses a rollback still converges on the next publication (R01)', async () => {
+  const { dbPath } = tmpWarehouse();
+  await runJob('curation', () => ({}), { dbPath });
+  await runJob('curation', db => db.exec(RENAME) && {}, { dbPath });
+  const app = express();
+  app.use(
+    '/api',
+    warehouseRouter(() => openWarehouseReadOnly(dbPath))
+  );
+  const fresh = async () => (await request(app).get('/api/freshness').expect(200)).body.refreshId;
+  const name = async () => JSON.stringify((await request(app).get('/api/search?q=anthropic').expect(200)).body);
+  const seen = [await fresh()];
+  assert.match(await name(), /renamed in a job/);
+  rollback(dbPath); // this reader asks nothing during the rollback
+  const g = await runJob(
+    'curation',
+    db => db.exec("UPDATE companies SET name = 'Anthropic C' WHERE name = 'Anthropic'") && {},
+    {
+      dbPath,
+    }
+  );
+  seen.push(await fresh());
+  assert.equal(seen[1], g.generation);
+  assert.ok(seen[1] > seen[0]);
+  assert.match(await name(), /Anthropic C/);
+  assert.doesNotMatch(await name(), /renamed in a job/);
+});
+
+test('lock fencing: a job whose lock was taken over cannot release or publish (R03)', async () => {
+  const { dbPath } = tmpWarehouse();
+  const before = publishedFile(dbPath);
+  let release;
+  const held = new Promise(resolve => (release = resolve));
+  const first = runJob('refresh', () => held.then(() => ({})), { dbPath });
+  await new Promise(r => setTimeout(r, 50));
+  // the first owner's heartbeat looks stopped and it runs on another host: a second owner takes over
+  const lockFile = `${dbPath}.lock`;
+  const holder = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+  fs.writeFileSync(lockFile, JSON.stringify({ ...holder, host: 'elsewhere' }));
+  const old = new Date(Date.now() - 11 * 60 * 1000);
+  fs.utimesSync(lockFile, old, old);
+  const second = acquireLock(dbPath, 'curation');
+  release();
+  await assert.rejects(first, err => err.status === 409 && /taken over/.test(err.message));
+  assert.equal(publishedFile(dbPath), before, 'the fenced job published nothing');
+  assert.ok(second.owned(), "the first job's release left the second lock in place");
+  assert.equal(JSON.parse(fs.readFileSync(lockFile, 'utf8')).token, second.token);
+  second.release();
+  assert.ok(!fs.existsSync(lockFile));
+});
+
+test('lock: a live process on this host is never taken over, however old its heartbeat (R03)', () => {
+  const { dbPath } = tmpWarehouse();
+  const lock = acquireLock(dbPath, 'refresh');
+  const old = new Date(Date.now() - 60 * 60 * 1000);
+  fs.utimesSync(`${dbPath}.lock`, old, old);
+  assert.throws(
+    () => acquireLock(dbPath, 'curation'),
+    err => err.status === 409
+  );
+  lock.release();
+});
+
+test('after the commit point, a cleanup failure is a warning on a published job, not a failure (R09)', async () => {
+  const { dbPath } = tmpWarehouse();
+  const realRm = fs.rmSync;
+  // pruning fails (ENOSPC-like) once the new generation is live
+  const g1 = await runJob('curation', () => ({}), { dbPath });
+  await runJob('curation', () => ({}), { dbPath });
+  fs.rmSync = (f, ...a) => {
+    if (/warehouse-\d+\.db$/.test(String(f)))
+      throw Object.assign(new Error('ENOSPC: no space left'), { code: 'ENOSPC' });
+    return realRm(f, ...a);
+  };
+  let r;
+  try {
+    r = await runJob('curation', db => db.exec(RENAME) && {}, { dbPath });
+  } finally {
+    fs.rmSync = realRm;
+  }
+  assert.equal(r.status, 'ok');
+  assert.match(r.warning, /pruning.*ENOSPC/);
+  assert.equal(generations(dbPath).find(g => g.published).id, r.generation);
+  assert.equal(jobState(dbPath).status, 'ok');
+  assert.match(jobState(dbPath).warning, /ENOSPC/);
+  assert.ok(g1.generation < r.generation);
+});
+
+const REVIEW = path.join(__dirname, '..', 'data', 'review');
+function reviewCopy() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vantage-review-'));
+  for (const f of fs.readdirSync(REVIEW)) fs.copyFileSync(path.join(REVIEW, f), path.join(dir, f));
+  return dir;
+}
+const snapshotOf = dir => Object.fromEntries(fs.readdirSync(dir).map(f => [f, fs.readFileSync(path.join(dir, f))]));
+
+test('curation: a failed job leaves the reviewed files byte for byte as they were (R05)', async () => {
+  const { dbPath } = tmpWarehouse();
+  const dir = reviewCopy();
+  const before = snapshotOf(dir);
+  const target = publishedFile(dbPath);
+  // the import rewrites the ledgers in the staged copy, then a later stage fails
+  for (const stage of ['import', 'validation']) {
+    await assert.rejects(
+      runJob(
+        'curation',
+        (db, { curationDir }) => {
+          assert.notEqual(curationDir, dir);
+          fs.appendFileSync(path.join(curationDir, 'company_ids.csv'), '9999,Never Published,,\n');
+          if (stage === 'import') throw new Error('disclosure import failed');
+          db.exec('DELETE FROM filings WHERE rowid % 10 = 0'); // validation refuses the shrink
+          return {};
+        },
+        { dbPath, curationDir: dir }
+      ),
+      stage === 'import' ? /disclosure import failed/ : /validation failed/
+    );
+    assert.deepEqual(snapshotOf(dir), before, `files unchanged after a failed ${stage}`);
+    assert.equal(publishedFile(dbPath), target);
+  }
+});
+
+test('curation: a published job writes its files back and records the exact snapshot (R05, R18)', async () => {
+  const { dbPath } = tmpWarehouse();
+  const dir = reviewCopy();
+  const r = await runJob(
+    'curation',
+    (db, { curationDir }) => {
+      fs.appendFileSync(path.join(curationDir, 'company_ids.csv'), '');
+      fs.writeFileSync(path.join(curationDir, 'note.txt'), 'staged');
+      return {};
+    },
+    { dbPath, curationDir: dir }
+  );
+  assert.equal(fs.readFileSync(path.join(dir, 'note.txt'), 'utf8'), 'staged');
+  assert.ok(!fs.existsSync(path.join(dir, '.pending-publish.json')));
+  const meta = read(dbPath, 'SELECT curation_digest FROM generation_meta WHERE id = ?', r.generation);
+  assert.match(meta.curation_digest, /^[0-9a-f]{64}$/);
+  const snap = read(dbPath, "SELECT content FROM curation_snapshot WHERE name = 'aliases.csv'");
+  assert.ok(Buffer.from(snap.content).equals(fs.readFileSync(path.join(dir, 'aliases.csv'))));
+  // a crash after the publish, before the write-back: the next curation job refuses until synced
+  fs.writeFileSync(path.join(dir, '.pending-publish.json'), JSON.stringify({ generation: r.generation, files: [] }));
+  fs.writeFileSync(path.join(dir, 'note.txt'), 'lost');
+  await assert.rejects(
+    runJob('curation', () => ({}), { dbPath, curationDir: dir }),
+    /--sync-curation/
+  );
+  syncCuration(dbPath, dir);
+  assert.equal(fs.readFileSync(path.join(dir, 'note.txt'), 'utf8'), 'staged');
+  assert.ok(!fs.existsSync(path.join(dir, '.pending-publish.json')));
+  // a job without curation carries the snapshot and its digest forward
+  const g = await runJob('refresh', () => ({}), { dbPath });
+  assert.equal(
+    read(dbPath, 'SELECT curation_digest d FROM generation_meta WHERE id = ?', g.generation).d,
+    meta.curation_digest
+  );
 });
 
 test('the CLI writers run as jobs: each moves the published generation exactly once (F04)', () => {

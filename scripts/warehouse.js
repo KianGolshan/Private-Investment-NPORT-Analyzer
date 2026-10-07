@@ -1,18 +1,27 @@
 #!/usr/bin/env node
 // The published warehouse generations (lib/warehouse/job.js, ADR 0009).
 //
-//   npm run warehouse                 # generations, which one is published, the last job
-//   npm run warehouse -- --rollback   # publish the generation before the current one
+//   npm run warehouse                        # generations, which one is published, the last job
+//   npm run warehouse -- --rollback          # republish the previous contents as a new generation
+//   npm run warehouse -- --rollback --to N   # republish kept generation N (also undoes a rollback)
+//   npm run warehouse -- --sync-curation     # write the published curation snapshot to data/review
 require('dotenv').config();
 const path = require('path');
 const { defaultWarehousePath } = require('../lib/warehouse/db');
-const { generations, jobState, rollback } = require('../lib/warehouse/job');
+const { generations, jobState, rollback, syncCuration } = require('../lib/warehouse/job');
 
 function main() {
   const dbPath = defaultWarehousePath();
-  if (process.argv.includes('--rollback')) {
-    const r = rollback(dbPath, { log: console.log });
-    console.log(`published generation ${r.to} (was ${r.from})`);
+  const args = process.argv.slice(2);
+  if (args.includes('--rollback')) {
+    const at = args.indexOf('--to');
+    const r = rollback(dbPath, { log: console.log, to: at >= 0 ? Number(args[at + 1]) : null });
+    console.log(`published generation ${r.to} with the contents of generation ${r.restores} (was ${r.from})`);
+    return;
+  }
+  if (args.includes('--sync-curation')) {
+    const names = syncCuration(dbPath);
+    console.log(`wrote ${names.join(', ')} from the published generation`);
     return;
   }
   const gens = generations(dbPath);
@@ -25,7 +34,8 @@ function main() {
   if (j)
     console.log(
       `last job: ${j.kind} ${j.status}${j.generation ? ` (generation ${j.generation})` : ''}, ` +
-        `${j.startedAt || ''} → ${j.finishedAt || 'running'}${j.error ? `: ${j.error}` : ''}${j.note ? ` (${j.note})` : ''}`
+        `${j.startedAt || ''} → ${j.finishedAt || 'running'}${j.error ? `: ${j.error}` : ''}${j.note ? ` (${j.note})` : ''}` +
+        `${j.warning ? `; WARNING: ${j.warning}` : ''}`
     );
 }
 

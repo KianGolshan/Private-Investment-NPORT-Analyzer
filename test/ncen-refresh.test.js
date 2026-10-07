@@ -101,3 +101,81 @@ test('refreshNcen: a filing EDGAR cannot serve is reported and retried on the ne
   assert.equal(r.topUp.failed[0].accession, GFA);
   assert.equal(db.prepare('SELECT COUNT(*) n FROM ncen_filings WHERE accession = ?').get(GFA).n, 0);
 });
+
+// ---- schema drift (P6d, staff full-stack review R04) ----
+// The real mini archive with one thing changed. A drifted data set must fail
+// the load and leave every stored mapping as it was, never store filings with
+// zero advisers (storeFiling replaces a filing's rows).
+const os = require('node:os');
+const { ingestNcenDataset } = require('../lib/warehouse/ncen');
+const { readZip, writeZip } = require('./helpers/zip');
+
+async function drifted(edit) {
+  const files = await readZip(ZIP);
+  edit(files);
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'vantage-ncen-')), '2026q1_ncen.zip');
+  fs.writeFileSync(file, writeZip(files));
+  return file;
+}
+const tsvEdit = (files, name, fn) => (files[name] = Buffer.from(fn(files[name].toString('utf8'))));
+
+test('N-CEN drift: the unchanged rewritten archive loads exactly as the original (control)', async () => {
+  const db = openWarehouse(':memory:');
+  const r = await ingestNcenDataset(db, await drifted(() => {}), { quarter: '2026q1' });
+  assert.deepEqual(r, { quarter: '2026q1', filings: 4, rows: 62 });
+});
+
+for (const [label, edit, error] of [
+  [
+    'a renamed ADVISER_TYPE column',
+    f => tsvEdit(f, 'ADVISER.tsv', t => t.replace('ADVISER_TYPE', 'ADVISOR_TYPE')),
+    /ADVISER\.tsv: missing column\(s\) ADVISER_TYPE/,
+  ],
+  [
+    'a renamed FUND_ID column',
+    f => tsvEdit(f, 'FUND_REPORTED_INFO.tsv', t => t.replace('FUND_ID', 'FUND_KEY')),
+    /FUND_REPORTED_INFO\.tsv: missing column\(s\) FUND_ID/,
+  ],
+  [
+    'a new spelling of the adviser role',
+    f => tsvEdit(f, 'ADVISER.tsv', t => t.replace(/\tAdvisor\t/g, '\tAdviser\t')),
+    /unknown ADVISER_TYPE "Adviser" \(53 rows\)/,
+  ],
+  [
+    'adviser rows that point at no fund',
+    f => tsvEdit(f, 'FUND_REPORTED_INFO.tsv', t => t.split('\n').slice(0, 2).join('\n') + '\n'),
+    /adviser rows name a FUND_ID not in FUND_REPORTED_INFO/,
+  ],
+]) {
+  test(`N-CEN drift: ${label} fails the load and keeps the stored mappings`, async () => {
+    const db = openWarehouse(':memory:');
+    await ingestNcenDataset(db, path.join(NCEN, 'mini_ncen.zip'), { quarter: '2026q1' });
+    const before = db.prepare('SELECT * FROM ncen_advisers ORDER BY accession, series_id, file_num, role').all();
+    assert.equal(before.length, 62);
+    await assert.rejects(ingestNcenDataset(db, await drifted(edit), { quarter: '2026q1' }), error);
+    assert.deepEqual(
+      db.prepare('SELECT * FROM ncen_advisers ORDER BY accession, series_id, file_num, role').all(),
+      before
+    );
+    assert.equal(
+      db.prepare("SELECT status FROM ingest_log WHERE kind = 'ncen' ORDER BY id DESC").get().status,
+      'failed'
+    );
+  });
+}
+
+test('N-CEN drift: terminated advisers are known types and stay out of the current mapping', async () => {
+  const db = openWarehouse(':memory:');
+  const file = await drifted(f =>
+    tsvEdit(f, 'ADVISER.tsv', t => {
+      const [head, first, ...rest] = t.split('\n');
+      return [
+        head,
+        first.replace('\tSubadvisor\t', '\tTerminated Subadvisor\t').replace('\tAdvisor\t', '\tTerminated Advisor\t'),
+        ...rest,
+      ].join('\n');
+    })
+  );
+  const r = await ingestNcenDataset(db, file, { quarter: '2026q1' });
+  assert.equal(r.rows, 61);
+});

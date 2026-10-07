@@ -28,7 +28,9 @@ function parseArgs(argv) {
 }
 
 // A warehouse job of kind 'curation': a lock conflict is 409, and nothing is
-// published unless the import and validation succeed.
+// published unless the import and validation succeed. The decision is written
+// to a staged copy of the reviewed files, which reach --dir only after the
+// publish (lib/warehouse/job.js curationDir).
 async function main() {
   try {
     const opts = parseArgs(process.argv.slice(2));
@@ -36,11 +38,11 @@ async function main() {
     let made;
     await runJob(
       'curation',
-      (db, { runId }) => {
-        made = makeCompany(db, { ...opts, log, runId });
+      (db, { runId, curationDir }) => {
+        made = makeCompany(db, { ...opts, dir: curationDir, log, runId });
         return {};
       },
-      { log }
+      { log, curationDir: opts.dir }
     );
     console.log(JSON.stringify(made));
   } catch (err) {

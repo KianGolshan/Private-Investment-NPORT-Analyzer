@@ -131,6 +131,19 @@ Then W5 (with the rest of F18). F10 and F11 move to P8 (readiness, binding, back
 
 ---
 
+## Phase 6d: full-stack review remediation (plan approved 2026-10-06)
+
+**Entry gate:** the staff full-stack review of 2026-10-06 (R01–R20, commit c697a12) checked against the code. Every P1
+finding (R01–R07) was confirmed. R17, backups, restore drills and alerting stay in P8/P9.
+
+| Wave                         | Scope                                                                                                                                                                                                                     | Exit check                                                                                            |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **W1 Publication**           | ids outside the data and rollback as a new generation (R01, R02), lock token and fencing (R03), N-CEN schema checks (R04), staged curation written back after publish (R05), commit point (R09), read-only generations    | Built 2026-10-06; awaiting sign-off (ADR 0009 amendment)                                              |
+| **W2 Answers**               | zero+exit attribution (R06), disclosure bound to its accession (R07), strict dates and X-Ray denominators (R13), dashboard fund counts and as-of staleness (R14), unknown subjects (R15), X-Ray truncation contract (R16) | `position_facts` before/after diff; real events checked against raw EDGAR and added to GOLDEN-NUMBERS |
+| **W3 Operations, assurance** | proxy-addr 2.0.8 and a CI audit (R10), `TRUST_PROXY`/`HOST`/pacing floor (R11), retry queue apart from the window (R12), `/freshness` without a 304 (R08), curation digest in exports (R18), one rebuild per import (R20) | `npm audit --omit=dev` clean; a real refresh publishes with `curation_digest`                         |
+
+---
+
 ## Phase 7: MCP server
 
 **Entry gate:** P5a checkpoint (open now; every service it needs exists).
@@ -185,6 +198,12 @@ rather than a live SEC call. Tools (the fund and firm tools arrive when P5b and 
     vehicles. Only advisers are loaded from N-CEN today; check the field's coverage in the data sets and on
     EDGAR (trap 21) before adopting.
 
+- **Carried from the 2026-10-06 review:**
+  - off-host backup with a tested restore onto an empty host (R09);
+  - kill-at-publication crash drills (R09);
+  - reconciliation of same-accession corrections and EDGAR index deletions (R12);
+  - event-loop lag and RSS in `npm run bench` (R17).
+
 **Success criteria:** 30 days of unattended nightly refreshes with no gaps; the monthly regression is green.
 
 ---
@@ -211,6 +230,12 @@ LinkedIn, a personal website and a resume. It refreshes itself nightly from the 
 - **Company ids survive a rebuild** (P5a): the fallback "full ingest on the server" must reproduce every
   public URL.
 - A private staging deploy may start once P5b is signed off. Public launch waits for P6 and P8.
+- **From the 2026-10-06 review (R11, R17):**
+  - one SEC request budget shared by the web and refresh processes;
+  - a verified proxy/origin boundary;
+  - caps on queued and expensive work;
+  - a measured concurrency envelope (p50/p95/p99, RSS, event-loop lag), with large responses compressed off the
+    event loop and the memo bounded by bytes.
 
 **Decision to confirm with the user first (record as ADR 0006):** hosting provider.
 

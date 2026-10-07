@@ -62,4 +62,18 @@ describe('api client freshness', () => {
     window.dispatchEvent(new Event('focus'));
     await waitFor(() => expect(getByTestId('v').textContent).toBe('2'));
   });
+
+  it('a rollback is adopted: the server republishes old contents under a higher generation (review R01/R02)', async () => {
+    generation = 3;
+    serve(url => ({ refreshId: generation, url, contents: generation === 3 ? 'bad' : 'restored' }));
+    expect(((await getJSON('/c')) as { contents: string }).contents).toBe('bad');
+    // `npm run warehouse -- --rollback` publishes generation 4 with generation 2's contents
+    generation = 4;
+    await revalidate();
+    expect(((await getJSON('/c')) as { contents: string }).contents).toBe('restored');
+    // and the next job's generation 5 is adopted in turn
+    generation = 5;
+    await revalidate();
+    expect(((await getJSON('/c')) as { refreshId: number }).refreshId).toBe(5);
+  });
 });

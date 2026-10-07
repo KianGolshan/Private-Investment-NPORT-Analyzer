@@ -141,14 +141,18 @@ Fund calendars are staggered, so "as of D" mixes mark dates. The UI always shows
 
 - **Every write is a job** (`lib/warehouse/job.js`, ADR 0009). The refresh, ingests, N-CEN, the review import,
   "make this a company", backfills and the entity report all:
-  1. take the job lock (`warehouse.db.lock`, heartbeat 30 s, stale after 10 min or when its process is gone);
+  1. take the job lock (`warehouse.db.lock` with an owner token, heartbeat 30 s; taken over when its process is
+     gone, or after 10 min without a heartbeat from another host; checked again before publishing);
   2. copy the published generation to a candidate (SQLite backup API);
   3. run, then rebuild every derived table (`refresh.rebuildDerived`);
   4. validate (integrity, schema, row counts against the published generation, derived tables present);
-  5. publish `generations/warehouse-<id>.db` by swapping the `warehouse.db` symlink.
+  5. publish `generations/warehouse-<id>.db` (read-only on disk; the id from `generations/SEQUENCE`, never
+     reused) by swapping the `warehouse.db` symlink: the commit point. A job given the reviewed files works on a
+     staged copy, which is stored in the generation (`curation_snapshot`) and written back only after the publish.
 
   A failure publishes nothing. `warehouse.db.job.json` holds the last job's state, which `/api/freshness` reports
-  as `job`. `npm run warehouse` lists the generations; `-- --rollback` republishes the previous one.
+  as `job`. `npm run warehouse` lists the generations; `-- --rollback` republishes the previous contents as a new generation (`--to <id>` for any kept one), and
+  `-- --sync-curation` writes the published curation snapshot back to `data/review`.
 
 - **Nightly** (`npm run refresh`, `scripts/refresh.js` → `runJob('refresh', refreshIngest)`):
   1. Run as a job (above). The job lock replaces the old `refresh_runs` claim; a `refresh_runs` row still records
