@@ -32,7 +32,7 @@ phase are in [archive/STATUS-history.md](archive/STATUS-history.md). Code commen
 | P5a   | Services, stable company ids, search over every issuer, read-only API, the company page on the warehouse (ADR 0008)  |
 | P5b   | `filing_totals`, capital-structure rows, fund page, Batch and Watchlist on services, exports, admin "make a company" |
 
-## Phase 6: analysis views (core signed off 2026-10-01; remaining items below; branch `v2-phase6`)
+## Phase 6: analysis views (core signed off 2026-10-01; remaining items below; merged to main, PR #5)
 
 **Entry gate:** P5b signed off (2026-09-30).
 
@@ -78,7 +78,7 @@ changes 138, top 118, feed 192).
 
 ---
 
-## Phase 6b: analyst workspace (branch `v2-p6b-workspace`; W0–W5 signed off 2026-10-01..06, complete)
+## Phase 6b: analyst workspace (W0–W5 signed off 2026-10-01..06, complete; merged to main, PR #5)
 
 **Goal (user, 2026-10-01):** the best way to search, analyze and display the data.
 
