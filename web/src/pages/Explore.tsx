@@ -397,6 +397,7 @@ export default function Explore() {
           <Card title="Table" flush>
             <DataTable
               basis={BASIS}
+              source={p}
               columns={columns}
               rows={shown}
               rowKey={r => String(r.key)}
@@ -528,6 +529,7 @@ function DrillView({
           </div>
           <DataTable
             basis={BASIS}
+            source={d}
             columns={columns}
             rows={d.events}
             rowKey={(e, i) => `${e.fundKey}|${e.companyId}|${e.accession ?? e.markDate}|${i}`}

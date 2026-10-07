@@ -151,6 +151,7 @@ export default function Filings({ base, sq, name, newest, openPosition }: ViewPr
           </div>
           <Card title="Stored rows" flush>
             <DataTable
+              source={d}
               columns={columns}
               rows={d.rows}
               rowKey={r => `${r.accession}:${r.rowKey}`}

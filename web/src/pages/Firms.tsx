@@ -33,6 +33,7 @@ export default function Firms() {
         <Card flush>
           <DataTable
             basis={BASIS}
+            source={firms.data}
             columns={[
               {
                 id: 'name',

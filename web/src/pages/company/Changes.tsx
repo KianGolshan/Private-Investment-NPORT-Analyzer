@@ -76,7 +76,7 @@ export default function Changes({ base, sq, subject, name, newest, openPosition 
             )}
           </div>
           <Card title="Position changes, filing by filing" flush>
-            <ChangesTable events={events} exportName={`${name}-changes`} onFund={openPosition} />
+            <ChangesTable events={events} source={act.data} exportName={`${name}-changes`} onFund={openPosition} />
           </Card>
         </>
       )}

@@ -147,6 +147,7 @@ export default function Movers() {
               <Card key={title} title={title} flush>
                 <DataTable
                   basis={BASIS}
+                  source={d}
                   columns={cols(main)}
                   rows={[...rows]}
                   rowKey={r => String(r.companyId)}

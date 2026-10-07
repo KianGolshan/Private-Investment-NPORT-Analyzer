@@ -212,6 +212,7 @@ export function BookOverview({ who, name, newest }: { who: Who; name: string; ne
         <Card title={`By company, ${p.periods[i0]?.label ?? ''} – ${p.periods[i1]?.label ?? ''}`} flush>
           <DataTable
             basis={BASIS}
+            source={p}
             columns={columns}
             rows={rows}
             rowKey={r => String(r.key)}

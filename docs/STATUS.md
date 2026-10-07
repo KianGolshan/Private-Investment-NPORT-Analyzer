@@ -1,9 +1,8 @@
 # Vantage v2 Status
 
-**Phase:** P6b, P6c and **P6d** (remediation of the 2026-10-06 staff full-stack review, R01–R20) are **complete and
-signed off** (W3 on 2026-10-06). **Everything is on `main`** (PR #5, e5eca00, 2026-10-06), the only branch; the live
-warehouse (generation 29) was built by that commit. **Next: the user chooses** P7 (MCP server) or P8 (operations).
-**Last updated:** 2026-10-06. Earlier results: [archive/STATUS-history.md](archive/STATUS-history.md).
+**Phase:** **P6e** (follow-ups from the Codex verification review of 2026-10-06, V01–V11) on branch
+`v2-p6e-verification`. **W1 and W2 are signed off**; PR #7 to `main` is open for the user to merge. V11 is closed (the
+Finastra live test passes alone in 35 s). **Next, after the merge: P8 (operations)**, the user's choice.
 
 ## Phase tracker
 
@@ -13,6 +12,7 @@ warehouse (generation 29) was built by that commit. **Next: the user chooses** P
 - [x] P6b: analyst workspace, W0–W5 (signed off 2026-10-01..06; ROADMAP §6b)
 - [x] P6c: review remediation R1–R3 (signed off 2026-10-05; [plan](plans/P6c-review-remediation.md), ADR 0009)
 - [x] P6d: full-stack review remediation, W1–W3 (signed off 2026-10-06; ROADMAP §6d, ADR 0009 amendment)
+- [x] P6e: Codex verification follow-ups, W1–W2 (signed off 2026-10-06; V11 closed)
 - [ ] P7: MCP server (open; the services exist)
 - [ ] P8: operations hardening (nightly job, backups and restore drill, readiness, alerting, doctor; F10/F11 items)
 - [ ] P9: public deployment (hosting to decide as ADR 0006; capacity envelope, shared SEC budget)
@@ -136,7 +136,6 @@ and 29 a refresh built by `main` (e5eca00, curation tree `eae566e`, clean). The 
   - proxy trust only on a loopback `HOST` or by `TRUST_PROXY`;
   - 5 retry attempts;
   - the export `Source` column;
-  - 4 dev-only advisories (nodemon chain, source-map-js) left for a lockfile pass.
 - **Install the nightly refresh** (launchd entry in ARCHITECTURE §Refresh lifecycle)? Not installed; until then run
   `npm run refresh` at session start. P8's 30-day unattended run cannot start before it.
 - **Calls still open to overrule** (details in the archive's "Decisions as recorded at W5 sign-off"):
@@ -213,6 +212,52 @@ and 29 a refresh built by `main` (e5eca00, curation tree `eae566e`, clean). The 
 > `npm run refresh` at session start.
 
 ## Log
+
+- **2026-10-06:** P6e W2 signed off; PR #7 to `main` opened. V11: the Finastra private-credit live test, run alone at a
+  load of 3.0, **passed in 35.2 s** (deadline 420 s). Codex's 564 s timeout was at a load of about 23, with suites
+  overlapping, so it was machine contention, not an app defect. Next phase: P8 (user's choice).
+
+- **2026-10-06 (P6e W2):** W1 signed off ("continue"). W2 built:
+  - **V05:** `job.warning` in freshness; the client refreshes `/api/freshness` in place when only the job changed; a
+    top-bar pill shows "Job running", "Last job failed" or "Published with warnings";
+  - **V07:** DataTable's Source comes from the rows' own answer (`source` prop, full digest) on all 34 exporting
+    tables, guarded by `test/invariants.test.js`;
+  - **V08:**
+    - `hidden(row)` keeps screen and export equal (X-Ray Returns), and the returns export carries the proxy caveat;
+    - the company stale panel honors the page date;
+    - leadership is labeled "first at mark date";
+  - **V09:**
+    - nodemon replaced by `node --watch`; `npm audit fix`; root and web all-dependency audits clean, and CI gates
+      them;
+    - Vitest `maxWorkers: 2`.
+
+  Verification:
+  - every new regression fails on the W1 code;
+  - backend 581/0/31 skipped; web 39/39; e2e 27/27;
+  - browser on a scratch clone: the failed-job pill at a constant generation, and a Market CSV whose Source is
+    "generation 30, curation sha256 327a4489…" (full digest).
+
+  V11 (Finastra live re-run) waits for the user's yes.
+
+- **2026-10-06 (P6e W1):** the Codex verification review checked; V01–V11 all real. W1 built:
+  - **V01:** a stale lock is taken by rename and verified;
+  - **V02:** `lib/warehouse/curation.js` is the only curation reader; a refresh uses the generation's snapshot;
+  - **V03:** commit-aware cleanup in `runJob` and `rollback`;
+  - **V04:** N-CEN coverage of at least half the funds (real 99.8%), and a filing is never replaced by zero advisers
+    (trap 56);
+  - **V06:** the newest empty filing warns; the shared label "no longer reported (the filing lists no holdings)"
+    covers holders, activity and legs;
+  - **V10:** the live test opens the warehouse read-only.
+
+  Guards:
+  - post-commit fault-injection sweeps for jobs and rollbacks (the first run found that a directory-sync failure was
+    only logged);
+  - `test/invariants.test.js`;
+  - LESSONS 37–39 and CLAUDE.md fix-completeness rules;
+  - `npm test` runs two files at a time.
+
+  The prod-startup flake was traced: its servers warmed the real 578 MB warehouse during timed request bursts; now
+  isolated. All 10 new regressions fail on 81496b8. Backend 579/0/31 skipped in 115 s; web 37/37.
 
 - **2026-10-06 (close-out):** PR #5 merged to `main` (e5eca00) by the user; `v2-p6b-workspace` deleted on GitHub and
   locally; `main` is the only branch. Local alignment:

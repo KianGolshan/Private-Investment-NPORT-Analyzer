@@ -121,6 +121,7 @@ export function BridgeView({ bridge: b, name }: { bridge: Bridge; name: string }
       </Card>
       <Card title="Bridge steps" flush>
         <DataTable
+          source={b}
           columns={[
             { id: 'label', header: 'Step', value: (s: BridgeRow) => s.label, noSort: true },
             {

@@ -289,6 +289,7 @@ export default function Positions({ base, sq, name, newest, openPosition }: View
           </Card>
           <Card title="Funds" flush>
             <DataTable
+              source={hist.data}
               columns={columns}
               rows={funds}
               rowKey={f => f.fundKey}

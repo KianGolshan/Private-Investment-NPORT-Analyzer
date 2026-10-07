@@ -33,7 +33,15 @@ export interface Freshness extends Envelope {
     codeRev: string | null;
   } | null;
   /** The last warehouse job, apart from the data version. */
-  job?: { kind: string; status: string; startedAt: string; finishedAt: string | null; error: string | null } | null;
+  job?: {
+    kind: string;
+    status: string;
+    startedAt: string;
+    finishedAt: string | null;
+    error: string | null;
+    /** published, with warnings (validation, post-commit cleanup) */
+    warning?: string | null;
+  } | null;
 }
 
 export interface Company {

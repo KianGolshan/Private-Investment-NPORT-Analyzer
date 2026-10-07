@@ -76,4 +76,22 @@ describe('api client freshness', () => {
     await revalidate();
     expect(((await getJSON('/c')) as { refreshId: number }).refreshId).toBe(5);
   });
+
+  it('a job-only change (same generation) reaches the views that show it (Codex V05)', async () => {
+    let job = { kind: 'refresh', status: 'running' };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ok({ refreshId: 29, job }))
+    );
+    function Pill() {
+      const s = useApi<{ refreshId: number; job: { status: string } }>('/api/freshness');
+      return <span data-testid="j">{s.data ? s.data.job.status : '…'}</span>;
+    }
+    const { getByTestId } = render(<Pill />);
+    await waitFor(() => expect(getByTestId('j').textContent).toBe('running'));
+    job = { kind: 'refresh', status: 'failed' }; // the job failed; nothing was published
+    await revalidate();
+    await waitFor(() => expect(getByTestId('j').textContent).toBe('failed'));
+    expect(((await getJSON('/api/freshness')) as { job: { status: string } }).job.status).toBe('failed');
+  });
 });

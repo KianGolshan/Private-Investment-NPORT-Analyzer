@@ -24,5 +24,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     include: ['test/**/*.test.{ts,tsx}'],
+    // two workers: stable timings, and safe on the 8 GB development Mac (LESSONS 15)
+    maxWorkers: 2,
   },
 });

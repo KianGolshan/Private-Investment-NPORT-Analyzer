@@ -1,4 +1,4 @@
-import type { ChangeEvent, Leg } from '../api/types';
+import type { ChangeEvent, Envelope, Leg } from '../api/types';
 import { companyPath, fundPath, moneyC, moneyDelta, num, pct, price, tone } from '../lib/format';
 import { Badge, FilingRef } from './bits';
 import { DataTable, type Column } from './DataTable';
@@ -73,6 +73,7 @@ export function ChangesTable({
   exportName,
   maxHeight = 640,
   onFund,
+  source,
 }: {
   events: ChangeEvent[];
   withCompany?: boolean;
@@ -81,6 +82,8 @@ export function ChangesTable({
   maxHeight?: number;
   /** A row click opens that fund's position history (the company workbench's drawer). */
   onFund?: (fundKey: string) => void;
+  /** The answer the events came from (its generation labels the export). */
+  source?: Pick<Envelope, 'refreshId' | 'basis'> | null;
 }) {
   const columns: Column<ChangeEvent>[] = [
     {
@@ -216,6 +219,7 @@ export function ChangesTable({
   ];
   return (
     <DataTable
+      source={source}
       columns={columns}
       rows={events}
       rowKey={(e, i) => `${e.fundKey}:${e.accession}:${e.companyId ?? ''}:${i}`}

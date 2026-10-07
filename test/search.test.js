@@ -17,6 +17,7 @@ const { rebuildEntities, searchVariants } = require('../lib/entities/entities');
 const { search, editDistance } = require('../lib/services/search');
 const { exposureAsOf } = require('../lib/analytics/asof');
 const { openFixtureWarehouse } = require('./helpers/warehouseFixture');
+const { loadCuration } = require('../lib/entities/seed');
 
 const FIXTURE = path.join(__dirname, 'fixtures', 'search', 'warehouse.json.gz');
 const REVIEW = path.join(__dirname, '..', 'data', 'review');
@@ -27,7 +28,7 @@ function build({ dropAlias } = {}) {
   const aliases = read('aliases.csv').filter(r => !(dropAlias && r.alias === dropAlias));
   importAliases(db, aliases, { ids: read('company_ids.csv'), now: '2026-09-30T00:00:00Z' });
   resolveCompanies(db);
-  const up = identityUpkeep(db);
+  const up = identityUpkeep(db, { curation: loadCuration() });
   const stats = rebuildEntities(db, up);
   return { db, up, stats };
 }
@@ -187,7 +188,7 @@ test('rebuild: idempotent, keeps entity ids, and follows curation (a reviewed na
   const { db: d } = build();
   const ids = () => d.prepare('SELECT key, id FROM unreviewed_entities ORDER BY key').all();
   const before = ids();
-  assert.equal(rebuildEntities(d, identityUpkeep(d)).tagged, 0);
+  assert.equal(rebuildEntities(d, identityUpkeep(d, { curation: loadCuration() })).tagged, 0);
   assert.deepEqual(ids(), before);
   const vercel = search(d, 'Vercel')[0];
   const key = d.prepare('SELECT key FROM unreviewed_entities WHERE id = ?').get(vercel.id).key;
@@ -200,7 +201,7 @@ test('rebuild: idempotent, keeps entity ids, and follows curation (a reviewed na
     { ids: read('company_ids.csv') }
   );
   resolveCompanies(d);
-  const s = rebuildEntities(d, identityUpkeep(d));
+  const s = rebuildEntities(d, identityUpkeep(d, { curation: loadCuration() }));
   assert.ok(s.cleared > 0);
   assert.equal(d.prepare('SELECT active FROM unreviewed_entities WHERE id = ?').get(vercel.id).active, 0);
   const now = search(d, 'Vercel')[0];

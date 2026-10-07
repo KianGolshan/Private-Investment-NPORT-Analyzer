@@ -25,6 +25,10 @@ import { DataTable } from '../../ui/DataTable';
 // filings: "first reported", "no longer reported", "reduced", never a sale.
 
 type Props = { fund: FundFilings; name: string };
+// The returns table's export carries the on-screen caveat (Codex verification V08).
+const RETURNS_BASIS =
+  "Mark-implied proxies from the fund's own marks, not real returns: each purchase is costed at the mark of the filing " +
+  'where it first appears or grows; a holding that leaves the private book is counted at its last mark';
 const KIND_LABEL = { company: 'operating company', fund: 'fund interest', vehicle: 'opaque vehicle' } as const;
 
 /** The filing picker shared by the three tabs (?filing=<accession>, default the newest). */
@@ -102,6 +106,7 @@ export function XRay({ fund, name }: Props) {
             flush
           >
             <DataTable
+              source={x.data}
               columns={[
                 {
                   id: 'name',
@@ -186,6 +191,7 @@ export function XRay({ fund, name }: Props) {
           {d.notPrivate.length > 0 && (
             <Card title={`Level-3 or restricted rows that are not private (${d.notPrivate.length})`} flush>
               <DataTable
+                source={x.data}
                 columns={[
                   { id: 'name', header: 'Name', value: (h: XrayHolding) => h.name, wrap: true },
                   { id: 'title', header: 'Title', value: h => h.title, wrap: true },
@@ -208,6 +214,7 @@ export function XRay({ fund, name }: Props) {
           {d.capitalStructure.length > 0 && (
             <Card title="Debt held beside equity in the same company" flush>
               <DataTable
+                source={x.data}
                 columns={[
                   { id: 'issuer', header: 'Company', value: (c: Xray['xray']['capitalStructure'][number]) => c.issuer },
                   {
@@ -361,6 +368,7 @@ export function Compare({ fund, name }: Props) {
           </div>
           <Card title={`${current!.reportDate} vs ${prior!.reportDate}`} flush>
             <DataTable
+              source={c.data}
               columns={[
                 {
                   id: 'name',
@@ -524,6 +532,7 @@ export function Returns({ fund, name }: Props) {
           )}
           <Card title="By position" flush>
             <DataTable
+              source={r.data}
               columns={[
                 { id: 'name', header: 'Position', value: (p: P) => p.title || p.name, wrap: true },
                 { id: 'status', header: 'Status', value: p => STATUS_RETURNS[p.status] ?? p.status },
@@ -533,14 +542,16 @@ export function Returns({ fund, name }: Props) {
                   header: 'Proxy invested',
                   value: p => p.invested,
                   num: true,
-                  render: p => (p.lotsUnavailable ? '—' : moneyC(p.invested)),
+                  hidden: p => p.lotsUnavailable,
+                  render: p => moneyC(p.invested),
                 },
                 {
                   id: 'realized',
                   header: 'Counted as realized',
                   value: p => p.realized,
                   num: true,
-                  render: p => (p.lotsUnavailable ? '—' : moneyC(p.realized)),
+                  hidden: p => p.lotsUnavailable,
+                  render: p => moneyC(p.realized),
                 },
                 {
                   id: 'current',
@@ -554,14 +565,16 @@ export function Returns({ fund, name }: Props) {
                   header: 'MOIC',
                   value: p => p.moic,
                   num: true,
-                  render: p => (p.lotsUnavailable ? '—' : x(p.moic)),
+                  hidden: p => p.lotsUnavailable,
+                  render: p => x(p.moic),
                 },
                 {
                   id: 'irr',
                   header: 'IRR',
                   value: p => p.irr,
                   num: true,
-                  render: p => (p.lotsUnavailable ? '—' : irr(p.irr)),
+                  hidden: p => p.lotsUnavailable,
+                  render: p => irr(p.irr),
                 },
                 { id: 'notes', header: 'Notes', value: notes, wrap: true, noSort: true },
               ]}
@@ -569,6 +582,7 @@ export function Returns({ fund, name }: Props) {
               rowKey={(p, i) => `${p.name}:${p.title}:${i}`}
               sort={{ id: 'current', desc: true }}
               exportName={`${name}-returns-${d.summary.lastDate}`}
+              basis={RETURNS_BASIS}
               maxHeight={620}
             />
           </Card>

@@ -397,7 +397,7 @@ test('rows: the Filings tab lists each canonical filing’s rows as filed, in th
   );
 });
 
-test('leadership: Stripe Common B $63.00 was first filed on 2026-02-28 by Capital Group and Fidelity', async () => {
+test('leadership: Stripe Common B $63.00 was first reported at mark date 2026-02-28 by Capital Group and Fidelity', async () => {
   const L = (await api(`/api/companies/${idOf('Stripe')}/leadership?instrument=${encodeURIComponent('Common B')}`))
     .body;
   const lvl = L.levels.find(l => Math.abs(l.mark - 63) < 0.01);

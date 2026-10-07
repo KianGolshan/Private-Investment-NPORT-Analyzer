@@ -25,6 +25,10 @@ function baseEnv(extra) {
     ...process.env,
     PORT: '0',
     CACHE_DB_PATH: ':memory:',
+    // No warehouse: these tests are about start-up, proxies and rate limits. The
+    // real one (~578 MB) made start-up warm it while the tests fired timed
+    // request bursts, blocking the event loop (the intermittent failures under load).
+    WAREHOUSE_DB_PATH: path.join(os.tmpdir(), 'vantage-no-warehouse', 'warehouse.db'),
     SEC_USER_AGENT: '',
     NODE_ENV: '',
     API_RATE_LIMIT_PER_MIN: '200',

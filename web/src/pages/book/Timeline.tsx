@@ -175,6 +175,7 @@ export function Timeline({ who, name }: { who: Who; name: string }) {
           <Card title="By company" flush>
             <DataTable
               basis={BASIS}
+              source={d}
               columns={[
                 {
                   id: 'name',

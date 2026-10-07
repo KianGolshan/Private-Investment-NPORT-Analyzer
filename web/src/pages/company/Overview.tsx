@@ -208,6 +208,7 @@ export default function Overview({ base, sq, subject, name, newest }: ViewProps)
             flush
           >
             <DataTable
+              source={p}
               columns={columns}
               rows={p.results}
               rowKey={r => String(r.key)}

@@ -266,6 +266,7 @@ function Watchlist() {
               <Card flush>
                 <DataTable
                   basis={BASIS}
+                  source={d}
                   columns={columns}
                   rows={d.items}
                   rowKey={r => `${r.kind}:${r.key}`}
@@ -367,6 +368,7 @@ function TrackedCompanies() {
           <Card flush>
             <DataTable
               basis={BASIS}
+              source={d}
               columns={columns}
               rows={d.companies}
               rowKey={r => String(r.companyId)}

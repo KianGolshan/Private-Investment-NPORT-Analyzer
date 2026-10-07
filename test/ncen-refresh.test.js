@@ -179,3 +179,66 @@ test('N-CEN drift: terminated advisers are known types and stay out of the curre
   const r = await ingestNcenDataset(db, file, { quarter: '2026q1' });
   assert.equal(r.rows, 61);
 });
+
+// Codex verification V04: a valid header with no adviser rows, or one filing's
+// advisers vanishing, must not erase stored mappings.
+test('N-CEN: an adviser table with headers only fails the load; the stored mappings stay', async () => {
+  const db = openWarehouse(':memory:');
+  await ingestNcenDataset(db, path.join(NCEN, 'mini_ncen.zip'), { quarter: '2026q1' });
+  const before = db.prepare('SELECT * FROM ncen_advisers ORDER BY accession, series_id, file_num, role').all();
+  const headerOnly = await drifted(f => tsvEdit(f, 'ADVISER.tsv', t => t.split('\n')[0] + '\n'));
+  await assert.rejects(ingestNcenDataset(db, headerOnly, { quarter: '2026q1' }), /the adviser table is incomplete/);
+  assert.deepEqual(
+    db.prepare('SELECT * FROM ncen_advisers ORDER BY accession, series_id, file_num, role').all(),
+    before
+  );
+});
+
+const COATUE = '0001410368-26-026363'; // one fund, one adviser row in the mini archive
+const coatueFund = files => {
+  const fund = files['FUND_REPORTED_INFO.tsv']
+    .toString('utf8')
+    .split('\n')
+    .find(l => l.includes(COATUE));
+  return fund.split('\t')[0];
+};
+
+test('N-CEN: a filing whose advisers vanish keeps its stored advisers and is reported, never erased', async () => {
+  const db = openWarehouse(':memory:');
+  await ingestNcenDataset(db, path.join(NCEN, 'mini_ncen.zip'), { quarter: '2026q1' });
+  const stored = () => db.prepare('SELECT COUNT(*) n FROM ncen_advisers WHERE accession = ?').get(COATUE).n;
+  assert.ok(stored() > 0);
+  const file = await drifted(f => {
+    const id = coatueFund(f);
+    tsvEdit(f, 'ADVISER.tsv', t =>
+      t
+        .split('\n')
+        .filter(l => !l.startsWith(`${id}\t`))
+        .join('\n')
+    );
+  });
+  const r = await ingestNcenDataset(db, file, { quarter: '2026q1' });
+  assert.deepEqual(r.kept, [COATUE]);
+  assert.ok(stored() > 0, 'the stored advisers stay');
+});
+
+test('N-CEN: a new filing whose advisers are all terminated loads with no current adviser', async () => {
+  const db = openWarehouse(':memory:');
+  const file = await drifted(f => {
+    const id = coatueFund(f);
+    tsvEdit(f, 'ADVISER.tsv', t =>
+      t
+        .split('\n')
+        .map(l =>
+          l.startsWith(`${id}\t`)
+            ? l.replace(/\tAdvisor\t/, '\tTerminated Advisor\t').replace(/\tSubadvisor\t/, '\tTerminated Subadvisor\t')
+            : l
+        )
+        .join('\n')
+    );
+  });
+  const r = await ingestNcenDataset(db, file, { quarter: '2026q1' });
+  assert.equal(r.kept, undefined);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM ncen_advisers WHERE accession = ?').get(COATUE).n, 0);
+  assert.ok(db.prepare('SELECT 1 FROM ncen_filings WHERE accession = ?').get(COATUE), 'the filing itself is stored');
+});

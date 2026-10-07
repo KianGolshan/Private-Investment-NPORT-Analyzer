@@ -286,6 +286,22 @@ test('R14: dashboard fund counts are distinct funds, and a past date never reads
   truncated.close();
 });
 
+test('V08: the company stale-marks panel reads history only through the page date', async () => {
+  const { staleMarks } = require('../lib/services/marks');
+  const id = idOf('Databricks');
+  const past = (await api(`/api/companies/${id}/stale?min=2&date=2026-03-31`)).body;
+  const expected = staleMarks(db, { companyId: id }, { minReports: 2, asOf: '2026-03-31' });
+  assert.deepEqual(
+    past.stale.map(x => [x.fundKey, x.instrument]),
+    expected.stale.map(x => [x.fundKey, x.instrument])
+  );
+  assert.ok(
+    past.stale.every(x => x.lastMarkDate <= '2026-03-31'),
+    'no mark after the page date'
+  );
+  await request(app).get(`/api/companies/${id}/stale?date=2026-02-31`).expect(400);
+});
+
 test('stale marks: every flagged series really repeats its mark while the class median moved', async () => {
   const id = idOf('Databricks');
   const st = (await api(`/api/companies/${id}/stale?min=2`)).body;

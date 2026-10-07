@@ -227,6 +227,7 @@ export function PositionDrawer({
               )}
               <Card title="Every leg, filing by filing" flush>
                 <DataTable
+                  source={hist.data}
                   columns={columns}
                   rows={legs}
                   rowKey={l => `${l.accession}:${l.instrumentKey}`}

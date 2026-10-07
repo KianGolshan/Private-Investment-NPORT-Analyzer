@@ -8,7 +8,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const axios = require('axios');
-const { openWarehouse, defaultWarehousePath } = require('../lib/warehouse/db');
+const { openWarehouseReadOnly, defaultWarehousePath } = require('../lib/warehouse/db');
 
 const LIVE = process.env.LIVE_SEC === '1';
 const DB_PATH = defaultWarehousePath();
@@ -45,7 +45,7 @@ test(
   'LIVE: warehouse filing list equals EDGAR submissions for sampled registrants (bulk window)',
   { skip: !LIVE || !fs.existsSync(DB_PATH), timeout: 30 * 60 * 1000 },
   async () => {
-    const db = openWarehouse(DB_PATH);
+    const db = openWarehouseReadOnly(DB_PATH);
     const windowEnd = db.prepare("SELECT MAX(filing_date) d FROM filings WHERE source LIKE 'bulk:%'").get().d;
     const ciks = db
       .prepare('SELECT cik FROM (SELECT DISTINCT cik FROM filings WHERE cik IS NOT NULL) ORDER BY random() LIMIT ?')
@@ -75,7 +75,7 @@ test(
 // re-verify on EDGAR and update GOLDEN-NUMBERS.md, never the code.
 test('LIVE: as-of golden aggregates A1-A6 on the full warehouse', { skip: !LIVE || !fs.existsSync(DB_PATH) }, () => {
   const { exposureAsOf } = require('../lib/analytics/asof');
-  const db = openWarehouse(DB_PATH);
+  const db = openWarehouseReadOnly(DB_PATH);
   const P = {
     anthropic: '\\banthropic\\b',
     databricks: '\\bdatabricks\\b',
@@ -106,7 +106,7 @@ test(
   { skip: !LIVE || !fs.existsSync(DB_PATH) },
   t => {
     const { exposureAsOf } = require('../lib/analytics/asof');
-    const db = openWarehouse(DB_PATH);
+    const db = openWarehouseReadOnly(DB_PATH);
     try {
       if (!db.prepare('SELECT COUNT(*) n FROM companies').get().n) return t.skip('no entities imported');
       const id = name => db.prepare('SELECT id FROM companies WHERE name = ?').get(name).id;
@@ -171,7 +171,7 @@ test('LIVE: bulk filing_totals equal v1 Fund X-Ray on the full EDGAR XML', { ski
   const { fetchFilingRows } = require('../lib/warehouse/delta');
   const { parseNportXml } = require('../lib/warehouse/edgar-rows');
   const { extractAllHoldings, extractFundMeta, buildFundXRay } = require('../parsers');
-  const db = openWarehouse(DB_PATH);
+  const db = openWarehouseReadOnly(DB_PATH);
   const cases = [
     ['0001193125-26-182055', '44201'], // Growth Fund of America 2026-02-28 (F1): a large book
     ['0000035402-25-002966', '754510'], // Fidelity OTC 2025-10-31 (F8)

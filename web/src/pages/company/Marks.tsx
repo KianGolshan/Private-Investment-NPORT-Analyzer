@@ -13,7 +13,7 @@ import { FilterPickers, useFilterOptions, type ViewProps } from './shared';
 // Per-share marks by class (share rows only, trap 40; split-adjusted within a
 // fund's series), each class's spread across funds at one mark date, gaps
 // between classes within one filing (F30), stale marks, and mark leadership:
-// which firm first filed each new per-share level, as filed. Funds report on
+// which firm first reported each new per-share level, by mark date. Funds report on
 // staggered calendars, so a lag is shown beside each firm's previous mark date.
 
 interface Stale extends Envelope {
@@ -47,7 +47,7 @@ export default function Marks({ base, sq, name, newest }: ViewProps) {
   const lead = useApi<Leadership>(
     `${base}/leadership${qs({ instrument: cls, ...sq, ...scopeParams(scope, ['kind']) })}`
   );
-  const stale = useApi<Stale>(`${base}/stale${qs({ ...sq, ...filters })}`);
+  const stale = useApi<Stale>(`${base}/stale${qs({ date: scope.asof, ...sq, ...filters })}`);
   const m = marks.data;
 
   const shownClasses = useMemo(() => {
@@ -200,18 +200,20 @@ export default function Marks({ base, sq, name, newest }: ViewProps) {
           title={`Mark leadership${cls ? `: ${cls}` : ''} (all firms)`}
           actions={
             <span class="muted small">
-              who first filed each new per-share level (moves over {lead.data.tolerancePct}%, levels within{' '}
-              {lead.data.tolerancePct}%); funds file on staggered calendars, so compare each firm’s previous mark date
+              who first reported each new per-share level, by mark date, not filing date (moves over{' '}
+              {lead.data.tolerancePct}%, levels within {lead.data.tolerancePct}%); funds file on staggered calendars, so
+              compare each firm’s previous mark date
             </span>
           }
           flush
         >
           {levels.length ? (
             <DataTable
+              source={lead.data}
               columns={[
                 { id: 'instrument', header: 'Class', value: (l: LevelRow) => l.instrument },
                 { id: 'mark', header: 'Level', value: (l: LevelRow) => l.mark, num: true, render: l => money(l.mark) },
-                { id: 'first', header: 'First filed', value: (l: LevelRow) => l.firstDate },
+                { id: 'first', header: 'First at mark date', value: (l: LevelRow) => l.firstDate },
                 {
                   id: 'leader',
                   header: 'First by',
@@ -278,6 +280,7 @@ export default function Marks({ base, sq, name, newest }: ViewProps) {
                 By firm, over levels two or more firms filed
               </div>
               <DataTable
+                source={lead.data}
                 columns={[
                   {
                     id: 'firm',
@@ -308,6 +311,7 @@ export default function Marks({ base, sq, name, newest }: ViewProps) {
       {classes.data && (
         <Card title={`Marks by class as of ${longDate(classes.data.date)}`} flush>
           <DataTable
+            source={classes.data}
             columns={[
               { id: 'instrument', header: 'Class', value: (r: ClassRow) => r.instrument },
               { id: 'markDate', header: 'Mark date', value: r => r.markDate },
@@ -348,6 +352,7 @@ export default function Marks({ base, sq, name, newest }: ViewProps) {
           flush
         >
           <DataTable
+            source={classes.data}
             columns={[
               {
                 id: 'fund',
@@ -394,6 +399,7 @@ export default function Marks({ base, sq, name, newest }: ViewProps) {
           flush
         >
           <DataTable
+            source={stale.data}
             columns={[
               {
                 id: 'fund',

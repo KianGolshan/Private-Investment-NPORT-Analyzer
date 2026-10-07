@@ -70,6 +70,7 @@ export function MarksVsOthers({ who, name, newest }: { who: Who; name: string; n
           >
             <DataTable
               basis={BASIS}
+              source={d}
               columns={[
                 {
                   id: 'company',
