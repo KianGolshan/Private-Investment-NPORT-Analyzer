@@ -317,6 +317,44 @@ test('a job that adds a filing with no holdings after private holdings publishes
   assert.equal(again.warning, undefined);
 });
 
+test("V06: the fund's newest filing with no holdings warns the moment it arrives", async () => {
+  const { dbPath } = tmpWarehouse();
+  const r = await runJob(
+    'ingest-delta',
+    db => {
+      // a fund whose newest canonical filing held a private company
+      const f = db
+        .prepare(
+          `SELECT c.accession, c.fund_key, c.report_date FROM canonical_filings c
+           WHERE EXISTS (SELECT 1 FROM holdings h JOIN companies co ON co.id = h.company_id
+                         WHERE h.accession = c.accession AND co.status = 'private')
+             AND NOT EXISTS (SELECT 1 FROM filings g WHERE g.fund_key = c.fund_key AND g.report_date > c.report_date)
+           ORDER BY c.report_date DESC LIMIT 1`
+        )
+        .get();
+      const cols = db
+        .prepare('PRAGMA table_info(filings)')
+        .all()
+        .map(c => c.name);
+      const set = {
+        accession: "'0009999999-26-000003'",
+        report_date: `date('${f.report_date}', '+1 month')`,
+        net_assets: '1000000',
+        source: "'edgar'",
+      };
+      db.exec(
+        `INSERT INTO filings (${cols.join(', ')}) SELECT ${cols.map(c => set[c] ?? c).join(', ')}
+         FROM filings WHERE accession = '${f.accession}'`
+      );
+      db.exec(`INSERT INTO filing_totals (accession, rows, value_usd, rows_listed, value_listed, rows_debt, value_debt,
+               rows_l3_equity, value_l3_equity) VALUES ('0009999999-26-000003', 0, 0, 0, 0, 0, 0, 0, 0)`);
+      return {};
+    },
+    { dbPath }
+  );
+  assert.match(r.warning || '', /trap 55.*0009999999-26-000003/);
+});
+
 const REVIEW = path.join(__dirname, '..', 'data', 'review');
 function reviewCopy() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vantage-review-'));
@@ -433,4 +471,197 @@ test('the CLI writers run as jobs: each moves the published generation exactly o
   );
   assert.equal(jobState(dbPath).kind, 'entities-report');
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+// Codex verification V03, made general: fail every mutating filesystem step the
+// job takes after its commit point (the link switch), one at a time. However it
+// fails, a published job resolves as published, with the failure as a warning.
+// A new post-commit step is covered without editing this test.
+const MUTATING = [
+  'rmSync',
+  'renameSync',
+  'writeFileSync',
+  'appendFileSync',
+  'unlinkSync',
+  'symlinkSync',
+  'linkSync',
+  'fsyncSync',
+  'chmodSync',
+];
+function instrument(dbPath, failAt = -1) {
+  const real = {};
+  const after = [];
+  let committed = false;
+  for (const m of MUTATING) {
+    real[m] = fs[m];
+    fs[m] = (...args) => {
+      if (committed) {
+        after.push(`${m} ${path.basename(String(args[0]))}`);
+        if (after.length - 1 === failAt) throw Object.assign(new Error(`injected ${m} failure`), { code: 'EIO' });
+      }
+      const out = real[m](...args);
+      if (m === 'renameSync' && args[1] === dbPath) committed = true; // the link switch
+      return out;
+    };
+  }
+  return { after, restore: () => Object.assign(fs, real) };
+}
+
+test('every post-commit step can fail without failing a published job (fault-injection sweep)', async () => {
+  const run = async failAt => {
+    const { dbPath } = tmpWarehouse();
+    const dir = reviewCopy();
+    await runJob('curation', () => ({}), { dbPath }); // a generation to prune later
+    const before = publishedFile(dbPath);
+    const probe = instrument(dbPath, failAt);
+    let r;
+    try {
+      r = await runJob(
+        'curation',
+        (db, { curationDir }) => {
+          fs.writeFileSync(path.join(curationDir, 'note.txt'), 'staged'); // a write-back to do
+          return {};
+        },
+        { dbPath, curationDir: dir }
+      );
+    } finally {
+      probe.restore();
+    }
+    return { r, steps: probe.after, before, after: publishedFile(dbPath), dbPath };
+  };
+  const clean = await run(-1);
+  assert.ok(clean.steps.length >= 5, `post-commit steps seen: ${clean.steps.join(', ')}`);
+  for (let i = 0; i < clean.steps.length; i++) {
+    const { r, before, after, dbPath } = await run(i);
+    assert.notEqual(after, before, `step ${i} (${clean.steps[i]}): published`);
+    assert.ok(['ok', 'partial'].includes(r.status), `step ${i} (${clean.steps[i]}): resolved ${r.status}`);
+    const lockStep = /^rmSync warehouse\.db\.lock$/.test(clean.steps[i]);
+    if (!lockStep) {
+      assert.ok(!fs.existsSync(`${dbPath}.lock`), `step ${i} (${clean.steps[i]}): lock released`);
+      if (!/state|jobs\.log/.test(clean.steps[i]))
+        assert.match(r.warning || jobState(dbPath)?.warning || '', /injected/, `step ${i} (${clean.steps[i]}): warned`);
+    }
+  }
+});
+
+test('every post-commit step of a rollback can fail without failing the rollback (fault-injection sweep)', async () => {
+  const run = async failAt => {
+    const { dbPath } = tmpWarehouse();
+    await runJob('curation', () => ({}), { dbPath });
+    await runJob('curation', db => db.exec(RENAME) && {}, { dbPath });
+    const before = publishedFile(dbPath);
+    const probe = instrument(dbPath, failAt);
+    let r;
+    try {
+      r = rollback(dbPath);
+    } finally {
+      probe.restore();
+    }
+    return { r, steps: probe.after, before, after: publishedFile(dbPath), dbPath };
+  };
+  const clean = await run(-1);
+  assert.ok(clean.steps.length >= 3, `post-commit steps seen: ${clean.steps.join(', ')}`);
+  for (let i = 0; i < clean.steps.length; i++) {
+    const { r, before, after, dbPath } = await run(i);
+    assert.notEqual(after, before, `step ${i} (${clean.steps[i]}): published`);
+    assert.ok(r.to > 0, `step ${i} (${clean.steps[i]}): resolved`);
+    if (!/^rmSync warehouse\.db\.lock$/.test(clean.steps[i]))
+      assert.ok(!fs.existsSync(`${dbPath}.lock`), `step ${i} (${clean.steps[i]}): lock released`);
+  }
+});
+
+// Codex verification V02: the curation a generation records is the curation its
+// derived tables were built from. A curation job reads its staged copy; any
+// other job reads the generation's own snapshot, never data/review on disk.
+test('derived identity reads the staged curation, then the snapshot, never the files on disk', async () => {
+  const { dbPath } = tmpWarehouse();
+  const dir = reviewCopy();
+  const probe = read(
+    dbPath,
+    "SELECT key FROM unreviewed_entities WHERE active = 1 AND category = 'company' ORDER BY current_value_usd DESC LIMIT 1"
+  ).key;
+  const categoryOf = () => read(dbPath, 'SELECT category FROM unreviewed_entities WHERE key = ?', probe).category;
+  // staged: the probe key is reviewed public; data/review on disk says nothing about it
+  await runJob(
+    'curation',
+    (db, { curationDir }) => {
+      const file = path.join(curationDir, 'curation.json');
+      const c = JSON.parse(fs.readFileSync(file, 'utf8'));
+      c.status = { ...c.status, [probe]: { status: 'public', evidence: 'test probe' } };
+      fs.writeFileSync(file, JSON.stringify(c, null, 2));
+      return {};
+    },
+    { dbPath, curationDir: dir }
+  );
+  assert.equal(categoryOf(), 'listed', 'the rebuild used the staged decision');
+  const snap = JSON.parse(
+    Buffer.from(read(dbPath, "SELECT content FROM curation_snapshot WHERE name = 'curation.json'").content).toString()
+  );
+  assert.equal(snap.status[probe].status, 'public', 'the snapshot holds what was used');
+  // a refresh: the generation's snapshot, not data/review/curation.json (which lacks the decision)
+  assert.equal(JSON.parse(fs.readFileSync(path.join(REVIEW, 'curation.json'), 'utf8')).status?.[probe], undefined);
+  await runJob('refresh', () => ({}), { dbPath });
+  assert.equal(categoryOf(), 'listed', 'the refresh used the snapshot');
+  // a rollback, then a refresh: the restored generation's own snapshot
+  rollback(dbPath);
+  await runJob('refresh', () => ({}), { dbPath });
+  assert.equal(categoryOf(), 'listed');
+});
+
+// Codex verification V01: two processes judge the same stale lock stale. The
+// second has already taken it (a fresh lock with its own token) when the first
+// moves the pathname: the first must give it back and answer 409.
+test('a stale lock taken by someone else between inspection and takeover stays theirs (one owner)', () => {
+  const { dbPath } = tmpWarehouse();
+  const lockFile = `${dbPath}.lock`;
+  fs.writeFileSync(lockFile, JSON.stringify({ pid: 1, host: 'elsewhere', kind: 'refresh', token: 'stale' }));
+  const old = new Date(Date.now() - 11 * 60 * 1000);
+  fs.utimesSync(lockFile, old, old);
+  const realRename = fs.renameSync;
+  let raced = false;
+  fs.renameSync = (from, to) => {
+    if (from === lockFile && !raced) {
+      raced = true; // the other taker wins first: a fresh lock replaces the stale one
+      fs.writeFileSync(lockFile, JSON.stringify({ pid: 2, host: 'elsewhere', kind: 'curation', token: 'fresh' }));
+    }
+    return realRename(from, to);
+  };
+  try {
+    assert.throws(
+      () => acquireLock(dbPath, 'refresh'),
+      err => err.status === 409
+    );
+  } finally {
+    fs.renameSync = realRename;
+  }
+  assert.equal(JSON.parse(fs.readFileSync(lockFile, 'utf8')).token, 'fresh', 'the other owner keeps its lock');
+  assert.ok(!fs.readdirSync(path.dirname(lockFile)).some(f => f.includes('.stale-')), 'no tombstone left');
+});
+
+test('a failure before the commit point fails the job and still releases the lock (V03)', async () => {
+  const { dbPath } = tmpWarehouse();
+  const dir = reviewCopy();
+  const target = publishedFile(dbPath);
+  const realRm = fs.rmSync;
+  fs.rmSync = (f, ...a) => {
+    if (String(f).includes('vantage-curation-')) throw Object.assign(new Error('injected EACCES'), { code: 'EACCES' });
+    return realRm(f, ...a);
+  };
+  try {
+    await assert.rejects(
+      runJob(
+        'curation',
+        () => {
+          throw new Error('the import failed');
+        },
+        { dbPath, curationDir: dir }
+      ),
+      /the import failed/ // the cause, not the cleanup error
+    );
+  } finally {
+    fs.rmSync = realRm;
+  }
+  assert.equal(publishedFile(dbPath), target);
+  assert.ok(!fs.existsSync(`${dbPath}.lock`), 'lock released');
+  assert.equal(jobState(dbPath).status, 'failed');
 });

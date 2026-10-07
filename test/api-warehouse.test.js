@@ -88,6 +88,50 @@ test('R07: a same-date amendment supersedes a disclosed range until it is re-cur
   copy.close();
 });
 
+test('V06: an exit caused by a filing with no holdings says so; an ordinary exit does not', () => {
+  const Database = require('better-sqlite3');
+  const company = require('../lib/services/company');
+  const copy = new Database(db.serialize());
+  const id = idOf('Anthropic');
+  // Growth Fund of America held Anthropic at 2026-05-31 (F2); its next filing lists nothing
+  const gfa = '0001193125-26-323081';
+  const cols = copy
+    .prepare('PRAGMA table_info(filings)')
+    .all()
+    .map(c => c.name);
+  const set = { accession: "'0009999999-26-000002'", report_date: "'2026-06-30'", filing_date: "'2026-08-20'" };
+  copy.exec(
+    `INSERT INTO filings (${cols.join(', ')}) SELECT ${cols.map(c => set[c] ?? c).join(', ')} FROM filings WHERE accession = '${gfa}'`
+  );
+  copy.exec(`INSERT INTO filing_totals (accession, rows, value_usd, rows_listed, value_listed, rows_debt, value_debt,
+             rows_l3_equity, value_l3_equity) VALUES ('0009999999-26-000002', 0, 0, 0, 0, 0, 0, 0, 0)`);
+  const r = company.exposure(copy, { companyId: id }, '2026-07-15');
+  const e = r.exited.find(x => x.accession === '0009999999-26-000002');
+  assert.ok(e, 'the fund reads as exited');
+  assert.equal(e.label, 'no longer reported (the filing lists no holdings)');
+  assert.equal(e.filingListsNoHoldings, true);
+  // an ordinary exit (Fidelity OTC, F8/F9) keeps the plain label
+  const stripe = company.exposure(copy, { companyId: idOf('Stripe') }, '2026-01-31');
+  const otc = stripe.exited.find(h => h.lastHeldAccession === '0000035402-25-002966');
+  assert.equal(otc.label, 'no longer reported');
+  assert.equal(otc.filingListsNoHoldings, undefined);
+  // the same words wherever the exit appears: the activity list and the fund's legs (one definition)
+  const { companyActivity } = require('../lib/analytics/activity');
+  const { buildPositionFacts } = require('../lib/warehouse/position-facts');
+  const analysis = require('../lib/services/analysis');
+  const ev = companyActivity(copy, { companyId: id }).find(x => x.accession === '0009999999-26-000002');
+  assert.deepEqual(
+    [ev.type, ev.label, ev.filingListsNoHoldings],
+    ['exited', 'no longer reported (the filing lists no holdings)', true]
+  );
+  buildPositionFacts(copy);
+  const legs = analysis
+    .positionHistory(copy, { companyId: id }, 'S000009228')
+    .legs.filter(l => l.accession === '0009999999-26-000002');
+  assert.ok(legs.length && legs.every(l => l.label === 'no longer reported (the filing lists no holdings)'));
+  copy.close();
+});
+
 test('API goldens: Stripe A5 49 / 35 / 34 / 37 and Databricks A6 120 / $6.22B', async () => {
   const stripe = idOf('Stripe');
   const counts = [];

@@ -21,6 +21,7 @@ const { rebuildEntities } = require('../lib/entities/entities');
 const { identityUpkeep } = require('../lib/entities/report');
 const { claimRun, STALE_CURATION_MS } = require('../lib/warehouse/refresh');
 const { makeCompany } = require('../lib/entities/make-company');
+const { loadCuration } = require('../lib/entities/seed');
 const { adminRouter, isLocalRequest, runMakeCompanyJob } = require('../lib/api/admin');
 const company = require('../lib/services/company');
 const { search } = require('../lib/services/search');
@@ -32,7 +33,7 @@ function reviewedWarehouse(file = ':memory:') {
   const db = file === ':memory:' ? fixture : fixtureToFile(fixture, file);
   importAliases(db, readReview('aliases.csv'), { ids: readReview('company_ids.csv'), now: '2026-09-30T00:00:00Z' });
   resolveCompanies(db);
-  rebuildEntities(db, identityUpkeep(db));
+  rebuildEntities(db, identityUpkeep(db, { curation: loadCuration() }));
   return db;
 }
 function fixtureToFile(db, file) {

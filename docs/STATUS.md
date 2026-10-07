@@ -1,9 +1,7 @@
 # Vantage v2 Status
 
-**Phase:** P6b, P6c and **P6d** (remediation of the 2026-10-06 staff full-stack review, R01–R20) are **complete and
-signed off** (W3 on 2026-10-06). **Everything is on `main`** (PR #5, e5eca00, 2026-10-06), the only branch; the live
-warehouse (generation 29) was built by that commit. **Next: the user chooses** P7 (MCP server) or P8 (operations).
-**Last updated:** 2026-10-06. Earlier results: [archive/STATUS-history.md](archive/STATUS-history.md).
+**Phase:** **P6e** (follow-ups from the Codex verification review of 2026-10-06, V01–V11) on branch
+`v2-p6e-verification`. **W1 is built and awaiting sign-off**; W2 follows. Everything through P6d is on `main`.
 
 ## Phase tracker
 
@@ -13,6 +11,7 @@ warehouse (generation 29) was built by that commit. **Next: the user chooses** P
 - [x] P6b: analyst workspace, W0–W5 (signed off 2026-10-01..06; ROADMAP §6b)
 - [x] P6c: review remediation R1–R3 (signed off 2026-10-05; [plan](plans/P6c-review-remediation.md), ADR 0009)
 - [x] P6d: full-stack review remediation, W1–W3 (signed off 2026-10-06; ROADMAP §6d, ADR 0009 amendment)
+- [ ] P6e: Codex verification follow-ups (ROADMAP §6e; W1 built 2026-10-06)
 - [ ] P7: MCP server (open; the services exist)
 - [ ] P8: operations hardening (nightly job, backups and restore drill, readiness, alerting, doctor; F10/F11 items)
 - [ ] P9: public deployment (hosting to decide as ADR 0006; capacity envelope, shared SEC budget)
@@ -213,6 +212,26 @@ and 29 a refresh built by `main` (e5eca00, curation tree `eae566e`, clean). The 
 > `npm run refresh` at session start.
 
 ## Log
+
+- **2026-10-06 (P6e W1):** the Codex verification review checked; V01–V11 all real. W1 built:
+  - **V01:** a stale lock is taken by rename and verified;
+  - **V02:** `lib/warehouse/curation.js` is the only curation reader; a refresh uses the generation's snapshot;
+  - **V03:** commit-aware cleanup in `runJob` and `rollback`;
+  - **V04:** N-CEN coverage of at least half the funds (real 99.8%), and a filing is never replaced by zero advisers
+    (trap 56);
+  - **V06:** the newest empty filing warns; the shared label "no longer reported (the filing lists no holdings)"
+    covers holders, activity and legs;
+  - **V10:** the live test opens the warehouse read-only.
+
+  Guards:
+  - post-commit fault-injection sweeps for jobs and rollbacks (the first run found that a directory-sync failure was
+    only logged);
+  - `test/invariants.test.js`;
+  - LESSONS 37–39 and CLAUDE.md fix-completeness rules;
+  - `npm test` runs two files at a time.
+
+  The prod-startup flake was traced: its servers warmed the real 578 MB warehouse during timed request bursts; now
+  isolated. All 10 new regressions fail on 81496b8. Backend 579/0/31 skipped in 115 s; web 37/37.
 
 - **2026-10-06 (close-out):** PR #5 merged to `main` (e5eca00) by the user; `v2-p6b-workspace` deleted on GitHub and
   locally; `main` is the only branch. Local alignment:

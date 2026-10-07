@@ -110,3 +110,22 @@ in `lib/warehouse/job.js` (migration 0021):
 - **Published files are read-only on disk (found during P6d verification).** Generation 24 was switched to WAL mode
   two minutes after it was published (19:42:53 on 2026-10-05). Its WAL file is empty, and no current script opens
   the warehouse read-write. A 0444 file cannot be reopened read-write by accident.
+
+## Amendment (P6e W1, 2026-10-06): the Codex verification review
+
+The review found four holes in the P6d amendment above. Each now has a regression test:
+
+- **Stale lock taken by two processes at once (V01).** A stale lock is taken by renaming it aside and checking that
+  what moved is the lock that was judged stale. If another taker replaced it first, it is linked back (link fails if a
+  newer one exists) and this caller gets a 409.
+- **The curation used is the curation recorded (V02).** `lib/warehouse/curation.js` `curationFor` is the only reader of
+  `curation.json`. A curation job reads its staged copy; any other job reads the generation's own `curation_snapshot`,
+  so a refresh never picks up uncommitted edits in `data/review`. `identityUpkeep` requires the curation;
+  `test/invariants.test.js` keeps other modules from reading the file.
+- **Nothing after the commit point fails a job (V03).** Directory syncs, pruning, the write-back, removing the stage,
+  the job state and releasing the lock are all warnings on a published job (`runJob` and `rollback`). Before the commit,
+  cleanup failures never mask the cause, and the lock is always released. A pending marker whose generation was never
+  published is dropped; `--sync-curation` takes the job lock. A fault-injection sweep fails every mutating filesystem
+  step after the commit, one at a time.
+- **N-CEN replacement (V04, trap 56):** a data set covering under half its funds fails; a filing is never replaced by
+  zero adviser rows.

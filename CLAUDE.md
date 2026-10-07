@@ -59,6 +59,13 @@ marks, new positions, adds, reductions, exits and trends. Keep that goal in view
   `lib/analytics`; module map and API in `docs/ARCHITECTURE.md`); v1's per-filing routes are a compatibility layer
   for the live path only. Warehouse size budget: 1 GB. Admin actions are local, behind `VANTAGE_ADMIN=1`, and run as jobs.
 - Match the surrounding code style: Prettier config, ESLint flat config, Node ≥22, CommonJS.
+- **Fix completeness** (LESSONS 37–39): a fix is done when its neighbours are tested too: every exit path
+  (try/catch/finally), empty, header-only and zero inputs, the first, middle and latest item in time, interleaved
+  callers. A recorded input (curation digest, source) must be the input used, proven by a test that changes it.
+  Labels and export metadata come from the same response as the rows they describe. End every wave with an
+  adversarial pass ("what would a reviewer probe?") and commit each counterexample as a test. `test/invariants.test.js`
+  and the post-commit fault-injection sweep in `test/job.test.js` enforce part of this; keep them passing, extend them.
+- **This machine** (8 GB, 8 cores): one heavy job at a time, in the foreground; ask before a refresh, e2e or LIVE run.
 
 ## Commands
 

@@ -15,6 +15,7 @@ const { identityUpkeep } = require('../../lib/entities/report');
 const { rebuildEntities } = require('../../lib/entities/entities');
 const { warehouseRouter } = require('../../lib/api/warehouse');
 const { openFixtureWarehouse } = require('./warehouseFixture');
+const { loadCuration } = require('../../lib/entities/seed');
 
 const REVIEW = path.join(__dirname, '..', '..', 'data', 'review');
 const readReview = f => parseCsv(fs.readFileSync(path.join(REVIEW, f), 'utf8'));
@@ -29,7 +30,7 @@ function goldenWarehouse() {
   importManagers(db, readReview('managers.csv'), { ids: readReview('manager_ids.csv') });
   refreshFundAdvisers(db);
   resolveCompanies(db);
-  rebuildEntities(db, identityUpkeep(db));
+  rebuildEntities(db, identityUpkeep(db, { curation: loadCuration() }));
   rebuildFundNames(db);
   buildPositionFacts(db);
   db.prepare(

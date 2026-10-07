@@ -26,8 +26,8 @@ async function main() {
   let written;
   await runJob(
     'entities-report',
-    db => {
-      written = writeEntityReport(db, OUT, { threshold });
+    (db, { curation }) => {
+      written = writeEntityReport(db, OUT, { threshold, curation: curation() });
       return {};
     },
     { log: console.log }

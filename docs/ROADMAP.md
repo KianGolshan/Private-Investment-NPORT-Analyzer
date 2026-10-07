@@ -142,6 +142,16 @@ finding (R01–R07) was confirmed. R17, backups, restore drills and alerting sta
 | **W2 Answers**               | zero+exit attribution (R06), disclosure bound to its accession (R07), strict dates and X-Ray denominators (R13), dashboard fund counts and as-of staleness (R14), unknown subjects (R15), X-Ray truncation contract (R16) | **Signed off 2026-10-06** (1 leg re-attributed, F54; traps 54–55; live generation 27) |
 | **W3 Operations, assurance** | proxy-addr 2.0.8 and a CI audit (R10), `TRUST_PROXY`/`HOST`/pacing floor (R11), retry queue apart from the window (R12), `/freshness` without a 304 (R08), curation digest in exports (R18), one rebuild per import (R20) | **Signed off 2026-10-06** (audit clean; live generation 28 carries the digest)        |
 
+## Phase 6e: Codex verification follow-ups (plan approved 2026-10-06)
+
+**Entry gate:** the Codex verification review of 2026-10-06 (V01–V11) checked against the code; all real. Four were holes in
+P6d fixes (V02, V03, V04, V06).
+
+| Wave                                       | Scope                                                                                                                                                                                                                                                                                                                                                   | Exit check                          |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| **W1 Publication, curation, source**       | atomic stale-lock takeover (V01), the curation snapshot as the only input (V02), nothing after the commit fails a job or rollback (V03), N-CEN coverage and no-erase rule (V04), newest empty filing flagged and its exit worded (V06), read-only live test (V10); recurrence guards (fault-injection sweeps, `test/invariants.test.js`, LESSONS 37–39) | Built 2026-10-06; awaiting sign-off |
+| **W2 Status, exports, wording, stability** | job state in the browser (V05), export source from the rows' own answer (V07), display/export parity, as-of stale panel, leadership wording (V08), dev advisories (V09), Finastra re-run (V11)                                                                                                                                                          |                                     |
+
 ---
 
 ## Phase 7: MCP server
