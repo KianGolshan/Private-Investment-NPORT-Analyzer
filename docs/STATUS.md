@@ -1,9 +1,8 @@
 # Vantage v2 Status
 
 **Phase:** P6b, P6c and **P6d** (remediation of the 2026-10-06 staff full-stack review, R01–R20) are **complete and
-signed off** (W3 on 2026-10-06). **Next: the user chooses** among P7 (MCP server), P8 (operations) and a PR of
-`v2-p6b-workspace` to main.
-Branch `v2-p6b-workspace` (pushed, in sync).
+signed off** (W3 on 2026-10-06). **Everything is on `main`** (PR #5, e5eca00, 2026-10-06), the only branch; the live
+warehouse (generation 29) was built by that commit. **Next: the user chooses** P7 (MCP server) or P8 (operations).
 **Last updated:** 2026-10-06. Earlier results: [archive/STATUS-history.md](archive/STATUS-history.md).
 
 ## Phase tracker
@@ -62,8 +61,8 @@ The analyst workspace is served at `/`; the route map is at the top of the [READ
 ## Handoff: how to work on this project
 
 - **Working with the user.** The user signs off each wave ("sign off", or "continue" = sign-off and build the next).
-  Build the whole wave, verify it in the browser on the live warehouse, update docs, commit and push to
-  `v2-p6b-workspace`, then stop for sign-off. Recommend, don't survey; decide delegated questions by v1 behavior and
+  Start each phase on a feature branch off `main` (e.g. `v2-p7-mcp`). Build the whole wave, verify it in the browser
+  on the live warehouse, update docs, commit and push the branch, then stop for sign-off. Recommend, don't survey; decide delegated questions by v1 behavior and
   v2 goals and list the call under Open decisions. No PR, merge to main, launchd job or global config without an
   explicit yes.
 - **Real data only.** Check any new metric's definition on real rows _before_ building it. Every new number shown as a
@@ -105,12 +104,12 @@ The analyst workspace is served at `/`; the route map is at the top of the [READ
 | Suite                          | green                | 598 backend (567 pass, 31 skipped, 0 fail); web 37/37; e2e 27/27; LIVE 31/31 (W5)          |
 | Full backfill / first catch-up | —                    | 13.6 min / 26.9 min (P1, P2)                                                               |
 
-## Warehouse state (generation 28, 2026-10-06)
+## Warehouse state (generation 29, 2026-10-06)
 
 Schema at migration 0021. Generation 25 is a refresh (nothing new) and generation 26 a no-change review import. 26 is
 the first generation with a curation snapshot (digest `327a4489…`, curation tree `eae566e`, clean). Generation 27 is a
-refresh that publishes the R06 rule (one leg re-attributed, F54), and 28 a no-change review import under the W3
-code. The files are read-only on disk.
+refresh that publishes the R06 rule (one leg re-attributed, F54), 28 a no-change review import under the W3 code,
+and 29 a refresh built by `main` (e5eca00, curation tree `eae566e`, clean). The files are read-only on disk.
 
 - 355,007 N-PORT filings: bulk 2019Q4–2026Q2 plus catch-up through filings of 2026-10-05.
 - 1.165M private-candidate rows.
@@ -125,8 +124,8 @@ code. The files are read-only on disk.
 
 ## Open decisions (user)
 
-- **Next phase:** P7 (MCP server), P8 (operations) or a PR to main. No PR is open. `v2-p6b-workspace` is the only
-  feature branch; it contains `main` and the former `v2-phase6` (deleted 2026-10-06).
+- **Next phase:** P7 (MCP server) or P8 (operations). `main` holds all of v2 (PRs #2–#5); there are no other branches
+  and no open PRs.
 - **P6d calls still open to overrule:**
   - rollback as a new generation;
   - no takeover of a live local job;
@@ -196,8 +195,8 @@ code. The files are read-only on disk.
 
 ## Next session
 
-> Resume Vantage v2 on branch `v2-p6b-workspace` (pushed; the only feature branch). P6b, P6c and P6d are complete and
-> signed off. Ask the user which comes next:
+> Resume Vantage v2 on `main` (everything through P6d is merged; PR #5). Ask the user which comes next, then branch off
+> `main` for it:
 >
 > - **P7 (MCP server)**: ROADMAP §7; the services exist.
 > - **P8 (operations)**: ROADMAP §8, including the review's carried items:
@@ -207,13 +206,23 @@ code. The files are read-only on disk.
 >   - bench RSS and event-loop lag;
 >   - the intermittent test failures under load;
 >   - the nightly launchd job (only with the user's yes).
-> - **A PR of `v2-p6b-workspace` to main**: only when the user says so.
 >
-> Read CLAUDE.md, this file and docs/ROADMAP.md first. Gates: `npm test`, `npm run lint`, `npm run format:check`,
+> This Mac has 8 GB of memory: run one heavy job at a time in the foreground, run tests with `--test-concurrency=2`, and
+> ask before a refresh, the e2e suite or the LIVE suite. Read CLAUDE.md, this file and docs/ROADMAP.md first. Gates: `npm test`, `npm run lint`, `npm run format:check`,
 > `npm run test:web`, `npm run lint:web`, `npm run build:web` then `npm run test:e2e`, `npm run test:live`; run
 > `npm run refresh` at session start.
 
 ## Log
+
+- **2026-10-06 (close-out):** PR #5 merged to `main` (e5eca00) by the user; `v2-p6b-workspace` deleted on GitHub and
+  locally; `main` is the only branch. Local alignment:
+  - clean `npm ci` (root, web) and `build:web`;
+  - refresh → generation 29, built by e5eca00;
+  - gates on `main`: backend 567/0/31 skipped, web 37/37, e2e 27/27;
+  - the LIVE suite was stopped unfinished: running everything back to back overloaded this 8 GB machine. Re-run it
+    alone, at a quiet moment.
+- **Paused (future builds, the user's call):** P7 MCP server, P8 operations, P9 public deployment (ROADMAP §7–9). Nothing
+  else is open.
 
 - **2026-10-06:** P6d W3 signed off; P6d complete. Git cleaned up: `v2-phase6` deleted (fully contained in
   `v2-p6b-workspace`), remote refs pruned, stray build artifacts removed.
