@@ -20,7 +20,11 @@ const { tmpDir } = require('./helpers/tmp');
 
 // no warehouse at this path: /readyz must say so
 process.env.WAREHOUSE_DB_PATH = path.join(tmpDir('ro'), 'missing.db');
+// loaded from another working directory, as a service or the e2e server (web/) runs it
+const CWD = process.cwd();
+process.chdir(tmpDir('ro'));
 const app = require('../server');
+process.chdir(CWD);
 const { runSmoke } = require('../scripts/smoke');
 
 test.beforeEach(() => {
@@ -83,6 +87,13 @@ test('config says public and the build; health and readiness are not rate-limite
   assert.deepEqual([r.body.ready, r.body.fresh], [false, false]);
   assert.match(r.body.reason, /warehouse unavailable/);
   await request(app).get('/readyz?fresh=1').expect(503);
+});
+
+test('static files are served from the app folder whatever the working directory (og.png for link previews)', async () => {
+  const og = await request(app).get('/og.png').expect(200);
+  assert.equal(og.headers['content-type'], 'image/png');
+  assert.equal(og.body.length, fs.statSync(path.join(__dirname, '..', 'public', 'og.png')).size);
+  await request(app).get('/splits.js').expect(200);
 });
 
 test('admin is refused on the public site', async () => {

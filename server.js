@@ -140,7 +140,8 @@ app.get('/sitemap.xml', (req, res) =>
     .send(pages.sitemapXml(originOf(req), warehouseApi.sitemapEntries()))
 );
 app.use('/assets', express.static(path.join(WEB_DIST, 'assets'), { immutable: true, maxAge: '1y', index: false }));
-app.use(express.static('public', { index: false }));
+// public/ beside this file, whatever the working directory (the e2e server runs from web/)
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 const USER_AGENT = process.env.SEC_USER_AGENT || '';
 const EFFECTIVE_USER_AGENT = USER_AGENT || 'Vantage internal-tool@localhost';
