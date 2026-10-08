@@ -5,17 +5,27 @@ import type { Freshness } from './api/types';
 import { CommandPalette } from './ui/CommandPalette';
 import { density, themePref, type ThemePref } from './lib/prefs';
 import { longDate } from './lib/format';
+import { reloadOnce, watchBuild, withReload } from './lib/notices';
+import { onGeneration } from './api/client';
 
-const Market = lazy(() => import('./pages/Market'));
-const Company = lazy(() => import('./pages/company'));
-const Firms = lazy(() => import('./pages/Firms'));
-const Firm = lazy(() => import('./pages/firm'));
-const Fund = lazy(() => import('./pages/fund'));
-const Activity = lazy(() => import('./pages/Activity'));
-const Explore = lazy(() => import('./pages/Explore'));
-const Tracked = lazy(() => import('./pages/Tracked'));
-const Compare = lazy(() => import('./pages/Compare'));
-const NotFound = lazy(() => import('./pages/NotFound'));
+// A page whose code chunk is gone after a deploy reloads once (lib/notices.ts).
+const Market = lazy(withReload(() => import('./pages/Market')));
+const Company = lazy(withReload(() => import('./pages/company')));
+const Firms = lazy(withReload(() => import('./pages/Firms')));
+const Firm = lazy(withReload(() => import('./pages/firm')));
+const Fund = lazy(withReload(() => import('./pages/fund')));
+const Activity = lazy(withReload(() => import('./pages/Activity')));
+const Explore = lazy(withReload(() => import('./pages/Explore')));
+const Tracked = lazy(withReload(() => import('./pages/Tracked')));
+const Compare = lazy(withReload(() => import('./pages/Compare')));
+const About = lazy(withReload(() => import('./pages/About')));
+const Status = lazy(withReload(() => import('./pages/Status')));
+const NotFound = lazy(withReload(() => import('./pages/NotFound')));
+// Vite's own preload of a chunk's dependencies failed: the same recovery.
+if (typeof window !== 'undefined')
+  window.addEventListener('vite:preloadError', e => {
+    if (reloadOnce()) e.preventDefault();
+  });
 
 const NAV: { href: string; label: string; match: (p: string) => boolean }[] = [
   { href: '/explore', label: 'Explore', match: p => p.startsWith('/explore') },
@@ -61,16 +71,22 @@ function Sidebar() {
             {n.label}
           </a>
         ))}
+        <div class="nav-section">More</div>
+        <a href="/about" aria-current={path === '/about' ? 'page' : undefined}>
+          About the data
+        </a>
+        <a href="/status" aria-current={path === '/status' ? 'page' : undefined}>
+          Status
+        </a>
         {config && !config.public && (
-          <>
-            <div class="nav-section">More</div>
-            <a href="/legacy" target="_top">
-              Private Credit (v1)
-            </a>
-          </>
+          <a href="/legacy" target="_top">
+            Private Credit (v1)
+          </a>
         )}
       </nav>
-      <div class="sidebar-foot">Private holdings and marks from SEC N-PORT filings. Every number links its filing.</div>
+      <div class="sidebar-foot">
+        Private holdings and marks from SEC N-PORT filings. Every number links its filing. Not investment advice.
+      </div>
     </aside>
   );
 }
@@ -155,6 +171,54 @@ function Topbar({ onSearch }: { onSearch: () => void }) {
   );
 }
 
+// Notices for an open tab (P9): a new deploy offers a reload; a new data
+// version (the nightly refresh) is said once, quietly. The data itself updates
+// on its own (api/client.ts re-fetches every answer on a new generation).
+function Notices() {
+  const [newBuild, setNewBuild] = useState(false);
+  const [dataNote, setDataNote] = useState<string | null>(null);
+  useEffect(() => watchBuild(() => setNewBuild(true)), []);
+  useEffect(
+    () =>
+      onGeneration(() => {
+        fetch('/api/freshness', { cache: 'no-store', headers: { Accept: 'application/json' } })
+          .then(r => r.json())
+          .then((f: Freshness) => setDataNote(`Data updated: filings through ${longDate(f.newestFilingDate)}.`))
+          .catch(() => setDataNote('Data updated.'));
+      }),
+    []
+  );
+  useEffect(() => {
+    if (!dataNote) return;
+    const t = setTimeout(() => setDataNote(null), 8000);
+    return () => clearTimeout(t);
+  }, [dataNote]);
+  if (!newBuild && !dataNote) return null;
+  return (
+    <div class="toasts" role="status" aria-live="polite">
+      {newBuild && (
+        <div class="toast">
+          <span>A new version of Vantage is available.</span>
+          <button class="btn sm" type="button" onClick={() => window.location.reload()}>
+            Reload
+          </button>
+          <button class="btn sm ghost" type="button" aria-label="Dismiss" onClick={() => setNewBuild(false)}>
+            ✕
+          </button>
+        </div>
+      )}
+      {dataNote && (
+        <div class="toast">
+          <span>{dataNote}</span>
+          <button class="btn sm ghost" type="button" aria-label="Dismiss" onClick={() => setDataNote(null)}>
+            ✕
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Shell() {
   const [open, setOpen] = useState(false);
   useEffect(() => {
@@ -186,13 +250,24 @@ function Shell() {
               <Route path="/explore" component={Explore} />
               <Route path="/tracked" component={Tracked} />
               <Route path="/compare" component={Compare} />
+              <Route path="/about" component={About} />
+              <Route path="/status" component={Status} />
               <Route default component={NotFound} />
             </Router>
           </ErrorBoundary>
         </div>
+        <footer class="site-foot">
+          <a href="/about">About the data</a>
+          <a href="/status">Status</a>
+          <a href="https://github.com/KianGolshan/Private-Investment-NPORT-Analyzer" rel="noopener noreferrer">
+            Source code
+          </a>
+          <span>From public SEC filings. Not investment advice.</span>
+        </footer>
       </main>
       <MobileNav />
       <CommandPalette open={open} onClose={() => setOpen(false)} />
+      <Notices />
     </div>
   );
 }

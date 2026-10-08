@@ -2,8 +2,8 @@
 
 **Phase:** **P9** (public deployment), on branch `v2-p9-deploy`. The user approved the plan on 2026-10-08
 ([plans/P9-deployment.md](plans/P9-deployment.md)): Oracle Cloud Always Free VM, a new domain on Cloudflare, two app
-instances behind Caddy, nightly refresh and auto-deploy. **W1 (public-ready server) is built, awaiting sign-off.** W2
-(seamless client and polish) and W3 (deployment files and docs) follow. P8 is paused (W1–W3 signed off and merged);
+instances behind Caddy, nightly refresh and auto-deploy. W1 (public-ready server) is signed off. **W2 (seamless client
+and polish) is built, awaiting sign-off.** W3 (deployment files and docs) follows. P8 is paused (W1–W3 signed off and merged);
 its open items are under [Deferred](#deferred). Live warehouse: generation 32.
 
 ## Phase tracker
@@ -18,7 +18,7 @@ its open items are under [Deferred](#deferred). Live warehouse: generation 32.
 - [ ] P7: MCP server (deferred)
 - [~] P8: operations. W1 (pre-flight fixes), W2 (backups and nightly) and W3 (reconciliation and watch) are
   signed off and merged. The W4 research and the P8 checkpoint (30 unattended nights) are deferred.
-- [~] P9: public deployment. W1 (public-ready server) built 2026-10-08, awaiting sign-off; W2, W3 next
+- [~] P9: public deployment. W1 signed off 2026-10-08; W2 (client and polish) built, awaiting sign-off; W3 next
   ([plan](plans/P9-deployment.md))
 
 ## What the app answers now (all from the warehouse, every row with mark date and accession)
@@ -285,8 +285,7 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
 ## Next session
 
 > Resume Vantage v2 P9 on `v2-p9-deploy` ([plans/P9-deployment.md](plans/P9-deployment.md)). W1 (public-ready server)
-> is built; on the user's sign-off build **W2** (version and data toasts, chunk-load recovery, `/about`, `/status`,
-> server-rendered meta and OG tags, `robots.txt`, `sitemap.xml`, optional Cloudflare Web Analytics), then **W3**
+> and W2 (client and polish) are built; on the user's sign-off build **W3**
 > (`deploy/`: setup.sh, systemd units, Caddyfile, cloudflared config, deploy.sh with rolling restart and rollback; the
 > GitHub Actions deploy workflow; Dependabot; DEPLOY.md, ADR 0006, README). The user's account steps are §5 of the
 > plan. Read CLAUDE.md, this file and the plan first.
@@ -299,6 +298,37 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
 > - `npm run build:web`, then `npm run test:e2e`.
 
 ## Log
+
+- **2026-10-08 (P9 W2):** W1 signed off ("continue"). W2 built:
+  - **Open tabs stay current:**
+    - a new deploy shows "A new version of Vantage is available" with Reload (the build from `/api/config`,
+      checked every 5 min and on focus);
+    - a new data version shows "Data updated: filings through …" for 8 s;
+    - a page whose code chunk is gone reloads once, but not without session storage, so it can never loop;
+    - Vite's `vite:preloadError` is handled the same way.
+  - **`/about`:** sources, how the numbers are read (staggered calendars, the 123-day as-of rule, private by company
+    status, marks, change words), how it is checked, known limits, disclaimer and privacy. Counts come from the new
+    `/api/stats`, and the page links GOLDEN-NUMBERS, DATA-QUALITY and ARCHITECTURE on GitHub (the repo is public).
+  - **`/status`:** filings and marks through, the last refresh, the data version, details and readiness, plus an
+    optional `VANTAGE_STATUS_URL` link to the uptime page.
+  - **Link previews** (`lib/api/pages.js`): the server writes each page's title, description, canonical URL and
+    Open Graph and Twitter tags.
+    - A company's description uses its stored stats: Anthropic reads "123 funds reported $18.16B as of Aug 31,
+      2026", the same as company_stats and STATUS.
+    - The image is `public/og.png` (1200×630, no numbers).
+    - Unknown pages, companies, funds and firms answer 404 with `noindex`, and unreviewed `/name/` pages are
+      `noindex`.
+    - `robots.txt` and `sitemap.xml` (static pages, private companies, firms; 520 URLs).
+  - **Optional Cloudflare Web Analytics** (`VANTAGE_ANALYTICS_TOKEN`, validated) adds the beacon and its CSP hosts.
+  - **Nav and footer:** About and Status in the nav. A footer (About · Status · Source code · "Not investment
+    advice") is on every page; on a phone it is the only way to About and Status.
+  - **Verified** in public mode on generation 32:
+    - About and Status in dark and light, at 375 px with no horizontal scroll (the Status table now wraps);
+    - the 404s, robots, sitemap and the og image;
+    - smoke 17/17; console clean.
+  - **Tests:** backend 659 (627 pass, 31 skipped, 0 fail; new `test/pages.test.js`; the edge-case title check now
+    accepts page titles); web 45/45 (new `notices.test.ts`); e2e adds heads and 404s, About and Status, the reload
+    offer, and axe on `/about`, `/status` and a 404 page. CI runs e2e on the push (not run on this Mac).
 
 - **2026-10-08 (P9 W1):** the user approved the P9 plan (readiness assessment, Oracle + Cloudflare, concurrency,
   seamless refresh and updates). W1 built on `v2-p9-deploy`:

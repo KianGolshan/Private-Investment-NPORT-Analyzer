@@ -294,7 +294,7 @@ test('the workspace (web/dist) serves at / and its routes when built; v1 stays a
   for (const p of ['/', '/company/5-stripe', '/firm/9', '/firms', '/activity', '/fund/S000009228']) {
     const res = await request(app).get(p);
     assert.equal(res.status, 200, p);
-    assert.match(res.text, /<title>Vantage/i, p);
+    assert.match(res.text, /<title>[^<]*Vantage[^<]*<\/title>/i, p);
     if (built) assert.match(res.text, /type="module"/, `${p} is the workspace`);
   }
   assert.equal((await request(app).get('/assets/nope.js')).status, 404);

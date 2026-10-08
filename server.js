@@ -9,6 +9,7 @@ const { fetchWithRetry } = require('./lib/edgar');
 const { openWarehouseReadOnly } = require('./lib/warehouse/db');
 const { warehouseRouter } = require('./lib/api/warehouse');
 const { adminRouter, adminEnabled, isLocalRequest } = require('./lib/api/admin');
+const pages = require('./lib/api/pages');
 const {
   extractHoldings,
   extractCreditHoldings,
@@ -45,7 +46,15 @@ const cspOf = scripts =>
     "form-action 'self'",
     "frame-ancestors 'none'",
   ].join('; ');
-const CSP = cspOf("'self'");
+// Cloudflare Web Analytics (P9, optional, cookieless): its beacon script and
+// endpoint are allowed only when VANTAGE_ANALYTICS_TOKEN is set.
+const ANALYTICS = pages.analyticsToken(process.env.VANTAGE_ANALYTICS_TOKEN);
+const CSP = ANALYTICS
+  ? cspOf("'self' https://static.cloudflareinsights.com").replace(
+      "connect-src 'self'",
+      "connect-src 'self' https://cloudflareinsights.com"
+    )
+  : cspOf("'self'");
 const LEGACY_CSP = cspOf("'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.sheetjs.com");
 app.disable('x-powered-by');
 app.use((_req, res, next) => {
@@ -78,6 +87,8 @@ const APP_ROUTES = [
   '/explore',
   '/tracked',
   '/compare',
+  '/about',
+  '/status',
 ];
 // v1's page, and its index under public/, are off on the public site (PUBLIC_MODE below).
 const V1_OFF =
@@ -87,8 +98,46 @@ app.get(['/legacy', '/index.html'], (req, res, next) =>
   PUBLIC_MODE ? res.status(410).type('html').send(V1_OFF) : next()
 );
 app.get('/legacy', (_req, res) => sendLegacy(res));
-app.get(APP_ROUTES, (_req, res) =>
-  webBuilt() ? res.sendFile(WEB_INDEX) : PUBLIC_MODE ? res.status(503).end() : sendLegacy(res)
+// The site's own address for canonical and Open Graph URLs: VANTAGE_PUBLIC_URL,
+// else what the request came in on (behind the trusted proxy, its scheme).
+const originOf = req => (process.env.VANTAGE_PUBLIC_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+const readIndex = pages.indexReader(WEB_INDEX);
+// A workspace page: index.html with this page's head (lib/api/pages.js). A
+// company, fund or firm that does not exist answers 404 (the app shows its own
+// not-found view); so does any other unknown page (the fallback at the end).
+function sendPage(req, res, { status = 200 } = {}) {
+  const fixed = pages.STATIC_PAGES[req.path];
+  const meta = status === 200 && !fixed ? warehouseApi.pageMeta(req.path) : null;
+  const notFound = status === 404 || !!meta?.notFound;
+  const head = pages.headTags({
+    title: notFound ? 'Not found' : (fixed?.title ?? meta?.title ?? pages.DEFAULT_TITLE),
+    description: fixed?.description ?? meta?.description ?? pages.DEFAULT_DESCRIPTION,
+    origin: originOf(req),
+    path: req.path,
+    // unknown pages, and unreviewed names (tens of thousands of raw filer labels)
+    noindex: notFound || req.path.startsWith('/name/'),
+    analytics: ANALYTICS,
+  });
+  res
+    .status(notFound ? 404 : 200)
+    .set('Cache-Control', 'no-cache')
+    .type('html')
+    .send(pages.renderIndex(readIndex(), head));
+}
+app.get(APP_ROUTES, (req, res) =>
+  webBuilt() ? sendPage(req, res) : PUBLIC_MODE ? res.status(503).end() : sendLegacy(res)
+);
+app.get('/robots.txt', (req, res) =>
+  res
+    .type('text/plain')
+    .set('Cache-Control', 'public, max-age=3600')
+    .send(pages.robotsTxt(originOf(req)))
+);
+app.get('/sitemap.xml', (req, res) =>
+  res
+    .type('application/xml')
+    .set('Cache-Control', 'public, max-age=3600')
+    .send(pages.sitemapXml(originOf(req), warehouseApi.sitemapEntries()))
 );
 app.use('/assets', express.static(path.join(WEB_DIST, 'assets'), { immutable: true, maxAge: '1y', index: false }));
 app.use(express.static('public', { index: false }));
@@ -470,6 +519,10 @@ app.get('/api/config', (req, res) => {
     admin: adminEnabled() && isLocalRequest(req),
     public: PUBLIC_MODE,
     build: BUILD,
+    // the uptime monitor's public page, linked from /status (P9)
+    statusUrl: /^https:\/\/[^\s"'<>]+$/.test(process.env.VANTAGE_STATUS_URL || '')
+      ? process.env.VANTAGE_STATUS_URL
+      : null,
   });
 });
 
@@ -1254,6 +1307,15 @@ app.get('/api/fund-xray-returns', async (req, res) => {
     console.error('Fund X-Ray returns error:', error.message);
     res.json({ success: false, returns: null, error: publicError(error) });
   }
+});
+
+// Any other page a browser asks for: the workspace's not-found view, as a 404
+// (a crawler then drops the URL). API paths and files keep their plain 404.
+app.use((req, res, next) => {
+  const file = /\.[a-z0-9]+$/i.test(req.path); // a missing asset or file stays a plain 404
+  if (req.method !== 'GET' || req.path.startsWith('/api/') || file || !webBuilt() || !req.accepts('html'))
+    return next();
+  return sendPage(req, res, { status: 404 });
 });
 
 // Only actually bind a port when this file is run directly (`node server.js`

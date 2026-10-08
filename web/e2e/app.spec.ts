@@ -43,6 +43,54 @@ test('the workspace is served with a strict script policy and its main routes lo
   expect(errors).toEqual([]);
 });
 
+// P9 W2: what a link crawler and a visitor get on the public site's pages.
+test('each page has its own title, description and Open Graph tags; unknown pages and ids are 404s with the app', async ({
+  page,
+}) => {
+  const errors = errorsOf(page);
+  const html = await (await page.request.get(`/company/${ANTHROPIC}-anthropic`)).text();
+  expect(html).toMatch(/<title>[^<]+: fund holdings and marks · Vantage<\/title>/);
+  expect(html).toMatch(/<meta property="og:image" content="http:\/\/127\.0\.0\.1:\d+\/og\.png" \/>/);
+  expect(html.match(/<title>/g)).toHaveLength(1);
+  expect((await page.request.get('/og.png')).headers()['content-type']).toBe('image/png');
+  for (const path of ['/no-such-page', '/company/424242', '/fund/NO-SUCH-FUND']) {
+    const res = await page.goto(path);
+    expect(res?.status(), path).toBe(404);
+    expect(await res?.text()).toContain('<meta name="robots" content="noindex" />');
+  }
+  await page.goto('/no-such-page');
+  await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible();
+  expect((await page.request.get('/assets/missing.js')).status()).toBe(404);
+  const robots = await (await page.request.get('/robots.txt')).text();
+  expect(robots).toContain('Sitemap: http://127.0.0.1');
+  const sitemap = await (await page.request.get('/sitemap.xml')).text();
+  expect(sitemap).toMatch(/<loc>http:\/\/127\.0\.0\.1:\d+\/company\/\d+-[a-z0-9-]+<\/loc>/);
+  expect(errors.filter(e => !/404/.test(e))).toEqual([]);
+});
+
+test('About and Status read the warehouse; the nav links them', async ({ page }) => {
+  const errors = errorsOf(page);
+  await page.goto('/');
+  await page.getByRole('navigation', { name: 'Main' }).first().getByRole('link', { name: 'About the data' }).click();
+  await expect(page.getByRole('heading', { name: 'About the data and methodology' })).toBeVisible();
+  await expect(page.getByText(/N-PORT filings from [\d,]+ funds/)).toBeVisible();
+  await expect(page.getByText('not investment advice')).toBeVisible();
+  await page.goto('/status');
+  await expect(page.getByRole('heading', { name: 'Data status' })).toBeVisible();
+  await expect(page.getByText('Filings through')).toBeVisible();
+  await expect(page.getByRole('cell', { name: /[\d,]+ private, [\d,]+ tracked/ })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('an open tab offers a reload when the server is deployed again', async ({ page }) => {
+  await page.goto('/firms');
+  await expect(page.locator('h1').first()).toBeVisible();
+  await page.route('**/api/config', r => r.fulfill({ json: { public: false, build: 'a-newer-build' } }));
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(page.getByText('A new version of Vantage is available.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Reload' })).toBeVisible();
+});
+
 test('a failed search says so and can be retried; it is never "no match" (F13)', async ({ page }) => {
   await page.goto('/firms');
   await page.route('**/api/search?*', r => r.fulfill({ status: 503, json: { error: 'warehouse is busy' } }));

@@ -16,6 +16,9 @@ const PAGES = [
   '/activity',
   '/compare?rows=company&key=1&key=5',
   '/tracked',
+  '/about',
+  '/status',
+  '/no-such-page',
 ];
 
 for (const scheme of ['light', 'dark'] as const)
