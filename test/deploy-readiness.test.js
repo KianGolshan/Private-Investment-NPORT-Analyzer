@@ -110,7 +110,7 @@ test('readiness: warming, ready, fresh, stale, failed job, and no warehouse', as
   const router = warehouseRouter(() => db);
   let r = router.readiness({ now: AFTER_REFRESH });
   assert.deepEqual([r.ready, r.fresh, r.reason], [false, false, 'warming up']);
-  await router.warm();
+  await router.warm(); // the warm-up that first readiness check started (one at a time)
   r = router.readiness({ now: AFTER_REFRESH });
   assert.deepEqual([r.ready, r.fresh, r.reason], [true, true, null]);
   assert.equal(r.refreshAgeHours, 12);
@@ -253,4 +253,14 @@ test('memo: a new generation starts empty', async () => {
   assert.equal(memoStats(db).entries, 1);
   assert.ok(Number.isInteger(generationOf(db)));
   db.close();
+});
+
+test('readiness starts the first warm-up itself when nothing has; ready once it ends', async () => {
+  const { db } = goldenWarehouse();
+  const router = warehouseRouter(() => db);
+  assert.equal(router.readiness({ now: AFTER_REFRESH }).ready, false);
+  const w = router.warm(); // the running one
+  assert.equal(router.warm(), w);
+  await w;
+  assert.equal(router.readiness({ now: AFTER_REFRESH }).ready, true);
 });

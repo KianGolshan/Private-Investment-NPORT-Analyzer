@@ -35,7 +35,7 @@ export default function Status() {
   const [ready, setReady] = useState<Readiness | null>(null);
   useEffect(() => {
     let live = true;
-    fetch('/readyz?fresh=1', { cache: 'no-store', headers: { Accept: 'application/json' } })
+    fetch('/readyz?report=1', { cache: 'no-store', headers: { Accept: 'application/json' } })
       .then(r => r.json())
       .then(b => live && setReady(b as Readiness))
       .catch(() => live && setReady(null));

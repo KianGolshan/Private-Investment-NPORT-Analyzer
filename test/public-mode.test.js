@@ -87,6 +87,8 @@ test('config says public and the build; health and readiness are not rate-limite
   assert.deepEqual([r.body.ready, r.body.fresh], [false, false]);
   assert.match(r.body.reason, /warehouse unavailable/);
   await request(app).get('/readyz?fresh=1').expect(503);
+  const report = await request(app).get('/readyz?report=1').expect(200);
+  assert.deepEqual([report.body.ready, report.body.fresh], [false, false], 'same body, always 200');
 });
 
 test('static files are served from the app folder whatever the working directory (og.png for link previews)', async () => {

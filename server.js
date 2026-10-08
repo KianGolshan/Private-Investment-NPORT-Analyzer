@@ -207,7 +207,8 @@ if (!USER_AGENT) {
 // Health (P9), before the rate limits: a balancer and an uptime monitor poll
 // these. /healthz: the process answers. /readyz: 200 once this process serves a
 // warmed warehouse, else 503; ?fresh=1 also needs a refresh within
-// VANTAGE_READY_MAX_AGE_HOURS (48) and a last job that did not fail.
+// VANTAGE_READY_MAX_AGE_HOURS (48) and a last job that did not fail; ?report=1
+// answers 200 with the same body (the status page).
 // /healthz also reports this process's memory and how long a request waited
 // behind synchronous work over the last minute (review R17; scripts/loadtest.js).
 const loopDelay = require('perf_hooks').monitorEventLoopDelay({ resolution: 20 });
@@ -227,8 +228,10 @@ app.get('/readyz', (req, res) => {
   const maxAgeHours = Number(process.env.VANTAGE_READY_MAX_AGE_HOURS) || 48;
   const r = warehouseApi.readiness({ maxAgeHours });
   const strict = req.query.fresh === '1' || req.query.fresh === 'true';
+  // ?report=1: always 200 with the same body, for a page that shows it (/status)
+  const report = req.query.report === '1';
   res
-    .status((strict ? r.fresh : r.ready) ? 200 : 503)
+    .status(report || (strict ? r.fresh : r.ready) ? 200 : 503)
     .set('Cache-Control', 'no-store')
     .json({ ...r, build: BUILD });
 });
