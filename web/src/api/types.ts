@@ -18,6 +18,8 @@ export interface Envelope {
 }
 
 export interface Freshness extends Envelope {
+  /** The server is warming a newer generation and will switch to it shortly (P9). */
+  switching?: boolean;
   refreshedAt: string | null;
   newestFilingDate: string | null;
   newestReportDate: string | null;

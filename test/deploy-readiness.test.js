@@ -39,6 +39,8 @@ test('a new generation is warmed before it is served; the old one answers meanwh
   assert.equal(during.refreshId, first.generation);
   assert.equal(during.company.name, 'Anthropic');
   assert.equal(router.readiness({ now: AFTER_REFRESH }).switching, true);
+  const f = (await request(app).get('/api/freshness').expect(200)).body;
+  assert.deepEqual([f.refreshId, f.switching], [first.generation, true], 'freshness tells a tab to ask again');
   assert.equal(router.readiness({ now: AFTER_REFRESH }).ready, true, 'still ready while switching');
   // warm() during a switch is the switch
   const w = await router.warm();
@@ -47,6 +49,7 @@ test('a new generation is warmed before it is served; the old one answers meanwh
   assert.equal(after.refreshId, g.generation);
   assert.equal(after.company.name, 'Anthropic (renamed in a job)');
   assert.equal(router.readiness({ now: AFTER_REFRESH }).switching, false);
+  assert.equal((await request(app).get('/api/freshness').expect(200)).body.switching, false);
 });
 
 test('checkSwitch moves an idle router to a new generation without a request; nothing to do is null', async () => {

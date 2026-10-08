@@ -94,4 +94,41 @@ describe('api client freshness', () => {
     await waitFor(() => expect(getByTestId('j').textContent).toBe('failed'));
     expect(((await getJSON('/api/freshness')) as { job: { status: string } }).job.status).toBe('failed');
   });
+
+  it('while the server warms a newer generation, it asks again every 2 s until the swap, then stops (P9)', async () => {
+    vi.useFakeTimers();
+    try {
+      let switching = true;
+      const fetchMock = vi.fn(async () => ok({ refreshId: switching ? 30 : 31, switching }));
+      vi.stubGlobal('fetch', fetchMock);
+      await getJSON('/api/freshness'); // generation 30 seen
+      await revalidate(); // switching: one retry scheduled
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      await revalidate(); // a trigger meanwhile does not stack another timer
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(fetchMock).toHaveBeenCalledTimes(4);
+      switching = false; // the swap happened
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(fetchMock).toHaveBeenCalledTimes(5);
+      expect(((await getJSON('/api/freshness')) as { refreshId: number }).refreshId).toBe(31);
+      await vi.advanceTimersByTimeAsync(10000);
+      // no more retries after the swap (the one extra fetch was the cache miss above)
+      expect(fetchMock).toHaveBeenCalledTimes(6);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a switch that never ends stops being asked about after 30 tries', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchMock = vi.fn(async () => ok({ refreshId: 30, switching: true }));
+      vi.stubGlobal('fetch', fetchMock);
+      await revalidate();
+      await vi.advanceTimersByTimeAsync(2000 * 40);
+      expect(fetchMock).toHaveBeenCalledTimes(31);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

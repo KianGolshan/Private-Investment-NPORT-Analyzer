@@ -74,10 +74,10 @@ test('About and Status read the warehouse; the nav links them', async ({ page })
   await page.getByRole('navigation', { name: 'Main' }).first().getByRole('link', { name: 'About the data' }).click();
   await expect(page.getByRole('heading', { name: 'About the data and methodology' })).toBeVisible();
   await expect(page.getByText(/N-PORT filings from [\d,]+ funds/)).toBeVisible();
-  await expect(page.getByText('not investment advice')).toBeVisible();
+  await expect(page.locator('main strong', { hasText: 'not investment advice' })).toBeVisible();
   await page.goto('/status');
   await expect(page.getByRole('heading', { name: 'Data status' })).toBeVisible();
-  await expect(page.getByText('Filings through')).toBeVisible();
+  await expect(page.getByText('Filings through', { exact: true })).toBeVisible();
   await expect(page.getByRole('cell', { name: /[\d,]+ private, [\d,]+ tracked/ })).toBeVisible();
   expect(errors).toEqual([]);
 });

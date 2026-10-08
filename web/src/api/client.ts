@@ -47,15 +47,29 @@ function replaceCached(url: string, body: unknown): void {
   for (const fn of [...(urlListeners.get(url) ?? [])]) fn(body);
 }
 
+// While the server warms a newer generation (P9: it keeps answering from the
+// old one until the swap), ask again this often, up to SWITCH_TRIES times.
+const SWITCH_RETRY_MS = 2000;
+const SWITCH_TRIES = 30;
+let switchTries = 0;
+let switchTimer: ReturnType<typeof setTimeout> | null = null;
+
 /** Asks the server which generation it serves, outside the answer cache. */
 export async function revalidate(): Promise<void> {
   try {
     const res = await fetch('/api/freshness', { cache: 'no-store', headers: { Accept: 'application/json' } });
     if (!res.ok) return;
-    const body = (await res.json()) as { refreshId?: number; job?: unknown };
+    const body = (await res.json()) as { refreshId?: number; job?: unknown; switching?: boolean };
     const before = cache.get('/api/freshness') as { job?: unknown } | undefined;
     if (adopt(body.refreshId) && JSON.stringify(before?.job) !== JSON.stringify(body.job))
       replaceCached('/api/freshness', body);
+    if (body.switching && switchTries < SWITCH_TRIES && !switchTimer) {
+      switchTries++;
+      switchTimer = setTimeout(() => {
+        switchTimer = null;
+        void revalidate();
+      }, SWITCH_RETRY_MS);
+    } else if (!body.switching) switchTries = 0;
   } catch {
     // offline or the server is restarting: try again on the next trigger
   }
@@ -174,6 +188,9 @@ export function useApi<T>(url: string | null): ApiState<T> {
 
 /** Test hook: forget every cached answer. */
 export function clearApiCache(): void {
+  if (switchTimer) clearTimeout(switchTimer);
+  switchTimer = null;
+  switchTries = 0;
   cache.clear();
   cacheRefreshId = null;
   listeners.clear();
