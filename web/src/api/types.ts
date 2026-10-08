@@ -35,6 +35,7 @@ export interface Freshness extends Envelope {
   /** The last warehouse job, apart from the data version. */
   job?: {
     kind: string;
+    /** running, ok, partial, failed, or interrupted (its process ended mid-run) */
     status: string;
     startedAt: string;
     finishedAt: string | null;

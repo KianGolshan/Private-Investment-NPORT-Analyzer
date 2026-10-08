@@ -338,3 +338,27 @@ test('pricePerShare is a share price only for share rows; other units carry pric
   for (const p of positions.filter(p => p.balance > 0 && p.unit === 'NS'))
     assert.equal(p.pricePerShare, p.pricePerUnit);
 });
+
+// DATA-QUALITY trap 57 (P8 pre-flight, 2026-10-07): 18 private-company rows are
+// filed below $0, all fund-of-funds LP interests (raw EDGAR: Pomona Investment
+// Fund, Triton Fund 6 SCSp, -$82,065.81, 0001752724-25-212249). They count as $0
+// like any write-down, and the words say what the filing says.
+test('trap 57: a row filed below $0 counts as $0 and reads "reported below $0 (counted as $0)"', () => {
+  const company = require('../lib/services/company');
+  const zero = openFixtureWarehouse(path.join(__dirname, 'fixtures', 'asof-zero', 'warehouse.json.gz'));
+  const pattern = zero.manifest.pattern;
+  const at = () => company.exposure(zero.db, { pattern }, '2026-06-30');
+  // the real $0 row (F34) keeps its words
+  let r = at();
+  assert.deepEqual(
+    r.zeroValue.map(h => h.label),
+    ['reported at $0']
+  );
+  zero.db.prepare("UPDATE holdings SET value_usd = -82065.81 WHERE accession = '0001193125-26-371280'").run();
+  r = at();
+  assert.deepEqual([r.funds, r.total, r.exited.length], [0, 0, 0], 'still reported, counted as $0, not an exit');
+  assert.deepEqual(
+    r.zeroValue.map(h => [h.label, h.positions[0].valueUsd]),
+    [['reported below $0 (counted as $0)', -82065.81]]
+  );
+});

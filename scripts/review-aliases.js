@@ -31,4 +31,6 @@ async function main() {
 main().catch(err => {
   console.error(`review import failed: ${err.message}`);
   process.exitCode = 1;
+  // A job past its time limit may leave work running (runJob); exit anyway.
+  setTimeout(() => process.exit(1), 1000).unref();
 });

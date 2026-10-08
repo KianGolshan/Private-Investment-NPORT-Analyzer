@@ -70,3 +70,24 @@ test('every exported table passes the answer its rows came from as `source`', ()
   }
   assert.deepEqual(missing, [], 'add source={answer} to these tables');
 });
+
+// P8 pre-flight (2026-10-07): tests that made temp directories without removing
+// them left 26 GB in $TMPDIR. Tests make them through test/helpers/tmp.js, which
+// removes them.
+test('tests make temp directories only through test/helpers/tmp.js', () => {
+  const found = hits(
+    tracked(['test']).filter(f => !['test/helpers/tmp.js', 'test/invariants.test.js'].includes(f)),
+    /mkdtemp|os\.tmpdir\(\)/
+  );
+  assert.deepEqual(found, [], 'use tmpDir() from test/helpers/tmp.js');
+});
+
+// P8 pre-flight (2026-10-07): the counting rule (a row counts when its value is
+// positive and it has shares or no share count) is defined once, in
+// lib/analytics/asof.js countsRule; position_facts once carried its own copy.
+test('the counting rule is defined only in lib/analytics/asof.js', () => {
+  const found = hits(tracked(['lib', 'scripts', 'server.js']), /value_usd > 0 && \(\w+\.balance > 0/).filter(
+    h => h.split(':')[0] !== 'lib/analytics/asof.js'
+  );
+  assert.deepEqual(found, [], 'use countsRule from lib/analytics/asof.js');
+});

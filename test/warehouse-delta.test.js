@@ -11,10 +11,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const nock = require('nock');
+const { PassThrough } = require('node:stream');
+const { tmpDir } = require('./helpers/tmp');
 
 const { openWarehouse } = require('../lib/warehouse/db');
 const { ingestBulkZip } = require('../lib/warehouse/bulk-ingest');
 const { ingestDelta, parseFormIndex, indexQuarters, defaultSince } = require('../lib/warehouse/delta');
+const { downloadQuarter } = require('../lib/warehouse/bulk-source');
 const { refresh, claimRun, republishedQuarters, STALE_RUN_MS } = require('../lib/warehouse/refresh');
 
 const SEC = 'https://www.sec.gov';
@@ -356,4 +359,51 @@ test('re-post detection: same size but a new Last-Modified is a re-post; unchang
   assert.deepEqual(await republishedQuarters(db, ['2024q1'], { now: '2026-10-07T00:00:00Z' }), ['2024q1']);
   assert.equal(db.prepare("SELECT COUNT(*) n FROM bulk_source_checks WHERE quarter = '2024q1'").get().n, 3);
   db.close();
+});
+
+// P8 pre-flight (2026-10-07): a zip body that stops arriving without closing
+// used to leave the download, and the job holding the lock, waiting forever.
+test('bulk download: a body that stalls fails after the idle limit and leaves no partial file', async () => {
+  const dir = tmpDir('stall');
+  nock(SEC)
+    .get('/files/dera/data/form-n-port-data-sets/2026q2_nport.zip')
+    .reply(
+      200,
+      () => {
+        const body = new PassThrough();
+        body.write(Buffer.alloc(1000)); // some data, then nothing: no end, no error
+        return body;
+      },
+      { 'Content-Length': '5000' }
+    );
+  const t0 = Date.now();
+  await assert.rejects(
+    downloadQuarter('2026q2', dir, { idleMs: 300 }),
+    /2026q2 stalled: no data for 0.3 s after 1000 bytes/
+  );
+  assert.ok(Date.now() - t0 < 5000, 'fails at the idle limit, not later');
+  assert.deepEqual(fs.readdirSync(dir), [], 'the partial zip is removed');
+});
+
+test('bulk download: a slow body that keeps arriving is not cut off by the idle limit', async () => {
+  const dir = tmpDir('slow');
+  const zipBytes = fs.readFileSync(ZIP);
+  nock(SEC)
+    .get('/files/dera/data/form-n-port-data-sets/2026q2_nport.zip')
+    .reply(
+      200,
+      () => {
+        const s = new PassThrough();
+        const parts = [zipBytes.subarray(0, 100), zipBytes.subarray(100, 200), zipBytes.subarray(200)];
+        let i = 0;
+        const next = () => (i < parts.length ? (s.write(parts[i++]), setTimeout(next, 150)) : s.end());
+        next();
+        return s;
+      },
+      { 'Content-Length': String(zipBytes.length) }
+    );
+  // 450 ms in all, but never 300 ms without data
+  const z = await downloadQuarter('2026q2', dir, { idleMs: 300 });
+  assert.equal(z.bytes, zipBytes.length);
+  assert.deepEqual(fs.readFileSync(z.path), zipBytes);
 });

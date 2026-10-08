@@ -84,3 +84,8 @@ Data traps are in [DATA-QUALITY.md](DATA-QUALITY.md). Numbers are stable: code a
 13. Phase gates are real: stop for sign-off; no push to main, schedulers or system config without an explicit yes.
 14. Give a one-line status before any wait.
 15. Compare across funds as filed at the same date; restate splits only within one series.
+16. Weak identity links hide in bulk-accepted curation: "shares X" / "prefix of X" joined fund vintages (V vs VI)
+    and an operating company into a fund. Before trusting a group, read the names behind it for numerals and
+    different entities, then diff every row's company across the job (P8 pre-flight, trap 58).
+17. Tests clean up what they make: a temp directory per test, never removed, filled 26 GB of disk in a week
+    and threatened the nightly job. Make temp files through `test/helpers/tmp.js`; `npm run doctor` reports leftovers.

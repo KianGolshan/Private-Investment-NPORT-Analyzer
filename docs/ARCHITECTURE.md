@@ -141,17 +141,25 @@ Fund calendars are staggered, so "as of D" mixes mark dates. The UI always shows
 
 - **Every write is a job** (`lib/warehouse/job.js`, ADR 0009). The refresh, ingests, N-CEN, the review import,
   "make this a company", backfills and the entity report all:
-  1. take the job lock (`warehouse.db.lock` with an owner token, heartbeat 30 s; taken over when its process is
-     gone, or after 10 min without a heartbeat from another host; checked again before publishing);
-  2. copy the published generation to a candidate (SQLite backup API);
+  1. take the job lock (`warehouse.db.lock` with an owner token, its process's start time and the boot time,
+     heartbeat 30 s; taken over when its process is gone, when its pid now runs another process or the host
+     rebooted (`job-state.holderGone`), or after 10 min without a heartbeat from another host; checked again before
+     publishing);
+  2. check the disk has room (a candidate plus 1 GiB, else fail before copying), remove candidates left by
+     interrupted jobs, and copy the published generation to a candidate (SQLite backup API);
   3. run, then rebuild every derived table (`refresh.rebuildDerived`);
   4. validate (integrity, schema, row counts against the published generation, derived tables present);
   5. publish `generations/warehouse-<id>.db` (read-only on disk; the id from `generations/SEQUENCE`, never
      reused) by swapping the `warehouse.db` symlink: the commit point. A job given the reviewed files works on a
      staged copy, which is stored in the generation (`curation_snapshot`) and written back only after the publish.
 
-  A failure publishes nothing. `warehouse.db.job.json` holds the last job's state, which `/api/freshness` reports
-  as `job`. `npm run warehouse` lists the generations; `-- --rollback` republishes the previous contents as a new generation (`--to <id>` for any kept one), and
+  A failure publishes nothing. Every job has a time limit (3 h, `VANTAGE_JOB_TIMEOUT_MIN`): past it the job fails
+  before the commit point, cleans up and releases the lock, and the CLI exits; a streamed bulk download fails
+  after 60 s without data (P8 pre-flight). `warehouse.db.job.json` holds the last job's state, which
+  `/api/freshness` reports as `job`; a `running` state whose process ended reads `interrupted` (top bar: "Last
+  job interrupted"). `npm run doctor` checks freshness, ingest errors, row counts, unresolved value, the last
+  job, the lock, disk room, leftover candidates and temp directories, and job processes (read-only; exits 1 on a
+  failure). `npm run warehouse` lists the generations; `-- --rollback` republishes the previous contents as a new generation (`--to <id>` for any kept one), and
   `-- --sync-curation` writes the published curation snapshot back to `data/review`.
 
 - **Nightly** (`npm run refresh`, `scripts/refresh.js` → `runJob('refresh', refreshIngest)`):
@@ -205,7 +213,8 @@ publishes the day's index overnight, and filings cluster about 60 days after eac
 ```
 
 Linux/cron equivalent: `15 6 * * * cd /path/to/repo && npm run --silent refresh >> logs/refresh.log 2>&1`.
-Check health with `npm run warehouse` (generations and the last job), `cat warehouse.db.jobs.log`,
+Check health with `npm run doctor` (exits 1 when the last job failed or was interrupted, or the disk has no
+room for the next one), `npm run warehouse` (generations and the last job), `cat warehouse.db.jobs.log`,
 `sqlite3 warehouse.db "select * from generation_meta order by id desc limit 5"` and `select * from ingest_errors`.
 
 ## Deployment (planned, Phase 9)
@@ -306,7 +315,8 @@ lib/analytics/peer.js              velocity, outliers, ledger, leaderboard (UMD;
 lib/entities/review-import.js      the review import (npm run review:aliases and the admin job)
 lib/entities/make-company.js       "make this a company": review files + import, run as a warehouse job
 lib/warehouse/job.js               runJob: the one write path (lock, candidate, derived rebuild, validate, publish)
-lib/warehouse/job-state.js         job file paths and the last job's state (read by /api/freshness)
+lib/warehouse/job-state.js         job file paths, the last job's state (read by /api/freshness), process identity
+lib/warehouse/doctor.js            npm run doctor: read-only health checks (scripts/doctor.js)
 lib/api/admin.js                   POST /api/admin/companies (VANTAGE_ADMIN=1, local only; runs scripts/make-company.js)
 ```
 

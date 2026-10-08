@@ -110,7 +110,15 @@ export default function Filings({ base, sq, name, newest, openPosition }: ViewPr
       header: 'Value',
       value: r => r.valueUsd,
       num: true,
-      render: r => (r.counts ? moneyC(r.valueUsd) : <span class="muted">{moneyC(r.valueUsd)} (at $0)</span>),
+      render: r =>
+        r.counts ? (
+          moneyC(r.valueUsd)
+        ) : (
+          // filed below $0: counted as $0, said as filed (DATA-QUALITY trap 57)
+          <span class="muted">
+            {moneyC(r.valueUsd)} {r.valueUsd < 0 ? '(below $0, counted as $0)' : '(at $0)'}
+          </span>
+        ),
     },
     {
       id: 'perUnit',

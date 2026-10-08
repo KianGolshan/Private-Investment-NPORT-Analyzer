@@ -1,8 +1,17 @@
 # Vantage v2 Status
 
-**Phase:** **P6e** (follow-ups from the Codex verification review of 2026-10-06, V01–V11) on branch
-`v2-p6e-verification`. **W1 and W2 are signed off**; PR #7 to `main` is open for the user to merge. V11 is closed (the
-Finastra live test passes alone in 35 s). **Next, after the merge: P8 (operations)**, the user's choice.
+**Phase:** **P8** (operations) on branch `v2-p8-operations`, off `main` at ed3fd6e (PR #7 merged; P6e complete).
+**P8 W1 (the pre-flight fixes) is built and pushed** and waits for sign-off:
+[plans/P8-preflight-analysis.md](plans/P8-preflight-analysis.md) (findings, then "Outcome"). Delivered:
+
+- the test temp leak fixed;
+- the job watchdog (download idle limit, job time limit, disk check);
+- lock identity across pid reuse and reboots, and "interrupted" job states;
+- `npm run doctor`;
+- below-zero values labeled as filed (trap 57);
+- 20 merged fund families split (trap 58).
+
+Live warehouse: generation 31.
 
 ## Phase tracker
 
@@ -94,28 +103,29 @@ The analyst workspace is served at `/`; the route map is at the top of the [READ
 
 ## Measurements
 
-| Metric                         | Budget               | Latest                                                                                     |
-| ------------------------------ | -------------------- | ------------------------------------------------------------------------------------------ |
-| Warehouse size                 | ≤1 GB per generation | **577.1 MB** (generation 24; two generations kept, ~1.8 GB on disk with a candidate)       |
-| Nightly refresh                | ≤5 min               | 0.8 min as a job (#22: copy, refresh, derived rebuild, validation, publish in 47 s)        |
-| API p95, all routes            | <200ms               | 13.5–16.1 ms over 3,805 requests (W5, load 3.2); drill total 382 KB JSON = 48.8 KB gzipped |
-| Lighthouse perf / a11y         | ≥90                  | Market 96/98, Explore 97/98, company 98/98, firm 95/98 (W5)                                |
-| Accessibility (axe, WCAG 2.1)  | 0 serious            | 0 findings of any impact, 10 views × light/dark                                            |
-| Suite                          | green                | 598 backend (567 pass, 31 skipped, 0 fail); web 37/37; e2e 27/27; LIVE 31/31 (W5)          |
-| Full backfill / first catch-up | —                    | 13.6 min / 26.9 min (P1, P2)                                                               |
+| Metric                         | Budget               | Latest                                                                                         |
+| ------------------------------ | -------------------- | ---------------------------------------------------------------------------------------------- |
+| Warehouse size                 | ≤1 GB per generation | **578.0 MB** (generation 31; two generations kept, ~1.8 GB on disk with a candidate)           |
+| Nightly refresh                | ≤5 min               | 0.8 min as a job (#22: copy, refresh, derived rebuild, validation, publish in 47 s)            |
+| API p95, all routes            | <200ms               | 13.5–16.1 ms over 3,805 requests (W5, load 3.2); drill total 382 KB JSON = 48.8 KB gzipped     |
+| Lighthouse perf / a11y         | ≥90                  | Market 96/98, Explore 97/98, company 98/98, firm 95/98 (W5)                                    |
+| Accessibility (axe, WCAG 2.1)  | 0 serious            | 0 findings of any impact, 10 views × light/dark                                                |
+| Suite                          | green                | 627 backend (596 pass, 31 skipped, 0 fail; P8 W1); web 39/39; e2e 27/27 (P6e); LIVE 31/31 (W5) |
+| Full backfill / first catch-up | —                    | 13.6 min / 26.9 min (P1, P2)                                                                   |
 
-## Warehouse state (generation 29, 2026-10-06)
+## Warehouse state (generation 31, 2026-10-07)
 
-Schema at migration 0021. Generation 25 is a refresh (nothing new) and generation 26 a no-change review import. 26 is
+Schema at migration 0021. Generations 30 and 31 are review imports of the trap 58 split (30 first; 31 with the NEA
+"Venture Growth" exclusion); 29 is pruned. Generation 25 is a refresh (nothing new) and generation 26 a no-change review import. 26 is
 the first generation with a curation snapshot (digest `327a4489…`, curation tree `eae566e`, clean). Generation 27 is a
 refresh that publishes the R06 rule (one leg re-attributed, F54), 28 a no-change review import under the W3 code,
 and 29 a refresh built by `main` (e5eca00, curation tree `eae566e`, clean). The files are read-only on disk.
 
 - 355,007 N-PORT filings: bulk 2019Q4–2026Q2 plus catch-up through filings of 2026-10-05.
 - 1.165M private-candidate rows.
-- 806 companies: 302 private, 504 public; 180 tracked.
-- 529 firms (ledger `manager_ids.csv`), 18,852 funds, 71,835 unreviewed entities.
-- 68,277 position-fact legs.
+- 900 companies: 396 private (94 new funds from the trap 58 split), 504 public; 180 tracked.
+- 529 firms (ledger `manager_ids.csv`), 18,852 funds, 71,842 unreviewed entities.
+- 68,127 position-fact legs.
 - 198,326 N-CEN adviser rows (now in the shrink check).
 - `ingest_errors` empty. 2026Q3 bulk not posted yet.
 - Generation 24 (now pruned) had been switched to WAL mode at 19:42:53 on 2026-10-05, two minutes after it was
@@ -124,8 +134,15 @@ and 29 a refresh built by `main` (e5eca00, curation tree `eae566e`, clean). The 
 
 ## Open decisions (user)
 
-- **Next phase:** P7 (MCP server) or P8 (operations). `main` holds all of v2 (PRs #2–#5); there are no other branches
-  and no open PRs.
+- **P8 W1 calls to overrule:**
+  - a job time limit of 3 h, and a disk check for a candidate plus 1 GiB;
+  - a below-zero row is counted as $0, and its words say "reported below $0 (counted as $0)";
+  - the trap 58 split rules: one company per fund vintage or CLO; no fund named and no evidence means unreviewed;
+    the 3 Partners Group "NEA 18" rows follow their title;
+  - groupings of one manager's vehicles were left as they are (list in the plan's Outcome).
+- **Leftover temp directories:** ~900 `vantage-*` directories (8.4 GiB per `npm run doctor`) from earlier test
+  runs. The sweep was blocked by the permission classifier, so it is the user's command to run (the reply that
+  closes W1 gives it).
 - **P6d calls still open to overrule:**
   - rollback as a new generation;
   - no takeover of a live local job;
@@ -170,6 +187,8 @@ and 29 a refresh built by `main` (e5eca00, curation tree `eae566e`, clean). The 
 
 ## Known issues
 
+- Fixed in P8 W1: the test temp leak. Its leftovers remain until the user deletes them (Open decisions).
+
 - Intermittent single-test failures in full parallel `npm test` runs, none reproduced on rerun:
   - "scope: … post-filter", 2026-10-05;
   - "API goldens: Stripe A5 …", 2026-10-06;
@@ -194,17 +213,17 @@ and 29 a refresh built by `main` (e5eca00, curation tree `eae566e`, clean). The 
 
 ## Next session
 
-> Resume Vantage v2 on `main` (everything through P6d is merged; PR #5). Ask the user which comes next, then branch off
-> `main` for it:
+> Resume Vantage v2 P8 (operations) on branch `v2-p8-operations`. P8 W1 (the pre-flight fixes,
+> [plans/P8-preflight-analysis.md](plans/P8-preflight-analysis.md)) waits for the user's sign-off. After it, P8 W2
+> takes the ROADMAP §8 items:
 >
-> - **P7 (MCP server)**: ROADMAP §7; the services exist.
-> - **P8 (operations)**: ROADMAP §8, including the review's carried items:
->   - off-host backup and a restore drill;
->   - crash drills at the publication boundary;
->   - correction and deletion reconciliation;
->   - bench RSS and event-loop lag;
->   - the intermittent test failures under load;
->   - the nightly launchd job (only with the user's yes).
+> - backup with an off-host copy and a restore drill;
+> - correction and deletion reconciliation;
+> - bench RSS and event-loop lag;
+> - alerting (`npm run doctor` exits 1 for a scheduler);
+> - the monthly LIVE regression;
+> - the watch reports;
+> - the launchd job, only with the user's yes.
 >
 > This Mac has 8 GB of memory: run one heavy job at a time in the foreground, run tests with `--test-concurrency=2`, and
 > ask before a refresh, the e2e suite or the LIVE suite. Read CLAUDE.md, this file and docs/ROADMAP.md first. Gates: `npm test`, `npm run lint`, `npm run format:check`,
@@ -212,6 +231,29 @@ and 29 a refresh built by `main` (e5eca00, curation tree `eae566e`, clean). The 
 > `npm run refresh` at session start.
 
 ## Log
+
+- **2026-10-07 (P8 W1):** the user said "proceed with full fixes". Every pre-flight finding is fixed, each with
+  a regression test. Detail is in the plan's "Outcome".
+  - New: `test/helpers/tmp.js` (a full run leaves 0 temp directories, was ~280), the download idle limit, the
+    `runJob` time limit and disk check, removal of stale candidates, lock and state identity (`holderGone`), the
+    `interrupted` job state and pill, `npm run doctor`, trap 57 wording, and `countsRule` used once.
+  - The SIGKILL crash drill passes; it found that a killed job's candidate was left on disk (fixed).
+  - Trap 58, found while checking the negative rows on EDGAR: 20 companies merged several funds, so they were
+    split through two review imports (generations 30 and 31). The diff found 2,955 rows that changed company,
+    all within 24 companies; 98 are now unreviewed.
+  - Gates: backend 596/0/31 skipped; lint, format, web 39/39, lint:web and build are green. e2e and LIVE were not
+    run (not asked). The browser on generation 31 shows Icon Partners IV and V apart, Triton Fund 6's filings row
+    "−$82.1K (below $0, counted as $0)", and the "Last job interrupted" pill (state file restored after).
+
+- **2026-10-07:** PR #7 merged; branch `v2-p8-operations` made. P8 pre-flight analysis
+  ([plans/P8-preflight-analysis.md](plans/P8-preflight-analysis.md)): backend 582/0/31 skipped, lint, format, web,
+  audits and main CI all green. The analysis found:
+  - four high operational defects: the test temp leak (26 GB), no idle timeout or job cap (a stalled download hangs
+    the job while it holds the lock), a pid-only lock check (pid reuse after a reboot), and a "running" state that
+    is never cleared;
+  - below-zero marks labeled "$0" (18 rows);
+  - the counting rule written twice;
+  - a misleading curation label (company 743 is the ASF VIII Sidecar).
 
 - **2026-10-06:** P6e W2 signed off; PR #7 to `main` opened. V11: the Finastra private-credit live test, run alone at a
   load of 3.0, **passed in 35.2 s** (deadline 420 s). Codex's 564 s timeout was at a load of about 23, with suites

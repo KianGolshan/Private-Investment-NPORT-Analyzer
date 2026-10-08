@@ -5,9 +5,9 @@
 // a refresh runs and restores the review files on failure. The route refuses
 // without the flag, from a non-local address, and without its header.
 const test = require('node:test');
+const { tmpDir } = require('./helpers/tmp');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const os = require('node:os');
 const path = require('node:path');
 const express = require('express');
 const request = require('supertest');
@@ -42,7 +42,7 @@ function fixtureToFile(db, file) {
   return openWarehouse(file);
 }
 function reviewCopy() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vantage-review-'));
+  const dir = tmpDir('review');
   for (const f of fs.readdirSync(REVIEW)) fs.copyFileSync(path.join(REVIEW, f), path.join(dir, f));
   return dir;
 }
@@ -180,7 +180,7 @@ test('admin route: refused without the flag, from a non-local or proxied address
 });
 
 test('admin job: the child process runs to its end on a warehouse file and reports the new company', async () => {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'vantage-admin-'));
+  const tmp = tmpDir('admin');
   const file = path.join(tmp, 'warehouse.db');
   reviewedWarehouse(file).close();
   const dir = reviewCopy();

@@ -3,9 +3,9 @@
 // data/review/ files. Golden numbers through the API, the display labels,
 // history starts, routing, stable ids, ETags, and no SEC call.
 const test = require('node:test');
+const { tmpDir } = require('./helpers/tmp');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const os = require('node:os');
 const path = require('node:path');
 const express = require('express');
 const request = require('supertest');
@@ -224,7 +224,7 @@ test('API caching: the ETag is the refresh id plus the build; a matching If-None
 });
 
 test('API read-only: a missing or behind warehouse gives 503, never a new file; the server opens it read-only', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vantage-ro-'));
+  const dir = tmpDir('ro');
   const missing = path.join(dir, 'none.db');
   const { openWarehouseReadOnly } = require('../lib/warehouse/db');
   const a = express().use(
