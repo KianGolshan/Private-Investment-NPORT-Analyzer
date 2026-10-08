@@ -1,21 +1,23 @@
 # Vantage v2 Status
 
-**Phase:** **P6e** (follow-ups from the Codex verification review of 2026-10-06, V01–V11) on branch
-`v2-p6e-verification`. **W1 and W2 are signed off**; PR #7 to `main` is open for the user to merge. V11 is closed (the
-Finastra live test passes alone in 35 s). **Next, after the merge: P8 (operations)**, the user's choice.
+**Phase:** **P8** (operations), **paused by the user on 2026-10-08**. W1–W3 are **signed off** (2026-10-07..08),
+and `v2-p8-operations` is **merged to `main`** by its PR (the user's yes, 2026-10-08). Everything not built is
+under [Deferred](#deferred), W4 included. Live warehouse: generation 32. A new phase or wave starts on a new branch
+off `main`.
 
 ## Phase tracker
 
 - [x] P0–P5b: live fixes, warehouse, refresh, as-of, entities, identity, services, company and fund pages
       (signed off 2026-09-28..30; ROADMAP "Done")
-- [x] P6 core: analysis views (signed off 2026-10-01; remaining items in ROADMAP §6)
+- [x] P6 core: analysis views (signed off 2026-10-01; the remaining P6 items are deferred)
 - [x] P6b: analyst workspace, W0–W5 (signed off 2026-10-01..06; ROADMAP §6b)
 - [x] P6c: review remediation R1–R3 (signed off 2026-10-05; [plan](plans/P6c-review-remediation.md), ADR 0009)
 - [x] P6d: full-stack review remediation, W1–W3 (signed off 2026-10-06; ROADMAP §6d, ADR 0009 amendment)
 - [x] P6e: Codex verification follow-ups, W1–W2 (signed off 2026-10-06; V11 closed)
-- [ ] P7: MCP server (open; the services exist)
-- [ ] P8: operations hardening (nightly job, backups and restore drill, readiness, alerting, doctor; F10/F11 items)
-- [ ] P9: public deployment (hosting to decide as ADR 0006; capacity envelope, shared SEC budget)
+- [ ] P7: MCP server (deferred)
+- [~] P8: operations. W1 (pre-flight fixes), W2 (backups and nightly) and W3 (reconciliation and watch) are
+  signed off and merged. The W4 research and the P8 checkpoint (30 unattended nights) are deferred.
+- [ ] P9: public deployment (deferred)
 
 ## What the app answers now (all from the warehouse, every row with mark date and accession)
 
@@ -36,27 +38,43 @@ The analyst workspace is served at `/`; the route map is at the top of the [READ
 | Private Credit (v1) | `/legacy`                         | BDC 10-Q/10-K schedules (deferred scope); the other v1 tabs link to their replacements                 |
 | Exports             | every table                       | CSV/XLSX with mark date, accession, source and how history is read (Basis); formula-safe CSV           |
 
-## Where things stand (2026-10-06)
+## Operations (P8): what runs and how to check it
 
-- **Data:** every write is a warehouse job (`lib/warehouse/job.js`, ADR 0009). It builds a candidate, rebuilds
+| Command             | What it does                                                                                                    |
+| ------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `npm run doctor`    | read-only health: freshness, last job, lock, disk room, backup, nightly/monthly, leftovers; exit 1 = act        |
+| `npm run refresh`   | one warehouse job: new bulk quarters, the EDGAR catch-up (NT NPORT-P included), N-CEN, derived rebuild          |
+| `npm run nightly`   | refresh, backup, watch report, doctor; macOS notification and exit 1 on a failure; optional `VANTAGE_ALERT_URL` |
+| `npm run monthly`   | `npm run reconcile` (EDGAR indexes vs stored filings, re-fetch sample) plus the LIVE regression, with alerts    |
+| `npm run backup`    | verified copy of the published generation (`-- --list`, `-- --restore FILE`), 3 kept                            |
+| `npm run watch`     | review suggestions against the previous generation (`reports/watch/`), never applied                            |
+| `npm run warehouse` | generations and the last job; `-- --rollback`, `-- --sync-curation`                                             |
+| `npm run bench`     | p50/p95 per route, RSS and event-loop delay, after the warm-up (`--cold` without)                               |
+
+Safeguards (P8 W1–W3): every job has a time limit (3 h) and a disk check, a stalled download fails after 60 s, a
+lock or "running" state left by a dead process is recognized (start time and boot time), a killed job's candidate
+is removed, and the server re-warms its caches on each new generation.
+
+## Where things stand (2026-10-08)
+
+- **Data:** every write is a warehouse job (`lib/warehouse/job.js`, ADR 0009). A job builds a candidate, rebuilds
   every derived table, validates it, and publishes `generations/warehouse-<id>.db` behind the `warehouse.db` link.
-  Readers switch on their next request. `npm run warehouse` lists generations and `-- --rollback` goes back one.
-  Company and firm ids are permanent ledgers in `data/review/`.
-- **Rules added in P6c:**
-  - trap 53 (a class at $0 is a mark move);
-  - one mark observation per fund × class × date (F06);
-  - disclosed ranges obey `knownAsOf`;
-  - bulk archives are validated before they replace a quarter (trap 41 updated);
-  - display rules for basis, paging and partial answers (DATA-QUALITY).
+  Readers switch on their next request. Company and firm ids are permanent ledgers in `data/review/`.
+- **Coverage:** checked against EDGAR on 2026-10-07/08:
+  - every N-PORT EDGAR lists is stored except the 117 filed as NT NPORT-P since 2026-07-01. The catch-up now lists
+    them, and the next refresh loads them (trap 59);
+  - 0 stored filings are deleted from EDGAR;
+  - 0 of 300 re-fetched filings changed.
+- **Curation:** the trap 58 fund-family split and its relabel correction are in `data/review` (generation 32).
 - **Assurance:**
-  - `npm test` (backend, incl. `test/job.test.js` and the raw-EDGAR oracle `test/oracle.test.js`);
-  - `npm run test:web` (Vitest);
-  - `npm run test:e2e` (Playwright, Chromium: 7 workflow tests plus an axe audit of 10 views in light and dark).
+  - `npm test`: backend, including the job, backup and reconcile tests and the raw-EDGAR oracle;
+  - `npm run test:web`: Vitest;
+  - `npm run test:e2e`: Playwright, 7 workflow tests plus an axe audit of 10 views × light/dark;
+  - `npm run test:live`: LIVE.
 
-  CI runs all three, with actions pinned by SHA.
+  CI runs the first three, with actions pinned by SHA.
 
-- **v1:** only Private Credit remains visible at `/legacy`. The retired tabs' code is hidden, not deleted, because
-  about 30 v1 regression tests drive it.
+- **v1:** only Private Credit remains visible at `/legacy`; the retired tabs' code is hidden, not deleted.
 
 ## Handoff: how to work on this project
 
@@ -67,7 +85,7 @@ The analyst workspace is served at `/`; the route map is at the top of the [READ
   explicit yes.
 - **Real data only.** Check any new metric's definition on real rows _before_ building it. Every new number shown as a
   finding goes to GOLDEN-NUMBERS after a raw-EDGAR check: `node scripts/verify-edgar.js <cik> <pattern> <accession>…`
-  (fails closed when nothing matches; needs `SEC_USER_AGENT` from `.env`). Last golden: **F53**.
+  (fails closed when nothing matches; needs `SEC_USER_AGENT` from `.env`). Last golden: **F54**.
 - **One definition, held equal by tests.** New answers must equal `exposureAsOf` / `companyActivity` / `firmBook`
   where they overlap (`test/analysis.test.js` pattern). Where shared code could be wrong, add an independent check
   to the oracle (`test/fixtures/oracle/build-oracle.js`, hand-picked rows, plain arithmetic).
@@ -94,124 +112,260 @@ The analyst workspace is served at `/`; the route map is at the top of the [READ
 
 ## Measurements
 
-| Metric                         | Budget               | Latest                                                                                     |
-| ------------------------------ | -------------------- | ------------------------------------------------------------------------------------------ |
-| Warehouse size                 | ≤1 GB per generation | **577.1 MB** (generation 24; two generations kept, ~1.8 GB on disk with a candidate)       |
-| Nightly refresh                | ≤5 min               | 0.8 min as a job (#22: copy, refresh, derived rebuild, validation, publish in 47 s)        |
-| API p95, all routes            | <200ms               | 13.5–16.1 ms over 3,805 requests (W5, load 3.2); drill total 382 KB JSON = 48.8 KB gzipped |
-| Lighthouse perf / a11y         | ≥90                  | Market 96/98, Explore 97/98, company 98/98, firm 95/98 (W5)                                |
-| Accessibility (axe, WCAG 2.1)  | 0 serious            | 0 findings of any impact, 10 views × light/dark                                            |
-| Suite                          | green                | 598 backend (567 pass, 31 skipped, 0 fail); web 37/37; e2e 27/27; LIVE 31/31 (W5)          |
-| Full backfill / first catch-up | —                    | 13.6 min / 26.9 min (P1, P2)                                                               |
+| Metric                         | Budget               | Latest                                                                                                                                                                                                |
+| ------------------------------ | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Warehouse size                 | ≤1 GB per generation | **578.0 MB** (generation 32; two generations kept, ~1.8 GB on disk with a candidate)                                                                                                                  |
+| Nightly refresh                | ≤5 min               | 0.8 min as a job (#22: copy, refresh, derived rebuild, validation, publish in 47 s)                                                                                                                   |
+| API p95, all routes            | <200ms               | 25.2 / 27.0 ms over 3,805 requests after the warm-up (P8 W3, load 2.6); no route over 150 ms p95 or 300 ms max; event-loop max 267 / 296 ms. The warm-up: 8.4 s, one stall of 2,657 ms per generation |
+| Backup / restore               | —                    | 2.9 s / 2.6 s for generation 31 (APFS clone, same disk; drill 2026-10-07, identical answers)                                                                                                          |
+| Lighthouse perf / a11y         | ≥90                  | Market 96/98, Explore 97/98, company 98/98, firm 95/98 (W5)                                                                                                                                           |
+| Accessibility (axe, WCAG 2.1)  | 0 serious            | 0 findings of any impact, 10 views × light/dark (e2e 2026-10-08)                                                                                                                                      |
+| Suite                          | green                | 2026-10-08: backend 638 (607 pass, 31 skipped, 0 fail); web 39/39; e2e 27/27; audits 0; CI green. LIVE 31/31 last run at W5 (2026-10-06)                                                              |
+| Full backfill / first catch-up | —                    | 13.6 min / 26.9 min (P1, P2)                                                                                                                                                                          |
 
-## Warehouse state (generation 29, 2026-10-06)
+## Warehouse state (generation 32, 2026-10-08)
 
-Schema at migration 0021. Generation 25 is a refresh (nothing new) and generation 26 a no-change review import. 26 is
-the first generation with a curation snapshot (digest `327a4489…`, curation tree `eae566e`, clean). Generation 27 is a
-refresh that publishes the R06 rule (one leg re-attributed, F54), 28 a no-change review import under the W3 code,
-and 29 a refresh built by `main` (e5eca00, curation tree `eae566e`, clean). The files are read-only on disk.
+Schema at migration 0021. Generations 30–32 are review imports (the trap 58 split, the NEA exclusion, the relabel
+correction); 31 and 32 are kept, and 32 is published and backed up (`~/Vantage-backups`). The files are read-only on
+disk.
 
-- 355,007 N-PORT filings: bulk 2019Q4–2026Q2 plus catch-up through filings of 2026-10-05.
+- 355,007 N-PORT filings: bulk 2019Q4–2026Q2 plus catch-up through filings of 2026-10-05 (117 NT NPORT-P pending a
+  refresh).
 - 1.165M private-candidate rows.
-- 806 companies: 302 private, 504 public; 180 tracked.
-- 529 firms (ledger `manager_ids.csv`), 18,852 funds, 71,835 unreviewed entities.
-- 68,277 position-fact legs.
-- 198,326 N-CEN adviser rows (now in the shrink check).
+- 898 companies: 394 private, 504 public; 180 tracked.
+- 529 firms, 18,852 funds, 71,842 unreviewed entities, 68,127 position-fact legs, 198,326 N-CEN adviser rows.
 - `ingest_errors` empty. 2026Q3 bulk not posted yet.
-- Generation 24 (now pruned) had been switched to WAL mode at 19:42:53 on 2026-10-05, two minutes after it was
-  published. Its WAL was empty, and no current script opens the warehouse read-write. Generations are now 0444 on
-  disk (ADR 0009 amendment).
 
-## Open decisions (user)
+## Decisions waiting on the user
 
-- **Next phase:** P7 (MCP server) or P8 (operations). `main` holds all of v2 (PRs #2–#5); there are no other branches
-  and no open PRs.
-- **P6d calls still open to overrule:**
-  - rollback as a new generation;
-  - no takeover of a live local job;
+1. **Run a refresh** (about 1 minute) to load the 117 NT NPORT-P reports? CLAUDE.md asks before a refresh.
+2. **Install the launchd jobs:** `npm run nightly` daily at 06:15 and `npm run monthly` monthly (plists in
+   ARCHITECTURE §Refresh lifecycle). The P8 checkpoint, 30 unattended nights, starts here.
+3. **Choose the backup location** (`VANTAGE_BACKUP_DIR`): an external disk, iCloud Drive or another machine. Today
+   backups go to `~/Vantage-backups` on the same disk, and the doctor warns.
+4. **Alert URL (optional):** a dead-man's switch such as healthchecks.io (`VANTAGE_ALERT_URL`).
+5. **Delete the leftover temp directories** (about 1,250 `vantage-*` folders, ~14.7 GiB, from test runs before the W1
+   fix; the doctor counts them). The permission classifier blocked the sweep. Command:
+   `find -E "$TMPDIR" -maxdepth 1 -type d -mmin +60 -regex '.*/vantage-(job|review|cache|ncen|zip|admin|curation|ro)-[A-Za-z0-9]{6}' -exec rm -rf {} +`
+
+## Calls made, open to overrule
+
+- **P8:**
+  - jobs have a 3 h time limit and need room for a candidate plus 1 GiB;
+  - 3 backups are kept, and a restore is a new generation;
+  - the nightly and monthly runs continue after a failed step, and a doctor warning makes the night "warn";
+  - below-zero values count as $0 and read "reported below $0 (counted as $0)" (trap 57);
+  - the trap 58 rules: one company per fund vintage or CLO, unless the filer's instrument id and share count carry
+    over (then one company); no fund named and no evidence means unreviewed; the 3 Partners Group "NEA 18" rows
+    follow their title.
+- **P6d:**
+  - rollback is a new generation;
+  - a live local job is never taken over;
   - staged curation with `--sync-curation`;
   - N-CEN drift fails the load;
   - empty-section filings are a warning (trap 55);
-  - "reported at $0" kept for a zero+exit position;
-  - proxy trust only on a loopback `HOST` or by `TRUST_PROXY`;
+  - "reported at $0" is kept for a zero+exit position;
+  - the proxy is trusted only on a loopback `HOST` or by `TRUST_PROXY`;
   - 5 retry attempts;
-  - the export `Source` column;
-- **Install the nightly refresh** (launchd entry in ARCHITECTURE §Refresh lifecycle)? Not installed; until then run
-  `npm run refresh` at session start. P8's 30-day unattended run cannot start before it.
-- **Calls still open to overrule** (details in the archive's "Decisions as recorded at W5 sign-off"):
-  - W5:
-    - v1 tab code hidden, not deleted;
-    - light-theme contrast colors;
-    - ECharts deferred to idle;
-    - drill payload not trimmed.
-  - P6c:
-    - mark observation unit per fund (F06);
-    - $0 class semantics (F05);
-    - formula-safe CSV;
-    - generation files plus a symlink;
-    - shrink limits (2% per job, 90% per quarter reload);
-    - `partial` publication;
-    - Last-Modified re-post detection;
-    - firm rename by identical keys;
-    - feed paging and basis labels.
-  - W4:
-    - the watchlist lives in this browser;
-    - Compare keeps v1 Batch's spread and mark age;
-    - movers rank dollars, not percent.
-  - Curation: two VIP funds set `public`.
-  - Earlier:
-    - trap 52;
-    - dated firm attribution not adopted;
-    - trap 45 (loans filed as OTHER are debt);
-    - the 1 GB budget.
-- **Deferred cleanup:** delete v1's retired tabs (`public/app.js`, `views.js`) together with their regression tests,
-  when the user agrees nothing more is needed from them.
-- **Global git identity** is "Test User <test@test.com>" (`git config --global`); this repo sets its own.
+  - the export `Source` column.
+- **P6c and W5 (archive):**
+  - mark observation per fund (F06);
+  - $0 class semantics (F05);
+  - formula-safe CSV;
+  - generation files plus a symlink;
+  - shrink limits;
+  - `partial` publication;
+  - Last-Modified re-post detection;
+  - firm rename by identical keys;
+  - feed paging and basis labels;
+  - v1 tab code hidden, not deleted;
+  - light-theme contrast colors;
+  - ECharts deferred to idle;
+  - drill payload not trimmed.
+- **W4 and earlier:**
+  - the watchlist lives in the browser;
+  - Compare keeps Batch's spread and mark age;
+  - movers rank dollars;
+  - two VIP funds are set `public`;
+  - trap 52;
+  - dated firm attribution not adopted;
+  - trap 45;
+  - the 1 GB budget.
 
-## Known issues
+## Deferred
 
-- Intermittent single-test failures in full parallel `npm test` runs, none reproduced on rerun:
-  - "scope: … post-filter", 2026-10-05;
-  - "API goldens: Stripe A5 …", 2026-10-06;
-  - earlier: prod-startup "behind a proxy" ECONNRESET at load 16–20; analysis unified search; edge-cases
-    "cik/accession are validated…".
+Everything known and not built, in one place (2026-10-08). Each item says why it waits.
 
-  Likely timing under load (the start-up warm-up can block the event loop past the 5 s keep-alive). Worth a look in
-  P8.
+### P8 (operations), remaining
 
-- Fidelity's opaque per-fund vehicles (~$0.6B) stay on the review list (no filing names their targets).
-- `public/splits.js` knows ratios 2–100 from a fixed list. Two consequences:
-  - A 60:1 share exchange (Nscale 2026-05-31) reads as a class change, not a split.
-  - A non-split share exchange reads as "added" plus "mark moved". Mesquite Energy (shares ×2.41, $205.76 → $15.45,
-    Fidelity 2026-04-30; F52) is Market's largest mark move down (−$801.4M) with a +$561.2M position flow.
+- **W4 research.** Check real filings first, build only if the data holds, and report negative findings.
+  - _Last private mark vs first listed price:_ `companies.public_since` is empty for all 504 listed companies, and
+    the keep rule drops post-listing rows, so a listing date and price source must come from filings. This also
+    fixes the next item.
+  - _Historical views use today's curation:_ a company that later listed drops out of earlier periods (labeled on
+    screen and in exports).
+  - _Fund type from N-CEN_ (ETF, open-end, closed-end, interval: which holders are retail-accessible). Only advisers
+    are loaded from N-CEN today; check the field's coverage first (trap 21).
+- **P8 checkpoint:** 30 unattended nightly runs with no gaps, and a green monthly run. This needs decision 2. The
+  monthly run (reconcile plus LIVE) has never run on a schedule; `npm run reconcile` ran by hand on 2026-10-08. LIVE
+  last passed at W5.
+- **Off-host backup and an alert URL:** decisions 3 and 4. The restore drill was done on the same disk only.
+- **Crash drills at the publication boundary (R09).** The SIGKILL drill kills a job mid-run, and the fault-injection
+  sweeps fail every post-commit step. A process killed exactly at the link rename (or between the generation rename
+  and the link swap) has not been drilled.
+- **Watch report gaps (ROADMAP §8):** status changes cover listing evidence (likely IPOs) only. Delistings
+  (listed → private) and post-IPO lock-up or PIPE signals are not detected yet; check how real filings label them
+  first.
+- **A readiness endpoint apart from liveness** (generation, data age, last job). `/api/freshness` and
+  `npm run doctor` cover it locally; a `/healthz` for a host is a P9 task.
+- **Intermittent single-test failures under heavy load**, none reproduced on rerun:
+  - "scope: … post-filter" (2026-10-05);
+  - "API goldens: Stripe A5" (2026-10-06);
+  - prod-startup ECONNRESET at load 16–20;
+  - analysis unified search;
+  - edge-cases "cik/accession are validated".
 
-  The bridge still reconciles.
+  None were seen in the 2026-10-07/08 runs (load 2–6). Likely timing under load; not investigated.
 
-- Explore's firm picker lists every firm holding private value (~170), including small advisers with terse N-CEN
-  names.
-- Historical cross-company views use today's curation, so a company that later listed drops out of earlier periods
-  (labeled on screen and in exports). `public_since` research is a P8 item.
+- **Leftover temp directories:** decision 5.
+
+### Data and curation (review items, each needs evidence before a change)
+
+- **Watch report** (`reports/watch/2026-10-08.md`, local and git-ignored; `npm run watch` regenerates it), suggestions
+  not yet reviewed:
+  - 7 listing-evidence hits (Endeavor, Altice France, Talwandi Sabo);
+  - 12 identity links (e.g. Alliant Holdings, Melange Capital Partners, Windstream / Uniti);
+  - 23 split instrument ids: Windstream Parent and New Windstream share one id in 14 funds, and Ascent Resources and
+    Ascent CNR share one in 3. These are corporate events, not filer relabels.
+- **Vehicle families still grouped** under one company (not vintages, so trap 58 did not split them):
+  - Five Arrows co-invests;
+  - HOF Capital SPVs;
+  - Parthenon Kairos;
+  - Greenbriar co-invests;
+  - EQT VIII co-investment;
+  - Disruptive Technology Solutions series;
+  - FTAI SPVs;
+  - Beacon Re Committed / Uncommitted.
+- **`issuerKeyOf` strips a trailing one-letter or two-digit numeral** as a class (the root of trap 58). Curation now
+  works around it with regex aliases. Changing the parser would re-key every stored row, so it needs a
+  warehouse-wide diff and a curation re-key.
+- **`public/splits.js` knows only a fixed list of ratios (2–100):**
+  - a 60:1 share exchange (Nscale 2026-05-31) reads as a class change;
+  - a non-split exchange reads as "added" plus "mark moved". Mesquite Energy (×2.41, Fidelity 2026-04-30, F52) is
+    Market's largest mark move down, −$801.4M, with a +$561.2M position flow. The bridge still reconciles.
+- **Fidelity's opaque per-fund vehicles** (~$0.6B) stay unresolved: no filing names their targets.
+- **Below-zero values:** activity legs carry the counted $0; only the holders list and the Filings tab show the
+  filed negative value (trap 57).
+- **Explore's firm picker** lists every firm holding private value (~170), including small advisers with terse
+  N-CEN names.
+
+### Performance and capacity (mostly P9)
+
+- The warm-up (8.4 s) blocks the event loop for up to ~2.7 s once per new generation. The fix is to precompute in
+  the job or use a worker thread.
+- The server memo is bounded by entry count (200), not bytes; large responses are gzipped on the event loop (R17).
+- The SEC request budget is per process; a shared budget across the web server and jobs is a P9 item (R11). So are
+  the verified proxy/origin boundary, caps on queued work and a measured concurrency envelope.
+
+### Product (remaining P6 items)
+
+- An indirect-exposure view: named SPVs, per-fund vehicles and disclosed ranges in one section.
+- Entity editing (rename, merge, track) through the admin job, like "make this a company".
+- Split `public/app.js` (v1, 4.6k lines), and delete v1's retired tabs with their ~30 regression tests once the user
+  agrees nothing more is needed from them.
+
+### Phases not started
+
+- **P7: MCP server** (ROADMAP §7; the services exist).
+- **P9: public deployment** (ROADMAP §9; hosting to decide as ADR 0006).
+
+### Housekeeping
+
+- The global git identity is "Test User <test@test.com>" (`git config --global`); this repo sets its own.
 
 ## Next session
 
-> Resume Vantage v2 on `main` (everything through P6d is merged; PR #5). Ask the user which comes next, then branch off
-> `main` for it:
+> Resume Vantage v2 on `main` (P8 W1–W3 merged; P8 paused 2026-10-08), on a new branch for the next work. Start with the user's answers to
+> "Decisions waiting on the user", then take the next item the user picks from "Deferred". Read CLAUDE.md, this file
+> and docs/ROADMAP.md first.
 >
-> - **P7 (MCP server)**: ROADMAP §7; the services exist.
-> - **P8 (operations)**: ROADMAP §8, including the review's carried items:
->   - off-host backup and a restore drill;
->   - crash drills at the publication boundary;
->   - correction and deletion reconciliation;
->   - bench RSS and event-loop lag;
->   - the intermittent test failures under load;
->   - the nightly launchd job (only with the user's yes).
+> This Mac has 8 GB of memory: run one heavy job at a time in the foreground, run tests with
+> `--test-concurrency=2`, and ask before a refresh, the e2e suite or the LIVE suite. Gates:
 >
-> This Mac has 8 GB of memory: run one heavy job at a time in the foreground, run tests with `--test-concurrency=2`, and
-> ask before a refresh, the e2e suite or the LIVE suite. Read CLAUDE.md, this file and docs/ROADMAP.md first. Gates: `npm test`, `npm run lint`, `npm run format:check`,
-> `npm run test:web`, `npm run lint:web`, `npm run build:web` then `npm run test:e2e`, `npm run test:live`; run
-> `npm run refresh` at session start.
+> - `npm test`, `npm run lint`, `npm run format:check`;
+> - `npm run test:web`, `npm run lint:web`;
+> - `npm run build:web`, then `npm run test:e2e`;
+> - `npm run test:live`.
+>
+> Check health with `npm run doctor`.
 
 ## Log
+
+- **2026-10-08:** the user signed off P8 W3 and asked for the PR and merge: `v2-p8-operations` merged to `main`.
+
+- **2026-10-08 (close-out):** the user stopped P8 ("Stop. Status report."). W3 is built and not signed off;
+  W4 and every open item moved to Deferred. Verified on bbc513f:
+  - backend 607/0/31 skipped; web 39/39; e2e 27/27; lint, format and audits clean; CI green on the branch;
+  - every route answered 200 on generation 32;
+  - Anthropic $18.16B in 123 funds; Market shows 365 private companies;
+  - the retired id 880 redirects to Formentera Partners Fund II;
+  - the console was clean.
+
+- **2026-10-08 (P8 W3):** W2 signed off. W3 built.
+  - **Real-data checks first (R12):**
+    - every quarter's EDGAR index against all 355,007 stored filings: **0 deleted**, 0 missing as NPORT-P;
+    - a 200-filing re-fetch, then 100 more by `npm run reconcile`: **0 changed** under the same accession;
+    - 580 stored filings are typed "NT NPORT-P" on EDGAR but are complete N-PORTs, and the catch-up skipped such
+      filings: **117 missing** since 2026-07-01 (trap 59, fixed in `delta.js`).
+  - **New:** `npm run reconcile` and `npm run monthly` (reconcile plus `test:live`, with alerts; doctor reports
+    them); `npm run watch` (four kinds of review suggestions, a nightly step); `runSteps`; and warm-on-switch, which
+    also warms the 12 largest firms' change pages. The bench warms up first, and `--cold` skips it.
+  - **Trap 58 correction:** the watch report's split-identity check found BlackRock relabels (DF Residential I to
+    III; Formentera "I" is Fund II) and iCapital's KKR III rows filed under IV. The two were merged back (ids 880
+    and 883 retired with redirects; generation 32, 43 rows moved, diff checked).
+  - **Bench after the warm-up** (load 2.6): every route within budget, and the loop max during passes fell from
+    1.4 s to 0.3 s.
+  - **Tests:** backend 607/0/31 skipped (reconcile, watch, warm-on-switch, NT index line). No temp directories
+    are left.
+
+- **2026-10-07 (P8 W2):** W1 signed off ("sign off, continue to W2"). W2 built:
+  - `npm run backup`: a verified copy (SHA-256 against the source, `quick_check`, `.sha256` beside it, 3 kept),
+    and `--restore <file>`, which publishes the backup as a new generation (`job.restoreBackup`; rollback now
+    shares its `republish`);
+  - `npm run nightly`: refresh, backup and doctor; a failure gives a macOS notification and exit 1, and an
+    optional `VANTAGE_ALERT_URL` dead-man's switch is pinged;
+  - the doctor reports the backup (missing, old, behind, same disk) and the last nightly run;
+  - bench reports RSS and event-loop delay (R17).
+
+  Live drill: generation 31 backed up in 2.9 s and restored onto an empty directory in 2.6 s. Its counts and the
+  Anthropic and Stripe answers were identical.
+
+  Tests: 7 new (restore drill, bad or missing checksum, restore over live, rotation, nightly alerts, doctor).
+  Backend 603/0/31 skipped, with no temp directories left (the V03 test's stage now lands in a removed
+  directory). The bench at load 4.1 shows three routes over 200 ms p95 and loop stalls up to 1.4 s, a W3 item.
+
+- **2026-10-07 (P8 W1):** the user said "proceed with full fixes". Every pre-flight finding is fixed, each with
+  a regression test. Detail is in the plan's "Outcome".
+  - New: `test/helpers/tmp.js` (a full run leaves 0 temp directories, was ~280), the download idle limit, the
+    `runJob` time limit and disk check, removal of stale candidates, lock and state identity (`holderGone`), the
+    `interrupted` job state and pill, `npm run doctor`, trap 57 wording, and `countsRule` used once.
+  - The SIGKILL crash drill passes; it found that a killed job's candidate was left on disk (fixed).
+  - Trap 58, found while checking the negative rows on EDGAR: 20 companies merged several funds, so they were
+    split through two review imports (generations 30 and 31). The diff found 2,955 rows that changed company,
+    all within 24 companies; 98 are now unreviewed.
+  - Gates: backend 596/0/31 skipped; lint, format, web 39/39, lint:web and build are green. e2e and LIVE were not
+    run (not asked). The browser on generation 31 shows Icon Partners IV and V apart, Triton Fund 6's filings row
+    "−$82.1K (below $0, counted as $0)", and the "Last job interrupted" pill (state file restored after).
+
+- **2026-10-07:** PR #7 merged; branch `v2-p8-operations` made. P8 pre-flight analysis
+  ([plans/P8-preflight-analysis.md](plans/P8-preflight-analysis.md)): backend 582/0/31 skipped, lint, format, web,
+  audits and main CI all green. The analysis found:
+  - four high operational defects: the test temp leak (26 GB), no idle timeout or job cap (a stalled download hangs
+    the job while it holds the lock), a pid-only lock check (pid reuse after a reboot), and a "running" state that
+    is never cleared;
+  - below-zero marks labeled "$0" (18 rows);
+  - the counting rule written twice;
+  - a misleading curation label (company 743 is the ASF VIII Sidecar).
 
 - **2026-10-06:** P6e W2 signed off; PR #7 to `main` opened. V11: the Finastra private-credit live test, run alone at a
   load of 3.0, **passed in 35.2 s** (deadline 420 s). Codex's 564 s timeout was at a load of about 23, with suites

@@ -5,6 +5,7 @@ process.env.SEC_MIN_INTERVAL_MS = '0';
 process.env.SEC_USER_AGENT = 'Test Suite test@example.com';
 
 const test = require('node:test');
+const { tmpDir } = require('./helpers/tmp');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -106,14 +107,13 @@ test('refreshNcen: a filing EDGAR cannot serve is reported and retried on the ne
 // The real mini archive with one thing changed. A drifted data set must fail
 // the load and leave every stored mapping as it was, never store filings with
 // zero advisers (storeFiling replaces a filing's rows).
-const os = require('node:os');
 const { ingestNcenDataset } = require('../lib/warehouse/ncen');
 const { readZip, writeZip } = require('./helpers/zip');
 
 async function drifted(edit) {
   const files = await readZip(ZIP);
   edit(files);
-  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'vantage-ncen-')), '2026q1_ncen.zip');
+  const file = path.join(tmpDir('ncen'), '2026q1_ncen.zip');
   fs.writeFileSync(file, writeZip(files));
   return file;
 }

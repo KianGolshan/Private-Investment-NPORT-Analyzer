@@ -177,9 +177,21 @@ npm run refresh        # nightly job: new or re-posted bulk quarters, catch-up, 
 
 The first catch-up after a full backfill took 27 minutes (11,822 filings at the SEC's rate limit). A
 routine refresh takes 20 seconds to 2 minutes, and only one runs at a time. Both commands can be
-interrupted and resumed. Filings that fail are listed in `ingest_errors` and retried on the next run. To
-run the refresh nightly, use the launchd or cron entry in
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#refresh-lifecycle).
+interrupted and resumed. Filings that fail are listed in `ingest_errors` and retried on the next run.
+
+Operations (P8):
+
+```bash
+npm run doctor     # read-only health check: freshness, last job, lock, disk room, backup; exit 1 = act
+npm run nightly    # what a scheduler runs: refresh, backup, watch report, doctor; alerts on a failure
+npm run monthly    # reconcile with EDGAR (npm run reconcile) and the LIVE regression
+npm run backup     # verified copy of the published generation (-- --list, -- --restore FILE)
+npm run watch      # review suggestions since the previous generation (reports/watch/)
+```
+
+To run them on a schedule, use the launchd or cron entries in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#refresh-lifecycle). Backups go to `VANTAGE_BACKUP_DIR` (default
+`~/Vantage-backups`); set it to another disk for an off-host copy.
 
 Companies, aliases and parent firms are human-reviewed files in `data/review/`. Company and firm ids are permanent
 ledgers there (`company_ids.csv`, `manager_ids.csv`); the import writes them back.

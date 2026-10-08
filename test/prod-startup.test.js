@@ -7,10 +7,12 @@
 // Run with: npm test
 
 const test = require('node:test');
+const { tmpDir } = require('./helpers/tmp');
+
+// A directory with no warehouse in it.
+const NO_WAREHOUSE = tmpDir('no-warehouse');
 const assert = require('node:assert/strict');
 const { spawn, spawnSync } = require('node:child_process');
-const fs = require('node:fs');
-const os = require('node:os');
 const path = require('node:path');
 const http = require('node:http');
 const Database = require('better-sqlite3');
@@ -28,7 +30,7 @@ function baseEnv(extra) {
     // No warehouse: these tests are about start-up, proxies and rate limits. The
     // real one (~578 MB) made start-up warm it while the tests fired timed
     // request bursts, blocking the event loop (the intermittent failures under load).
-    WAREHOUSE_DB_PATH: path.join(os.tmpdir(), 'vantage-no-warehouse', 'warehouse.db'),
+    WAREHOUSE_DB_PATH: path.join(NO_WAREHOUSE, 'warehouse.db'),
     SEC_USER_AGENT: '',
     NODE_ENV: '',
     API_RATE_LIMIT_PER_MIN: '200',
@@ -173,7 +175,7 @@ test('SEC pacing: negative or unreadable is the default, 0 only outside producti
 });
 
 test('a cache.db written by an older parser version is not served (version is part of the key) and does not crash start-up', async () => {
-  const dbPath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'vantage-cache-')), 'cache.db');
+  const dbPath = path.join(tmpDir('cache'), 'cache.db');
   const db = new Database(dbPath);
   db.exec(`CREATE TABLE holdings_cache (key TEXT PRIMARY KEY, value TEXT NOT NULL, created_at INTEGER NOT NULL);
            CREATE TABLE search_cache (key TEXT PRIMARY KEY, value TEXT NOT NULL, created_at INTEGER NOT NULL);`);

@@ -175,8 +175,9 @@ app.use(
 // names, answered from warehouse.db opened read-only on first use (missing or
 // behind: those routes answer 503, the live routes below keep working). They
 // never call the SEC.
-const warehouseApi = warehouseRouter(() => openWarehouseReadOnly());
+const warehouseApi = warehouseRouter(() => openWarehouseReadOnly(), { warmOnSwitch: true });
 app.use('/api', warehouseApi);
+app.locals.warehouseApi = warehouseApi; // scripts/bench.js warms it as start-up does
 // Admin actions ("make this a company"): local, admin-only, run as a job
 // (lib/api/admin.js); refused unless VANTAGE_ADMIN=1 and the request is local.
 app.use('/api/admin', adminRouter());

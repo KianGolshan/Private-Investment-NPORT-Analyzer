@@ -4,9 +4,9 @@
 // holdings). The warehouse must store exactly what extractAllHoldings()
 // reads from the XML, for exactly the private-candidate rows.
 const test = require('node:test');
+const { tmpDir } = require('./helpers/tmp');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const os = require('node:os');
 const path = require('node:path');
 const Database = require('better-sqlite3');
 const xml2js = require('xml2js');
@@ -128,7 +128,7 @@ test('migrations apply once and are recorded', () => {
 });
 
 test('readers open the warehouse read-only: no file is created, an unmigrated file is refused, nothing is written', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vantage-ro-'));
+  const dir = tmpDir('ro');
   try {
     const file = path.join(dir, 'warehouse.db');
     assert.throws(() => openWarehouseReadOnly(file));
@@ -297,7 +297,6 @@ test('ingest: a bad quarter label or unreadable zip fails loudly and is logged a
 async function mutatedZip(changes) {
   const yauzl = require('yauzl');
   const yazl = require('yazl');
-  const os = require('os');
   const files = await new Promise((resolve, reject) =>
     yauzl.open(ZIP, { lazyEntries: true }, (err, zip) => {
       if (err) return reject(err);
@@ -321,7 +320,7 @@ async function mutatedZip(changes) {
   for (const [name, text] of Object.entries(files))
     z.addBuffer(Buffer.from(changes[name] ? changes[name](text) : text), name);
   z.end();
-  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'vantage-zip-')), 'q.zip');
+  const file = path.join(tmpDir('zip'), 'q.zip');
   await new Promise((resolve, reject) =>
     z.outputStream.pipe(fs.createWriteStream(file)).on('close', resolve).on('error', reject)
   );

@@ -30,22 +30,13 @@ at the checkpoint for sign-off; update `docs/STATUS.md` before ending.
 > and the server reopens on a new generation like the web router. Tests return golden numbers. Document
 > `claude mcp add` in README.
 
-### Phase 8: operations
+### Phase 8: operations (resume after the 2026-10-08 pause)
 
-> Vantage v2 Phase 8. Read CLAUDE.md, docs/STATUS.md, ADR 0009, docs/ROADMAP.md §Phase 8 and the P8 items in
-> docs/plans/P6c-review-remediation.md (staff review F10/F11). Binding to 127.0.0.1 (`HOST`) and an explicit
-> `TRUST_PROXY` are done (P6d W3). Add:
->
-> - backups of published generations with a restore drill on a clean checkout;
-> - a readiness endpoint apart from liveness (generation, data age, last job);
-> - async gzip and a byte-bounded memo;
-> - from the 2026-10-06 review (ROADMAP §8 "Carried"): off-host backup, crash drills at the publication boundary,
->   correction and deletion reconciliation, RSS and event-loop lag in `npm run bench`;
-> - refresh alerting on a failed, partial or stuck job;
-> - the monthly golden regression and `npm run doctor`;
-> - a look at the intermittent test failures in STATUS Known issues.
->
-> Install the nightly launchd job only with my explicit yes.
+> Vantage v2 Phase 8, resumed on a new branch off `main` (W1–W3 signed off and merged). Read CLAUDE.md, docs/STATUS.md
+> ("Decisions waiting on the user" and "Deferred") and docs/ROADMAP.md §Phase 8. Get my answers to the open
+> decisions first (refresh, launchd, backup location). Then take the P8 items under
+> "Deferred" in the order I choose; W4 research checks real filings before building anything. Install launchd jobs
+> only with my explicit yes.
 
 ### Phase 9: public deployment
 

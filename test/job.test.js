@@ -3,6 +3,10 @@
 // job leaves the published warehouse exactly as it was; readers switch to a new
 // generation on their next request; one job at a time.
 const test = require('node:test');
+const { tmpDir, removeTmp } = require('./helpers/tmp');
+
+// Each test's warehouse copies go when it ends (54 MB each, plus generations).
+test.afterEach(removeTmp);
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const os = require('os');
@@ -21,14 +25,16 @@ const {
   acquireLock,
   publishedFile,
   syncCuration,
+  jobTimeoutMs,
 } = require('../lib/warehouse/job');
+const { holderGone, selfIdentity } = require('../lib/warehouse/job-state');
 
 // The golden warehouse as a plain file, the way every warehouse looked before
 // generations (refresh run 1 ok).
 let golden;
 function tmpWarehouse() {
   golden ??= goldenWarehouse().db.serialize();
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vantage-job-'));
+  const dir = tmpDir('job');
   const dbPath = path.join(dir, 'warehouse.db');
   fs.writeFileSync(dbPath, golden);
   return { dir, dbPath };
@@ -357,7 +363,7 @@ test("V06: the fund's newest filing with no holdings warns the moment it arrives
 
 const REVIEW = path.join(__dirname, '..', 'data', 'review');
 function reviewCopy() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vantage-review-'));
+  const dir = tmpDir('review');
   for (const f of fs.readdirSync(REVIEW)) fs.copyFileSync(path.join(REVIEW, f), path.join(dir, f));
   return dir;
 }
@@ -437,7 +443,7 @@ test('curation: a published job writes its files back and records the exact snap
 
 test('the CLI writers run as jobs: each moves the published generation exactly once (F04)', () => {
   const { dir, dbPath } = tmpWarehouse();
-  const reports = fs.mkdtempSync(path.join(os.tmpdir(), 'vantage-review-'));
+  const reports = tmpDir('review');
   for (const f of ['aliases.csv', 'company_ids.csv', 'managers.csv', 'disclosed_exposure.csv', 'manager_ids.csv'])
     if (fs.existsSync(path.join(__dirname, '..', 'data', 'review', f)))
       fs.copyFileSync(path.join(__dirname, '..', 'data', 'review', f), path.join(reports, f));
@@ -509,8 +515,13 @@ function instrument(dbPath, failAt = -1) {
 
 test('every post-commit step can fail without failing a published job (fault-injection sweep)', async () => {
   const run = async failAt => {
+    removeTmp(); // the previous run's files (its results are already checked)
     const { dbPath } = tmpWarehouse();
     const dir = reviewCopy();
+    // the job stages curation under os.tmpdir(); a step that fails to remove the
+    // stage (injected) leaves it in a directory this test removes
+    const tmpEnv = process.env.TMPDIR;
+    process.env.TMPDIR = tmpDir('sweep-stage');
     await runJob('curation', () => ({}), { dbPath }); // a generation to prune later
     const before = publishedFile(dbPath);
     const probe = instrument(dbPath, failAt);
@@ -526,6 +537,8 @@ test('every post-commit step can fail without failing a published job (fault-inj
       );
     } finally {
       probe.restore();
+      if (tmpEnv === undefined) delete process.env.TMPDIR;
+      else process.env.TMPDIR = tmpEnv;
     }
     return { r, steps: probe.after, before, after: publishedFile(dbPath), dbPath };
   };
@@ -546,6 +559,7 @@ test('every post-commit step can fail without failing a published job (fault-inj
 
 test('every post-commit step of a rollback can fail without failing the rollback (fault-injection sweep)', async () => {
   const run = async failAt => {
+    removeTmp(); // the previous run's files (its results are already checked)
     const { dbPath } = tmpWarehouse();
     await runJob('curation', () => ({}), { dbPath });
     await runJob('curation', db => db.exec(RENAME) && {}, { dbPath });
@@ -647,6 +661,9 @@ test('a failure before the commit point fails the job and still releases the loc
     if (String(f).includes('vantage-curation-')) throw Object.assign(new Error('injected EACCES'), { code: 'EACCES' });
     return realRm(f, ...a);
   };
+  // the stage this test keeps from being removed lands in a directory it removes
+  const tmpEnv = process.env.TMPDIR;
+  process.env.TMPDIR = tmpDir('v03-stage');
   try {
     await assert.rejects(
       runJob(
@@ -660,8 +677,249 @@ test('a failure before the commit point fails the job and still releases the loc
     );
   } finally {
     fs.rmSync = realRm;
+    if (tmpEnv === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = tmpEnv;
   }
   assert.equal(publishedFile(dbPath), target);
   assert.ok(!fs.existsSync(`${dbPath}.lock`), 'lock released');
   assert.equal(jobState(dbPath).status, 'failed');
+});
+
+// ---- P8 pre-flight (2026-10-07): every job ends, and a dead job is seen as dead ----
+
+const noCandidate = dir =>
+  assert.ok(!fs.readdirSync(path.join(dir, 'generations')).some(f => /candidate/.test(f)), 'candidate removed');
+
+test('a job past its time limit fails, publishes nothing and releases the lock; the next job runs', async () => {
+  const { dir, dbPath } = tmpWarehouse();
+  const first = await runJob('curation', () => ({}), { dbPath });
+  const target = publishedFile(dbPath);
+  const t0 = Date.now();
+  await assert.rejects(
+    runJob('refresh', () => new Promise(() => {}), { dbPath, timeoutMs: 2000 }), // a source that never answers
+    err => err.status === 504 && /refresh job ran past its 0 min limit; nothing published/.test(err.message)
+  );
+  assert.ok(Date.now() - t0 < 10000, 'it ends at the limit');
+  assert.equal(publishedFile(dbPath), target);
+  assert.ok(!fs.existsSync(`${dbPath}.lock`), 'lock released');
+  assert.equal(jobState(dbPath).status, 'failed');
+  assert.match(jobState(dbPath).error, /past its/);
+  noCandidate(dir);
+  const next = await runJob('curation', () => ({}), { dbPath });
+  assert.ok(next.generation > first.generation);
+});
+
+test('a job whose synchronous work runs past its limit is refused before the commit point', async () => {
+  const { dir, dbPath } = tmpWarehouse();
+  const target = publishedFile(dbPath);
+  const busy = () => {
+    const end = Date.now() + 1600; // no timer can fire meanwhile
+    while (Date.now() < end);
+    return {};
+  };
+  await assert.rejects(runJob('refresh', busy, { dbPath, timeoutMs: 1500 }), err => err.status === 504);
+  assert.equal(publishedFile(dbPath), target);
+  assert.ok(!fs.existsSync(`${dbPath}.lock`));
+  noCandidate(dir);
+});
+
+test('the job time limit: 3 hours unless VANTAGE_JOB_TIMEOUT_MIN gives a positive number', () => {
+  assert.equal(jobTimeoutMs(undefined), 3 * 3600 * 1000);
+  assert.equal(jobTimeoutMs(''), 3 * 3600 * 1000);
+  assert.equal(jobTimeoutMs('45'), 45 * 60 * 1000);
+  for (const bad of ['0', '-5', 'soon']) assert.equal(jobTimeoutMs(bad), 3 * 3600 * 1000, bad);
+});
+
+test('lock: a live pid that now runs another process (pid reuse, a reboot) is taken over', () => {
+  const { dbPath } = tmpWarehouse();
+  const me = selfIdentity();
+  const lockFile = `${dbPath}.lock`;
+  const put = holder => fs.writeFileSync(lockFile, JSON.stringify({ kind: 'refresh', ...holder }));
+  // this process's pid, but a start time a day earlier: another process held it
+  put({ ...me, procStart: me.procStart - 86400000 });
+  acquireLock(dbPath, 'curation').release();
+  assert.ok(!fs.existsSync(lockFile));
+  // ps unavailable: a boot time an hour off means the host rebooted since
+  put({ ...me, boot: me.boot - 3600000 });
+  acquireLock(dbPath, 'curation', { startOf: () => null }).release();
+  assert.ok(!fs.existsSync(lockFile));
+  // the same process (start time within ps's whole seconds): never taken over
+  put({ ...me, procStart: me.procStart - 900 });
+  assert.throws(
+    () => acquireLock(dbPath, 'curation'),
+    err => err.status === 409
+  );
+  // a lock written before start times were recorded: judged by its pid, as before
+  put({ pid: me.pid, host: me.host });
+  assert.throws(
+    () => acquireLock(dbPath, 'curation'),
+    err => err.status === 409
+  );
+  fs.rmSync(lockFile);
+});
+
+test('holderGone: ended, reused, rebooted, alive, another host, no pid', () => {
+  const me = selfIdentity();
+  const dead = Number(spawnSync(process.execPath, ['-e', 'process.stdout.write(String(process.pid))']).stdout);
+  assert.equal(holderGone({ ...me, pid: dead }), true);
+  assert.equal(holderGone({ ...me, procStart: me.procStart + 60000 }), true);
+  assert.equal(holderGone({ ...me, procStart: undefined, boot: me.boot + 7200000 }), true);
+  assert.equal(holderGone(me), false);
+  assert.equal(holderGone({ ...me, host: 'another-host' }), null);
+  assert.equal(holderGone({ host: me.host }), null);
+});
+
+test('a job state left "running" by a process that ended reads as interrupted, in jobState and /freshness', async () => {
+  const { dbPath } = tmpWarehouse();
+  await runJob('curation', () => ({}), { dbPath });
+  const me = selfIdentity();
+  const dead = Number(spawnSync(process.execPath, ['-e', 'process.stdout.write(String(process.pid))']).stdout);
+  const put = s =>
+    fs.writeFileSync(
+      `${dbPath}.job.json`,
+      JSON.stringify({ kind: 'refresh', startedAt: 'x', status: 'running', ...s })
+    );
+  const app = express().use(
+    '/api',
+    warehouseRouter(() => openWarehouseReadOnly(dbPath))
+  );
+  const job = async () => (await request(app).get('/api/freshness').expect(200)).body.job;
+
+  put({ ...me, pid: dead });
+  assert.equal(jobState(dbPath).status, 'interrupted');
+  const j = await job();
+  assert.equal(j.status, 'interrupted');
+  assert.match(j.error, new RegExp(`refresh job's process \\(pid ${dead}\\) ended without finishing`));
+  put({ ...me, procStart: me.procStart - 86400000 }); // the pid was reused
+  assert.equal((await job()).status, 'interrupted');
+  put(me); // the job really is running
+  assert.equal((await job()).status, 'running');
+});
+
+// The drill behind both (ROADMAP §8 crash drills): a job killed mid-run leaves
+// its lock and a "running" state; the state reads as interrupted, and the next
+// job takes the lock over and publishes.
+test('crash drill: a job killed with SIGKILL mid-run blocks nothing; the next job publishes', async () => {
+  const { dir, dbPath } = tmpWarehouse();
+  const first = await runJob('curation', () => ({}), { dbPath });
+  const marker = path.join(dir, 'started');
+  const child = require('child_process').spawn(
+    process.execPath,
+    [
+      '-e',
+      `require(${JSON.stringify(path.join(__dirname, '..', 'lib', 'warehouse', 'job.js'))})
+        .runJob('refresh', () => { require('fs').writeFileSync(${JSON.stringify(marker)}, ''); return new Promise(() => {}); },
+          { dbPath: ${JSON.stringify(dbPath)} });`,
+    ],
+    { stdio: 'ignore' }
+  );
+  const t0 = Date.now();
+  while (!fs.existsSync(marker)) {
+    assert.ok(Date.now() - t0 < 30000, 'the child job started');
+    await new Promise(r => setTimeout(r, 50));
+  }
+  assert.equal(jobState(dbPath).status, 'running');
+  const exited = new Promise(r => child.on('exit', r));
+  child.kill('SIGKILL');
+  await exited;
+  assert.ok(fs.existsSync(`${dbPath}.lock`), 'the killed job left its lock');
+  const left = fs.readdirSync(path.join(dir, 'generations')).filter(f => /candidate/.test(f));
+  assert.ok(left.length, 'and its candidate');
+  assert.equal(jobState(dbPath).status, 'interrupted');
+  const next = await runJob('curation', () => ({}), { dbPath });
+  assert.ok(next.generation > first.generation, 'the lock was taken over and the job published');
+  noCandidate(dir); // the killed job's candidate (~ the warehouse's size) is gone
+  assert.ok(!fs.existsSync(`${dbPath}.lock`));
+  assert.equal(jobState(dbPath).status, 'ok');
+});
+
+test('a job that would fill the disk fails before copying anything; the lock is released', async () => {
+  const { dir, dbPath } = tmpWarehouse();
+  const target = publishedFile(dbPath);
+  const size = fs.statSync(target).size;
+  await assert.rejects(
+    runJob('refresh', () => assert.fail('the job never starts'), { dbPath, freeBytes: () => size }),
+    err => err.status === 507 && /not enough free disk for a job: .* GiB needed .*nothing changed/.test(err.message)
+  );
+  assert.equal(publishedFile(dbPath), target);
+  assert.ok(!fs.existsSync(`${dbPath}.lock`));
+  assert.equal(jobState(dbPath).status, 'failed');
+  noCandidate(dir);
+  // exactly enough room: the job runs
+  const r = await runJob('curation', () => ({}), { dbPath, freeBytes: () => size + 1024 ** 3 });
+  assert.equal(r.status, 'ok');
+});
+
+test('doctor: healthy after a job; fails on an interrupted job or a full disk; warns on what dead jobs left', async () => {
+  const { doctor } = require('../lib/warehouse/doctor');
+  const { dir, dbPath } = tmpWarehouse();
+  await runJob('refresh', () => ({}), { dbPath });
+  const tmp = tmpDir('doctor-tmp');
+  const opts = { tmp, processes: () => [], freeBytes: () => 100 * 1024 ** 3 };
+  const by = r => Object.fromEntries(r.checks.map(c => [c.name, c]));
+
+  let r = doctor(dbPath, opts);
+  assert.equal(r.ok, true);
+  assert.deepEqual(
+    r.checks.filter(c => c.status === 'fail').map(c => c.name),
+    []
+  );
+  assert.match(by(r).warehouse.detail, /^generation \d+, generations\/warehouse-\d+\.db/);
+  assert.match(by(r)['last job'].detail, /^refresh ok/);
+  assert.equal(by(r)['job lock'].detail, 'free');
+  assert.match(by(r).rows.detail, /filings; .* holding rows; companies .* private/);
+
+  // what a SIGKILLed job leaves: a running state, its lock, its candidate
+  const dead = Number(spawnSync(process.execPath, ['-e', 'process.stdout.write(String(process.pid))']).stdout);
+  const ghost = { ...selfIdentity(), pid: dead, kind: 'refresh' };
+  fs.writeFileSync(`${dbPath}.job.json`, JSON.stringify({ ...ghost, status: 'running', startedAt: 'x' }));
+  fs.writeFileSync(`${dbPath}.lock`, JSON.stringify(ghost));
+  fs.writeFileSync(path.join(dir, 'generations', `warehouse.candidate-${dead}.db`), 'x');
+  const old = tmpDir('doctor-old');
+  fs.renameSync(old, path.join(tmp, 'vantage-job-AbC123'));
+  const day = new Date(Date.now() - 2 * 86400000);
+  fs.utimesSync(path.join(tmp, 'vantage-job-AbC123'), day, day);
+  r = doctor(dbPath, opts);
+  assert.equal(r.ok, false);
+  assert.equal(by(r)['last job'].status, 'fail');
+  assert.match(by(r)['last job'].detail, /refresh interrupted/);
+  assert.equal(by(r)['job lock'].status, 'warn');
+  assert.match(by(r)['job lock'].detail, new RegExp(`process ended \\(pid ${dead}\\); the next job takes it over`));
+  assert.equal(by(r).candidates.status, 'warn');
+  assert.equal(by(r)['temp files'].status, 'warn');
+  assert.match(by(r)['temp files'].detail, /^1 vantage-\* directories older than a day/);
+
+  // no room for the next job
+  r = doctor(dbPath, { ...opts, freeBytes: () => 1024 });
+  assert.equal(by(r).disk.status, 'fail');
+  assert.match(by(r).disk.detail, /not enough free disk/);
+
+  // no warehouse at all
+  r = doctor(path.join(tmpDir('doctor-none'), 'warehouse.db'), opts);
+  assert.deepEqual([r.ok, r.checks[0].status], [false, 'fail']);
+});
+
+// P8 W3: every cache is keyed on the generation, so a new generation is warmed
+// when the server opens it, not by the first visitors (bench: the firm list
+// took 1.5 s cold, 7 ms warm).
+test('the server warms its caches again when it opens a new generation; one warm-up at a time', async () => {
+  const { dbPath } = tmpWarehouse();
+  await runJob('curation', () => ({}), { dbPath });
+  const router = warehouseRouter(() => openWarehouseReadOnly(dbPath), { warmOnSwitch: true });
+  const app = express().use('/api', router);
+  const first = await router.warm();
+  assert.ok(!first.error, first.error);
+  assert.ok(first.companies > 0 && first.firms > 0);
+  const a = router.warm();
+  assert.equal(router.warm(), a, 'a call during a warm-up gets the running one');
+  await a;
+  const g = await runJob('curation', db => db.exec(RENAME) && {}, { dbPath });
+  // the next request opens the new generation and schedules the warm-up
+  await request(app).get('/api/freshness').expect(200);
+  await new Promise(r => setImmediate(r));
+  const w = await router.warm(); // the scheduled one, or a new one: either warms the new generation
+  assert.equal(w.generation, g.generation);
+  // without the option (tests, tools), nothing is scheduled
+  const quiet = warehouseRouter(() => openWarehouseReadOnly(dbPath));
+  assert.equal(typeof quiet.warm, 'function');
 });

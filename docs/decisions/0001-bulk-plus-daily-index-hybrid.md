@@ -34,5 +34,8 @@ The live app finds filings through EDGAR full-text search and parses only the 10
   nightly and rebuilds the quarterly indexes weekly, with corrections and deletions, so a filing made today is
   not listed until the index catches up (amended P6d, staff full-stack review R12).
 - The catch-up finds missing accessions. A filing that fails is retried on every run (up to 5 attempts) even
-  after the window moves past it. A same-accession correction or an EDGAR deletion is not reconciled; a bulk
-  re-post (trap 41) is. Periodic reconciliation is a P8 item.
+  after the window moves past it. A bulk re-post (trap 41) is reloaded. Since P8 W3, `npm run reconcile` (monthly,
+  `npm run monthly`) compares every quarter's EDGAR index with the stored filings in both directions and re-fetches a
+  rotating sample, reporting deletions, missing filings and same-accession changes (never applied without a job).
+  Measured 2026-10-07: 0 deletions in 355,007 filings, 0 of 300 re-fetches changed, and 117 reports filed as NT
+  NPORT-P that the catch-up had skipped (trap 59, fixed).

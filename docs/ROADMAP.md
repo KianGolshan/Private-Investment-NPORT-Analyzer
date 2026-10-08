@@ -58,7 +58,7 @@ phase are in [archive/STATUS-history.md](archive/STATUS-history.md). Code commen
   12-month split-adjusted mark change, spread, stale count); freshness banner; Atom feed per company; fund and firm
   names linked to their pages.
 
-**Remaining (in this order):**
+**Remaining (in this order; deferred 2026-10-08, STATUS "Deferred"):**
 
 1. ~~**Mark leadership**~~ (done in P6b W2: Marks & classes, `/leadership`, F49).
 2. **Indirect exposure view:** named SPVs, per-fund vehicles and `disclosed_exposure` ranges in one section.
@@ -183,6 +183,18 @@ rather than a live SEC call. Tools (the fund and firm tools arrive when P5b and 
 ---
 
 ## Phase 8: operations hardening
+
+**Paused 2026-10-08 by the user.** W1–W3 signed off and merged to `main`; everything else in this phase, the remaining P6
+items, P7 and P9 are listed in [STATUS "Deferred"](STATUS.md#deferred).
+
+**Waves (2026-10-07):**
+
+| Wave   | Scope                                                                                                                                                                                                                                                             | State                                                                           |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| **W1** | Pre-flight fixes ([plans/P8-preflight-analysis.md](plans/P8-preflight-analysis.md)): the test temp leak, the job time limit and disk check, the download idle limit, lock identity, interrupted jobs, `npm run doctor`, trap 57 and the trap 58 fund-family split | **Signed off 2026-10-07**                                                       |
+| **W2** | Backups with a restore drill (`npm run backup`), the nightly wrapper with alerts (`npm run nightly`), RSS and event-loop delay in `npm run bench` (R17)                                                                                                           | **Signed off 2026-10-08** (installing the launchd job waits for the user's yes) |
+| **W3** | Correction and deletion reconciliation (R12), the nightly watch reports, the monthly LIVE regression, and the slow routes and event-loop stalls that W2's bench found                                                                                             | **Signed off 2026-10-08**; merged to `main`                                     |
+| W4     | Research: `public_since` (last private mark vs first listed price) and N-CEN fund type                                                                                                                                                                            | **Deferred** (STATUS "Deferred")                                                |
 
 **Entry gate:** P6 checkpoint.
 
