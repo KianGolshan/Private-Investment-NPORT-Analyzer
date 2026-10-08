@@ -898,3 +898,28 @@ test('doctor: healthy after a job; fails on an interrupted job or a full disk; w
   r = doctor(path.join(tmpDir('doctor-none'), 'warehouse.db'), opts);
   assert.deepEqual([r.ok, r.checks[0].status], [false, 'fail']);
 });
+
+// P8 W3: every cache is keyed on the generation, so a new generation is warmed
+// when the server opens it, not by the first visitors (bench: the firm list
+// took 1.5 s cold, 7 ms warm).
+test('the server warms its caches again when it opens a new generation; one warm-up at a time', async () => {
+  const { dbPath } = tmpWarehouse();
+  await runJob('curation', () => ({}), { dbPath });
+  const router = warehouseRouter(() => openWarehouseReadOnly(dbPath), { warmOnSwitch: true });
+  const app = express().use('/api', router);
+  const first = await router.warm();
+  assert.ok(!first.error, first.error);
+  assert.ok(first.companies > 0 && first.firms > 0);
+  const a = router.warm();
+  assert.equal(router.warm(), a, 'a call during a warm-up gets the running one');
+  await a;
+  const g = await runJob('curation', db => db.exec(RENAME) && {}, { dbPath });
+  // the next request opens the new generation and schedules the warm-up
+  await request(app).get('/api/freshness').expect(200);
+  await new Promise(r => setImmediate(r));
+  const w = await router.warm(); // the scheduled one, or a new one: either warms the new generation
+  assert.equal(w.generation, g.generation);
+  // without the option (tests, tools), nothing is scheduled
+  const quiet = warehouseRouter(() => openWarehouseReadOnly(dbPath));
+  assert.equal(typeof quiet.warm, 'function');
+});

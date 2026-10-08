@@ -2401,10 +2401,10 @@ HgCapital 5,private,N,regex,^HG ?CAPITAL\s+5\b(?![-.]?\d),0,,,,,,HGCAPITAL 5 L.P
 HgCapital 6,private,N,regex,^HG ?CAPITAL\s+6\b(?![-.]?\d),0,,,,,,HGCAPITAL 6 L.P.,fund named in the filing,,,P8 pre-flight 2026-10-07: one fund per vintage
 HgCapital 7 C,private,N,regex,^HG ?CAPITAL\s+7\b(?![-.]?\d),0,,,,,,HGCAPITAL 7 L.P.,fund named in the filing,,,P8 pre-flight 2026-10-07: one fund per vintage
 HgCapital 8,private,N,regex,^HG ?CAPITAL\s+8\b(?![-.]?\d),0,,,,,,HGCAPITAL 8 L.P.,fund named in the filing,,,P8 pre-flight 2026-10-07: one fund per vintage
-Formentera Partners Fund I,private,N,regex,^FORMENTERA PARTNERS FUND I\b,0,,,,,,FORMENTERA PARTNERS FUND I LP,fund named in the filing,,,P8 pre-flight 2026-10-07: one fund per vintage
+Formentera Partners Fund II,private,N,regex,^FORMENTERA PARTNERS FUND I\b,0,,,,,,"Formentera Partners Fund I LP (BlackRock, BRY3UH9C1, = Fund II from 2025-12-31)",fund named in the filing,,,P8 W3 2026-10-08: same filer instrument id and carried-over share counts (trap 58 correction)
 Permira V,private,N,regex,^PERMIRA V\b,0,,,,,,PERMIRA V L.P. | PERMIRA V G.P. L.P.,fund named in the filing,,,P8 pre-flight 2026-10-07: one fund per vintage
 TPG Asia V,private,N,regex,^TPG ASIA V\b,0,,,,,,"TPG ASIA V, L.P.",fund named in the filing,,,P8 pre-flight 2026-10-07: one fund per vintage
-DF Residential I,private,N,regex,^DF RESIDENTIAL I\b,0,,,,,,DF RESIDENTIAL I LP,fund named in the filing,,,P8 pre-flight 2026-10-07: one fund per vintage
+DF Residential III,private,N,regex,^DF RESIDENTIAL I\b,0,,,,,,"DF Residential I LP (BlackRock, BYD4WVW79, = DF Residential III LP from 2025-12-31)",fund named in the filing,,,P8 W3 2026-10-08: same filer instrument id and carried-over share counts (trap 58 correction)
 Octagon Investment Partners 24,private,N,regex,^OCTAGON INVESTMENT PARTNERS\s+24\b(?![-.]?\d),0,,,,,,OCTAGON INVESTMENT PARTNERS 24,fund named in the filing,,,P8 pre-flight 2026-10-07: one fund per vintage
 Octagon Investment Partners 29,private,N,regex,^OCTAGON INVESTMENT PARTNERS\s+29\b(?![-.]?\d),0,,,,,,OCTAGON INVESTMENT PARTNERS 29,fund named in the filing,,,P8 pre-flight 2026-10-07: one fund per vintage
 Octagon Investment Partners 31,private,N,regex,^OCTAGON INVESTMENT PARTNERS\s+31\b(?![-.]?\d),0,,,,,,OCTAGON INVESTMENT PARTNERS 31,fund named in the filing,,,P8 pre-flight 2026-10-07: one fund per vintage
@@ -2426,3 +2426,5 @@ Audax Senior Loan Fund III,private,N,regex,^AUDAX SENIOR LOAN FUND III\b,0,,,,,,
 Vistria Fund V,private,N,regex,^VISTRIA FUND V\b,0,,,,,,"VISTRIA FUND V, L.P. | VISTRIA FUND V (FT), LP",fund named in the filing,,,P8 pre-flight 2026-10-07: one fund per vintage
 Quiet T1,private,N,regex,^QUIET T1\b,0,,,,,,"QUIET T1, LP / | QUIET T1 CLASS B LP /",fund named in the filing,,,P8 pre-flight 2026-10-07: one fund per vintage
 Quiet SPV R9,private,N,regex,^QUIET SPV R9\b,0,,,,,,"QUIET SPV R9, L.P.",fund named in the filing,,,P8 pre-flight 2026-10-07: one fund per vintage
+DF Residential III,private,N,exact,DF RESIDENTIAL LP,0,,,,,,"Df Residential Lp (BlackRock Global Allocation Fund, 2026-07-31, BYD4WVW79)",same instrument id,,,P8 W3 2026-10-08: same filer instrument id and carried-over share counts (trap 58 correction)
+KKR European Fund III,private,N,regex,^KKR EUROPEAN FUND III\b,0,,,,,,"issuer KKR EUROPEAN FUND IV, LP / title KKR European Fund III, LP (iCapital KKR Private Markets Fund, 2020-03..2021-03, id KKR_EIII)",the title and the filer id name Fund III,,,P8 W3 2026-10-08: the issuer field names IV; title and filer id KKR_EIII name III

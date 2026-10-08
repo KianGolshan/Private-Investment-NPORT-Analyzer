@@ -86,7 +86,9 @@ npm run refresh                    # nightly: new/re-posted bulk quarter(s), cat
 npm run warehouse                  # published generations and the last job (-- --rollback: previous generation)
 npm run doctor                     # read-only health: freshness, last job, lock, disk room, leftovers (exit 1 = act)
 npm run backup                     # verified copy of the published generation (-- --list, -- --restore FILE)
-npm run nightly                    # what the scheduler runs: refresh, backup, doctor, alerts (exit 1 = failed)
+npm run nightly                    # what the scheduler runs: refresh, backup, watch, doctor, alerts (exit 1 = failed)
+npm run watch                      # review suggestions: new over-threshold names, listing evidence, renames, split ids
+npm run monthly                    # reconcile with EDGAR (npm run reconcile) + the LIVE regression, with alerts
 npm run ingest:ncen                # N-CEN adviser data sets + EDGAR top-up (managers, ADR 0007)
 npm run seed:entities              # write data/review/{aliases,managers}.csv suggestions (--force to overwrite)
 npm run review:aliases             # import the reviewed CSVs, re-resolve holdings (under the refresh lock)

@@ -193,7 +193,7 @@ Fund calendars are staggered, so "as of D" mixes mark dates. The UI always shows
 - Every job exits. Nothing polls indefinitely.
 
 - **Nightly wrapper** (`npm run nightly`, `lib/warehouse/nightly.js`, P8 W2): runs the refresh (a child process
-  with its own job and exit code, killed after 4 h), then a backup, then the doctor. Every step runs even after
+  with its own job and exit code, killed after 4 h), then a backup, then the watch report, then the doctor. Every step runs even after
   one fails. The result goes to `warehouse.db.nightly.json` (and `.nightly.log`); the doctor reports it. On a
   failure it shows a macOS notification (`VANTAGE_NOTIFY=0` turns it off) and exits 1. With `VANTAGE_ALERT_URL` (a
   dead-man's switch such as healthchecks.io) it pings the URL on success and `<url>/fail` with the summary on a
@@ -207,6 +207,20 @@ Fund calendars are staggered, so "as of D" mixes mark dates. The UI always shows
   onto an empty host or over the live warehouse (`job.restoreBackup`; undo with `npm run warehouse -- --rollback`).
   Drill on 2026-10-07: generation 31 backed up in 2.9 s and restored onto an empty directory in 2.6 s (as
   generation 32); the row counts and the Anthropic and Stripe exposure answers were identical.
+
+- **Watch report** (`npm run watch`, `lib/warehouse/watch.js`, P8 W3): the published generation against the
+  kept one before it, as `reports/watch/<date>.md` and `.json`. Suggestions only: unreviewed company-like names
+  over the review threshold, listing evidence for private companies (possible IPOs), instrument-id, share-count and
+  same-mark links between a company and an unclaimed name (possible renames), and one filer instrument id under two
+  private companies in one fund (relabels, trap 58). New items make the nightly run "warn".
+- **Monthly** (`npm run monthly`): `npm run reconcile` (`lib/warehouse/reconcile.js`: every quarter's EDGAR index
+  against the stored filings in both directions, NT NPORT-P included, and a rotating re-fetch of 100 filings; report
+  in `reports/reconcile/`) and the LIVE regression (`test:live`, which re-checks the goldens), with the nightly
+  run's alerts; recorded as `warehouse.db.monthly.json`, reported by the doctor (warn after 35 days).
+- **Warm-up** (P8 W3): the server warms its caches at start and again whenever it opens a new generation
+  (`warehouseRouter` `warmOnSwitch`): every cache is keyed on the generation, and cold the firm list took 1.5 s and a
+  firm's changes 0.2–0.3 s. The warm-up takes ~8 s and blocks the event loop for up to ~2.7 s once per generation
+  (a P9 item: precompute or a worker).
 
 **Scheduling on macOS (launchd).** This is not installed automatically. Save the following as
 `~/Library/LaunchAgents/com.vantage.refresh.plist` and load it with
@@ -228,7 +242,9 @@ publishes the day's index overnight, and filings cluster about 60 days after eac
 </dict></plist>
 ```
 
-Linux/cron equivalent: `15 6 * * * cd /path/to/repo && npm run --silent nightly >> logs/nightly.log 2>&1`.
+Linux/cron equivalent: `15 6 * * * cd /path/to/repo && npm run --silent nightly >> logs/nightly.log 2>&1`. The
+monthly run is a second agent (`com.vantage.monthly`, `npm run --silent monthly`, `StartCalendarInterval` Day 2,
+Hour 7) or `0 7 2 * * … monthly`.
 Check health with `npm run doctor` (exits 1 when the last job failed or was interrupted, or the disk has no
 room for the next one), `npm run warehouse` (generations and the last job), `cat warehouse.db.jobs.log`,
 `sqlite3 warehouse.db "select * from generation_meta order by id desc limit 5"` and `select * from ingest_errors`.
@@ -338,7 +354,9 @@ lib/warehouse/job.js               runJob: the one write path (lock, candidate, 
 lib/warehouse/job-state.js         job file paths, the last job's state (read by /api/freshness), process identity
 lib/warehouse/doctor.js            npm run doctor: read-only health checks (scripts/doctor.js)
 lib/warehouse/backup.js            npm run backup: verified copies of the published generation, rotation
-lib/warehouse/nightly.js           npm run nightly: refresh, backup, doctor, alerts (scripts/nightly.js)
+lib/warehouse/nightly.js           npm run nightly / monthly: scheduled steps with alerts (scripts/nightly.js, monthly.js)
+lib/warehouse/reconcile.js         npm run reconcile: EDGAR indexes vs stored filings, re-fetch sample (read-only)
+lib/warehouse/watch.js             npm run watch: review suggestions, published vs previous generation
 lib/api/admin.js                   POST /api/admin/companies (VANTAGE_ADMIN=1, local only; runs scripts/make-company.js)
 ```
 

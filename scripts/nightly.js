@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // The nightly run for a scheduler (lib/warehouse/nightly.js): refresh, backup,
-// doctor; alerts on a failure; exits 1 on a failure.
+// the watch report, doctor; alerts on a failure; exits 1 on a failure.
 //
 //   npm run nightly
 require('dotenv').config();
@@ -8,6 +8,7 @@ const { defaultWarehousePath } = require('../lib/warehouse/db');
 const { nightly, runRefresh } = require('../lib/warehouse/nightly');
 const { backup } = require('../lib/warehouse/backup');
 const { doctor } = require('../lib/warehouse/doctor');
+const { runWatch } = require('./watch');
 
 async function main() {
   const dbPath = defaultWarehousePath();
@@ -19,6 +20,18 @@ async function main() {
       return {
         status: 'ok',
         detail: `${b.skipped ? 'already backed up' : 'backed up'}: generation ${b.generation}, ${b.file}`,
+      };
+    },
+    // suggestions for review (lib/warehouse/watch.js): new items make the night "warn"
+    watch: async () => {
+      const w = runWatch(dbPath);
+      const c = w.counts;
+      const fresh = c.queueNew + c.listingNew + c.identityNew + c.splitNew;
+      return {
+        status: fresh ? 'warn' : 'ok',
+        detail:
+          `${fresh} new item(s) to review (queue ${c.queueNew}, listing ${c.listingNew}, identity ${c.identityNew}, split ${c.splitNew}); ` +
+          w.file,
       };
     },
     doctor: async () => {

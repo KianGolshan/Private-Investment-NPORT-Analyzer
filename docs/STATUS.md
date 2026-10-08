@@ -1,9 +1,15 @@
 # Vantage v2 Status
 
-**Phase:** **P8** (operations) on branch `v2-p8-operations`. W1 (the pre-flight fixes) was **signed off on
-2026-10-07**. **W2 is built and pushed** and waits for sign-off: `npm run backup` (verified copies, restore drill),
-`npm run nightly` (refresh, backup and doctor, with alerts), and RSS and event-loop delay in `npm run bench`. Live
-warehouse: generation 31. The waves are in ROADMAP §8.
+**Phase:** **P8** (operations) on branch `v2-p8-operations`. W1 and W2 are **signed off** (2026-10-07..08). **W3 is
+built and pushed** and waits for sign-off:
+
+- `npm run reconcile` and `npm run monthly`: EDGAR reconciliation plus the LIVE regression;
+- the NT NPORT-P catch-up fix (trap 59);
+- `npm run watch`, the review suggestions run nightly;
+- a cache warm-up on each new generation;
+- the trap 58 relabel correction.
+
+Live warehouse: generation 32. The waves are in ROADMAP §8.
 
 ## Phase tracker
 
@@ -99,6 +105,7 @@ The analyst workspace is served at `/`; the route map is at the top of the [READ
 | ------------------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Warehouse size                 | ≤1 GB per generation | **578.0 MB** (generation 31; two generations kept, ~1.8 GB on disk with a candidate)                                                                                                                                                        |
 | Nightly refresh                | ≤5 min               | 0.8 min as a job (#22: copy, refresh, derived rebuild, validation, publish in 47 s)                                                                                                                                                         |
+| API p95, all routes (P8 W3)    | <200ms               | 25.2 / 27.0 ms over 3,805 requests after the warm-up, load 2.6; no route over 150 ms p95 or 300 ms max. Event-loop max 267 / 296 ms during the passes. The warm-up itself: 8.4 s, loop max 2,657 ms, once per generation                    |
 | API p95, all routes (P8 W2)    | <200ms               | 37.2 / 30.7 ms over 3,805 requests at load 4.1 (passes 1 and 2). Over budget: firms (cold) 275 ms, firm changes 293, search all (pass 2) 273. Event-loop delay p99 175 / 168 ms, max 1,418 / 775 ms; RSS peak 475 / 594 MB. W3 investigates |
 | API p95, all routes (W5)       | <200ms               | 13.5–16.1 ms over 3,805 requests (W5, load 3.2); drill total 382 KB JSON = 48.8 KB gzipped                                                                                                                                                  |
 | Lighthouse perf / a11y         | ≥90                  | Market 96/98, Explore 97/98, company 98/98, firm 95/98 (W5)                                                                                                                                                                                 |
@@ -106,7 +113,7 @@ The analyst workspace is served at `/`; the route map is at the top of the [READ
 | Suite                          | green                | 627 backend (596 pass, 31 skipped, 0 fail; P8 W1); web 39/39; e2e 27/27 (P6e); LIVE 31/31 (W5)                                                                                                                                              |
 | Full backfill / first catch-up | —                    | 13.6 min / 26.9 min (P1, P2)                                                                                                                                                                                                                |
 
-## Warehouse state (generation 31, 2026-10-07)
+## Warehouse state (generation 32, 2026-10-08)
 
 Schema at migration 0021. Generations 30 and 31 are review imports of the trap 58 split (30 first; 31 with the NEA
 "Venture Growth" exclusion); 29 is pruned. Generation 25 is a refresh (nothing new) and generation 26 a no-change review import. 26 is
@@ -116,7 +123,8 @@ and 29 a refresh built by `main` (e5eca00, curation tree `eae566e`, clean). The 
 
 - 355,007 N-PORT filings: bulk 2019Q4–2026Q2 plus catch-up through filings of 2026-10-05.
 - 1.165M private-candidate rows.
-- 900 companies: 396 private (94 new funds from the trap 58 split), 504 public; 180 tracked.
+- 898 companies: 394 private (the trap 58 split, then two relabels merged back in generation 32), 504 public; 180
+  tracked.
 - 529 firms (ledger `manager_ids.csv`), 18,852 funds, 71,842 unreviewed entities.
 - 68,127 position-fact legs.
 - 198,326 N-CEN adviser rows (now in the shrink check).
@@ -127,6 +135,13 @@ and 29 a refresh built by `main` (e5eca00, curation tree `eae566e`, clean). The 
 
 ## Open decisions (user)
 
+- **Run a refresh to load the 117 NT NPORT-P reports?** The catch-up now lists them (trap 59). `npm run reconcile`
+  reports them as missing until the next refresh (the user's yes: CLAUDE.md asks before a refresh).
+- **Watch report items to review** (`reports/watch/`; suggestions only):
+  - 7 listing-evidence hits, mostly Endeavor, which is listed;
+  - 12 identity links;
+  - 23 split instrument ids. Windstream Parent and New Windstream share one id in 14 funds, and Ascent Resources and
+    Ascent CNR share one in 3: corporate events to decide in review, not filer relabels.
 - **Install the nightly job?** It would run `npm run nightly` daily at 06:15 through launchd (plist in ARCHITECTURE
   §Refresh lifecycle). Not installed; it needs the user's yes. The 30-day unattended run (the P8 success
   criterion) starts when it is installed.
@@ -216,10 +231,13 @@ and 29 a refresh built by `main` (e5eca00, curation tree `eae566e`, clean). The 
 
 ## Next session
 
-> Resume Vantage v2 P8 (operations) on branch `v2-p8-operations`. W2 (backups, nightly, bench) waits for the user's
-> sign-off, and the launchd install and the backup location for the user's answers (Open decisions). Next is W3
-> (ROADMAP §8): correction and deletion reconciliation (R12, check real filings first), the nightly watch reports,
-> the monthly LIVE regression, and the slow routes and event-loop stalls that `npm run bench` now shows.
+> Resume Vantage v2 P8 (operations) on branch `v2-p8-operations`. W3 waits for the user's sign-off, and the
+> refresh, the launchd install and the backup location wait for the user's answers (Open decisions). Next is W4
+> (ROADMAP §8 research):
+>
+> - `public_since`: last private mark vs first listed price, checking real filings first;
+> - N-CEN fund type (retail-accessible holders): check its coverage first;
+> - then the P8 checkpoint (30 unattended nights once launchd is installed).
 >
 > This Mac has 8 GB of memory: run one heavy job at a time in the foreground, run tests with `--test-concurrency=2`, and
 > ask before a refresh, the e2e suite or the LIVE suite. Read CLAUDE.md, this file and docs/ROADMAP.md first. Gates: `npm test`, `npm run lint`, `npm run format:check`,
@@ -227,6 +245,23 @@ and 29 a refresh built by `main` (e5eca00, curation tree `eae566e`, clean). The 
 > `npm run refresh` at session start.
 
 ## Log
+
+- **2026-10-08 (P8 W3):** W2 signed off. W3 built.
+  - **Real-data checks first (R12):**
+    - every quarter's EDGAR index against all 355,007 stored filings: **0 deleted**, 0 missing as NPORT-P;
+    - a 200-filing re-fetch, then 100 more by `npm run reconcile`: **0 changed** under the same accession;
+    - 580 stored filings are typed "NT NPORT-P" on EDGAR but are complete N-PORTs, and the catch-up skipped such
+      filings: **117 missing** since 2026-07-01 (trap 59, fixed in `delta.js`).
+  - **New:** `npm run reconcile` and `npm run monthly` (reconcile plus `test:live`, with alerts; doctor reports
+    them); `npm run watch` (four kinds of review suggestions, a nightly step); `runSteps`; and warm-on-switch, which
+    also warms the 12 largest firms' change pages. The bench warms up first, and `--cold` skips it.
+  - **Trap 58 correction:** the watch report's split-identity check found BlackRock relabels (DF Residential I to
+    III; Formentera "I" is Fund II) and iCapital's KKR III rows filed under IV. The two were merged back (ids 880
+    and 883 retired with redirects; generation 32, 43 rows moved, diff checked).
+  - **Bench after the warm-up** (load 2.6): every route within budget, and the loop max during passes fell from
+    1.4 s to 0.3 s.
+  - **Tests:** backend 607/0/31 skipped (reconcile, watch, warm-on-switch, NT index line). No temp directories
+    are left.
 
 - **2026-10-07 (P8 W2):** W1 signed off ("sign off, continue to W2"). W2 built:
   - `npm run backup`: a verified copy (SHA-256 against the source, `quick_check`, `.sha256` beside it, 3 kept),

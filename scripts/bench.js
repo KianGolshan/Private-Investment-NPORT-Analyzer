@@ -7,6 +7,7 @@
 //
 //   npm run bench                  # both passes
 //   npm run bench -- --passes 1    # first pass only
+//   npm run bench -- --cold        # no warm-up first (what a visitor saw before start-up warm-up)
 //
 // Requests: every tracked company (info, exposure at the newest date, history),
 // the ROADMAP search cases plus each tracked company's name, and the 20 largest
@@ -242,6 +243,15 @@ async function main() {
         .map(x => x.toFixed(2))
         .join(' ')} (1, 5, 15 min)`
     );
+    // What the server does at start and on each new generation (P8 W3): the
+    // passes then measure what visitors see; the warm-up's own cost and loop
+    // stall are reported apart. --cold skips it (the first visitor's cost).
+    if (!process.argv.includes('--cold')) {
+      const { out: w, process: proc } = await measured(() => app.locals.warehouseApi.warm());
+      if (w.error) throw new Error(`warm-up failed: ${w.error}`);
+      console.log(`\nwarm-up: ${w.companies} companies, ${w.firms} firms in ${w.ms} ms`);
+      console.table([proc]);
+    }
     for (let i = 1; i <= passes; i++) {
       const t = Date.now();
       const { out: rows, process: proc } = await measured(() => pass(base, list));

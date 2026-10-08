@@ -292,3 +292,201 @@ test('doctor: the backup check says when there is none, when it is behind, and w
   await runJob('curation', () => ({}), { dbPath });
   assert.match(check().detail, /behind the published generation/);
 });
+
+// R12 (P8 W3): reconciliation with EDGAR, with the index and the re-fetch faked
+// from the stored rows themselves.
+test('reconcile: finds filings missing, no longer listed and changed; recent ones are pending; a clean run is ok', async () => {
+  const { reconcile } = require('../lib/warehouse/reconcile');
+  const { dbPath } = tmpWarehouse();
+  const db = openWarehouseReadOnly(dbPath);
+  try {
+    const stored = db.prepare('SELECT accession, cik, filing_date, form FROM filings ORDER BY accession').all();
+    const totals = new Map(
+      db
+        .prepare(
+          `SELECT f.accession, f.report_date, f.net_assets, t.rows,
+                  (SELECT COUNT(*) FROM holdings h WHERE h.accession = f.accession) kept
+           FROM filings f LEFT JOIN filing_totals t USING (accession)`
+        )
+        .all()
+        .map(r => [r.accession, r])
+    );
+    const until = stored
+      .map(f => f.filing_date)
+      .sort()
+      .at(-1);
+    const entry = f => ({ accession: f.accession, cik: f.cik, filingDate: f.filing_date, form: f.form });
+    const asStored = e => {
+      const t = totals.get(e.accession);
+      return {
+        filing: { report_date: t.report_date, net_assets: t.net_assets },
+        totals: { rows: t.rows },
+        holdings: { length: t.kept },
+      };
+    };
+    // the index for a window: what is stored in it
+    const inWindow = ({ since, until: to }) => stored.filter(f => f.filing_date >= since && f.filing_date <= to);
+    const clean = await reconcile(db, {
+      since: '2019-10-01',
+      until,
+      sample: 5,
+      list: async w => inWindow(w).map(entry),
+      fetchRows: async e => asStored(e),
+    });
+    assert.deepEqual([clean.ok, clean.missing, clean.notListed, clean.changed, clean.pending], [true, [], [], [], []]);
+    assert.equal(clean.listed, clean.stored);
+    assert.equal(clean.sampled, 5);
+    assert.deepEqual(clean.failed, [], 'every faked re-fetch answered');
+
+    const dropped = stored[0].accession; // deleted from EDGAR
+    const extraOld = { accession: '0009999999-20-000001', cik: '1', filingDate: '2020-01-15', form: 'NPORT-P' };
+    const extraNew = { accession: '0009999999-26-000002', cik: '1', filingDate: until, form: 'NPORT-P' };
+    let changedOne;
+    const r = await reconcile(db, {
+      since: '2019-10-01',
+      until,
+      sample: 5,
+      list: async w => [
+        ...inWindow(w)
+          .filter(f => f.accession !== dropped)
+          .map(entry),
+        ...[extraOld, extraNew].filter(e => e.filingDate >= w.since && e.filingDate <= w.until),
+      ],
+      fetchRows: async e => {
+        const a = asStored(e);
+        if (!changedOne) {
+          changedOne = e.accession;
+          a.filing.net_assets += 1000; // corrected in place
+        }
+        return a;
+      },
+    });
+    assert.equal(r.ok, false);
+    assert.deepEqual(
+      r.missing.map(e => e.accession),
+      [extraOld.accession]
+    );
+    assert.deepEqual(
+      r.pending.map(e => e.accession),
+      [extraNew.accession],
+      'filed in the last two days: the next nightly run'
+    );
+    assert.deepEqual(
+      r.notListed.map(f => f.accession),
+      [dropped]
+    );
+    assert.deepEqual(
+      r.changed.map(c => [c.accession, c.fields]),
+      [[changedOne, ['net_assets']]]
+    );
+    // a re-fetch that fails is reported, not a finding
+    const flaky = await reconcile(db, {
+      since: '2019-10-01',
+      until,
+      sample: 2,
+      list: async w => inWindow(w).map(entry),
+      fetchRows: async () => {
+        throw new Error('ECONNRESET');
+      },
+    });
+    assert.deepEqual([flaky.ok, flaky.failed.length], [true, 2]);
+  } finally {
+    db.close();
+  }
+});
+
+test('watch report: new listing evidence, review-queue names, identity links and split ids against the previous generation', () => {
+  const Database = require('better-sqlite3');
+  const { watchReport, watchMarkdown } = require('../lib/warehouse/watch');
+  golden ??= goldenWarehouse().db.serialize();
+  const previous = new Database(golden);
+  const current = new Database(golden);
+  try {
+    const empty = watchReport(current, previous);
+    assert.deepEqual(
+      [empty.counts.queueNew, empty.counts.listingNew, empty.counts.identityNew, empty.counts.splitNew],
+      [0, 0, 0, 0],
+      'nothing new between identical generations'
+    );
+    // a private company's alias key now held as listed stock
+    const { id, key } = current
+      .prepare(
+        `SELECT c.id, a.pattern key FROM companies c JOIN company_aliases a ON a.company_id = c.id
+         WHERE c.status = 'private' AND a.kind = 'issuer_key' ORDER BY c.id LIMIT 1`
+      )
+      .get();
+    current
+      .prepare(
+        `INSERT INTO listing_evidence (issuer_key, quarter, rows, filings, value_usd, sample_accession, sample_cusip)
+         VALUES (?, '2026q3', 3, 2, 12000000, '0000000000-26-000001', '123456789')`
+      )
+      .run(key);
+    // an unreviewed company-like name over the threshold
+    const ent = current
+      .prepare('SELECT key FROM unreviewed_entities WHERE active = 1 ORDER BY current_value_usd DESC LIMIT 1')
+      .get().key;
+    current
+      .prepare(
+        "UPDATE unreviewed_entities SET category = 'company', current_value_usd = 75e6, current_funds = 3 WHERE key = ?"
+      )
+      .run(ent);
+    const entKeys = JSON.parse(current.prepare('SELECT keys FROM unreviewed_entities WHERE key = ?').get(ent).keys);
+    // an instrument-id link between the company's key and that name
+    current
+      .prepare(
+        `INSERT OR REPLACE INTO identity_edges (a, b, kind, accession, confidence, detail, applied)
+         VALUES (?, ?, 'instrument_id', '0000000000-26-000002', 'high', 'test', 0)`
+      )
+      .run(key, entKeys[0]);
+    // one fund's instrument id under two private companies; a placeholder id is not one
+    const [x, y] = current
+      .prepare(
+        `SELECT h.accession, h.row_key, h.company_id, f.fund_key FROM holdings h JOIN filings f USING (accession)
+         JOIN companies c ON c.id = h.company_id AND c.status = 'private' ORDER BY h.accession LIMIT 400`
+      )
+      .all()
+      .reduce(
+        (pair, r, _i, all) =>
+          pair ||
+          (() => {
+            const o = all.find(s => s.fund_key === r.fund_key && s.company_id !== r.company_id);
+            return o ? [r, o] : null;
+          })(),
+        null
+      );
+    for (const r of [x, y])
+      current
+        .prepare("UPDATE holdings SET other_id = 'TESTID42' WHERE accession = ? AND row_key = ?")
+        .run(r.accession, r.row_key);
+    const r = watchReport(current, previous);
+    assert.deepEqual(
+      r.listing.filter(l => l.isNew).map(l => [l.company.id, l.quarter]),
+      [[id, '2026q3']]
+    );
+    assert.deepEqual(
+      r.queue.filter(q => q.isNew).map(q => q.key),
+      [ent]
+    );
+    assert.deepEqual(
+      r.identity.filter(i => i.isNew).map(i => [i.company.id, i.entity, i.kind]),
+      [[id, ent, 'instrument_id']]
+    );
+    assert.deepEqual(
+      r.split.filter(s => s.isNew).map(s => s.id),
+      ['TESTID42']
+    );
+    const md = watchMarkdown(r, { generation: 2, previous: 1, date: '2026-10-08' });
+    assert.match(md, /## Review queue: \d+ name\(s\) over \$50M in 2\+ funds \(1 new\)/);
+    assert.match(md, /\*\*new\*\* .* 2026q3: 2 filing\(s\), \$12\.0M/);
+    assert.match(md, /## Split identities: .*\(1 new\)/);
+    // the next night, against this one: nothing new
+    const again = watchReport(current, current);
+    assert.deepEqual(
+      [again.counts.queueNew, again.counts.listingNew, again.counts.identityNew, again.counts.splitNew],
+      [0, 0, 0, 0]
+    );
+  } finally {
+    previous.close();
+    current.close();
+  }
+});

@@ -407,3 +407,24 @@ test('bulk download: a slow body that keeps arriving is not cut off by the idle 
   assert.equal(z.bytes, zipBytes.length);
   assert.deepEqual(fs.readFileSync(z.path), zipBytes);
 });
+
+// DATA-QUALITY trap 59: complete N-PORT reports filed under EDGAR's "NT NPORT-P"
+// form type (real 2026 QTR3 index line; header NT NPORT-P, XML submissionType
+// NPORT-P). The SEC's bulk data set holds 580 of them as NPORT-P.
+test('parseFormIndex: an N-PORT filed as "NT NPORT-P" is listed, stored as NPORT-P like the bulk data set', () => {
+  const line =
+    'NT NPORT-P       Corgi ETF Trust I                                             2078265     2026-09-01  edgar/data/2078265/0000894189-26-024708.txt';
+  const [e] = parseFormIndex(`${line}\n`, { since: '2026-07-01', until: '2026-09-30' });
+  assert.deepEqual(e, {
+    form: 'NPORT-P',
+    company: 'Corgi ETF Trust I',
+    cik: '2078265',
+    filingDate: '2026-09-01',
+    accession: '0000894189-26-024708',
+  });
+  // other NT forms are not N-PORT reports
+  assert.deepEqual(
+    parseFormIndex(line.replace('NT NPORT-P', 'NT 10-Q    '), { since: '2026-07-01', until: '2026-09-30' }),
+    []
+  );
+});
