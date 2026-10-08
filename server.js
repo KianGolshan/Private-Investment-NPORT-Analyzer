@@ -79,14 +79,31 @@ const APP_ROUTES = [
   '/tracked',
   '/compare',
 ];
+// v1's page, and its index under public/, are off on the public site (PUBLIC_MODE below).
+const V1_OFF =
+  '<!doctype html><meta charset="utf-8"><title>Vantage</title><p>The v1 page is not part of the public site. ' +
+  '<a href="/">Open Vantage</a>.</p>';
+app.get(['/legacy', '/index.html'], (req, res, next) =>
+  PUBLIC_MODE ? res.status(410).type('html').send(V1_OFF) : next()
+);
 app.get('/legacy', (_req, res) => sendLegacy(res));
-app.get(APP_ROUTES, (_req, res) => (webBuilt() ? res.sendFile(WEB_INDEX) : sendLegacy(res)));
+app.get(APP_ROUTES, (_req, res) =>
+  webBuilt() ? res.sendFile(WEB_INDEX) : PUBLIC_MODE ? res.status(503).end() : sendLegacy(res)
+);
 app.use('/assets', express.static(path.join(WEB_DIST, 'assets'), { immutable: true, maxAge: '1y', index: false }));
 app.use(express.static('public', { index: false }));
 
 const USER_AGENT = process.env.SEC_USER_AGENT || '';
 const EFFECTIVE_USER_AGENT = USER_AGENT || 'Vantage internal-tool@localhost';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+// The public site (P9): visitors must never cause an SEC request, so v1's live
+// per-filing routes and its page are off; everything the workspace shows comes
+// from the warehouse. Only the nightly job calls the SEC.
+const PUBLIC_MODE = process.env.VANTAGE_PUBLIC === '1';
+// The code version: the ETag on warehouse answers and what open tabs compare
+// to offer a reload after a deploy. Every instance of one deploy must agree,
+// so the deploy sets APP_BUILD (the commit); else this process's start.
+const BUILD = process.env.APP_BUILD || Date.now().toString(36);
 
 // Where the server listens (staff full-stack review R11): loopback unless HOST
 // says otherwise, so the origin is reachable only through a proxy on this host.
@@ -137,6 +154,47 @@ if (!USER_AGENT) {
 // with a warm cache the client fires ~20 requests/second (5 per 250ms), so a
 // 10-issuer Watchlist run at 100 filings each is ~1,000 requests, which the old
 // 200/min cap turned into "Too many requests" errors partway through.
+// Health (P9), before the rate limits: a balancer and an uptime monitor poll
+// these. /healthz: the process answers. /readyz: 200 once this process serves a
+// warmed warehouse, else 503; ?fresh=1 also needs a refresh within
+// VANTAGE_READY_MAX_AGE_HOURS (48) and a last job that did not fail.
+// /healthz also reports this process's memory and how long a request waited
+// behind synchronous work over the last minute (review R17; scripts/loadtest.js).
+const loopDelay = require('perf_hooks').monitorEventLoopDelay({ resolution: 20 });
+loopDelay.enable();
+setInterval(() => loopDelay.reset(), 60000).unref();
+app.get('/healthz', (_req, res) =>
+  res.set('Cache-Control', 'no-store').json({
+    ok: true,
+    build: BUILD,
+    uptimeS: Math.round(process.uptime()),
+    rssMB: Math.round(process.memoryUsage.rss() / 1048576),
+    loopP99Ms: Math.round(loopDelay.percentile(99) / 1e6),
+    loopMaxMs: Math.round(loopDelay.max / 1e6),
+  })
+);
+app.get('/readyz', (req, res) => {
+  const maxAgeHours = Number(process.env.VANTAGE_READY_MAX_AGE_HOURS) || 48;
+  const r = warehouseApi.readiness({ maxAgeHours });
+  const strict = req.query.fresh === '1' || req.query.fresh === 'true';
+  res
+    .status((strict ? r.fresh : r.ready) ? 200 : 503)
+    .set('Cache-Control', 'no-store')
+    .json({ ...r, build: BUILD });
+});
+
+// The live per-filing routes below call the SEC for each visitor; on the public
+// site they answer 410 (the workspace never calls them; test/public-mode.test.js).
+const LIVE_ROUTES =
+  /^\/api\/(search-nport|parse-nport|search-10q|parse-10q|search-fund|fund-series|fund-series-filings|fund-xray|fund-xray-compare|fund-xray-returns)\/?$/;
+if (PUBLIC_MODE)
+  app.use(LIVE_ROUTES, (_req, res) =>
+    res
+      .status(410)
+      .set('Cache-Control', 'no-store')
+      .json({ error: 'Live SEC lookups are off on the public site; every page answers from the warehouse.' })
+  );
+
 const parsedApiLimit = Number(process.env.API_RATE_LIMIT_PER_MIN);
 const API_RATE_LIMIT_PER_MIN = Number.isFinite(parsedApiLimit) && parsedApiLimit > 0 ? parsedApiLimit : 1500;
 const apiLimiter = rateLimit({
@@ -175,7 +233,7 @@ app.use(
 // names, answered from warehouse.db opened read-only on first use (missing or
 // behind: those routes answer 503, the live routes below keep working). They
 // never call the SEC.
-const warehouseApi = warehouseRouter(() => openWarehouseReadOnly(), { warmOnSwitch: true });
+const warehouseApi = warehouseRouter(() => openWarehouseReadOnly(), { warmOnSwitch: true, build: BUILD });
 app.use('/api', warehouseApi);
 app.locals.warehouseApi = warehouseApi; // scripts/bench.js warms it as start-up does
 // Admin actions ("make this a company"): local, admin-only, run as a job
@@ -407,7 +465,12 @@ function eftsPhrase(term) {
 // Config endpoint — lets the frontend show a warning if user-agent isn't set
 app.get('/api/config', (req, res) => {
   // admin: the "make this a company" action is available to this viewer (lib/api/admin.js).
-  res.json({ userAgentConfigured: !!USER_AGENT, admin: adminEnabled() && isLocalRequest(req) });
+  res.set('Cache-Control', 'no-store').json({
+    userAgentConfigured: !!USER_AGENT,
+    admin: adminEnabled() && isLocalRequest(req),
+    public: PUBLIC_MODE,
+    build: BUILD,
+  });
 });
 
 // Search for NPORT-P filings matching a security name/ticker
@@ -1207,6 +1270,9 @@ if (require.main === module) {
           'reach this port directly.'
       );
     console.log(`   User-Agent: ${EFFECTIVE_USER_AGENT}\n`);
+    // A generation published by the nightly job is switched to without waiting
+    // for a visitor (warm first, then swap; lib/api/warehouse.js).
+    setInterval(() => warehouseApi.checkSwitch(), 15000).unref();
     warehouseApi.warm().then(w => {
       console.log(
         w.error ? `   Warehouse: ${w.error}` : `   Warehouse warmed: ${w.companies} tracked companies in ${w.ms} ms`

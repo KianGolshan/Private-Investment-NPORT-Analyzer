@@ -26,8 +26,16 @@ const NAV: { href: string; label: string; match: (p: string) => boolean }[] = [
   { href: '/firms', label: 'Firms', match: p => p.startsWith('/firm') },
 ];
 
+// /api/config: the public site (P9) has no v1 page; the link shows only when
+// the server says it is there.
+interface Config {
+  public: boolean;
+  build: string;
+}
+
 function Sidebar() {
   const { path } = useLocation();
+  const config = useApi<Config>('/api/config').data;
   return (
     <aside class="sidebar">
       <a class="brandmark" href="/" style={{ textDecoration: 'none' }}>
@@ -53,10 +61,14 @@ function Sidebar() {
             {n.label}
           </a>
         ))}
-        <div class="nav-section">More</div>
-        <a href="/legacy" target="_top">
-          Private Credit (v1)
-        </a>
+        {config && !config.public && (
+          <>
+            <div class="nav-section">More</div>
+            <a href="/legacy" target="_top">
+              Private Credit (v1)
+            </a>
+          </>
+        )}
       </nav>
       <div class="sidebar-foot">Private holdings and marks from SEC N-PORT filings. Every number links its filing.</div>
     </aside>

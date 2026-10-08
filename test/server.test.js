@@ -676,3 +676,13 @@ test('GET /api/search-fund: a failed older submissions page is reported as parti
   }
   nock.cleanAll();
 });
+
+// P9: public mode off (this file's process) changes nothing: v1's page and the
+// live routes stay (test/public-mode.test.js has the public side).
+test('public mode off: config says so, and v1 stays at /legacy', async () => {
+  const c = await request(app).get('/api/config').expect(200);
+  assert.equal(c.body.public, false);
+  assert.equal(typeof c.body.build, 'string');
+  const legacy = await request(app).get('/legacy').expect(200);
+  assert.match(legacy.text, /<html/i);
+});

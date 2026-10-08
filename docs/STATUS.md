@@ -1,9 +1,10 @@
 # Vantage v2 Status
 
-**Phase:** **P8** (operations), **paused by the user on 2026-10-08**. W1–W3 are **signed off** (2026-10-07..08),
-and `v2-p8-operations` is **merged to `main`** by its PR (the user's yes, 2026-10-08). Everything not built is
-under [Deferred](#deferred), W4 included. Live warehouse: generation 32. A new phase or wave starts on a new branch
-off `main`.
+**Phase:** **P9** (public deployment), on branch `v2-p9-deploy`. The user approved the plan on 2026-10-08
+([plans/P9-deployment.md](plans/P9-deployment.md)): Oracle Cloud Always Free VM, a new domain on Cloudflare, two app
+instances behind Caddy, nightly refresh and auto-deploy. **W1 (public-ready server) is built, awaiting sign-off.** W2
+(seamless client and polish) and W3 (deployment files and docs) follow. P8 is paused (W1–W3 signed off and merged);
+its open items are under [Deferred](#deferred). Live warehouse: generation 32.
 
 ## Phase tracker
 
@@ -17,7 +18,8 @@ off `main`.
 - [ ] P7: MCP server (deferred)
 - [~] P8: operations. W1 (pre-flight fixes), W2 (backups and nightly) and W3 (reconciliation and watch) are
   signed off and merged. The W4 research and the P8 checkpoint (30 unattended nights) are deferred.
-- [ ] P9: public deployment (deferred)
+- [~] P9: public deployment. W1 (public-ready server) built 2026-10-08, awaiting sign-off; W2, W3 next
+  ([plan](plans/P9-deployment.md))
 
 ## What the app answers now (all from the warehouse, every row with mark date and accession)
 
@@ -216,8 +218,6 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
 - **Watch report gaps (ROADMAP §8):** status changes cover listing evidence (likely IPOs) only. Delistings
   (listed → private) and post-IPO lock-up or PIPE signals are not detected yet; check how real filings label them
   first.
-- **A readiness endpoint apart from liveness** (generation, data age, last job). `/api/freshness` and
-  `npm run doctor` cover it locally; a `/healthz` for a host is a P9 task.
 - **Intermittent single-test failures under heavy load**, none reproduced on rerun:
   - "scope: … post-filter" (2026-10-05);
   - "API goldens: Stripe A5" (2026-10-06);
@@ -277,7 +277,6 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
 ### Phases not started
 
 - **P7: MCP server** (ROADMAP §7; the services exist).
-- **P9: public deployment** (ROADMAP §9; hosting to decide as ADR 0006).
 
 ### Housekeeping
 
@@ -285,21 +284,52 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
 
 ## Next session
 
-> Resume Vantage v2 on `main` (P8 W1–W3 merged; P8 paused 2026-10-08), on a new branch for the next work. Start with the user's answers to
-> "Decisions waiting on the user", then take the next item the user picks from "Deferred". Read CLAUDE.md, this file
-> and docs/ROADMAP.md first.
+> Resume Vantage v2 P9 on `v2-p9-deploy` ([plans/P9-deployment.md](plans/P9-deployment.md)). W1 (public-ready server)
+> is built; on the user's sign-off build **W2** (version and data toasts, chunk-load recovery, `/about`, `/status`,
+> server-rendered meta and OG tags, `robots.txt`, `sitemap.xml`, optional Cloudflare Web Analytics), then **W3**
+> (`deploy/`: setup.sh, systemd units, Caddyfile, cloudflared config, deploy.sh with rolling restart and rollback; the
+> GitHub Actions deploy workflow; Dependabot; DEPLOY.md, ADR 0006, README). The user's account steps are §5 of the
+> plan. Read CLAUDE.md, this file and the plan first.
 >
 > This Mac has 8 GB of memory: run one heavy job at a time in the foreground, run tests with
 > `--test-concurrency=2`, and ask before a refresh, the e2e suite or the LIVE suite. Gates:
 >
 > - `npm test`, `npm run lint`, `npm run format:check`;
 > - `npm run test:web`, `npm run lint:web`;
-> - `npm run build:web`, then `npm run test:e2e`;
-> - `npm run test:live`.
->
-> Check health with `npm run doctor`.
+> - `npm run build:web`, then `npm run test:e2e`.
 
 ## Log
+
+- **2026-10-08 (P9 W1):** the user approved the P9 plan (readiness assessment, Oracle + Cloudflare, concurrency,
+  seamless refresh and updates). W1 built on `v2-p9-deploy`:
+  - **Public mode** (`VANTAGE_PUBLIC=1`): v1's ten live per-filing routes answer 410 without an SEC request, and
+    `/legacy` and `/index.html` answer 410. `/api/config` gains `public` and `build`, and the nav hides "Private
+    Credit (v1)". The workspace never called these routes (checked by grep).
+  - **Health:** `/healthz` (build, uptime, RSS, event-loop p99/max over the last minute) and `/readyz` (200 once
+    warmed; `?fresh=1` also needs a refresh within 48 h and a last job that did not fail). Both sit outside the rate
+    limits and are `no-store`.
+  - **Seamless data:** a new generation is opened beside the old one and warmed, then swapped in one step. The old
+    one answers meanwhile. `VANTAGE_WARM_DELAY_MS` staggers a second instance, and the server checks for a new
+    generation every 15 s, so an idle instance switches too. A failed open keeps the old generation and retries. Found
+    while testing: an open that threw at once left the switch marked as running forever (fixed, with a regression
+    test).
+  - **CDN:** `VANTAGE_CDN_MAX_AGE` gives warehouse answers `public, max-age=0, must-revalidate, s-maxage=N`.
+    Errors are `no-store` and drop the generation ETag. `APP_BUILD` is one ETag build for every instance.
+  - **Memo** bounded by bytes (`VANTAGE_MEMO_MAX_MB`, 256), with the whole-warehouse tables pinned (R17).
+  - **Off-site backup** (`VANTAGE_OFFSITE_CMD`, e.g. rclone to R2) is a nightly step; a failure is "warn". The doctor
+    counts a recent off-site copy as off-host.
+  - **`scripts/smoke.js`:** health, headers, goldens A1/A2/A4/A5/A6 (by company), admin 403 and public-mode 410s. It
+    is a nightly step when `VANTAGE_PUBLIC_URL` is set.
+  - **`scripts/loadtest.js`:** N visitors over the workspace's real page mix, reading the server's RSS and event-loop
+    delay.
+  - **Verified** on generation 32, in public mode on this Mac:
+    - smoke: 17/17, every golden equal to GOLDEN-NUMBERS;
+    - load test, 10 users for 20 s at load 2.9, warmed: 345 requests, **0 errors**, p50 12 ms, p95 137 ms,
+      p99 201 ms, RSS 314 MB, event-loop max 359 ms;
+    - browser: no v1 link, console clean;
+    - headers: CSP, `s-maxage=300` with ETag `W/"r32-local-p9"`, freshness `no-store`.
+  - **Tests:** backend 653 (621 pass, 31 skipped, 0 fail; 22 new across public-mode, deploy-readiness and backup
+    off-site); web 39/39; lint, format, lint:web and build clean. e2e not run (not asked).
 
 - **2026-10-08:** the user signed off P8 W3 and asked for the PR and merge: `v2-p8-operations` merged to `main`.
 
