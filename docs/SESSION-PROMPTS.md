@@ -32,9 +32,9 @@ at the checkpoint for sign-off; update `docs/STATUS.md` before ending.
 
 ### Phase 8: operations (resume after the 2026-10-08 pause)
 
-> Vantage v2 Phase 8, resumed on `v2-p8-operations` (W1–W2 signed off, W3 built). Read CLAUDE.md, docs/STATUS.md
+> Vantage v2 Phase 8, resumed on a new branch off `main` (W1–W3 signed off and merged). Read CLAUDE.md, docs/STATUS.md
 > ("Decisions waiting on the user" and "Deferred") and docs/ROADMAP.md §Phase 8. Get my answers to the open
-> decisions first (W3 sign-off, PR and merge, refresh, launchd, backup location). Then take the P8 items under
+> decisions first (refresh, launchd, backup location). Then take the P8 items under
 > "Deferred" in the order I choose; W4 research checks real filings before building anything. Install launchd jobs
 > only with my explicit yes.
 

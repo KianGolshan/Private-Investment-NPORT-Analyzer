@@ -1,14 +1,9 @@
 # Vantage v2 Status
 
-**Phase:** **P8** (operations) on branch `v2-p8-operations`, **paused by the user on 2026-10-08** ("Stop. Status
-report.").
-
-- W1 and W2 are signed off.
-- W3 is built, verified and pushed, but not signed off.
-- Everything not built is under [Deferred](#deferred), W4 included.
-- The branch is 3 commits ahead of `main` (ca6a3bc, 5aa2d89, bbc513f), CI is green on each, and no PR is open: a PR
-  and merge need the user's yes.
-- Live warehouse: generation 32.
+**Phase:** **P8** (operations), **paused by the user on 2026-10-08**. W1–W3 are **signed off** (2026-10-07..08),
+and `v2-p8-operations` is **merged to `main`** by its PR (the user's yes, 2026-10-08). Everything not built is
+under [Deferred](#deferred), W4 included. Live warehouse: generation 32. A new phase or wave starts on a new branch
+off `main`.
 
 ## Phase tracker
 
@@ -20,8 +15,8 @@ report.").
 - [x] P6d: full-stack review remediation, W1–W3 (signed off 2026-10-06; ROADMAP §6d, ADR 0009 amendment)
 - [x] P6e: Codex verification follow-ups, W1–W2 (signed off 2026-10-06; V11 closed)
 - [ ] P7: MCP server (deferred)
-- [~] P8: operations. W1 pre-flight fixes and W2 backups and nightly are signed off; W3 reconciliation and watch
-  are built. The W4 research and the P8 checkpoint (30 unattended nights) are deferred.
+- [~] P8: operations. W1 (pre-flight fixes), W2 (backups and nightly) and W3 (reconciliation and watch) are
+  signed off and merged. The W4 research and the P8 checkpoint (30 unattended nights) are deferred.
 - [ ] P9: public deployment (deferred)
 
 ## What the app answers now (all from the warehouse, every row with mark date and accession)
@@ -143,15 +138,13 @@ disk.
 
 ## Decisions waiting on the user
 
-1. **Sign off P8 W3**, or overrule it.
-2. **Open a PR and merge `v2-p8-operations` into `main`** (3 commits, CI green)?
-3. **Run a refresh** (about 1 minute) to load the 117 NT NPORT-P reports? CLAUDE.md asks before a refresh.
-4. **Install the launchd jobs:** `npm run nightly` daily at 06:15 and `npm run monthly` monthly (plists in
+1. **Run a refresh** (about 1 minute) to load the 117 NT NPORT-P reports? CLAUDE.md asks before a refresh.
+2. **Install the launchd jobs:** `npm run nightly` daily at 06:15 and `npm run monthly` monthly (plists in
    ARCHITECTURE §Refresh lifecycle). The P8 checkpoint, 30 unattended nights, starts here.
-5. **Choose the backup location** (`VANTAGE_BACKUP_DIR`): an external disk, iCloud Drive or another machine. Today
+3. **Choose the backup location** (`VANTAGE_BACKUP_DIR`): an external disk, iCloud Drive or another machine. Today
    backups go to `~/Vantage-backups` on the same disk, and the doctor warns.
-6. **Alert URL (optional):** a dead-man's switch such as healthchecks.io (`VANTAGE_ALERT_URL`).
-7. **Delete the leftover temp directories** (about 1,250 `vantage-*` folders, ~14.7 GiB, from test runs before the W1
+4. **Alert URL (optional):** a dead-man's switch such as healthchecks.io (`VANTAGE_ALERT_URL`).
+5. **Delete the leftover temp directories** (about 1,250 `vantage-*` folders, ~14.7 GiB, from test runs before the W1
    fix; the doctor counts them). The permission classifier blocked the sweep. Command:
    `find -E "$TMPDIR" -maxdepth 1 -type d -mmin +60 -regex '.*/vantage-(job|review|cache|ncen|zip|admin|curation|ro)-[A-Za-z0-9]{6}' -exec rm -rf {} +`
 
@@ -213,10 +206,10 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
     screen and in exports).
   - _Fund type from N-CEN_ (ETF, open-end, closed-end, interval: which holders are retail-accessible). Only advisers
     are loaded from N-CEN today; check the field's coverage first (trap 21).
-- **P8 checkpoint:** 30 unattended nightly runs with no gaps, and a green monthly run. This needs decision 4. The
+- **P8 checkpoint:** 30 unattended nightly runs with no gaps, and a green monthly run. This needs decision 2. The
   monthly run (reconcile plus LIVE) has never run on a schedule; `npm run reconcile` ran by hand on 2026-10-08. LIVE
   last passed at W5.
-- **Off-host backup and an alert URL:** decisions 5 and 6. The restore drill was done on the same disk only.
+- **Off-host backup and an alert URL:** decisions 3 and 4. The restore drill was done on the same disk only.
 - **Crash drills at the publication boundary (R09).** The SIGKILL drill kills a job mid-run, and the fault-injection
   sweeps fail every post-commit step. A process killed exactly at the link rename (or between the generation rename
   and the link swap) has not been drilled.
@@ -234,7 +227,7 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
 
   None were seen in the 2026-10-07/08 runs (load 2–6). Likely timing under load; not investigated.
 
-- **Leftover temp directories:** decision 7.
+- **Leftover temp directories:** decision 5.
 
 ### Data and curation (review items, each needs evidence before a change)
 
@@ -292,7 +285,7 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
 
 ## Next session
 
-> Resume Vantage v2 on branch `v2-p8-operations` (P8 paused 2026-10-08). Start with the user's answers to
+> Resume Vantage v2 on `main` (P8 W1–W3 merged; P8 paused 2026-10-08), on a new branch for the next work. Start with the user's answers to
 > "Decisions waiting on the user", then take the next item the user picks from "Deferred". Read CLAUDE.md, this file
 > and docs/ROADMAP.md first.
 >
@@ -307,6 +300,8 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
 > Check health with `npm run doctor`.
 
 ## Log
+
+- **2026-10-08:** the user signed off P8 W3 and asked for the PR and merge: `v2-p8-operations` merged to `main`.
 
 - **2026-10-08 (close-out):** the user stopped P8 ("Stop. Status report."). W3 is built and not signed off;
   W4 and every open item moved to Deferred. Verified on bbc513f:

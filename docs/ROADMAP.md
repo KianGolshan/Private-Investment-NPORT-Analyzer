@@ -184,7 +184,7 @@ rather than a live SEC call. Tools (the fund and firm tools arrive when P5b and 
 
 ## Phase 8: operations hardening
 
-**Paused 2026-10-08 by the user.** W1–W2 signed off, W3 built; everything else in this phase, the remaining P6
+**Paused 2026-10-08 by the user.** W1–W3 signed off and merged to `main`; everything else in this phase, the remaining P6
 items, P7 and P9 are listed in [STATUS "Deferred"](STATUS.md#deferred).
 
 **Waves (2026-10-07):**
@@ -193,7 +193,7 @@ items, P7 and P9 are listed in [STATUS "Deferred"](STATUS.md#deferred).
 | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | **W1** | Pre-flight fixes ([plans/P8-preflight-analysis.md](plans/P8-preflight-analysis.md)): the test temp leak, the job time limit and disk check, the download idle limit, lock identity, interrupted jobs, `npm run doctor`, trap 57 and the trap 58 fund-family split | **Signed off 2026-10-07**                                                       |
 | **W2** | Backups with a restore drill (`npm run backup`), the nightly wrapper with alerts (`npm run nightly`), RSS and event-loop delay in `npm run bench` (R17)                                                                                                           | **Signed off 2026-10-08** (installing the launchd job waits for the user's yes) |
-| **W3** | Correction and deletion reconciliation (R12), the nightly watch reports, the monthly LIVE regression, and the slow routes and event-loop stalls that W2's bench found                                                                                             | Built 2026-10-08; not signed off (P8 paused by the user)                        |
+| **W3** | Correction and deletion reconciliation (R12), the nightly watch reports, the monthly LIVE regression, and the slow routes and event-loop stalls that W2's bench found                                                                                             | **Signed off 2026-10-08**; merged to `main`                                     |
 | W4     | Research: `public_since` (last private mark vs first listed price) and N-CEN fund type                                                                                                                                                                            | **Deferred** (STATUS "Deferred")                                                |
 
 **Entry gate:** P6 checkpoint.
