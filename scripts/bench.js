@@ -16,6 +16,12 @@
 // P6b W1: each tracked company's analysis views, scope filters, bridge and one
 // position history; the 12 firms with the most holding funds (Fidelity first)
 // for book, changes, bridge, timeline and pivot; market-wide pivots; unified search.
+// P8 (review R17): each pass also reports the process's memory (RSS start, peak,
+// end, heap) and event-loop delay (p50, p99, max: how long a request could wait
+// behind synchronous work; the server and this client share the process), plus
+// the load average, which every reading must be quoted with.
+const os = require('os');
+const { monitorEventLoopDelay } = require('perf_hooks');
 const { openWarehouseReadOnly } = require('../lib/warehouse/db');
 const { TOP_FUND_GROUPS } = require('../public/fund-groups');
 
@@ -155,6 +161,37 @@ function requests() {
 
 const pct = (xs, p) => xs[Math.min(xs.length - 1, Math.floor(xs.length * p))];
 
+const MB = b => Math.round(b / 1048576);
+// Memory and event-loop delay while fn runs (R17).
+async function measured(fn) {
+  const loop = monitorEventLoopDelay({ resolution: 10 });
+  loop.enable();
+  const start = process.memoryUsage();
+  let peak = start.rss;
+  const sample = setInterval(() => (peak = Math.max(peak, process.memoryUsage().rss)), 50);
+  try {
+    const out = await fn();
+    const end = process.memoryUsage();
+    peak = Math.max(peak, end.rss);
+    const ms = ns => +(ns / 1e6).toFixed(1);
+    return {
+      out,
+      process: {
+        'rss start MB': MB(start.rss),
+        'rss peak MB': MB(peak),
+        'rss end MB': MB(end.rss),
+        'heap end MB': MB(end.heapUsed),
+        'loop p50 ms': ms(loop.percentile(50)),
+        'loop p99 ms': ms(loop.percentile(99)),
+        'loop max ms': ms(loop.max),
+      },
+    };
+  } finally {
+    clearInterval(sample);
+    loop.disable();
+  }
+}
+
 async function pass(base, list) {
   const byRoute = new Map();
   for (const [route, url] of list) {
@@ -199,11 +236,18 @@ async function main() {
   await new Promise(r => server.once('listening', r));
   const base = `http://127.0.0.1:${server.address().port}`;
   try {
+    console.log(
+      `load average ${os
+        .loadavg()
+        .map(x => x.toFixed(2))
+        .join(' ')} (1, 5, 15 min)`
+    );
     for (let i = 1; i <= passes; i++) {
       const t = Date.now();
-      const rows = await pass(base, list);
+      const { out: rows, process: proc } = await measured(() => pass(base, list));
       console.log(`\npass ${i}${i === 1 ? ' (fresh process)' : ''}: ${list.length} requests in ${Date.now() - t} ms`);
       console.table(rows);
+      console.table([proc]);
     }
   } finally {
     server.close();

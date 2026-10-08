@@ -1,17 +1,9 @@
 # Vantage v2 Status
 
-**Phase:** **P8** (operations) on branch `v2-p8-operations`, off `main` at ed3fd6e (PR #7 merged; P6e complete).
-**P8 W1 (the pre-flight fixes) is built and pushed** and waits for sign-off:
-[plans/P8-preflight-analysis.md](plans/P8-preflight-analysis.md) (findings, then "Outcome"). Delivered:
-
-- the test temp leak fixed;
-- the job watchdog (download idle limit, job time limit, disk check);
-- lock identity across pid reuse and reboots, and "interrupted" job states;
-- `npm run doctor`;
-- below-zero values labeled as filed (trap 57);
-- 20 merged fund families split (trap 58).
-
-Live warehouse: generation 31.
+**Phase:** **P8** (operations) on branch `v2-p8-operations`. W1 (the pre-flight fixes) was **signed off on
+2026-10-07**. **W2 is built and pushed** and waits for sign-off: `npm run backup` (verified copies, restore drill),
+`npm run nightly` (refresh, backup and doctor, with alerts), and RSS and event-loop delay in `npm run bench`. Live
+warehouse: generation 31. The waves are in ROADMAP §8.
 
 ## Phase tracker
 
@@ -103,15 +95,16 @@ The analyst workspace is served at `/`; the route map is at the top of the [READ
 
 ## Measurements
 
-| Metric                         | Budget               | Latest                                                                                         |
-| ------------------------------ | -------------------- | ---------------------------------------------------------------------------------------------- |
-| Warehouse size                 | ≤1 GB per generation | **578.0 MB** (generation 31; two generations kept, ~1.8 GB on disk with a candidate)           |
-| Nightly refresh                | ≤5 min               | 0.8 min as a job (#22: copy, refresh, derived rebuild, validation, publish in 47 s)            |
-| API p95, all routes            | <200ms               | 13.5–16.1 ms over 3,805 requests (W5, load 3.2); drill total 382 KB JSON = 48.8 KB gzipped     |
-| Lighthouse perf / a11y         | ≥90                  | Market 96/98, Explore 97/98, company 98/98, firm 95/98 (W5)                                    |
-| Accessibility (axe, WCAG 2.1)  | 0 serious            | 0 findings of any impact, 10 views × light/dark                                                |
-| Suite                          | green                | 627 backend (596 pass, 31 skipped, 0 fail; P8 W1); web 39/39; e2e 27/27 (P6e); LIVE 31/31 (W5) |
-| Full backfill / first catch-up | —                    | 13.6 min / 26.9 min (P1, P2)                                                                   |
+| Metric                         | Budget               | Latest                                                                                                                                                                                                                                      |
+| ------------------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Warehouse size                 | ≤1 GB per generation | **578.0 MB** (generation 31; two generations kept, ~1.8 GB on disk with a candidate)                                                                                                                                                        |
+| Nightly refresh                | ≤5 min               | 0.8 min as a job (#22: copy, refresh, derived rebuild, validation, publish in 47 s)                                                                                                                                                         |
+| API p95, all routes (P8 W2)    | <200ms               | 37.2 / 30.7 ms over 3,805 requests at load 4.1 (passes 1 and 2). Over budget: firms (cold) 275 ms, firm changes 293, search all (pass 2) 273. Event-loop delay p99 175 / 168 ms, max 1,418 / 775 ms; RSS peak 475 / 594 MB. W3 investigates |
+| API p95, all routes (W5)       | <200ms               | 13.5–16.1 ms over 3,805 requests (W5, load 3.2); drill total 382 KB JSON = 48.8 KB gzipped                                                                                                                                                  |
+| Lighthouse perf / a11y         | ≥90                  | Market 96/98, Explore 97/98, company 98/98, firm 95/98 (W5)                                                                                                                                                                                 |
+| Accessibility (axe, WCAG 2.1)  | 0 serious            | 0 findings of any impact, 10 views × light/dark                                                                                                                                                                                             |
+| Suite                          | green                | 627 backend (596 pass, 31 skipped, 0 fail; P8 W1); web 39/39; e2e 27/27 (P6e); LIVE 31/31 (W5)                                                                                                                                              |
+| Full backfill / first catch-up | —                    | 13.6 min / 26.9 min (P1, P2)                                                                                                                                                                                                                |
 
 ## Warehouse state (generation 31, 2026-10-07)
 
@@ -134,6 +127,16 @@ and 29 a refresh built by `main` (e5eca00, curation tree `eae566e`, clean). The 
 
 ## Open decisions (user)
 
+- **Install the nightly job?** It would run `npm run nightly` daily at 06:15 through launchd (plist in ARCHITECTURE
+  §Refresh lifecycle). Not installed; it needs the user's yes. The 30-day unattended run (the P8 success
+  criterion) starts when it is installed.
+- **Off-host backups:** where should `VANTAGE_BACKUP_DIR` point? Options are an external disk, a synced folder
+  (iCloud Drive) or another machine. Until it is set, backups go to `~/Vantage-backups` on the same disk (APFS
+  clones, 3 kept), and the doctor warns.
+- **Alert URL (optional):** a dead-man's switch such as healthchecks.io (`VANTAGE_ALERT_URL`) catches a night that
+  never runs; the macOS notification only fires for a run that fails.
+- **P8 W2 calls to overrule:** keep 3 backups; a restore is a new generation (undo with rollback); the nightly run
+  continues after a failed step; a doctor warning makes the night "warn", not "fail".
 - **P8 W1 calls to overrule:**
   - a job time limit of 3 h, and a disk check for a candidate plus 1 GiB;
   - a below-zero row is counted as $0, and its words say "reported below $0 (counted as $0)";
@@ -213,17 +216,10 @@ and 29 a refresh built by `main` (e5eca00, curation tree `eae566e`, clean). The 
 
 ## Next session
 
-> Resume Vantage v2 P8 (operations) on branch `v2-p8-operations`. P8 W1 (the pre-flight fixes,
-> [plans/P8-preflight-analysis.md](plans/P8-preflight-analysis.md)) waits for the user's sign-off. After it, P8 W2
-> takes the ROADMAP §8 items:
->
-> - backup with an off-host copy and a restore drill;
-> - correction and deletion reconciliation;
-> - bench RSS and event-loop lag;
-> - alerting (`npm run doctor` exits 1 for a scheduler);
-> - the monthly LIVE regression;
-> - the watch reports;
-> - the launchd job, only with the user's yes.
+> Resume Vantage v2 P8 (operations) on branch `v2-p8-operations`. W2 (backups, nightly, bench) waits for the user's
+> sign-off, and the launchd install and the backup location for the user's answers (Open decisions). Next is W3
+> (ROADMAP §8): correction and deletion reconciliation (R12, check real filings first), the nightly watch reports,
+> the monthly LIVE regression, and the slow routes and event-loop stalls that `npm run bench` now shows.
 >
 > This Mac has 8 GB of memory: run one heavy job at a time in the foreground, run tests with `--test-concurrency=2`, and
 > ask before a refresh, the e2e suite or the LIVE suite. Read CLAUDE.md, this file and docs/ROADMAP.md first. Gates: `npm test`, `npm run lint`, `npm run format:check`,
@@ -231,6 +227,22 @@ and 29 a refresh built by `main` (e5eca00, curation tree `eae566e`, clean). The 
 > `npm run refresh` at session start.
 
 ## Log
+
+- **2026-10-07 (P8 W2):** W1 signed off ("sign off, continue to W2"). W2 built:
+  - `npm run backup`: a verified copy (SHA-256 against the source, `quick_check`, `.sha256` beside it, 3 kept),
+    and `--restore <file>`, which publishes the backup as a new generation (`job.restoreBackup`; rollback now
+    shares its `republish`);
+  - `npm run nightly`: refresh, backup and doctor; a failure gives a macOS notification and exit 1, and an
+    optional `VANTAGE_ALERT_URL` dead-man's switch is pinged;
+  - the doctor reports the backup (missing, old, behind, same disk) and the last nightly run;
+  - bench reports RSS and event-loop delay (R17).
+
+  Live drill: generation 31 backed up in 2.9 s and restored onto an empty directory in 2.6 s. Its counts and the
+  Anthropic and Stripe answers were identical.
+
+  Tests: 7 new (restore drill, bad or missing checksum, restore over live, rotation, nightly alerts, doctor).
+  Backend 603/0/31 skipped, with no temp directories left (the V03 test's stage now lands in a removed
+  directory). The bench at load 4.1 shows three routes over 200 ms p95 and loop stalls up to 1.4 s, a W3 item.
 
 - **2026-10-07 (P8 W1):** the user said "proceed with full fixes". Every pre-flight finding is fixed, each with
   a regression test. Detail is in the plan's "Outcome".

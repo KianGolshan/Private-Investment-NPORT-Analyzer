@@ -192,6 +192,22 @@ Fund calendars are staggered, so "as of D" mixes mark dates. The UI always shows
   - The filing list is de-duplicated by accession.
 - Every job exits. Nothing polls indefinitely.
 
+- **Nightly wrapper** (`npm run nightly`, `lib/warehouse/nightly.js`, P8 W2): runs the refresh (a child process
+  with its own job and exit code, killed after 4 h), then a backup, then the doctor. Every step runs even after
+  one fails. The result goes to `warehouse.db.nightly.json` (and `.nightly.log`); the doctor reports it. On a
+  failure it shows a macOS notification (`VANTAGE_NOTIFY=0` turns it off) and exits 1. With `VANTAGE_ALERT_URL` (a
+  dead-man's switch such as healthchecks.io) it pings the URL on success and `<url>/fail` with the summary on a
+  failure, so a night that never runs is caught too.
+- **Backups** (`npm run backup`, `lib/warehouse/backup.js`): a copy of the published generation in
+  `VANTAGE_BACKUP_DIR` (default `~/Vantage-backups`), checked against the source's SHA-256 and SQLite's
+  `quick_check`, with a `.sha256` beside it, keeping the newest 3. A generation already backed up is skipped. On
+  the same APFS volume the copy is a clone (seconds, no extra space), which survives a deleted or damaged
+  warehouse, not a lost disk; the doctor warns until the directory is on another disk or a synced folder.
+  `npm run backup -- --restore <file>` verifies the checksum and publishes the backup as a new generation,
+  onto an empty host or over the live warehouse (`job.restoreBackup`; undo with `npm run warehouse -- --rollback`).
+  Drill on 2026-10-07: generation 31 backed up in 2.9 s and restored onto an empty directory in 2.6 s (as
+  generation 32); the row counts and the Anthropic and Stripe exposure answers were identical.
+
 **Scheduling on macOS (launchd).** This is not installed automatically. Save the following as
 `~/Library/LaunchAgents/com.vantage.refresh.plist` and load it with
 `launchctl load ~/Library/LaunchAgents/com.vantage.refresh.plist`. It runs daily at 06:15 local time. EDGAR
@@ -204,15 +220,15 @@ publishes the day's index overnight, and filings cluster about 60 days after eac
   <key>Label</key><string>com.vantage.refresh</string>
   <key>WorkingDirectory</key><string>/path/to/repo</string>
   <key>ProgramArguments</key><array>
-    <string>/usr/local/bin/npm</string><string>run</string><string>--silent</string><string>refresh</string>
+    <string>/usr/local/bin/npm</string><string>run</string><string>--silent</string><string>nightly</string>
   </array>
   <key>StartCalendarInterval</key><dict><key>Hour</key><integer>6</integer><key>Minute</key><integer>15</integer></dict>
-  <key>StandardOutPath</key><string>/path/to/repo/logs/refresh.log</string>
-  <key>StandardErrorPath</key><string>/path/to/repo/logs/refresh.log</string>
+  <key>StandardOutPath</key><string>/path/to/repo/logs/nightly.log</string>
+  <key>StandardErrorPath</key><string>/path/to/repo/logs/nightly.log</string>
 </dict></plist>
 ```
 
-Linux/cron equivalent: `15 6 * * * cd /path/to/repo && npm run --silent refresh >> logs/refresh.log 2>&1`.
+Linux/cron equivalent: `15 6 * * * cd /path/to/repo && npm run --silent nightly >> logs/nightly.log 2>&1`.
 Check health with `npm run doctor` (exits 1 when the last job failed or was interrupted, or the disk has no
 room for the next one), `npm run warehouse` (generations and the last job), `cat warehouse.db.jobs.log`,
 `sqlite3 warehouse.db "select * from generation_meta order by id desc limit 5"` and `select * from ingest_errors`.
@@ -232,14 +248,18 @@ room for the next one), `npm run warehouse` (generations and the last job), `cat
 
 ## Configuration
 
-| Env var               | Default          | Purpose                                                        |
-| --------------------- | ---------------- | -------------------------------------------------------------- |
-| `SEC_USER_AGENT`      | required         | SEC fair-access identity                                       |
-| `WAREHOUSE_DB_PATH`   | `./warehouse.db` | Warehouse file (git-ignored)                                   |
-| `CACHE_DB_PATH`       | `./cache.db`     | Existing request cache                                         |
-| `SEC_MIN_INTERVAL_MS` | 110              | Outbound pacing (≤10 req/s)                                    |
-| `LIVE_SEC`            | unset            | Enables network tests                                          |
-| `VANTAGE_ADMIN`       | unset            | `1` enables the local admin action "make this a company" (P5b) |
+| Env var                   | Default             | Purpose                                                               |
+| ------------------------- | ------------------- | --------------------------------------------------------------------- |
+| `SEC_USER_AGENT`          | required            | SEC fair-access identity                                              |
+| `WAREHOUSE_DB_PATH`       | `./warehouse.db`    | Warehouse file (git-ignored)                                          |
+| `CACHE_DB_PATH`           | `./cache.db`        | Existing request cache                                                |
+| `SEC_MIN_INTERVAL_MS`     | 110                 | Outbound pacing (≤10 req/s)                                           |
+| `LIVE_SEC`                | unset               | Enables network tests                                                 |
+| `VANTAGE_ADMIN`           | unset               | `1` enables the local admin action "make this a company" (P5b)        |
+| `VANTAGE_JOB_TIMEOUT_MIN` | 180                 | A warehouse job's time limit (P8 W1)                                  |
+| `VANTAGE_BACKUP_DIR`      | `~/Vantage-backups` | Where `npm run backup` writes (point it at another disk for off-host) |
+| `VANTAGE_ALERT_URL`       | unset               | Dead-man's-switch URL the nightly run pings (`/fail` on a failure)    |
+| `VANTAGE_NOTIFY`          | on (macOS)          | `0` turns off the nightly run's failure notification                  |
 
 ## Performance budgets
 
@@ -317,6 +337,8 @@ lib/entities/make-company.js       "make this a company": review files + import,
 lib/warehouse/job.js               runJob: the one write path (lock, candidate, derived rebuild, validate, publish)
 lib/warehouse/job-state.js         job file paths, the last job's state (read by /api/freshness), process identity
 lib/warehouse/doctor.js            npm run doctor: read-only health checks (scripts/doctor.js)
+lib/warehouse/backup.js            npm run backup: verified copies of the published generation, rotation
+lib/warehouse/nightly.js           npm run nightly: refresh, backup, doctor, alerts (scripts/nightly.js)
 lib/api/admin.js                   POST /api/admin/companies (VANTAGE_ADMIN=1, local only; runs scripts/make-company.js)
 ```
 

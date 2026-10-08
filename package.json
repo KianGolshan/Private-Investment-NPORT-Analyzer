@@ -20,6 +20,8 @@
     "refresh": "node scripts/refresh.js",
     "warehouse": "node scripts/warehouse.js",
     "doctor": "node scripts/doctor.js",
+    "backup": "node scripts/backup.js",
+    "nightly": "node scripts/nightly.js",
     "ingest:ncen": "node scripts/ingest-ncen.js",
     "seed:entities": "node scripts/seed-entities.js",
     "review:aliases": "node scripts/review-aliases.js",

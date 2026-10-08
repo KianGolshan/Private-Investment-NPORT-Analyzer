@@ -661,6 +661,9 @@ test('a failure before the commit point fails the job and still releases the loc
     if (String(f).includes('vantage-curation-')) throw Object.assign(new Error('injected EACCES'), { code: 'EACCES' });
     return realRm(f, ...a);
   };
+  // the stage this test keeps from being removed lands in a directory it removes
+  const tmpEnv = process.env.TMPDIR;
+  process.env.TMPDIR = tmpDir('v03-stage');
   try {
     await assert.rejects(
       runJob(
@@ -674,6 +677,8 @@ test('a failure before the commit point fails the job and still releases the loc
     );
   } finally {
     fs.rmSync = realRm;
+    if (tmpEnv === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = tmpEnv;
   }
   assert.equal(publishedFile(dbPath), target);
   assert.ok(!fs.existsSync(`${dbPath}.lock`), 'lock released');
