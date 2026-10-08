@@ -328,7 +328,15 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
     - smoke 17/17; console clean.
   - **Tests:** backend 659 (627 pass, 31 skipped, 0 fail; new `test/pages.test.js`; the edge-case title check now
     accepts page titles); web 45/45 (new `notices.test.ts`); e2e adds heads and 404s, About and Status, the reload
-    offer, and axe on `/about`, `/status` and a 404 page. CI runs e2e on the push (not run on this Mac).
+    offer, and axe on `/about`, `/status` and a 404 page.
+  - **CI caught four things, all fixed with regression tests; CI is now green on every job (run 37809812736):**
+    - W1's push had failed on Node 22: the stagger timer was unref'd, so a test process could exit mid-switch.
+    - e2e F02: after warm-then-swap, an open tab only noticed new data at its next 5-minute check. Now
+      `/api/freshness` says `switching` and the tab asks again every 2 s until the swap.
+    - `express.static('public')` resolved against the working directory, so og.png and v1's scripts were missing
+      when the server started elsewhere. It now uses the app folder.
+    - The Status page read `/readyz?fresh=1`, which is 503 by design when the data is stale. It now reads
+      `?report=1`, which is always 200, and a process nobody warmed warms itself on the first readiness check.
 
 - **2026-10-08 (P9 W1):** the user approved the P9 plan (readiness assessment, Oracle + Cloudflare, concurrency,
   seamless refresh and updates). W1 built on `v2-p9-deploy`:
