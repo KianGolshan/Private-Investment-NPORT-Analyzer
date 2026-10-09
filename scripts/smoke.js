@@ -6,6 +6,7 @@
 //
 //   node scripts/smoke.js https://vantage.example.com
 //   node scripts/smoke.js http://127.0.0.1:3002 --no-public   # a local server (live routes on)
+//   node scripts/smoke.js http://127.0.0.1:3002 --no-goldens  # a test warehouse (the deploy drill)
 //
 // Goldens (docs/GOLDEN-NUMBERS.md, by company as the app reads them; the
 // by-company totals of A1 and A2 are in GOLDEN-NUMBERS A1 and the P4.5 log in
@@ -43,7 +44,8 @@ const round = (v, places) => Math.round(v * 10 ** places) / 10 ** places;
 
 // fetchImpl: injected by tests. publicSite: the URL is the public deployment
 // (live routes and v1 off); false for a local or development server.
-async function runSmoke(base, { fetchImpl = fetch, publicSite = true } = {}) {
+// goldens: false skips the golden numbers (a test warehouse, deploy/test/drill.sh).
+async function runSmoke(base, { fetchImpl = fetch, publicSite = true, goldens = true } = {}) {
   const root = String(base).replace(/\/$/, '');
   const checks = [];
   const check = (name, ok, detail) => checks.push({ name, ok: !!ok, detail });
@@ -97,7 +99,7 @@ async function runSmoke(base, { fetchImpl = fetch, publicSite = true } = {}) {
       csp ? 'CSP, nosniff and frame-deny present' : 'no Content-Security-Policy'
     );
   });
-  for (const g of GOLDENS)
+  for (const g of goldens ? GOLDENS : [])
     await step(g.name, async () => {
       const r = await get(g.path);
       if (r.status !== 200) return check(g.name, false, `status ${r.status}`);
@@ -137,11 +139,11 @@ async function main() {
   const args = process.argv.slice(2);
   const url = args.find(a => !a.startsWith('--')) || process.env.VANTAGE_PUBLIC_URL;
   if (!url) {
-    console.error('usage: node scripts/smoke.js <url> [--no-public]');
+    console.error('usage: node scripts/smoke.js <url> [--no-public] [--no-goldens]');
     process.exitCode = 2;
     return;
   }
-  const r = await runSmoke(url, { publicSite: !args.includes('--no-public') });
+  const r = await runSmoke(url, { publicSite: !args.includes('--no-public'), goldens: !args.includes('--no-goldens') });
   for (const c of r.checks) console.log(`${c.ok ? 'ok  ' : 'FAIL'} ${c.name}: ${c.detail}`);
   console.log(r.ok ? `smoke passed (${r.checks.length} checks)` : 'smoke FAILED');
   if (!r.ok) process.exitCode = 1;

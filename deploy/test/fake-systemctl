@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# The deploy drill's systemctl (deploy/test/drill.sh): "restart <unit>" stops
+# the unit's server process and starts the current release's server.js with the
+# service environment, as the systemd units do (deploy/systemd).
+set -Eeuo pipefail
+[[ ${1:-} == restart ]] || exit 2
+unit=${2:?unit}
+run=$VANTAGE_DATA/run
+case $unit in
+  vantage@*)
+    port=${unit#vantage@}
+    dir=$VANTAGE_APP/prod
+    build=$VANTAGE_DATA/build-production.env
+    ;;
+  vantage-staging)
+    port=3010
+    dir=$VANTAGE_APP/staging
+    build=$VANTAGE_DATA/build-staging.env
+    ;;
+  *) exit 2 ;;
+esac
+pidf=$run/$unit.pid
+if [[ -f $pidf ]]; then
+  pid=$(cat "$pidf")
+  kill "$pid" 2>/dev/null || true
+  for _ in $(seq 1 50); do
+    kill -0 "$pid" 2>/dev/null || break
+    sleep 0.1
+  done
+fi
+(
+  set -a
+  # shellcheck source=/dev/null
+  . "$VANTAGE_ENV_FILE"
+  # shellcheck source=/dev/null
+  if [[ -f $build ]]; then . "$build"; fi
+  set +a
+  export PORT=$port
+  cd "$dir/current"
+  exec node "$dir/current/server.js"
+) >>"$run/$unit.log" 2>&1 &
+echo $! >"$pidf"

@@ -34,6 +34,31 @@ jobs:
       - run: npm ci
       - run: npm test
 
+  # P9: the deploy scripts (deploy/), checked with shellcheck (preinstalled on
+  # the runner) and bash -n.
+  deploy-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - run: shellcheck --version && shellcheck -x deploy/*.sh deploy/bin/* deploy/test/*.sh deploy/test/fake-systemctl
+      - run: for f in deploy/*.sh deploy/bin/* deploy/test/*.sh; do bash -n "$f"; done
+
+  # P9: the deploy drill: real deploys, an automatic rollback and a manual one,
+  # in a temporary tree with real server processes (deploy/test/drill.sh).
+  deploy-drill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.x
+          cache: npm
+      - run: npm ci
+      - run: bash deploy/test/drill.sh
+
   lint:
     runs-on: ubuntu-latest
     steps:

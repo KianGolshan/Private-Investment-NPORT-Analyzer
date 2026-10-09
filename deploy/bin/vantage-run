@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Runs a command in the production release as the vantage user, with the
+# service environment (P9, docs/DEPLOY.md). Installed as /usr/local/bin/vantage-run.
+#
+#   sudo vantage-run npm run doctor
+#   sudo vantage-run npm run backup -- --restore /var/lib/vantage/incoming/vantage-g32-....db
+#   sudo vantage-run npm run warehouse -- --rollback
+set -Eeuo pipefail
+[[ $# -gt 0 ]] || {
+  echo "usage: sudo vantage-run <command> [args...]" >&2
+  exit 2
+}
+if [[ $(id -un) != vantage ]]; then exec sudo -u vantage -H -- "$0" "$@"; fi
+set -a
+# shellcheck source=/dev/null
+. /etc/vantage/vantage.env
+set +a
+cd /opt/vantage/prod/current
+exec "$@"

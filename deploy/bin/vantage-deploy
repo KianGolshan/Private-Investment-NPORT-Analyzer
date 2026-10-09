@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# The only command the deploy SSH key may run (P9, docs/DEPLOY.md). setup.sh
+# installs it as /usr/local/bin/vantage-deploy and pins the key to it in
+# authorized_keys (command="...", no forwarding, no pty), so GitHub Actions can
+# deploy and do nothing else. Runs as the vantage user.
+#
+#   deploy <production|staging> <40-hex sha | main | staging | rollback>
+#   status <production|staging>
+#
+# The deploy script that runs is the one in the commit being deployed
+# (git show <sha>:deploy/deploy.sh), so a rollback runs its own version.
+# VANTAGE_DEPLOY_DRY_RUN=1 prints the parsed command and stops (tests).
+set -Eeuo pipefail
+
+REPO=${VANTAGE_APP:-/opt/vantage}/repo
+DATA=${VANTAGE_DATA:-/var/lib/vantage}
+
+die() {
+  echo "vantage-deploy: $*" >&2
+  exit 2
+}
+
+# The SSH forced command passes the client's words in SSH_ORIGINAL_COMMAND;
+# run by hand, the arguments. Only letters, digits, '-' and spaces get through.
+cmd=${SSH_ORIGINAL_COMMAND:-$*}
+[[ $cmd =~ ^[A-Za-z0-9\ -]+$ ]] || die "refused: unexpected characters"
+read -r verb target ref extra <<<"$cmd"
+[[ -z ${extra:-} ]] || die "refused: too many words"
+[[ ${target:-} =~ ^(production|staging)$ ]] || die "target must be production or staging"
+
+case $verb in
+  status)
+    [[ -z ${ref:-} ]] || die "status takes only a target"
+    if [[ ${VANTAGE_DEPLOY_DRY_RUN:-} == 1 ]]; then
+      echo "status $target"
+      exit 0
+    fi
+    dir=${VANTAGE_APP:-/opt/vantage}/prod
+    port=3002
+    if [[ $target == staging ]]; then
+      dir=${VANTAGE_APP:-/opt/vantage}/staging
+      port=3010
+    fi
+    echo "release: $(basename "$(readlink -f "$dir/current" 2>/dev/null || echo none)")"
+    echo "previous: $(cat "$DATA/previous-$target" 2>/dev/null || echo none)"
+    curl -fsS "http://127.0.0.1:$port/readyz" || true
+    echo
+    exit 0
+    ;;
+  deploy) ;;
+  *) die "verb must be deploy or status" ;;
+esac
+
+[[ ${ref:-} =~ ^([0-9a-f]{40}|main|staging|rollback)$ ]] || die "ref must be a full commit sha, main, staging or rollback"
+
+if [[ ${VANTAGE_DEPLOY_DRY_RUN:-} == 1 ]]; then
+  echo "deploy $target $ref"
+  exit 0
+fi
+
+git -C "$REPO" fetch --quiet --prune origin
+if [[ $ref == rollback ]]; then
+  sha=$(cat "$DATA/previous-$target" 2>/dev/null || true)
+  [[ $sha =~ ^[0-9a-f]{40}$ ]] || die "no previous release recorded for $target"
+elif [[ $ref == main || $ref == staging ]]; then
+  sha=$(git -C "$REPO" rev-parse --verify "origin/$ref^{commit}")
+else
+  sha=$(git -C "$REPO" rev-parse --verify "$ref^{commit}") || die "unknown commit $ref"
+fi
+
+script=$(mktemp "${TMPDIR:-/tmp}/vantage-deploy-XXXXXX")
+trap 'rm -f "$script"' EXIT
+git -C "$REPO" show "$sha:deploy/deploy.sh" >"$script"
+bash "$script" "$target" "$sha"

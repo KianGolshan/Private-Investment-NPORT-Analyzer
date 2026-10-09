@@ -1,0 +1,34 @@
+# One production app instance per port (P9): vantage@3002 and vantage@3003
+# behind Caddy (deploy/Caddyfile). Restarted one at a time by deploy.sh.
+[Unit]
+Description=Vantage web (port %i)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=vantage
+Group=vantage
+WorkingDirectory=/opt/vantage/prod/current
+EnvironmentFile=/etc/vantage/vantage.env
+# APP_BUILD (the deployed commit), written by deploy.sh
+EnvironmentFile=-/var/lib/vantage/build-production.env
+# per-instance settings, e.g. VANTAGE_WARM_DELAY_MS on the second instance
+EnvironmentFile=-/etc/vantage/instance-%i.env
+Environment=PORT=%i
+ExecStart=/usr/bin/node /opt/vantage/prod/current/server.js
+Restart=always
+RestartSec=2
+TimeoutStopSec=20
+MemoryMax=2G
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/vantage
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+
+[Install]
+WantedBy=multi-user.target

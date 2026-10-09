@@ -9,8 +9,8 @@ module.exports = [
   js.configs.recommended,
   eslintConfigPrettier,
   {
-    // server.js, cache.js, parsers.js, lib/, scripts/, test/ — Node/CommonJS
-    files: ['*.js', 'lib/**/*.js', 'scripts/**/*.js', 'test/**/*.js'],
+    // server.js, cache.js, parsers.js, lib/, scripts/, test/, deploy/ — Node/CommonJS
+    files: ['*.js', 'lib/**/*.js', 'scripts/**/*.js', 'test/**/*.js', 'deploy/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'commonjs',

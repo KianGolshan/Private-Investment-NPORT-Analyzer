@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Restores the warehouse from the newest backup in Cloudflare R2 (P9 restore
+# drill, docs/DEPLOY.md): download, verify its SHA-256, publish it as a new
+# generation, restart the instances. Run as root: sudo vantage-restore [file name]
+set -Eeuo pipefail
+[[ $EUID -eq 0 ]] || {
+  echo "run with sudo" >&2
+  exit 2
+}
+bucket=$(sudo -u vantage -H bash -c 'set -a; . /etc/vantage/vantage.env; echo "${VANTAGE_R2_BUCKET:-vantage-backups}"')
+name=${1:-$(sudo -u vantage -H rclone lsf "r2:$bucket" --include 'vantage-g*.db' | sort -V | tail -n 1)}
+[[ $name =~ ^vantage-g[0-9]+-[0-9TZ]+\.db$ ]] || {
+  echo "no backup found in r2:$bucket (got '$name')" >&2
+  exit 1
+}
+dest=/var/lib/vantage/incoming
+sudo -u vantage mkdir -p "$dest"
+echo "downloading $name"
+sudo -u vantage -H rclone copy "r2:$bucket" "$dest" --include "$name" --include "$name.sha256"
+vantage-run npm run backup -- --restore "$dest/$name"
+systemctl restart vantage@3003 vantage@3002
+echo "restored $name; check: curl -s http://127.0.0.1:8080/readyz"

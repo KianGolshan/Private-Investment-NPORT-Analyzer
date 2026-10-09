@@ -51,10 +51,12 @@ async function main() {
         detail: bad.length ? bad.map(c => `${c.name} ${c.status}: ${c.detail}`).join('; ') : 'all checks ok',
       };
     },
-    // the public site against GOLDEN-NUMBERS (P9), when VANTAGE_PUBLIC_URL is set
+    // the public site against GOLDEN-NUMBERS (P9): VANTAGE_SMOKE_URL (the
+    // server's own proxy, so no bot check at the CDN gets in the way), else
+    // VANTAGE_PUBLIC_URL; skipped when neither is set
     smoke: async () => {
-      const url = process.env.VANTAGE_PUBLIC_URL;
-      if (!url) return { status: 'ok', detail: 'skipped (VANTAGE_PUBLIC_URL is not set)' };
+      const url = process.env.VANTAGE_SMOKE_URL || process.env.VANTAGE_PUBLIC_URL;
+      if (!url) return { status: 'ok', detail: 'skipped (VANTAGE_SMOKE_URL is not set)' };
       const s = await runSmoke(url);
       const bad = s.checks.filter(c => !c.ok);
       return {

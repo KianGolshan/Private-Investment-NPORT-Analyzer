@@ -1,0 +1,9 @@
+[Unit]
+Description=Vantage monthly check on the 3rd at 08:00 New York time
+
+[Timer]
+OnCalendar=*-*-03 08:00:00 America/New_York
+Persistent=true
+
+[Install]
+WantedBy=timers.target

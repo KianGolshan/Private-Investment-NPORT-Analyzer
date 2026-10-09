@@ -1,0 +1,29 @@
+# The nightly run (P8/P9): refresh from the SEC, backup, off-site copy to R2,
+# watch report, doctor, smoke check; pings VANTAGE_ALERT_URL (healthchecks.io).
+[Unit]
+Description=Vantage nightly refresh
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=vantage
+Group=vantage
+WorkingDirectory=/opt/vantage/prod/current
+EnvironmentFile=/etc/vantage/vantage.env
+ExecStart=/usr/bin/node /opt/vantage/prod/current/scripts/nightly.js
+# below the web instances for CPU and disk
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+# past the job's own 3 h limit; the run always ends
+TimeoutStartSec=5h
+MemoryMax=3G
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/vantage /opt/vantage
+
+[Install]
+WantedBy=multi-user.target

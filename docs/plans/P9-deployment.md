@@ -195,6 +195,10 @@ runs on the VM during setup.
 
 ## 5. Your steps (concrete, in order; about 2 hours total, mostly waiting)
 
+> **Built in W3:** the authoritative, step-by-step version with the exact commands is [DEPLOY.md](../DEPLOY.md)
+> part 1. Two changes from this outline: Bot Fight Mode stays **off** (it can challenge the uptime monitor), and
+> GitHub also needs the secret `DEPLOY_KNOWN_HOSTS` and the variable `DEPLOY_ENABLED=true`.
+
 ### A. Accounts (about 40 min)
 
 1. **Cloudflare** (dash.cloudflare.com): sign up. Under **Domain Registration**, buy your domain (~$10/yr, at
@@ -264,7 +268,7 @@ runs on the VM during setup.
 15. **Cloudflare dashboard** (all free):
     - SSL/TLS → Full (strict);
     - Always Use HTTPS on;
-    - Bot Fight Mode on;
+    - Bot Fight Mode off (it can challenge the uptime monitor and API calls);
     - Security → WAF → one rate-limiting rule (e.g. 300 requests per 10 s per IP on `/api/*`, block for 1 min);
     - Caching → Cache Rules: "Respect origin" for `/api/*` and cache everything for `/assets/*`.
 

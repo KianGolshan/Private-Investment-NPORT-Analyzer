@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# The nightly off-site copy (VANTAGE_OFFSITE_CMD, lib/warehouse/nightly.js):
+# mirrors the verified backups (vantage-g<N>-<time>.db and .sha256, 3 kept) to
+# the Cloudflare R2 bucket set up by setup.sh. BACKUP_DIR is set by the nightly run.
+set -Eeuo pipefail
+: "${BACKUP_DIR:?BACKUP_DIR is not set}"
+exec rclone sync "$BACKUP_DIR" "r2:${VANTAGE_R2_BUCKET:-vantage-backups}" \
+  --include 'vantage-g*' --s3-no-check-bucket --retries 3 --stats-one-line -v
