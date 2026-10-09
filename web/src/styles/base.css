@@ -745,3 +745,80 @@ table.data td.wrap {
 .cell-link.neg {
   color: var(--neg);
 }
+
+/* About: readable prose in cards (P9) */
+.prose .card-body h2 {
+  font-size: 17px;
+  margin: 0 0 var(--sp-2);
+}
+.prose .card-body ul {
+  margin: 0;
+  padding-left: 1.2em;
+}
+.prose .card-body li,
+.prose .card-body p {
+  line-height: 1.55;
+  max-width: 78ch;
+  margin: 0 0 var(--sp-2);
+}
+
+/* Notices for an open tab: a new version, new data (P9) */
+.toasts {
+  position: fixed;
+  right: var(--sp-4);
+  bottom: var(--sp-4);
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  max-width: calc(100vw - 2 * var(--sp-4));
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 24px rgba(8, 16, 28, 0.18);
+}
+@media (max-width: 860px) {
+  .toasts {
+    left: var(--sp-4);
+    bottom: calc(var(--sp-4) + 56px); /* above the mobile nav */
+  }
+}
+
+/* The site footer: methodology, status, source (P9; on a phone, the only way to them) */
+.site-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+  max-width: 1480px;
+  margin: var(--sp-6) auto 0;
+  padding: var(--sp-4) 0 0;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  border-top: 1px solid var(--border);
+}
+.site-foot span {
+  margin-left: auto;
+}
+@media (max-width: 860px) {
+  .site-foot span {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+}
+
+/* Status details: label and value, wrapping on a phone */
+table.status-details th,
+table.status-details td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+table.status-details th {
+  width: 30%;
+}

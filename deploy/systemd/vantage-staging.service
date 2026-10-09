@@ -1,0 +1,30 @@
+# Staging (P9): the staging branch on port 3010, behind Cloudflare Access at
+# staging.<domain>. Reads production's warehouse read-only; runs no jobs.
+[Unit]
+Description=Vantage web (staging)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=vantage
+Group=vantage
+WorkingDirectory=/opt/vantage/staging/current
+EnvironmentFile=/etc/vantage/vantage.env
+EnvironmentFile=-/var/lib/vantage/build-staging.env
+Environment=PORT=3010
+Environment=CACHE_DB_PATH=/var/lib/vantage/staging-cache.db
+Environment=VANTAGE_CDN_MAX_AGE=0
+ExecStart=/usr/bin/node /opt/vantage/staging/current/server.js
+Restart=always
+RestartSec=2
+MemoryMax=1G
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/vantage
+RestrictSUIDSGID=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -251,7 +251,7 @@ test('API read-only: a missing or behind warehouse gives 503, never a new file; 
   assert.throws(() => ro.prepare('DELETE FROM filings').run(), /readonly/);
   ro.close();
   const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
-  assert.match(server, /warehouseRouter\(\(\) => openWarehouseReadOnly\(\)(, \{ [\w: ]+ \})?\)/);
+  assert.match(server, /warehouseRouter\(\(\) => openWarehouseReadOnly\(\)(, \{ [\w:, ]+ \})?\)/);
   assert.doesNotMatch(server, /openWarehouse\(/);
   fs.rmSync(dir, { recursive: true, force: true });
 });

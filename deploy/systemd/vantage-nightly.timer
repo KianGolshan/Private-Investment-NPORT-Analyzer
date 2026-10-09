@@ -1,0 +1,11 @@
+[Unit]
+Description=Vantage nightly refresh at 06:15 New York time
+
+[Timer]
+OnCalendar=*-*-* 06:15:00 America/New_York
+# a night missed while the machine was off runs at the next boot
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

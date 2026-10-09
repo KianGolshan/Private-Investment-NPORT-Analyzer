@@ -9,6 +9,7 @@ const { fetchWithRetry } = require('./lib/edgar');
 const { openWarehouseReadOnly } = require('./lib/warehouse/db');
 const { warehouseRouter } = require('./lib/api/warehouse');
 const { adminRouter, adminEnabled, isLocalRequest } = require('./lib/api/admin');
+const pages = require('./lib/api/pages');
 const {
   extractHoldings,
   extractCreditHoldings,
@@ -45,7 +46,15 @@ const cspOf = scripts =>
     "form-action 'self'",
     "frame-ancestors 'none'",
   ].join('; ');
-const CSP = cspOf("'self'");
+// Cloudflare Web Analytics (P9, optional, cookieless): its beacon script and
+// endpoint are allowed only when VANTAGE_ANALYTICS_TOKEN is set.
+const ANALYTICS = pages.analyticsToken(process.env.VANTAGE_ANALYTICS_TOKEN);
+const CSP = ANALYTICS
+  ? cspOf("'self' https://static.cloudflareinsights.com").replace(
+      "connect-src 'self'",
+      "connect-src 'self' https://cloudflareinsights.com"
+    )
+  : cspOf("'self'");
 const LEGACY_CSP = cspOf("'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.sheetjs.com");
 app.disable('x-powered-by');
 app.use((_req, res, next) => {
@@ -78,15 +87,73 @@ const APP_ROUTES = [
   '/explore',
   '/tracked',
   '/compare',
+  '/about',
+  '/status',
 ];
+// v1's page, and its index under public/, are off on the public site (PUBLIC_MODE below).
+const V1_OFF =
+  '<!doctype html><meta charset="utf-8"><title>Vantage</title><p>The v1 page is not part of the public site. ' +
+  '<a href="/">Open Vantage</a>.</p>';
+app.get(['/legacy', '/index.html'], (req, res, next) =>
+  PUBLIC_MODE ? res.status(410).type('html').send(V1_OFF) : next()
+);
 app.get('/legacy', (_req, res) => sendLegacy(res));
-app.get(APP_ROUTES, (_req, res) => (webBuilt() ? res.sendFile(WEB_INDEX) : sendLegacy(res)));
+// The site's own address for canonical and Open Graph URLs: VANTAGE_PUBLIC_URL,
+// else what the request came in on (behind the trusted proxy, its scheme).
+const originOf = req => (process.env.VANTAGE_PUBLIC_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+const readIndex = pages.indexReader(WEB_INDEX);
+// A workspace page: index.html with this page's head (lib/api/pages.js). A
+// company, fund or firm that does not exist answers 404 (the app shows its own
+// not-found view); so does any other unknown page (the fallback at the end).
+function sendPage(req, res, { status = 200 } = {}) {
+  const fixed = pages.STATIC_PAGES[req.path];
+  const meta = status === 200 && !fixed ? warehouseApi.pageMeta(req.path) : null;
+  const notFound = status === 404 || !!meta?.notFound;
+  const head = pages.headTags({
+    title: notFound ? 'Not found' : (fixed?.title ?? meta?.title ?? pages.DEFAULT_TITLE),
+    description: fixed?.description ?? meta?.description ?? pages.DEFAULT_DESCRIPTION,
+    origin: originOf(req),
+    path: req.path,
+    // unknown pages, and unreviewed names (tens of thousands of raw filer labels)
+    noindex: notFound || req.path.startsWith('/name/'),
+    analytics: ANALYTICS,
+  });
+  res
+    .status(notFound ? 404 : 200)
+    .set('Cache-Control', 'no-cache')
+    .type('html')
+    .send(pages.renderIndex(readIndex(), head));
+}
+app.get(APP_ROUTES, (req, res) =>
+  webBuilt() ? sendPage(req, res) : PUBLIC_MODE ? res.status(503).end() : sendLegacy(res)
+);
+app.get('/robots.txt', (req, res) =>
+  res
+    .type('text/plain')
+    .set('Cache-Control', 'public, max-age=3600')
+    .send(pages.robotsTxt(originOf(req)))
+);
+app.get('/sitemap.xml', (req, res) =>
+  res
+    .type('application/xml')
+    .set('Cache-Control', 'public, max-age=3600')
+    .send(pages.sitemapXml(originOf(req), warehouseApi.sitemapEntries()))
+);
 app.use('/assets', express.static(path.join(WEB_DIST, 'assets'), { immutable: true, maxAge: '1y', index: false }));
-app.use(express.static('public', { index: false }));
+// public/ beside this file, whatever the working directory (the e2e server runs from web/)
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 const USER_AGENT = process.env.SEC_USER_AGENT || '';
 const EFFECTIVE_USER_AGENT = USER_AGENT || 'Vantage internal-tool@localhost';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+// The public site (P9): visitors must never cause an SEC request, so v1's live
+// per-filing routes and its page are off; everything the workspace shows comes
+// from the warehouse. Only the nightly job calls the SEC.
+const PUBLIC_MODE = process.env.VANTAGE_PUBLIC === '1';
+// The code version: the ETag on warehouse answers and what open tabs compare
+// to offer a reload after a deploy. Every instance of one deploy must agree,
+// so the deploy sets APP_BUILD (the commit); else this process's start.
+const BUILD = process.env.APP_BUILD || Date.now().toString(36);
 
 // Where the server listens (staff full-stack review R11): loopback unless HOST
 // says otherwise, so the origin is reachable only through a proxy on this host.
@@ -137,6 +204,50 @@ if (!USER_AGENT) {
 // with a warm cache the client fires ~20 requests/second (5 per 250ms), so a
 // 10-issuer Watchlist run at 100 filings each is ~1,000 requests, which the old
 // 200/min cap turned into "Too many requests" errors partway through.
+// Health (P9), before the rate limits: a balancer and an uptime monitor poll
+// these. /healthz: the process answers. /readyz: 200 once this process serves a
+// warmed warehouse, else 503; ?fresh=1 also needs a refresh within
+// VANTAGE_READY_MAX_AGE_HOURS (48) and a last job that did not fail; ?report=1
+// answers 200 with the same body (the status page).
+// /healthz also reports this process's memory and how long a request waited
+// behind synchronous work over the last minute (review R17; scripts/loadtest.js).
+const loopDelay = require('perf_hooks').monitorEventLoopDelay({ resolution: 20 });
+loopDelay.enable();
+setInterval(() => loopDelay.reset(), 60000).unref();
+app.get('/healthz', (_req, res) =>
+  res.set('Cache-Control', 'no-store').json({
+    ok: true,
+    build: BUILD,
+    uptimeS: Math.round(process.uptime()),
+    rssMB: Math.round(process.memoryUsage.rss() / 1048576),
+    loopP99Ms: Math.round(loopDelay.percentile(99) / 1e6),
+    loopMaxMs: Math.round(loopDelay.max / 1e6),
+  })
+);
+app.get('/readyz', (req, res) => {
+  const maxAgeHours = Number(process.env.VANTAGE_READY_MAX_AGE_HOURS) || 48;
+  const r = warehouseApi.readiness({ maxAgeHours });
+  const strict = req.query.fresh === '1' || req.query.fresh === 'true';
+  // ?report=1: always 200 with the same body, for a page that shows it (/status)
+  const report = req.query.report === '1';
+  res
+    .status(report || (strict ? r.fresh : r.ready) ? 200 : 503)
+    .set('Cache-Control', 'no-store')
+    .json({ ...r, build: BUILD });
+});
+
+// The live per-filing routes below call the SEC for each visitor; on the public
+// site they answer 410 (the workspace never calls them; test/public-mode.test.js).
+const LIVE_ROUTES =
+  /^\/api\/(search-nport|parse-nport|search-10q|parse-10q|search-fund|fund-series|fund-series-filings|fund-xray|fund-xray-compare|fund-xray-returns)\/?$/;
+if (PUBLIC_MODE)
+  app.use(LIVE_ROUTES, (_req, res) =>
+    res
+      .status(410)
+      .set('Cache-Control', 'no-store')
+      .json({ error: 'Live SEC lookups are off on the public site; every page answers from the warehouse.' })
+  );
+
 const parsedApiLimit = Number(process.env.API_RATE_LIMIT_PER_MIN);
 const API_RATE_LIMIT_PER_MIN = Number.isFinite(parsedApiLimit) && parsedApiLimit > 0 ? parsedApiLimit : 1500;
 const apiLimiter = rateLimit({
@@ -175,7 +286,7 @@ app.use(
 // names, answered from warehouse.db opened read-only on first use (missing or
 // behind: those routes answer 503, the live routes below keep working). They
 // never call the SEC.
-const warehouseApi = warehouseRouter(() => openWarehouseReadOnly(), { warmOnSwitch: true });
+const warehouseApi = warehouseRouter(() => openWarehouseReadOnly(), { warmOnSwitch: true, build: BUILD });
 app.use('/api', warehouseApi);
 app.locals.warehouseApi = warehouseApi; // scripts/bench.js warms it as start-up does
 // Admin actions ("make this a company"): local, admin-only, run as a job
@@ -407,7 +518,16 @@ function eftsPhrase(term) {
 // Config endpoint — lets the frontend show a warning if user-agent isn't set
 app.get('/api/config', (req, res) => {
   // admin: the "make this a company" action is available to this viewer (lib/api/admin.js).
-  res.json({ userAgentConfigured: !!USER_AGENT, admin: adminEnabled() && isLocalRequest(req) });
+  res.set('Cache-Control', 'no-store').json({
+    userAgentConfigured: !!USER_AGENT,
+    admin: adminEnabled() && isLocalRequest(req),
+    public: PUBLIC_MODE,
+    build: BUILD,
+    // the uptime monitor's public page, linked from /status (P9)
+    statusUrl: /^https:\/\/[^\s"'<>]+$/.test(process.env.VANTAGE_STATUS_URL || '')
+      ? process.env.VANTAGE_STATUS_URL
+      : null,
+  });
 });
 
 // Search for NPORT-P filings matching a security name/ticker
@@ -1193,6 +1313,15 @@ app.get('/api/fund-xray-returns', async (req, res) => {
   }
 });
 
+// Any other page a browser asks for: the workspace's not-found view, as a 404
+// (a crawler then drops the URL). API paths and files keep their plain 404.
+app.use((req, res, next) => {
+  const file = /\.[a-z0-9]+$/i.test(req.path); // a missing asset or file stays a plain 404
+  if (req.method !== 'GET' || req.path.startsWith('/api/') || file || !webBuilt() || !req.accepts('html'))
+    return next();
+  return sendPage(req, res, { status: 404 });
+});
+
 // Only actually bind a port when this file is run directly (`node server.js`
 // / `npm start`) — not when required by a test, so integration tests can
 // drive `app` in-process via supertest without opening a real socket.
@@ -1207,6 +1336,9 @@ if (require.main === module) {
           'reach this port directly.'
       );
     console.log(`   User-Agent: ${EFFECTIVE_USER_AGENT}\n`);
+    // A generation published by the nightly job is switched to without waiting
+    // for a visitor (warm first, then swap; lib/api/warehouse.js).
+    setInterval(() => warehouseApi.checkSwitch(), 15000).unref();
     warehouseApi.warm().then(w => {
       console.log(
         w.error ? `   Warehouse: ${w.error}` : `   Warehouse warmed: ${w.companies} tracked companies in ${w.ms} ms`

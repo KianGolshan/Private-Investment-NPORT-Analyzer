@@ -1,9 +1,11 @@
 # Vantage v2 Status
 
-**Phase:** **P8** (operations), **paused by the user on 2026-10-08**. W1–W3 are **signed off** (2026-10-07..08),
-and `v2-p8-operations` is **merged to `main`** by its PR (the user's yes, 2026-10-08). Everything not built is
-under [Deferred](#deferred), W4 included. Live warehouse: generation 32. A new phase or wave starts on a new branch
-off `main`.
+**Phase:** **P9** (public deployment), on branch `v2-p9-deploy`. The user approved the plan on 2026-10-08
+([plans/P9-deployment.md](plans/P9-deployment.md)): Oracle Cloud Always Free VM, a new domain on Cloudflare, two app
+instances behind Caddy, nightly refresh and auto-deploy. W1 and W2 are signed off. **W3 (deployment as code) is
+built, awaiting sign-off.** Then the user's account and server steps ([DEPLOY.md](DEPLOY.md) part 1) and go-live
+verification. P8 is paused (W1–W3 signed off and merged);
+its open items are under [Deferred](#deferred). Live warehouse: generation 32.
 
 ## Phase tracker
 
@@ -17,7 +19,9 @@ off `main`.
 - [ ] P7: MCP server (deferred)
 - [~] P8: operations. W1 (pre-flight fixes), W2 (backups and nightly) and W3 (reconciliation and watch) are
   signed off and merged. The W4 research and the P8 checkpoint (30 unattended nights) are deferred.
-- [ ] P9: public deployment (deferred)
+- [~] P9: public deployment. W1, W2 signed off 2026-10-08; W3 (deployment as code) built, awaiting sign-off; then
+  the user's setup ([DEPLOY.md](DEPLOY.md)) and go-live checks
+  ([plan](plans/P9-deployment.md))
 
 ## What the app answers now (all from the warehouse, every row with mark date and accession)
 
@@ -216,8 +220,6 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
 - **Watch report gaps (ROADMAP §8):** status changes cover listing evidence (likely IPOs) only. Delistings
   (listed → private) and post-IPO lock-up or PIPE signals are not detected yet; check how real filings label them
   first.
-- **A readiness endpoint apart from liveness** (generation, data age, last job). `/api/freshness` and
-  `npm run doctor` cover it locally; a `/healthz` for a host is a P9 task.
 - **Intermittent single-test failures under heavy load**, none reproduced on rerun:
   - "scope: … post-filter" (2026-10-05);
   - "API goldens: Stripe A5" (2026-10-06);
@@ -277,7 +279,6 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
 ### Phases not started
 
 - **P7: MCP server** (ROADMAP §7; the services exist).
-- **P9: public deployment** (ROADMAP §9; hosting to decide as ADR 0006).
 
 ### Housekeeping
 
@@ -285,21 +286,142 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
 
 ## Next session
 
-> Resume Vantage v2 on `main` (P8 W1–W3 merged; P8 paused 2026-10-08), on a new branch for the next work. Start with the user's answers to
-> "Decisions waiting on the user", then take the next item the user picks from "Deferred". Read CLAUDE.md, this file
-> and docs/ROADMAP.md first.
+> Resume Vantage v2 P9 on `v2-p9-deploy` ([plans/P9-deployment.md](plans/P9-deployment.md)).
+> W1–W3 are built (W3 awaiting sign-off). Next: the user follows [DEPLOY.md](DEPLOY.md) part 1 (accounts, VM,
+> setup.sh, data load, tunnel, GitHub secrets), then go-live verification (DEPLOY.md 1.6 and the plan's §6: smoke,
+> load test at 50/100 users, a nightly under load, a deploy under load, the restore drill, Lighthouse, LinkedIn
+> preview). PR `v2-p9-deploy` → main needs the user's yes. Read CLAUDE.md, this file and the plan first.
 >
 > This Mac has 8 GB of memory: run one heavy job at a time in the foreground, run tests with
 > `--test-concurrency=2`, and ask before a refresh, the e2e suite or the LIVE suite. Gates:
 >
 > - `npm test`, `npm run lint`, `npm run format:check`;
 > - `npm run test:web`, `npm run lint:web`;
-> - `npm run build:web`, then `npm run test:e2e`;
-> - `npm run test:live`.
->
-> Check health with `npm run doctor`.
+> - `npm run build:web`, then `npm run test:e2e`.
 
 ## Log
+
+- **2026-10-08 (P9 W3):** W2 signed off ("continue"). W3 built: deployment as code.
+  - **`deploy/setup.sh`** is the idempotent Ubuntu 24.04 bootstrap:
+    - installs Node 22, Caddy, cloudflared, rclone, fail2ban, unattended upgrades (reboot at 04:00) and swap;
+    - creates the `vantage` user, `/etc/vantage/vantage.env` (640, asked once), the R2 rclone remote, the units,
+      sudoers limited to three restarts, and the first release;
+    - generates a deploy key pinned to a forced command;
+    - `--tunnel` creates the tunnel and the DNS for the apex, `www.`, `staging.` and `ssh.`.
+  - **`deploy/deploy.sh`:**
+    - a git worktree per release, so jobs still record `code_rev` and `curation_rev`;
+    - one review import job when migrations or `data/review` change (it migrates the warehouse);
+    - a one-step `current` switch, then a rolling restart gated on `/readyz`, then the smoke check through Caddy;
+    - automatic rollback; the previous build's chunks are kept 14 days for open tabs; 4 releases are kept.
+    - It runs from the commit being deployed, via `git show <sha>:deploy/deploy.sh`.
+  - **`deploy/bin`:**
+    - `vantage-deploy`, the SSH forced command, accepts only `deploy|status <target> <sha|main|staging|rollback>`;
+      it refused every injection tried;
+    - `vantage-run`, `vantage-offsite` (rclone to R2) and `vantage-restore` (the restore drill).
+  - **Units and proxies:**
+    - `vantage@.service` (3002, 3003; the second warms 60 s later) and `vantage-staging` (3010, read-only on
+      production's warehouse);
+    - nightly at 06:15 New York and monthly on the 3rd, all `ProtectSystem=strict`;
+    - Caddy: least-conn, `/readyz` health checks, the visitor IP from `CF-Connecting-IP` (`client_ip_headers`);
+    - `cloudflared.yml`.
+  - **GitHub:**
+    - `deploy.yml`: after green CI on main (production) or staging; automatic only when the variable
+      `DEPLOY_ENABLED` is `true`; manual runs take any SHA or `rollback`; SSH through Cloudflare Access with a
+      service token;
+    - `dependabot.yml`;
+    - CI jobs `deploy-scripts` (shellcheck) and **`deploy-drill`**, which runs real deploys in a temporary tree with
+      real server processes: a first deploy, a `data/review` change (review import, new generation), a broken
+      release that rolls itself back, `rollback`, and a no-op redeploy.
+  - **Docs:** [DEPLOY.md](DEPLOY.md) (setup, shipping, operating, recovery), ADR 0006 (hosting; Litestream
+    rejected), README "Live site and deployment", CHANGELOG v2.0.0. The plan now points to DEPLOY.md, and Bot Fight
+    Mode stays off.
+  - **Small app changes:** the nightly smoke check reads `VANTAGE_SMOKE_URL` (the server's own Caddy, so no CDN bot
+    check gets in the way); `smoke.js --no-goldens`; the deploy paths can be overridden for the drill only.
+  - **Fixed in review:** a first deploy would have looked like an upgrade (`readlink -f` on a missing link) and run
+    an import. Asset pruning could have deleted an old release's own chunks on rollback.
+  - **CI, run 37872168537, all 7 jobs green.** The deploy drill took 2m15s and passed every check:
+    - a first deploy;
+    - B, with a `data/review` change, ran the import, served a new generation and kept A for rollback;
+    - broken C failed readiness and rolled back to B in 4 s;
+    - `rollback` brought A back;
+    - a no-op redeploy.
+
+    The first drill run hung: the stand-in systemctl's servers inherited the deploy lock's descriptor. Restarts
+    now close fd 9, and the drill's lock wait is 60 s. Shellcheck found one unquoted array split in `deploy.sh`
+    (fixed).
+
+  - **Local:** backend 665 (632 pass, 31 skipped). 2 v1 jsdom tests failed at load about 7 and passed alone (the
+    known load flakes); CI is green.
+
+- **2026-10-08 (P9 W2):** W1 signed off ("continue"). W2 built:
+  - **Open tabs stay current:**
+    - a new deploy shows "A new version of Vantage is available" with Reload (the build from `/api/config`,
+      checked every 5 min and on focus);
+    - a new data version shows "Data updated: filings through …" for 8 s;
+    - a page whose code chunk is gone reloads once, but not without session storage, so it can never loop;
+    - Vite's `vite:preloadError` is handled the same way.
+  - **`/about`:** sources, how the numbers are read (staggered calendars, the 123-day as-of rule, private by company
+    status, marks, change words), how it is checked, known limits, disclaimer and privacy. Counts come from the new
+    `/api/stats`, and the page links GOLDEN-NUMBERS, DATA-QUALITY and ARCHITECTURE on GitHub (the repo is public).
+  - **`/status`:** filings and marks through, the last refresh, the data version, details and readiness, plus an
+    optional `VANTAGE_STATUS_URL` link to the uptime page.
+  - **Link previews** (`lib/api/pages.js`): the server writes each page's title, description, canonical URL and
+    Open Graph and Twitter tags.
+    - A company's description uses its stored stats: Anthropic reads "123 funds reported $18.16B as of Aug 31,
+      2026", the same as company_stats and STATUS.
+    - The image is `public/og.png` (1200×630, no numbers).
+    - Unknown pages, companies, funds and firms answer 404 with `noindex`, and unreviewed `/name/` pages are
+      `noindex`.
+    - `robots.txt` and `sitemap.xml` (static pages, private companies, firms; 520 URLs).
+  - **Optional Cloudflare Web Analytics** (`VANTAGE_ANALYTICS_TOKEN`, validated) adds the beacon and its CSP hosts.
+  - **Nav and footer:** About and Status in the nav. A footer (About · Status · Source code · "Not investment
+    advice") is on every page; on a phone it is the only way to About and Status.
+  - **Verified** in public mode on generation 32:
+    - About and Status in dark and light, at 375 px with no horizontal scroll (the Status table now wraps);
+    - the 404s, robots, sitemap and the og image;
+    - smoke 17/17; console clean.
+  - **Tests:** backend 659 (627 pass, 31 skipped, 0 fail; new `test/pages.test.js`; the edge-case title check now
+    accepts page titles); web 45/45 (new `notices.test.ts`); e2e adds heads and 404s, About and Status, the reload
+    offer, and axe on `/about`, `/status` and a 404 page.
+  - **CI caught four things, all fixed with regression tests; CI is now green on every job (run 37809812736):**
+    - W1's push had failed on Node 22: the stagger timer was unref'd, so a test process could exit mid-switch.
+    - e2e F02: after warm-then-swap, an open tab only noticed new data at its next 5-minute check. Now
+      `/api/freshness` says `switching` and the tab asks again every 2 s until the swap.
+    - `express.static('public')` resolved against the working directory, so og.png and v1's scripts were missing
+      when the server started elsewhere. It now uses the app folder.
+    - The Status page read `/readyz?fresh=1`, which is 503 by design when the data is stale. It now reads
+      `?report=1`, which is always 200, and a process nobody warmed warms itself on the first readiness check.
+
+- **2026-10-08 (P9 W1):** the user approved the P9 plan (readiness assessment, Oracle + Cloudflare, concurrency,
+  seamless refresh and updates). W1 built on `v2-p9-deploy`:
+  - **Public mode** (`VANTAGE_PUBLIC=1`): v1's ten live per-filing routes answer 410 without an SEC request, and
+    `/legacy` and `/index.html` answer 410. `/api/config` gains `public` and `build`, and the nav hides "Private
+    Credit (v1)". The workspace never called these routes (checked by grep).
+  - **Health:** `/healthz` (build, uptime, RSS, event-loop p99/max over the last minute) and `/readyz` (200 once
+    warmed; `?fresh=1` also needs a refresh within 48 h and a last job that did not fail). Both sit outside the rate
+    limits and are `no-store`.
+  - **Seamless data:** a new generation is opened beside the old one and warmed, then swapped in one step. The old
+    one answers meanwhile. `VANTAGE_WARM_DELAY_MS` staggers a second instance, and the server checks for a new
+    generation every 15 s, so an idle instance switches too. A failed open keeps the old generation and retries. Found
+    while testing: an open that threw at once left the switch marked as running forever (fixed, with a regression
+    test).
+  - **CDN:** `VANTAGE_CDN_MAX_AGE` gives warehouse answers `public, max-age=0, must-revalidate, s-maxage=N`.
+    Errors are `no-store` and drop the generation ETag. `APP_BUILD` is one ETag build for every instance.
+  - **Memo** bounded by bytes (`VANTAGE_MEMO_MAX_MB`, 256), with the whole-warehouse tables pinned (R17).
+  - **Off-site backup** (`VANTAGE_OFFSITE_CMD`, e.g. rclone to R2) is a nightly step; a failure is "warn". The doctor
+    counts a recent off-site copy as off-host.
+  - **`scripts/smoke.js`:** health, headers, goldens A1/A2/A4/A5/A6 (by company), admin 403 and public-mode 410s. It
+    is a nightly step when `VANTAGE_PUBLIC_URL` is set.
+  - **`scripts/loadtest.js`:** N visitors over the workspace's real page mix, reading the server's RSS and event-loop
+    delay.
+  - **Verified** on generation 32, in public mode on this Mac:
+    - smoke: 17/17, every golden equal to GOLDEN-NUMBERS;
+    - load test, 10 users for 20 s at load 2.9, warmed: 345 requests, **0 errors**, p50 12 ms, p95 137 ms,
+      p99 201 ms, RSS 314 MB, event-loop max 359 ms;
+    - browser: no v1 link, console clean;
+    - headers: CSP, `s-maxage=300` with ETag `W/"r32-local-p9"`, freshness `no-store`.
+  - **Tests:** backend 653 (621 pass, 31 skipped, 0 fail; 22 new across public-mode, deploy-readiness and backup
+    off-site); web 39/39; lint, format, lint:web and build clean. e2e not run (not asked).
 
 - **2026-10-08:** the user signed off P8 W3 and asked for the PR and merge: `v2-p8-operations` merged to `main`.
 

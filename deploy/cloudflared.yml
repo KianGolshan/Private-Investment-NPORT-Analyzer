@@ -1,0 +1,18 @@
+# Cloudflare Tunnel (P9): the only way in from the internet, outbound from the
+# VM, so no web port is open. setup.sh --tunnel installs it as
+# /etc/cloudflared/config.yml with __TUNNEL_ID__ and __DOMAIN__ filled in.
+tunnel: __TUNNEL_ID__
+credentials-file: /etc/cloudflared/__TUNNEL_ID__.json
+
+ingress:
+  - hostname: __DOMAIN__
+    service: http://127.0.0.1:8080
+  - hostname: www.__DOMAIN__
+    service: http://127.0.0.1:8080
+  # behind Cloudflare Access (your email only): set up in the Zero Trust dashboard
+  - hostname: staging.__DOMAIN__
+    service: http://127.0.0.1:3010
+  # behind Cloudflare Access (your email, or the github-deploy service token)
+  - hostname: ssh.__DOMAIN__
+    service: ssh://127.0.0.1:22
+  - service: http_status:404

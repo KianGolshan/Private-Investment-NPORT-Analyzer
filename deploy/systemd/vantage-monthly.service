@@ -1,0 +1,27 @@
+# The monthly check (P8 W3): reconcile the warehouse with EDGAR's indexes and
+# run the LIVE regression; alerts like the nightly run.
+[Unit]
+Description=Vantage monthly reconciliation and LIVE regression
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=vantage
+Group=vantage
+WorkingDirectory=/opt/vantage/prod/current
+EnvironmentFile=/etc/vantage/vantage.env
+ExecStart=/usr/bin/node /opt/vantage/prod/current/scripts/monthly.js
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+TimeoutStartSec=4h
+MemoryMax=3G
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/vantage /opt/vantage
+
+[Install]
+WantedBy=multi-user.target

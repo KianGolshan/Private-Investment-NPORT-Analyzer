@@ -1,0 +1,84 @@
+name: Deploy
+
+# P9 (docs/DEPLOY.md): a push to main that passes the Test workflow deploys to
+# production; a push to staging deploys to staging.<domain>. "Run workflow"
+# deploys any commit, a branch, or "rollback" (the previous release) by hand.
+# The runner reaches the server over SSH through Cloudflare Access (a service
+# token); the server's key only runs vantage-deploy (deploy/bin).
+on:
+  workflow_run:
+    workflows: [Test]
+    types: [completed]
+    branches: [main, staging]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Where to deploy
+        type: choice
+        options: [production, staging]
+        default: production
+      ref:
+        description: 'A full commit SHA, main, staging, or rollback'
+        required: true
+        default: main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.event_name == 'workflow_dispatch' && inputs.target || (github.event.workflow_run.head_branch == 'main' && 'production' || 'staging') }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # only a green Test run of a push to this repository (never a fork's PR), or a manual run
+    # (and automatic deploys only once the repository variable DEPLOY_ENABLED is
+    # "true", set after the server is up: docs/DEPLOY.md)
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (vars.DEPLOY_ENABLED == 'true' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: ${{ github.event_name == 'workflow_dispatch' && inputs.target || (github.event.workflow_run.head_branch == 'main' && 'production' || 'staging') }}
+    env:
+      TARGET: ${{ github.event_name == 'workflow_dispatch' && inputs.target || (github.event.workflow_run.head_branch == 'main' && 'production' || 'staging') }}
+      REF: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.event.workflow_run.head_sha }}
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+    steps:
+      - name: Check the secrets are set
+        run: |
+          for s in DEPLOY_HOST CF_ACCESS_CLIENT_ID CF_ACCESS_CLIENT_SECRET; do
+            [ -n "${!s}" ] || { echo "::error::secret $s is not set (docs/DEPLOY.md, GitHub secrets)"; exit 1; }
+          done
+      - name: Install cloudflared
+        run: |
+          curl -fsSL -o /usr/local/bin/cloudflared \
+            https://github.com/cloudflare/cloudflared/releases/download/2026.10.0/cloudflared-linux-amd64
+          chmod +x /usr/local/bin/cloudflared
+          cloudflared --version
+      - name: SSH key and host key
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Deploy ${{ env.TARGET }}
+        run: |
+          ssh -i ~/.ssh/deploy -o BatchMode=yes -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 \
+            -o ProxyCommand="cloudflared access ssh --hostname %h --service-token-id $CF_ACCESS_CLIENT_ID --service-token-secret $CF_ACCESS_CLIENT_SECRET" \
+            "vantage@$DEPLOY_HOST" "deploy $TARGET $REF"
+      - name: Summary
+        if: always()
+        env:
+          STATUS: ${{ job.status }}
+        run: |
+          echo "Deploy of \`$REF\` to **$TARGET**: $STATUS" >> "$GITHUB_STEP_SUMMARY"

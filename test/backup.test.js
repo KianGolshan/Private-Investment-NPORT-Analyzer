@@ -288,9 +288,66 @@ test('doctor: the backup check says when there is none, when it is behind, and w
   assert.match(check().detail, /^none in /);
   backup(dbPath, { dir });
   // the test's backup directory is on the same disk as the test warehouse
-  assert.match(check().detail, /not off-host \(set VANTAGE_BACKUP_DIR\)/);
+  assert.match(check().detail, /not off-host \(set VANTAGE_BACKUP_DIR or VANTAGE_OFFSITE_CMD\)/);
   await runJob('curation', () => ({}), { dbPath });
   assert.match(check().detail, /behind the published generation/);
+});
+
+// P9: the off-site copy (VANTAGE_OFFSITE_CMD) after the nightly backup.
+test('off-site copy: unset is skipped; success is recorded and counts as off-host; failure and the time limit warn', async () => {
+  const { runOffsite, lastOffsite } = require('../lib/warehouse/nightly');
+  const { dbPath } = tmpWarehouse();
+  const dir = tmpDir('backups');
+  await runJob('curation', () => ({}), { dbPath });
+  const b = backup(dbPath, { dir });
+  const opts = { tmp: tmpDir('doctor-tmp'), processes: () => [], freeBytes: () => 100 * 1024 ** 3, backups: dir };
+  const check = () => doctor(dbPath, opts).checks.find(c => c.name === 'backup');
+
+  // unset: skipped, nothing recorded
+  let r = await runOffsite(dbPath, { cmd: '', dir, file: b.file, generation: b.generation });
+  assert.deepEqual([r.status, r.detail], ['ok', 'skipped (VANTAGE_OFFSITE_CMD is not set)']);
+  assert.equal(lastOffsite(dbPath), null);
+
+  // a failing command: warn with its last line, nothing recorded, still same-disk
+  r = await runOffsite(dbPath, {
+    cmd: 'echo "bucket not found" >&2; exit 3',
+    dir,
+    file: b.file,
+    generation: b.generation,
+  });
+  assert.deepEqual([r.status, r.detail], ['warn', 'exit code 3: bucket not found']);
+  assert.equal(lastOffsite(dbPath), null);
+  assert.match(check().detail, /not off-host/);
+
+  // the time limit
+  r = await runOffsite(dbPath, { cmd: 'sleep 5', dir, limitMs: 100, generation: b.generation });
+  assert.equal(r.status, 'warn');
+  assert.match(r.detail, /^killed \(SIGKILL\) after the time limit/);
+
+  // success: the command sees BACKUP_DIR and BACKUP_FILE; recorded; the doctor counts it
+  const seen = path.join(tmpDir('offsite'), 'seen.txt');
+  r = await runOffsite(dbPath, {
+    cmd: `printf '%s|%s' "$BACKUP_DIR" "$BACKUP_FILE" > '${seen}'`,
+    dir,
+    file: b.file,
+    generation: b.generation,
+    now: () => new Date(),
+  });
+  assert.deepEqual([r.status, r.detail], ['ok', `copied off-site: generation ${b.generation}`]);
+  assert.equal(fs.readFileSync(seen, 'utf8'), `${dir}|${b.file}`);
+  assert.equal(lastOffsite(dbPath).generation, b.generation);
+  assert.equal(check().status, 'ok');
+  assert.match(check().detail, /copied off-site /);
+
+  // a newer backup than the off-site copy is on the same disk again
+  await runJob('curation', () => ({}), { dbPath });
+  backup(dbPath, { dir });
+  assert.match(check().detail, /not off-host/);
+
+  // an off-site copy older than the stale limit no longer counts
+  const b2 = listBackups(dir)[0];
+  await runOffsite(dbPath, { cmd: 'true', dir, generation: b2.generation, now: () => new Date('2020-01-01') });
+  assert.match(check().detail, /not off-host/);
 });
 
 // R12 (P8 W3): reconciliation with EDGAR, with the index and the re-fetch faked

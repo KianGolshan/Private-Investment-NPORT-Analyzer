@@ -1,6 +1,30 @@
 # Vantage
 
-An internal tool for analyzing SEC NPORT-P filings to track and compare private investment valuations across institutional funds. Search by company name or ticker to see how different funds mark the same asset over time.
+[![Test](https://github.com/KianGolshan/Private-Investment-NPORT-Analyzer/actions/workflows/test.yml/badge.svg)](https://github.com/KianGolshan/Private-Investment-NPORT-Analyzer/actions/workflows/test.yml)
+[![Deploy](https://github.com/KianGolshan/Private-Investment-NPORT-Analyzer/actions/workflows/deploy.yml/badge.svg)](https://github.com/KianGolshan/Private-Investment-NPORT-Analyzer/actions/workflows/deploy.yml)
+
+Private-company holdings, per-share marks and position changes reported by SEC-registered funds in N-PORT filings
+since 2019, by company, share class, fund and firm. Every number links to its filing.
+
+## Live site and deployment
+
+The public site runs on one small VM behind Cloudflare, refreshes from the SEC every night, and deploys `main` on
+every green CI run with zero downtime and automatic rollback ([ADR 0006](docs/decisions/0006-hosting.md)).
+
+```
+Visitors → Cloudflare (TLS, CDN, WAF) → Tunnel → Caddy → two Node instances → SQLite warehouse (read-only generations)
+                                                          nightly job: SEC refresh → validated new generation → R2 backup
+```
+
+- **Runbook:** [docs/DEPLOY.md](docs/DEPLOY.md) covers first setup, shipping changes, operating and recovery.
+  Scripts are in [deploy/](deploy/).
+- **Public mode** (`VANTAGE_PUBLIC=1`): visitors never cause an SEC request. `/healthz` and `/readyz` serve the
+  balancer and the uptime monitor, `/status` shows data freshness, and `/about` the methodology.
+- **Checks:** `node scripts/smoke.js <url>` (golden numbers, headers, public mode) runs after every deploy and every
+  night; `node scripts/loadtest.js <url>` simulates concurrent visitors.
+
+_The original tool: analyzing SEC NPORT-P filings to compare private investment valuations across institutional
+funds. The sections from "What It Does" describe v1's live flow._
 
 > **Vantage v2** answers from an SEC-verified local warehouse: complete N-PORT history since 2019Q4, a nightly refresh
 > from EDGAR published as whole, validated generations, an as-of engine (amendments, exits, dead funds, $0 positions

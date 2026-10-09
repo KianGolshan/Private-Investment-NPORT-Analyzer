@@ -1,0 +1,39 @@
+# Caddy between Cloudflare Tunnel and the two production instances (P9).
+# setup.sh installs it as /etc/caddy/Caddyfile with __DOMAIN__ filled in.
+# Listens on loopback only: the tunnel is the one way in.
+{
+	# Cloudflare's edge sets CF-Connecting-IP to the visitor's address (a client
+	# cannot set it); cloudflared reaches Caddy from loopback. Caddy takes the
+	# visitor's address from it, and the app trusts one hop (TRUST_PROXY=1), so
+	# rate limits are per visitor.
+	servers {
+		trusted_proxies static 127.0.0.1/32 ::1/128
+		client_ip_headers CF-Connecting-IP
+	}
+}
+
+http://:8080 {
+	bind 127.0.0.1
+
+	@www host www.__DOMAIN__
+	redir @www https://__DOMAIN__{uri} permanent
+
+	reverse_proxy 127.0.0.1:3002 127.0.0.1:3003 {
+		lb_policy least_conn
+		# an instance restarting (a deploy) or warming: try the other one
+		lb_try_duration 15s
+		lb_try_interval 250ms
+		health_uri /readyz
+		health_interval 5s
+		health_timeout 3s
+		header_up X-Forwarded-For {client_ip}
+	}
+
+	log {
+		output file /var/log/caddy/vantage.log {
+			roll_size 20MiB
+			roll_keep 5
+		}
+		format json
+	}
+}
