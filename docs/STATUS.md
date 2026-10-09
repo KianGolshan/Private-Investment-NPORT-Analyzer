@@ -317,6 +317,9 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
     second run does nothing; a broken one fails, keeps the previous release and is not retried.
   - **Docs:** DEPLOY.md part 1A (accounts, server with 22/80/443, setup, data, checks, staging through SSH, moving
     to a domain later); the domain path is now 1B; ADR 0006 amendment; README.
+  - **The drill caught a real bug:** auto-deploy loads the service environment (`NODE_ENV=production`), so
+    `npm ci` skipped devDependencies and the release build failed. `deploy.sh` now installs with `--include=dev`,
+    with a test. CI is green on all 7 jobs (run 37877463260), and drill step 6 passes every check.
 
 - **2026-10-08 (P9 W3):** W2 signed off ("continue"). W3 built: deployment as code.
   - **`deploy/setup.sh`** is the idempotent Ubuntu 24.04 bootstrap:
