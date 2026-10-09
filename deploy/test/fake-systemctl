@@ -29,6 +29,9 @@ if [[ -f $pidf ]]; then
   done
 fi
 (
+  # not the deploy lock (fd 9, deploy.sh): a server must never hold it; systemd
+  # starts services without the caller's descriptors, this stand-in must close it
+  exec 9>&-
   set -a
   # shellcheck source=/dev/null
   . "$VANTAGE_ENV_FILE"

@@ -2,8 +2,9 @@
 
 **Phase:** **P9** (public deployment), on branch `v2-p9-deploy`. The user approved the plan on 2026-10-08
 ([plans/P9-deployment.md](plans/P9-deployment.md)): Oracle Cloud Always Free VM, a new domain on Cloudflare, two app
-instances behind Caddy, nightly refresh and auto-deploy. W1 (public-ready server) is signed off. **W2 (seamless client
-and polish) is built, awaiting sign-off.** W3 (deployment files and docs) follows. P8 is paused (W1–W3 signed off and merged);
+instances behind Caddy, nightly refresh and auto-deploy. W1 and W2 are signed off. **W3 (deployment as code) is
+built, awaiting sign-off.** Then the user's account and server steps ([DEPLOY.md](DEPLOY.md) part 1) and go-live
+verification. P8 is paused (W1–W3 signed off and merged);
 its open items are under [Deferred](#deferred). Live warehouse: generation 32.
 
 ## Phase tracker
@@ -18,7 +19,8 @@ its open items are under [Deferred](#deferred). Live warehouse: generation 32.
 - [ ] P7: MCP server (deferred)
 - [~] P8: operations. W1 (pre-flight fixes), W2 (backups and nightly) and W3 (reconciliation and watch) are
   signed off and merged. The W4 research and the P8 checkpoint (30 unattended nights) are deferred.
-- [~] P9: public deployment. W1 signed off 2026-10-08; W2 (client and polish) built, awaiting sign-off; W3 next
+- [~] P9: public deployment. W1, W2 signed off 2026-10-08; W3 (deployment as code) built, awaiting sign-off; then
+  the user's setup ([DEPLOY.md](DEPLOY.md)) and go-live checks
   ([plan](plans/P9-deployment.md))
 
 ## What the app answers now (all from the warehouse, every row with mark date and accession)
@@ -284,11 +286,11 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
 
 ## Next session
 
-> Resume Vantage v2 P9 on `v2-p9-deploy` ([plans/P9-deployment.md](plans/P9-deployment.md)). W1 (public-ready server)
-> and W2 (client and polish) are built; on the user's sign-off build **W3**
-> (`deploy/`: setup.sh, systemd units, Caddyfile, cloudflared config, deploy.sh with rolling restart and rollback; the
-> GitHub Actions deploy workflow; Dependabot; DEPLOY.md, ADR 0006, README). The user's account steps are §5 of the
-> plan. Read CLAUDE.md, this file and the plan first.
+> Resume Vantage v2 P9 on `v2-p9-deploy` ([plans/P9-deployment.md](plans/P9-deployment.md)).
+> W1–W3 are built (W3 awaiting sign-off). Next: the user follows [DEPLOY.md](DEPLOY.md) part 1 (accounts, VM,
+> setup.sh, data load, tunnel, GitHub secrets), then go-live verification (DEPLOY.md 1.6 and the plan's §6: smoke,
+> load test at 50/100 users, a nightly under load, a deploy under load, the restore drill, Lighthouse, LinkedIn
+> preview). PR `v2-p9-deploy` → main needs the user's yes. Read CLAUDE.md, this file and the plan first.
 >
 > This Mac has 8 GB of memory: run one heavy job at a time in the foreground, run tests with
 > `--test-concurrency=2`, and ask before a refresh, the e2e suite or the LIVE suite. Gates:
@@ -298,6 +300,45 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
 > - `npm run build:web`, then `npm run test:e2e`.
 
 ## Log
+
+- **2026-10-08 (P9 W3):** W2 signed off ("continue"). W3 built: deployment as code.
+  - **`deploy/setup.sh`** is the idempotent Ubuntu 24.04 bootstrap:
+    - installs Node 22, Caddy, cloudflared, rclone, fail2ban, unattended upgrades (reboot at 04:00) and swap;
+    - creates the `vantage` user, `/etc/vantage/vantage.env` (640, asked once), the R2 rclone remote, the units,
+      sudoers limited to three restarts, and the first release;
+    - generates a deploy key pinned to a forced command;
+    - `--tunnel` creates the tunnel and the DNS for the apex, `www.`, `staging.` and `ssh.`.
+  - **`deploy/deploy.sh`:**
+    - a git worktree per release, so jobs still record `code_rev` and `curation_rev`;
+    - one review import job when migrations or `data/review` change (it migrates the warehouse);
+    - a one-step `current` switch, then a rolling restart gated on `/readyz`, then the smoke check through Caddy;
+    - automatic rollback; the previous build's chunks are kept 14 days for open tabs; 4 releases are kept.
+    - It runs from the commit being deployed, via `git show <sha>:deploy/deploy.sh`.
+  - **`deploy/bin`:**
+    - `vantage-deploy`, the SSH forced command, accepts only `deploy|status <target> <sha|main|staging|rollback>`;
+      it refused every injection tried;
+    - `vantage-run`, `vantage-offsite` (rclone to R2) and `vantage-restore` (the restore drill).
+  - **Units and proxies:**
+    - `vantage@.service` (3002, 3003; the second warms 60 s later) and `vantage-staging` (3010, read-only on
+      production's warehouse);
+    - nightly at 06:15 New York and monthly on the 3rd, all `ProtectSystem=strict`;
+    - Caddy: least-conn, `/readyz` health checks, the visitor IP from `CF-Connecting-IP` (`client_ip_headers`);
+    - `cloudflared.yml`.
+  - **GitHub:**
+    - `deploy.yml`: after green CI on main (production) or staging; automatic only when the variable
+      `DEPLOY_ENABLED` is `true`; manual runs take any SHA or `rollback`; SSH through Cloudflare Access with a
+      service token;
+    - `dependabot.yml`;
+    - CI jobs `deploy-scripts` (shellcheck) and **`deploy-drill`**, which runs real deploys in a temporary tree with
+      real server processes: a first deploy, a `data/review` change (review import, new generation), a broken
+      release that rolls itself back, `rollback`, and a no-op redeploy.
+  - **Docs:** [DEPLOY.md](DEPLOY.md) (setup, shipping, operating, recovery), ADR 0006 (hosting; Litestream
+    rejected), README "Live site and deployment", CHANGELOG v2.0.0. The plan now points to DEPLOY.md, and Bot Fight
+    Mode stays off.
+  - **Small app changes:** the nightly smoke check reads `VANTAGE_SMOKE_URL` (the server's own Caddy, so no CDN bot
+    check gets in the way); `smoke.js --no-goldens`; the deploy paths can be overridden for the drill only.
+  - **Fixed in review:** a first deploy would have looked like an upgrade (`readlink -f` on a missing link) and run
+    an import. Asset pruning could have deleted an old release's own chunks on rollback.
 
 - **2026-10-08 (P9 W2):** W1 signed off ("continue"). W2 built:
   - **Open tabs stay current:**

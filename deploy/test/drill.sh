@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# check '<condition>' below expands its variables when it runs (eval), on purpose:
+# shellcheck disable=SC2016,SC2034
 # The deploy drill (P9 W3; CI job deploy-drill). Runs the real vantage-deploy
 # and deploy.sh in a temporary tree on Linux, with real server processes over
 # the golden warehouse (a fake systemctl starts them), and checks:
@@ -20,11 +22,14 @@ export VANTAGE_SYSTEMCTL=$SRC/deploy/test/fake-systemctl
 export VANTAGE_DEPLOY_SMOKE_URL=http://127.0.0.1:3002
 export VANTAGE_DEPLOY_SMOKE_ARGS=--no-goldens
 export VANTAGE_DEPLOY_READY_TRIES=30
+export VANTAGE_DEPLOY_LOCK_WAIT=60
 GIT=(git -c user.name=drill -c user.email=drill@example.com -c init.defaultBranch=main)
 
 cleanup() {
   local code=$?
-  for f in "$VANTAGE_DATA"/run/*.pid; do [[ -f $f ]] && kill "$(cat "$f")" 2>/dev/null || true; done
+  for f in "$VANTAGE_DATA"/run/*.pid; do
+    if [[ -f $f ]]; then kill "$(cat "$f")" 2>/dev/null || true; fi
+  done
   if [[ $code -ne 0 ]]; then
     echo "---- deploy.log"
     cat "$VANTAGE_DATA/deploy.log" 2>/dev/null || true

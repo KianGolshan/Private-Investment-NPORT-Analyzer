@@ -45,7 +45,7 @@ else
   SMOKE_URL=${VANTAGE_DEPLOY_SMOKE_URL:-http://127.0.0.1:3010}
 fi
 # --no-goldens only in the drill, whose test warehouse is not the live one
-SMOKE_ARGS=(${VANTAGE_DEPLOY_SMOKE_ARGS:-})
+read -r -a SMOKE_ARGS <<<"${VANTAGE_DEPLOY_SMOKE_ARGS:-}"
 REL=$DIR/releases/$SHA
 LOG=$DATA/deploy.log
 
@@ -57,7 +57,7 @@ fail() {
 
 # One deploy per target at a time; a second waits up to 30 minutes.
 exec 9>"$DATA/deploy-$TARGET.lock"
-flock -w 1800 9 || fail "another $TARGET deploy holds the lock"
+flock -w "${VANTAGE_DEPLOY_LOCK_WAIT:-1800}" 9 || fail "another $TARGET deploy holds the lock"
 
 # (readlink -f prints a path even when the link is missing: check the link first)
 PREV=
@@ -97,10 +97,11 @@ wait_ready() {
 restart_all() {
   local i
   for i in "${!UNITS[@]}"; do
+    # 9>&-: nothing started here may hold the deploy lock
     if [[ -n ${VANTAGE_SYSTEMCTL:-} ]]; then
-      "$VANTAGE_SYSTEMCTL" restart "${UNITS[$i]}"
+      "$VANTAGE_SYSTEMCTL" restart "${UNITS[$i]}" 9>&-
     else
-      sudo /usr/bin/systemctl restart "${UNITS[$i]}"
+      sudo /usr/bin/systemctl restart "${UNITS[$i]}" 9>&-
     fi
     [[ ${FIRST:-} == 1 ]] && continue
     wait_ready "${PORTS[$i]}" || return 1
