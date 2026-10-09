@@ -339,6 +339,19 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
     check gets in the way); `smoke.js --no-goldens`; the deploy paths can be overridden for the drill only.
   - **Fixed in review:** a first deploy would have looked like an upgrade (`readlink -f` on a missing link) and run
     an import. Asset pruning could have deleted an old release's own chunks on rollback.
+  - **CI, run 37872168537, all 7 jobs green.** The deploy drill took 2m15s and passed every check:
+    - a first deploy;
+    - B, with a `data/review` change, ran the import, served a new generation and kept A for rollback;
+    - broken C failed readiness and rolled back to B in 4 s;
+    - `rollback` brought A back;
+    - a no-op redeploy.
+
+    The first drill run hung: the stand-in systemctl's servers inherited the deploy lock's descriptor. Restarts
+    now close fd 9, and the drill's lock wait is 60 s. Shellcheck found one unquoted array split in `deploy.sh`
+    (fixed).
+
+  - **Local:** backend 665 (632 pass, 31 skipped). 2 v1 jsdom tests failed at load about 7 and passed alone (the
+    known load flakes); CI is green.
 
 - **2026-10-08 (P9 W2):** W1 signed off ("continue"). W2 built:
   - **Open tabs stay current:**
