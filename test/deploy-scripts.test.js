@@ -166,3 +166,10 @@ test('the direct edge: Caddy serves HTTPS for the name itself and trusts no forw
   assert.match(auto, /select\(\.name == "Test" and \.head_sha == \$sha and \.conclusion == "success"\)/);
   assert.match(auto, /autodeploy-failed-\$TARGET/);
 });
+
+test('releases install the build tools whatever NODE_ENV the caller has (auto-deploy runs with production)', () => {
+  const d = read('deploy.sh');
+  const installs = d.match(/npm ci [^)]*/g);
+  assert.equal(installs.length, 2);
+  for (const i of installs) assert.match(i, /--include=dev/, i);
+});

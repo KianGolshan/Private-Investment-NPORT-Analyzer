@@ -149,7 +149,10 @@ ANALYTICS=$(ask VANTAGE_ANALYTICS_TOKEN "Cloudflare Web Analytics token (optiona
 # Off-site backups to Cloudflare R2 (free, no domain needed): optional; without
 # them backups stay on this server and the doctor says so.
 R2_ENDPOINT=$(ask VANTAGE_R2_ENDPOINT "R2 endpoint for off-site backups (https://<account-id>.r2.cloudflarestorage.com; Enter to skip)")
-R2_KEY= R2_SECRET= R2_BUCKET= OFFSITE=
+R2_KEY=''
+R2_SECRET=''
+R2_BUCKET=''
+OFFSITE=''
 if [[ -n $R2_ENDPOINT ]]; then
   R2_KEY=$(ask VANTAGE_R2_ACCESS_KEY_ID "R2 access key id")
   R2_SECRET=$(ask VANTAGE_R2_SECRET_ACCESS_KEY "R2 secret access key" secret)
@@ -270,7 +273,7 @@ for target in production staging; do
   sha=$(sudo -u vantage git -C "$APP/repo" rev-parse origin/main)
   first=$(mktemp)
   # as the repository's owner: git refuses a repository owned by another user
-  sudo -u vantage git -C "$APP/repo" show "$sha:deploy/deploy.sh" >"$first"
+  sudo -u vantage git -C "$APP/repo" show "$sha:deploy/deploy.sh" | tee "$first" >/dev/null
   chmod 644 "$first"
   sudo -u vantage -H env FIRST=1 bash "$first" "$target" "$sha"
   rm -f "$first"

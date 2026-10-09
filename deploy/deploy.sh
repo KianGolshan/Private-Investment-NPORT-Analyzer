@@ -135,8 +135,10 @@ if [[ ! -f $REL/.vantage-built ]]; then
   git -C "$REPO" worktree prune
   mkdir -p "$DIR/releases"
   git -C "$REPO" worktree add --force --detach "$REL" "$SHA" >/dev/null
-  (cd "$REL" && npm ci --no-audit --no-fund --loglevel=error)
-  (cd "$REL/web" && npm ci --no-audit --no-fund --loglevel=error)
+  # --include=dev whatever NODE_ENV says (the service environment sets production,
+  # and an auto-deploy runs with it): the build needs Vite, the monthly LIVE run its tools
+  (cd "$REL" && npm ci --include=dev --no-audit --no-fund --loglevel=error)
+  (cd "$REL/web" && npm ci --include=dev --no-audit --no-fund --loglevel=error)
   (cd "$REL" && npm run --silent build:web >/dev/null)
   # this build's own chunks, never pruned below (a rollback to an old release keeps them)
   (cd "$REL/web/dist/assets" && ls -1) >"$REL/.vantage-assets"
