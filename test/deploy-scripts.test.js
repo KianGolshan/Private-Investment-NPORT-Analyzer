@@ -64,6 +64,10 @@ test('the deploy key runs only "deploy <target> <ref>" and "status <target>"', (
 test('the systemd units run scripts that exist, from the release link, as the vantage user', () => {
   const units = fs.readdirSync(path.join(D, 'systemd'));
   assert.deepEqual(units.sort(), [
+    'vantage-autodeploy.service',
+    'vantage-autodeploy.timer',
+    'vantage-duckdns.service',
+    'vantage-duckdns.timer',
     'vantage-monthly.service',
     'vantage-monthly.timer',
     'vantage-nightly.service',
@@ -71,7 +75,17 @@ test('the systemd units run scripts that exist, from the release link, as the va
     'vantage-staging.service',
     'vantage@.service',
   ]);
-  for (const u of units.filter(f => f.endsWith('.service'))) {
+  // the direct edge's helpers run installed scripts, as vantage
+  for (const [u, bin] of [
+    ['vantage-autodeploy.service', 'vantage-autodeploy production'],
+    ['vantage-duckdns.service', 'vantage-duckdns'],
+  ]) {
+    const s = read(`systemd/${u}`);
+    assert.match(s, /^User=vantage$/m, u);
+    assert.match(s, new RegExp(`^ExecStart=/usr/local/bin/${bin}$`, 'm'), u);
+    assert.ok(fs.existsSync(path.join(D, 'bin', bin.split(' ')[0])), `${u}: deploy/bin/${bin}`);
+  }
+  for (const u of units.filter(f => f.endsWith('.service') && !/autodeploy|duckdns/.test(f))) {
     const s = read(`systemd/${u}`);
     assert.match(s, /^User=vantage$/m, u);
     assert.match(s, /^EnvironmentFile=\/etc\/vantage\/vantage\.env$/m, u);
@@ -111,11 +125,12 @@ test('Caddy, the tunnel and deploy.sh agree on ports; setup writes every product
     'SEC_USER_AGENT=',
     'WAREHOUSE_DB_PATH=',
     'VANTAGE_BACKUP_DIR=',
-    'VANTAGE_OFFSITE_CMD="/usr/local/bin/vantage-offsite"',
+    'VANTAGE_OFFSITE_CMD="$OFFSITE"',
+    'OFFSITE=/usr/local/bin/vantage-offsite',
     'VANTAGE_ALERT_URL=',
     'VANTAGE_PUBLIC_URL=',
     'VANTAGE_SMOKE_URL="http://127.0.0.1:8080"',
-    'VANTAGE_CDN_MAX_AGE=',
+    'VANTAGE_CDN_MAX_AGE="$CDN_MAX_AGE"',
   ])
     assert.ok(setup.includes(key), key);
   assert.ok(!/VANTAGE_ADMIN/.test(setup), 'admin actions are never on on the server');
@@ -129,4 +144,32 @@ test('Caddy, the tunnel and deploy.sh agree on ports; setup writes every product
     'VANTAGE_SMOKE_URL',
   ])
     assert.ok(example.includes(k), `.env.example documents ${k}`);
+});
+
+test('the direct edge: Caddy serves HTTPS for the name itself and trusts no forwarded header; setup opens 80/443', () => {
+  const caddy = read('Caddyfile.direct');
+  assert.match(caddy, /^__DOMAIN__ \{$/m, 'a site block for the name (automatic HTTPS)');
+  assert.match(caddy, /reverse_proxy 127\.0\.0\.1:3002 127\.0\.0\.1:3003/);
+  assert.match(caddy, /health_uri \/readyz/);
+  assert.match(caddy, /header_up X-Forwarded-For \{client_ip\}/);
+  assert.doesNotMatch(caddy, /client_ip_headers|trusted_proxies/, 'no proxy in front: never trust a client header');
+  assert.match(caddy, /http:\/\/:8080 \{\s*bind 127\.0\.0\.1/, 'the loopback listener the smoke checks use');
+  assert.match(caddy, /encode zstd gzip/);
+  const setup = read('setup.sh');
+  assert.match(setup, /CADDYFILE=\$SRC\/Caddyfile\.direct/);
+  assert.match(setup, /for port in 80 443; do/);
+  assert.match(setup, /systemctl enable vantage-autodeploy\.timer vantage-duckdns\.timer/);
+  assert.match(setup, /DUCKDNS_TOKEN="\$DUCKDNS"/);
+  assert.match(setup, /sudo -u vantage git -C "\$APP\/repo" show/, 'git show as the repository owner');
+  // auto-deploy needs a green Test run of that exact commit, and remembers a failed one
+  const auto = read('bin/vantage-autodeploy');
+  assert.match(auto, /select\(\.name == "Test" and \.head_sha == \$sha and \.conclusion == "success"\)/);
+  assert.match(auto, /autodeploy-failed-\$TARGET/);
+});
+
+test('releases install the build tools whatever NODE_ENV the caller has (auto-deploy runs with production)', () => {
+  const d = read('deploy.sh');
+  const installs = d.match(/npm ci [^)]*/g);
+  assert.equal(installs.length, 2);
+  for (const i of installs) assert.match(i, /--include=dev/, i);
 });

@@ -3,11 +3,15 @@
 # Ubuntu 24.04 (arm64 or amd64), run as root from a clone of the repository:
 #
 #   sudo bash setup.sh            # packages, user, config, services, first release
-#   sudo bash setup.sh --tunnel   # after `cloudflared tunnel login`: the tunnel and DNS
+#   sudo bash setup.sh --tunnel   # cloudflare edge only, after `cloudflared tunnel login`
 #
-# Asks once for the domain, SEC user agent, healthchecks.io URL and R2 keys and
-# keeps them in /etc/vantage/vantage.env (mode 640, root:vantage); re-running
-# keeps existing answers. Safe to run again after a repository update.
+# Two edges (how visitors reach the server), asked once:
+#   direct      a free DuckDNS name (or any name pointing here); Caddy serves HTTPS
+#               itself on 80/443; the server deploys main on its own (vantage-autodeploy)
+#   cloudflare  your own domain through Cloudflare Tunnel, CDN and Access; GitHub
+#               Actions deploys over SSH (.github/workflows/deploy.yml)
+# Answers are kept in /etc/vantage/vantage.env (mode 640, root:vantage);
+# re-running keeps them. Safe to run again after a repository update.
 set -Eeuo pipefail
 
 REPO_URL=${VANTAGE_REPO_URL:-https://github.com/KianGolshan/Private-Investment-NPORT-Analyzer.git}
@@ -51,6 +55,7 @@ tunnel_setup() {
   local domain id
   domain=$(current VANTAGE_DOMAIN)
   [[ -n $domain ]] || die "run setup.sh without --tunnel first"
+  [[ $(current VANTAGE_EDGE) == cloudflare ]] || die "--tunnel is for the cloudflare edge (this server uses: $(current VANTAGE_EDGE))"
   [[ -f /root/.cloudflared/cert.pem ]] || die "run 'cloudflared tunnel login' first (opens a link to pick $domain)"
   say "Cloudflare Tunnel for $domain"
   if ! cloudflared tunnel info vantage >/dev/null 2>&1; then cloudflared tunnel create vantage; fi
@@ -123,18 +128,40 @@ if [[ ! -d $APP/repo/.git ]]; then sudo -u vantage git clone --quiet "$REPO_URL"
 sudo -u vantage git -C "$APP/repo" fetch --quiet --prune origin
 
 say "Configuration ($ENV_FILE)"
-DOMAIN=$(ask VANTAGE_DOMAIN "Domain (e.g. vantage-example.com, no https://)")
-[[ $DOMAIN =~ ^[a-z0-9.-]+\.[a-z]{2,}$ ]] || die "not a domain: $DOMAIN"
+EDGE=$(ask VANTAGE_EDGE "Edge: 'direct' (free DuckDNS name, no domain) or 'cloudflare' (your own domain)")
+[[ $EDGE =~ ^(direct|cloudflare)$ ]] || die "the edge must be direct or cloudflare, not '$EDGE'"
+if [[ $EDGE == direct ]]; then
+  DOMAIN=$(ask VANTAGE_DOMAIN "Hostname (e.g. vantage-yourname.duckdns.org)")
+else
+  DOMAIN=$(ask VANTAGE_DOMAIN "Domain (e.g. vantage-example.com, no https://)")
+fi
+[[ $DOMAIN =~ ^[a-z0-9.-]+\.[a-z]{2,}$ ]] || die "not a hostname: $DOMAIN"
+DUCKDNS=
+if [[ $DOMAIN == *.duckdns.org ]]; then
+  DUCKDNS=$(ask DUCKDNS_TOKEN "DuckDNS token (shown at the top of duckdns.org after you sign in)" secret)
+  [[ $DUCKDNS =~ ^[0-9a-f-]{36}$ ]] || die "a DuckDNS token looks like 8-4-4-4-12 hex digits"
+fi
 UA=$(ask SEC_USER_AGENT "SEC user agent: your name and email (e.g. Jane Doe jane@example.com)")
 [[ $UA =~ @ ]] || die "the SEC user agent must include an email"
 ALERT=$(ask VANTAGE_ALERT_URL "healthchecks.io ping URL (https://hc-ping.com/...)")
 STATUS_URL=$(ask VANTAGE_STATUS_URL "Public uptime status page URL (optional, Enter to skip)")
 ANALYTICS=$(ask VANTAGE_ANALYTICS_TOKEN "Cloudflare Web Analytics token (optional, Enter to skip)")
-R2_ENDPOINT=$(ask VANTAGE_R2_ENDPOINT "R2 endpoint (https://<account-id>.r2.cloudflarestorage.com)")
-R2_KEY=$(ask VANTAGE_R2_ACCESS_KEY_ID "R2 access key id")
-R2_SECRET=$(ask VANTAGE_R2_SECRET_ACCESS_KEY "R2 secret access key" secret)
-R2_BUCKET=$(ask VANTAGE_R2_BUCKET "R2 bucket name (Enter for vantage-backups)")
-R2_BUCKET=${R2_BUCKET:-vantage-backups}
+# Off-site backups to Cloudflare R2 (free, no domain needed): optional; without
+# them backups stay on this server and the doctor says so.
+R2_ENDPOINT=$(ask VANTAGE_R2_ENDPOINT "R2 endpoint for off-site backups (https://<account-id>.r2.cloudflarestorage.com; Enter to skip)")
+R2_KEY=''
+R2_SECRET=''
+R2_BUCKET=''
+OFFSITE=''
+if [[ -n $R2_ENDPOINT ]]; then
+  R2_KEY=$(ask VANTAGE_R2_ACCESS_KEY_ID "R2 access key id")
+  R2_SECRET=$(ask VANTAGE_R2_SECRET_ACCESS_KEY "R2 secret access key" secret)
+  R2_BUCKET=$(ask VANTAGE_R2_BUCKET "R2 bucket name (Enter for vantage-backups)")
+  R2_BUCKET=${R2_BUCKET:-vantage-backups}
+  OFFSITE=/usr/local/bin/vantage-offsite
+fi
+CDN_MAX_AGE=300
+[[ $EDGE == direct ]] && CDN_MAX_AGE=0 # no shared cache in front
 umask 027
 cat >"$ENV_FILE.tmp" <<EOF
 # Vantage service configuration (written by deploy/setup.sh; secrets: keep private).
@@ -142,16 +169,19 @@ NODE_ENV="production"
 HOST="127.0.0.1"
 TRUST_PROXY="1"
 VANTAGE_PUBLIC="1"
-VANTAGE_CDN_MAX_AGE="300"
+VANTAGE_CDN_MAX_AGE="$CDN_MAX_AGE"
 VANTAGE_NOTIFY="0"
+VANTAGE_EDGE="$EDGE"
 VANTAGE_DOMAIN="$DOMAIN"
+DUCKDNS_TOKEN="$DUCKDNS"
+VANTAGE_GITHUB_REPO="$(sed -E 's#^https://github.com/##; s#\.git$##' <<<"$REPO_URL")"
 VANTAGE_PUBLIC_URL="https://$DOMAIN"
 VANTAGE_SMOKE_URL="http://127.0.0.1:8080"
 SEC_USER_AGENT="$UA"
 WAREHOUSE_DB_PATH="$DATA/warehouse.db"
 CACHE_DB_PATH="$DATA/cache.db"
 VANTAGE_BACKUP_DIR="$DATA/backups"
-VANTAGE_OFFSITE_CMD="/usr/local/bin/vantage-offsite"
+VANTAGE_OFFSITE_CMD="$OFFSITE"
 VANTAGE_ALERT_URL="$ALERT"
 VANTAGE_STATUS_URL="$STATUS_URL"
 VANTAGE_ANALYTICS_TOKEN="$ANALYTICS"
@@ -166,7 +196,7 @@ umask 022
 printf 'VANTAGE_WARM_DELAY_MS="60000"\n' >"$ETC/instance-3003.env"
 # rclone's R2 remote, for the vantage user
 install -d -o vantage -g vantage -m 700 "$DATA/.config" "$DATA/.config/rclone"
-cat >"$DATA/.config/rclone/rclone.conf" <<EOF
+[[ -n $R2_ENDPOINT ]] && cat >"$DATA/.config/rclone/rclone.conf" <<EOF
 [r2]
 type = s3
 provider = Cloudflare
@@ -175,12 +205,16 @@ secret_access_key = $R2_SECRET
 endpoint = $R2_ENDPOINT
 acl = private
 EOF
-chown vantage:vantage "$DATA/.config/rclone/rclone.conf" && chmod 600 "$DATA/.config/rclone/rclone.conf"
+if [[ -f $DATA/.config/rclone/rclone.conf ]]; then
+  chown vantage:vantage "$DATA/.config/rclone/rclone.conf" && chmod 600 "$DATA/.config/rclone/rclone.conf"
+fi
 
 say "Programs, services, Caddy"
-install -m 755 "$SRC/bin/vantage-deploy" "$SRC/bin/vantage-run" "$SRC/bin/vantage-offsite" "$SRC/bin/vantage-restore" /usr/local/bin/
+install -m 755 "$SRC"/bin/vantage-* /usr/local/bin/
 install -m 644 "$SRC"/systemd/*.service "$SRC"/systemd/*.timer /etc/systemd/system/
-sed "s/__DOMAIN__/$DOMAIN/g" "$SRC/Caddyfile" >/etc/caddy/Caddyfile
+CADDYFILE=$SRC/Caddyfile
+[[ $EDGE == direct ]] && CADDYFILE=$SRC/Caddyfile.direct
+sed "s/__DOMAIN__/$DOMAIN/g" "$CADDYFILE" >/etc/caddy/Caddyfile
 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 cat >/etc/sudoers.d/vantage-deploy <<'EOF'
 # deploy.sh restarts the app instances, and nothing else (P9)
@@ -192,11 +226,29 @@ systemctl daemon-reload
 systemd-analyze verify /etc/systemd/system/vantage@.service /etc/systemd/system/vantage-nightly.service \
   /etc/systemd/system/vantage-monthly.service || true
 systemctl enable caddy vantage@3002 vantage@3003 vantage-staging vantage-nightly.timer vantage-monthly.timer
+
+if [[ $EDGE == direct ]]; then
+  say "Direct edge: DuckDNS, ports 80 and 443, auto-deploy"
+  if [[ -n $DUCKDNS ]]; then vantage-duckdns || echo "warning: the DuckDNS update failed; check the name and token"; fi
+  # Oracle's Ubuntu images reject everything but SSH in iptables; open the two
+  # web ports (Let's Encrypt needs 80) and keep them across reboots.
+  for port in 80 443; do
+    iptables -C INPUT -p tcp --dport "$port" -m conntrack --ctstate NEW -j ACCEPT 2>/dev/null ||
+      iptables -I INPUT -p tcp --dport "$port" -m conntrack --ctstate NEW -j ACCEPT
+  done
+  if command -v netfilter-persistent >/dev/null; then netfilter-persistent save; fi
+  if command -v ufw >/dev/null && ufw status | grep -q 'Status: active'; then ufw allow 80/tcp && ufw allow 443/tcp; fi
+  systemctl enable vantage-autodeploy.timer vantage-duckdns.timer
+else
+  systemctl disable --now vantage-autodeploy.timer vantage-duckdns.timer 2>/dev/null || true
+fi
 systemctl restart caddy
 
-say "Deploy key for GitHub Actions (forced command: vantage-deploy only)"
 KEYS=$DATA/.ssh/authorized_keys
-if ! grep -q 'vantage-github-deploy' "$KEYS" 2>/dev/null; then
+if [[ $EDGE == direct ]]; then
+  : # deploys are pulled by vantage-autodeploy: no deploy key
+elif ! grep -q 'vantage-github-deploy' "$KEYS" 2>/dev/null; then
+  say "Deploy key for GitHub Actions (forced command: vantage-deploy only)"
   tmpk=$(mktemp -d)
   ssh-keygen -q -t ed25519 -N '' -C vantage-github-deploy -f "$tmpk/key"
   echo "command=\"/usr/local/bin/vantage-deploy\",no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty $(cat "$tmpk/key.pub")" >>"$KEYS"
@@ -220,19 +272,23 @@ for target in production staging; do
   [[ -L $dir/current ]] && continue
   sha=$(sudo -u vantage git -C "$APP/repo" rev-parse origin/main)
   first=$(mktemp)
-  git -C "$APP/repo" show "$sha:deploy/deploy.sh" >"$first"
+  # as the repository's owner: git refuses a repository owned by another user
+  sudo -u vantage git -C "$APP/repo" show "$sha:deploy/deploy.sh" | tee "$first" >/dev/null
   chmod 644 "$first"
   sudo -u vantage -H env FIRST=1 bash "$first" "$target" "$sha"
   rm -f "$first"
 done
 systemctl start vantage-nightly.timer vantage-monthly.timer
+[[ $EDGE == direct ]] && systemctl start vantage-autodeploy.timer vantage-duckdns.timer
 
 say "Done"
-cat <<EOF
-Next (docs/DEPLOY.md):
-  1. Load the data: copy a backup from your Mac to $DATA/incoming/ (scp), then
-       sudo vantage-run npm run backup -- --restore $DATA/incoming/<file>.db
-       sudo systemctl restart vantage@3003 vantage@3002
-  2. The tunnel: sudo cloudflared tunnel login && sudo bash $SRC/setup.sh --tunnel
-  3. Check: curl -s http://127.0.0.1:8080/readyz && sudo vantage-run npm run doctor
-EOF
+echo "Next (docs/DEPLOY.md):"
+echo "  1. Load the data: copy a backup from your Mac to $DATA/incoming/ (scp), then"
+echo "       sudo vantage-run npm run backup -- --restore $DATA/incoming/<file>.db"
+echo "       sudo systemctl restart vantage@3003 vantage@3002"
+if [[ $EDGE == direct ]]; then
+  echo "  2. Open TCP 80 and 443 to 0.0.0.0/0 in the instance's Oracle security list (VCN), then open https://$DOMAIN"
+else
+  echo "  2. The tunnel: sudo cloudflared tunnel login && sudo bash $SRC/setup.sh --tunnel"
+fi
+echo "  3. Check: curl -s http://127.0.0.1:8080/readyz && sudo vantage-run npm run doctor"

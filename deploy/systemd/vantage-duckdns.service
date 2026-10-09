@@ -1,0 +1,15 @@
+# Keeps the DuckDNS name pointing at this server (the direct edge).
+[Unit]
+Description=Vantage DuckDNS update
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=vantage
+Group=vantage
+ExecStart=/usr/local/bin/vantage-duckdns
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes

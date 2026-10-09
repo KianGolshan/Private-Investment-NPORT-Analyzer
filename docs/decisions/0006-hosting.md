@@ -70,3 +70,21 @@ writes git-tracked files or allows admin actions.
   part 5). That is acceptable for a portfolio site.
 - **Oracle's free-tier terms change** (the A1 allowance was cut in 2026). The Hetzner fallback keeps every step the
   same.
+
+## Amendment (2026-10-09): a free direct edge first
+
+The user chose not to buy a domain yet. A second edge, **direct**, is the starting point
+([DEPLOY.md](../DEPLOY.md) part 1A):
+
+- **A free DuckDNS name.** `vantage-duckdns.timer` keeps it pointing at the server.
+- **Caddy serves HTTPS itself** on 80/443 with automatic Let's Encrypt certificates (`deploy/Caddyfile.direct`).
+  It trusts no forwarded header, since the visitor's address is the connection's.
+- **Pull-based deploys** (`vantage-autodeploy`, every 5 minutes) of `main`'s newest commit once its Test workflow
+  has passed on GitHub's public API. They go through the same `vantage-deploy` and `deploy.sh`, with the same
+  rollback, and need no secrets or inbound SSH. A failed commit is not retried.
+- **Optional R2 backups.** Without them, backups stay on the server and the doctor says so.
+
+What the direct edge gives up: the CDN and the firewall rule (the app's per-visitor rate limits remain), a private
+staging URL (staging is reached through SSH), and a hidden origin. Dynamic-DNS names can be blocked by company web
+filters. Moving to the cloudflare edge is one setting and a re-run of `setup.sh` (DEPLOY.md, "Moving from 1A to a
+domain"). The deploy drill in CI covers auto-deploy too.

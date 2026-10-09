@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# Pull-based deploys (P9, the direct edge; docs/DEPLOY.md part 1A): run every 5
+# minutes by vantage-autodeploy.timer as the vantage user. When main has a new
+# commit whose Test workflow passed on GitHub, it deploys it through
+# vantage-deploy (rolling restart, smoke check, automatic rollback). No secret and
+# no inbound SSH: it reads the public repository and GitHub's public API.
+# A commit whose deploy failed is not retried; the next commit is.
+#
+#   vantage-autodeploy [production|staging]   # staging follows the staging branch
+set -Eeuo pipefail
+
+TARGET=${1:-production}
+[[ $TARGET =~ ^(production|staging)$ ]] || {
+  echo "target must be production or staging" >&2
+  exit 2
+}
+BRANCH=main
+DIR_NAME=prod
+if [[ $TARGET == staging ]]; then
+  BRANCH=staging
+  DIR_NAME=staging
+fi
+APP=${VANTAGE_APP:-/opt/vantage}
+DATA=${VANTAGE_DATA:-/var/lib/vantage}
+ENV_FILE=${VANTAGE_ENV_FILE:-/etc/vantage/vantage.env}
+set -a
+# shellcheck source=/dev/null
+. "$ENV_FILE"
+set +a
+REPO=${VANTAGE_GITHUB_REPO:-KianGolshan/Private-Investment-NPORT-Analyzer}
+API=${VANTAGE_GITHUB_API:-https://api.github.com}
+DEPLOY=${VANTAGE_DEPLOY_BIN:-/usr/local/bin/vantage-deploy}
+
+git -C "$APP/repo" fetch --quiet --prune origin
+sha=$(git -C "$APP/repo" rev-parse --verify --quiet "origin/$BRANCH^{commit}") || exit 0 # no such branch
+current=
+if [[ -L $APP/$DIR_NAME/current ]]; then current=$(basename "$(readlink -f "$APP/$DIR_NAME/current")"); fi
+[[ $sha == "$current" ]] && exit 0
+failed_file=$DATA/autodeploy-failed-$TARGET
+if [[ -f $failed_file && $(cat "$failed_file") == "$sha" ]]; then exit 0; fi
+
+# Has the Test workflow passed for this commit (a push run)? VANTAGE_CI_JSON: a
+# file with the API's answer instead (the deploy drill).
+if [[ -n ${VANTAGE_CI_JSON:-} ]]; then
+  runs=$(cat "$VANTAGE_CI_JSON")
+else
+  runs=$(curl -fsS --max-time 20 -H 'Accept: application/vnd.github+json' \
+    "$API/repos/$REPO/actions/runs?head_sha=$sha&event=push&status=success&per_page=30") || {
+    echo "GitHub API unreachable; trying again next time"
+    exit 0
+  }
+fi
+if ! jq -e --arg sha "$sha" \
+  '[.workflow_runs[]? | select(.name == "Test" and .head_sha == $sha and .conclusion == "success")] | length > 0' \
+  >/dev/null <<<"$runs"; then
+  echo "waiting: the Test workflow has not passed for ${sha:0:12} yet"
+  exit 0
+fi
+
+echo "deploying ${sha:0:12} to $TARGET"
+if SSH_ORIGINAL_COMMAND="deploy $TARGET $sha" "$DEPLOY"; then
+  rm -f "$failed_file"
+else
+  echo "$sha" >"$failed_file"
+  echo "deploy of ${sha:0:12} failed; the previous release is serving (see $DATA/deploy.log)" >&2
+  exit 1
+fi
