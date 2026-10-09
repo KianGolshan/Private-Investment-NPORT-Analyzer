@@ -1,7 +1,13 @@
 # Deploying and running Vantage in public
 
 The runbook for the public site (P9; plan: [plans/P9-deployment.md](plans/P9-deployment.md); decision:
-[ADR 0006](decisions/0006-hosting.md)). Part 1 is done once. Parts 2–4 are day-to-day work. Part 5 covers recovery.
+[ADR 0006](decisions/0006-hosting.md)). Part 1 is done once, in one of two ways:
+
+- **1A, free, no domain:** a free DuckDNS name with HTTPS served by the server itself. $0. Start here.
+- **1B, your own domain:** through Cloudflare (CDN, firewall, private staging, deploys from GitHub). About $10 a
+  year. Move to it later.
+
+Parts 2–4 are day-to-day work. Part 5 covers recovery.
 
 ```
 Visitors ─HTTPS─> Cloudflare: DNS, TLS, CDN, WAF rate rule, Access (staging, ssh)
@@ -19,12 +25,110 @@ Ubuntu 24.04 VM (Oracle Cloud Always Free, 2 OCPU / 12 GB / 100 GB)
   /etc/vantage/vantage.env                    configuration and secrets (root:vantage, 640)
 ```
 
-Cost: the domain (about $10–11 a year). Everything else is on free tiers. If Oracle has no capacity, a Hetzner
-CAX11 (about €5 a month) works with the same steps.
+That picture is 1B. In 1A, visitors reach Caddy directly on port 443 at `https://<name>.duckdns.org`, and the
+server deploys `main` on its own.
+
+Cost:
+
+- 1A: $0. Oracle asks for a card to verify your identity, and nothing is charged.
+- 1B: the domain, about $10–11 a year.
+
+If Oracle has no capacity, a Hetzner CAX11 (about €5 a month) works with the same steps.
 
 ---
 
-## 1. First setup (once, about 2 hours, mostly waiting)
+## 1A. Free start: a DuckDNS name (no domain, about 45 minutes)
+
+Caveats of a free dynamic-DNS name:
+
+- some company networks block or warn on `*.duckdns.org`;
+- DuckDNS has no uptime guarantee;
+- links shared now stop working when you move to a domain (1B).
+
+That makes 1A good for testing and showing people, and 1B the version for your resume.
+
+### 1A.1 Accounts
+
+1. **Oracle Cloud** (cloud.oracle.com): sign up. The card is for identity verification only, and Always Free
+   resources are $0. Choose a home region near you; it cannot be changed later.
+   - Recommended: _Billing → Upgrade to Pay As You Go_. It is still $0 within Always Free, and it stops Oracle from
+     stopping an instance it judges idle.
+   - Add a **budget alert at $1**.
+2. **DuckDNS** (duckdns.org): sign in with GitHub or Google and add a subdomain, e.g. `vantage-yourname`. Keep the
+   **token** shown at the top of the page.
+3. **healthchecks.io** (free, recommended): create a check `vantage-nightly`, period 1 day, grace 6 hours. Keep its
+   **ping URL**. It emails you if a nightly refresh fails or never runs.
+4. Optional, any time later:
+   - **Cloudflare R2** for off-site backups (1.1 step 2). Without it, backups stay on the server.
+   - An uptime monitor (UptimeRobot, free) on `https://<name>.duckdns.org/readyz?fresh=1`.
+
+### 1A.2 The server
+
+1. Create the instance as in **1.2**: Ubuntu 24.04 aarch64, VM.Standard.A1.Flex, 2 OCPU, 12 GB, 100 GB boot
+   volume, and your Mac's SSH public key.
+2. In the instance's subnet **security list**, add ingress rules:
+   - TCP **22** from your home IP;
+   - TCP **80** from `0.0.0.0/0` (Let's Encrypt checks it to issue the certificate);
+   - TCP **443** from `0.0.0.0/0`.
+
+### 1A.3 Setup
+
+```bash
+ssh ubuntu@<server-ip>
+git clone https://github.com/KianGolshan/Private-Investment-NPORT-Analyzer.git ~/vantage-setup
+sudo bash ~/vantage-setup/deploy/setup.sh
+```
+
+| Asked for           | Answer                                           |
+| ------------------- | ------------------------------------------------ |
+| Edge                | `direct`                                         |
+| Hostname            | `vantage-yourname.duckdns.org`                   |
+| DuckDNS token       | from 1A.1                                        |
+| SEC user agent      | `Your Name you@example.com` (an SEC requirement) |
+| healthchecks.io URL | from 1A.1 (Enter to skip)                        |
+| The optional ones   | Enter to skip (status page, analytics, R2)       |
+
+Setup also points the DuckDNS name at the server, opens ports 80 and 443 in the server's firewall, and turns on
+**auto-deploy**. Every 5 minutes the server checks GitHub, and when `main` has a new commit whose CI passed, it
+deploys it: rolling restart, smoke check, automatic rollback. Nothing needs setting up in GitHub.
+
+### 1A.4 The data
+
+As in **1.3**: run `npm run backup` on your Mac, copy the backup with `scp`, run `sudo vantage-run npm run backup
+-- --restore …` on the server, then restart the instances.
+
+### 1A.5 Check and share
+
+1. Open `https://vantage-yourname.duckdns.org`. The first visit may take up to a minute while Caddy gets the
+   certificate.
+2. From your Mac: `node scripts/smoke.js https://vantage-yourname.duckdns.org` passes every check.
+3. Run one nightly by hand: `sudo systemctl start vantage-nightly && journalctl -fu vantage-nightly`. Then check
+   for a green ping on healthchecks.io.
+4. Auto-deploy: merge something to `main`. About 5 minutes after CI passes, `journalctl -u vantage-autodeploy`
+   shows it deployed, and `/status` shows the new app version.
+
+Staging in 1A is not public. Push a `staging` branch, then:
+
+```bash
+sudo -u vantage vantage-deploy deploy staging staging
+```
+
+Open it through SSH: `ssh -L 3010:127.0.0.1:3010 ubuntu@<server-ip>`, then <http://localhost:3010>.
+
+### Moving from 1A to a domain (1B) later
+
+1. Buy the domain on Cloudflare and do the Cloudflare parts of 1.1 (R2 if you like).
+2. On the server, `sudoedit /etc/vantage/vantage.env`:
+   - set `VANTAGE_EDGE="cloudflare"` and `VANTAGE_DOMAIN="<your domain>"`;
+   - empty `DUCKDNS_TOKEN`.
+3. Re-run `sudo bash ~/vantage-setup/deploy/setup.sh`. It installs the Cloudflare Caddyfile, stops auto-deploy and
+   prints a GitHub deploy key.
+4. Do 1.4 (tunnel), 1.5 (GitHub) and 1.6. Then remove the 80/443 rules from the security list.
+5. Update the links you shared.
+
+---
+
+## 1B. With your own domain through Cloudflare (once, about 2 hours, mostly waiting)
 
 ### 1.1 Accounts
 
@@ -63,6 +167,7 @@ CAX11 (about €5 a month) works with the same steps.
 
    | Asked for                   | Example                                       |
    | --------------------------- | --------------------------------------------- |
+   | Edge                        | `cloudflare`                                  |
    | Domain                      | `vantage-example.com`                         |
    | SEC user agent              | `Jane Doe jane@example.com` (SEC requirement) |
    | healthchecks.io ping URL    | `https://hc-ping.com/…`                       |
@@ -165,6 +270,7 @@ or "deployed".
 | Push a branch, open a PR                             | CI: tests, lint, web, e2e, deploy scripts                                                                                                                                                               |
 | Push to `staging` (optional)                         | After CI passes: deployed to `staging.<domain>` (only you can open it)                                                                                                                                  |
 | Merge to `main`                                      | After CI passes: deployed to production. The release is built beside the running one, switched, the instances restart one at a time, and the smoke check runs. A failure puts the previous release back |
+| (1A) Merge to `main`                                 | The server's auto-deploy sees it within 5 minutes of CI passing and deploys it the same way                                                                                                             |
 | Actions → Deploy → Run workflow, ref `rollback`      | The previous release again (it is still on disk: seconds)                                                                                                                                               |
 | Actions → Deploy → Run workflow, any full commit SHA | That commit                                                                                                                                                                                             |
 

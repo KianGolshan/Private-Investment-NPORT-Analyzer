@@ -1,0 +1,15 @@
+# Pull-based deploys (the direct edge): deploys main's newest commit once its
+# Test workflow has passed on GitHub (deploy/bin/vantage-autodeploy).
+[Unit]
+Description=Vantage auto-deploy from main
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=vantage
+Group=vantage
+ExecStart=/usr/local/bin/vantage-autodeploy production
+TimeoutStartSec=45min
+# deploys restart the instances through sudo (sudoers: three restarts only)
+NoNewPrivileges=no

@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Keeps the DuckDNS name pointing at this server (P9, the direct edge): run at
+# setup and every 30 minutes by vantage-duckdns.timer. DuckDNS takes the address
+# the request comes from. Does nothing unless the domain is a *.duckdns.org name
+# and DUCKDNS_TOKEN is set in /etc/vantage/vantage.env.
+set -Eeuo pipefail
+set -a
+# shellcheck source=/dev/null
+. "${VANTAGE_ENV_FILE:-/etc/vantage/vantage.env}"
+set +a
+domain=${VANTAGE_DOMAIN:-}
+[[ $domain == *.duckdns.org && -n ${DUCKDNS_TOKEN:-} ]] || exit 0
+name=${domain%.duckdns.org}
+out=$(curl -fsS --max-time 20 "https://www.duckdns.org/update?domains=$name&token=$DUCKDNS_TOKEN&ip=") || out="unreachable"
+if [[ $out != OK ]]; then
+  echo "DuckDNS update for $domain failed: $out (check the name and token)" >&2
+  exit 1
+fi
+echo "DuckDNS: $domain points at this server"

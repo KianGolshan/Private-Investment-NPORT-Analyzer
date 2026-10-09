@@ -1,11 +1,10 @@
 # Vantage v2 Status
 
-**Phase:** **P9** (public deployment), on branch `v2-p9-deploy`. The user approved the plan on 2026-10-08
-([plans/P9-deployment.md](plans/P9-deployment.md)): Oracle Cloud Always Free VM, a new domain on Cloudflare, two app
-instances behind Caddy, nightly refresh and auto-deploy. W1 and W2 are signed off. **W3 (deployment as code) is
-built, awaiting sign-off.** Then the user's account and server steps ([DEPLOY.md](DEPLOY.md) part 1) and go-live
-verification. P8 is paused (W1–W3 signed off and merged);
-its open items are under [Deferred](#deferred). Live warehouse: generation 32.
+**Phase:** **P9** (public deployment). W1–W3 are merged to `main` (PR #9, 2026-10-09; the merge was the
+sign-off). The user chose a **free start with no domain**: the direct edge (a DuckDNS name, HTTPS from the server,
+pull-based auto-deploy) is built on `v2-p9-duckdns`, awaiting sign-off. Next: the user's steps in
+[DEPLOY.md](DEPLOY.md) part 1A, then go-live checks. The Cloudflare path (1B) stays for when a domain is bought. P8
+is paused; its open items are under [Deferred](#deferred). Live warehouse: generation 32.
 
 ## Phase tracker
 
@@ -300,6 +299,24 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
 > - `npm run build:web`, then `npm run test:e2e`.
 
 ## Log
+
+- **2026-10-09 (P9 direct edge):** the user merged PR #9 to `main` and asked for a free start without a domain.
+  Built on `v2-p9-duckdns`:
+  - **`setup.sh` asks for the edge.**
+    - `direct`: a DuckDNS name plus token, `Caddyfile.direct` (automatic HTTPS on 443, a loopback listener on 8080
+      for smoke checks, compression, HSTS, no trusted forwarded header), iptables opened for 80 and 443, and the
+      auto-deploy and DuckDNS timers. No GitHub deploy key.
+    - `cloudflare`: as before. R2 is optional on both.
+    - Fixed: the first release ran `git show` as root on a repository owned by vantage, which git refuses
+      ("dubious ownership").
+  - **`deploy/bin/vantage-autodeploy`** runs every 5 minutes. It deploys `origin/main` once GitHub's public API
+    shows a successful push run of the Test workflow for that exact commit, through `vantage-deploy`. It skips a
+    commit whose deploy failed.
+  - **`deploy/bin/vantage-duckdns`** keeps the name pointing at the server.
+  - **Drill step 6:** a commit with no green Test run (or only another workflow's) waits; a green one deploys; a
+    second run does nothing; a broken one fails, keeps the previous release and is not retried.
+  - **Docs:** DEPLOY.md part 1A (accounts, server with 22/80/443, setup, data, checks, staging through SSH, moving
+    to a domain later); the domain path is now 1B; ADR 0006 amendment; README.
 
 - **2026-10-08 (P9 W3):** W2 signed off ("continue"). W3 built: deployment as code.
   - **`deploy/setup.sh`** is the idempotent Ubuntu 24.04 bootstrap:

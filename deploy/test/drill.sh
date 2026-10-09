@@ -9,7 +9,9 @@
 #      generation), switches, and records the previous release;
 #   3. a broken commit fails its readiness check and puts the previous release back;
 #   4. "rollback" deploys the recorded previous release again;
-#   5. status reports what runs.
+#   5. status reports what runs;
+#   6. vantage-autodeploy (the direct edge) waits for a green Test run, deploys
+#      main's new commit, does nothing twice, and does not retry a failed one.
 # Needs: bash, git, node with this repository's npm ci, curl, flock (Linux).
 set -Eeuo pipefail
 
@@ -127,5 +129,46 @@ deploy status production | tee "$T/status.txt"
 check 'grep -q "release: $A" "$T/status.txt"' "status names the release"
 deploy deploy production "$A"
 check 'tail -n 1 "$VANTAGE_DATA/deploy.log" | grep -q "nothing to do"' "re-deploying the running commit is a no-op"
+
+step "6. auto-deploy from main (the direct edge)"
+export VANTAGE_DEPLOY_BIN=$SRC/deploy/bin/vantage-deploy VANTAGE_CI_JSON=$T/ci.json
+(
+  cd "$T/work"
+  git checkout -q -B drill-d "$A"
+  echo "drill" >DRILL.md
+  git add DRILL.md
+  "${GIT[@]}" commit -qm "drill: a new commit on main"
+  git push -q origin HEAD:refs/heads/main
+)
+D=$(git -C "$T/work" rev-parse HEAD)
+ci() { printf '{"workflow_runs":[{"name":"%s","head_sha":"%s","conclusion":"%s"}]}' "$1" "$2" "$3" >"$T/ci.json"; }
+ci Test "$D" failure
+bash "$SRC/deploy/bin/vantage-autodeploy" | tee "$T/auto.txt"
+check 'grep -q "waiting: the Test workflow has not passed" "$T/auto.txt" && [[ $(current) == "$A" ]]' "a commit without a green Test run waits"
+ci Lint "$D" success
+bash "$SRC/deploy/bin/vantage-autodeploy" >/dev/null
+check '[[ $(current) == "$A" ]]' "another workflow's success does not count"
+ci Test "$D" success
+bash "$SRC/deploy/bin/vantage-autodeploy"
+check '[[ $(current) == "$D" && $(build_of 3002) == "$D" ]]' "main's green commit is deployed"
+lines=$(wc -l <"$VANTAGE_DATA/deploy.log")
+bash "$SRC/deploy/bin/vantage-autodeploy"
+check '[[ $(wc -l <"$VANTAGE_DATA/deploy.log") == "$lines" ]]' "nothing happens when main is already deployed"
+(
+  cd "$T/work"
+  printf "throw new Error('drill: broken on main');\n" | cat - server.js >server.tmp && mv server.tmp server.js
+  "${GIT[@]}" commit -qam "drill: broken on main"
+  git push -q origin HEAD:refs/heads/main
+)
+E=$(git -C "$T/work" rev-parse HEAD)
+ci Test "$E" success
+if bash "$SRC/deploy/bin/vantage-autodeploy"; then
+  echo "drill FAILED: the broken auto-deploy succeeded" >&2
+  exit 1
+fi
+check '[[ $(current) == "$D" && $(cat "$VANTAGE_DATA/autodeploy-failed-production") == "$E" ]]' "a failed auto-deploy keeps D and remembers E"
+lines=$(wc -l <"$VANTAGE_DATA/deploy.log")
+bash "$SRC/deploy/bin/vantage-autodeploy"
+check '[[ $(wc -l <"$VANTAGE_DATA/deploy.log") == "$lines" ]]' "a failed commit is not retried"
 
 step "passed"
