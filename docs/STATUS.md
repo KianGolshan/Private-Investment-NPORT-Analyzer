@@ -271,8 +271,8 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
 
 - **The first refresh on the server.** The data loaded is from 2026-10-07; `sudo systemctl start vantage-nightly`,
   or wait for the 06:15 New York timer. `/readyz?fresh=1` says "not fresh" until then.
-- **Auto-deploy observed live.** Merging PR #16 and the close-out commits should show a new app version on
-  `/status` within about 10 minutes of green CI (`journalctl -u vantage-autodeploy`).
+- ~~Auto-deploy observed live~~: done 2026-10-14. CI on `main` went green (run 38506208169) and the server
+  deployed `f7b1fa6` by itself within minutes (`/healthz` build).
 - **The plan's §6 checks, not run yet against the live site:**
   - the load test at 50 and 100 users (from the server against `http://127.0.0.1:8080`, or with a raised rate
     limit, because one IP hits the per-visitor limit);
