@@ -142,7 +142,20 @@ test('/api/stats: counts from the tables; the router gives sitemap entries and p
   const app = express().use('/api', router);
   const r = (await request(app).get('/api/stats').expect(200)).body.stats;
   assert.equal(r.filings, db.prepare('SELECT COUNT(*) n FROM filings').get().n);
-  assert.equal(r.privateCompanies, db.prepare("SELECT COUNT(*) n FROM companies WHERE status = 'private'").get().n);
+  // operating companies; fund interests, CLOs and insurance vehicles are counted apart (review F-03)
+  const byCat = Object.fromEntries(
+    db
+      .prepare("SELECT category, COUNT(*) n FROM companies WHERE status = 'private' GROUP BY category")
+      .all()
+      .map(x => [x.category, x.n])
+  );
+  assert.equal(r.privateCompanies, byCat.company);
+  assert.deepEqual(r.privateByCategory, byCat);
+  assert.ok(byCat.fund > 0 && byCat.clo > 0 && byCat.insurance > 0, JSON.stringify(byCat));
+  assert.equal(
+    Object.values(r.privateByCategory).reduce((a, b) => a + b, 0),
+    db.prepare("SELECT COUNT(*) n FROM companies WHERE status = 'private'").get().n
+  );
   assert.equal(r.funds, db.prepare('SELECT COUNT(DISTINCT fund_key) n FROM filings').get().n);
   assert.ok(r.firstFilingDate <= r.newestFilingDate);
   const e = router.sitemapEntries();

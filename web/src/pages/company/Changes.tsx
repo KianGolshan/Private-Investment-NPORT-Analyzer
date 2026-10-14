@@ -61,6 +61,10 @@ export default function Changes({ base, sq, subject, name, newest, openPosition 
       {p && <PeriodEffects pivot={p} name={name} />}
       {act.data && (
         <>
+          <p class="muted small" style={{ margin: 0 }}>
+            Fund filings by their main change, each filing once. The bridge above counts a filing under every step it
+            touched, so a filing that both added and reduced shows there twice and here under Other.
+          </p>
           <div class="kpis">
             <Kpi label="First reported" value={num(counts.new ?? 0)} sub="funds’ first filing with it" />
             <Kpi label="Added" value={num(counts.added ?? 0)} sub="more shares or a new class" />

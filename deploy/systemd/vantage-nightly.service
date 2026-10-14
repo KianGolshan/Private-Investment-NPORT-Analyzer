@@ -18,7 +18,7 @@ IOSchedulingClass=best-effort
 IOSchedulingPriority=7
 # past the job's own 3 h limit; the run always ends
 TimeoutStartSec=5h
-MemoryMax=3G
+MemoryMax=5G
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict

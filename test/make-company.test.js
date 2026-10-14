@@ -79,10 +79,11 @@ test('make this a company: Verily Life Sciences becomes a company with the next 
       .slice(before.length)
       .trim()
       .split('\n')
-      .map(l => l.split(',').slice(0, 6).join(',')),
+      .map(l => l.split(',').slice(0, 7).join(',')),
     [
-      'Verily Life Sciences,private,N,issuer_key,VERILY HEALTH,0',
-      'Verily Life Sciences,private,N,issuer_key,VERILY LIFE SCIENCES,0',
+      // company, status, track, category (blank = an operating company), kind, alias, via_spv
+      'Verily Life Sciences,private,N,,issuer_key,VERILY HEALTH,0',
+      'Verily Life Sciences,private,N,,issuer_key,VERILY LIFE SCIENCES,0',
     ]
   );
   assert.match(

@@ -273,7 +273,11 @@ export default function Compare() {
         />
       </Card>
       {keys.length < 2 ? (
-        <Empty>Add at least two {KINDS.find(k => k.id === rows)!.label.toLowerCase()} to compare.</Empty>
+        <Empty>
+          Add at least two {KINDS.find(k => k.id === rows)!.label.toLowerCase()} to compare, or open an example:{' '}
+          <a href="/compare?rows=company&key=1&key=7&key=2">Anthropic, OpenAI and Databricks</a> ·{' '}
+          <a href="/compare?rows=firm&key=9&key=3&key=8">Capital Group, Fidelity and T. Rowe Price</a>.
+        </Empty>
       ) : (
         <>
           <ErrorBox error={c.error} />

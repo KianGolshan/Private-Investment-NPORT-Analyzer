@@ -47,10 +47,14 @@ export interface Freshness extends Envelope {
   } | null;
 }
 
+/** What a reviewed company is (migration 0022): an operating company, or a fund interest, CLO or insurance vehicle. */
+export type CompanyCategory = 'company' | 'fund' | 'clo' | 'insurance';
+
 export interface Company {
   id: number;
   name: string;
   status: 'private' | 'public';
+  category: CompanyCategory;
   public_since: string | null;
   tracked: boolean;
 }
@@ -412,6 +416,7 @@ export interface TopCompanies extends Envelope {
     rank: number;
     companyId: number;
     name: string;
+    category: CompanyCategory;
     tracked: boolean;
     funds: number;
     value: number;
@@ -890,6 +895,7 @@ export interface Drill extends Envelope, ScopeEcho {
 export interface Mover {
   companyId: number;
   name: string;
+  category?: CompanyCategory;
   startValue: number;
   endValue: number;
   startFunds: number;
@@ -925,6 +931,7 @@ export interface NewlyReported extends Envelope {
   results: {
     companyId: number;
     name: string;
+    category?: CompanyCategory;
     tracked: boolean;
     firstMarkDate: string;
     firstFunds: number;

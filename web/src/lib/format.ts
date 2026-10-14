@@ -43,6 +43,10 @@ export const moneyDelta = (v: number | null | undefined) =>
 
 export const num = (v: number | null | undefined) => (bad(v) ? '—' : int.format(v));
 
+/** "1 fund", "2 funds": a count with its noun in the right number (review F-19). */
+export const count = (n: number | null | undefined, one: string, many = `${one}s`) =>
+  `${num(n ?? 0)} ${n === 1 ? one : many}`;
+
 export const signedNum = (v: number | null | undefined) =>
   bad(v) ? '—' : v === 0 ? '0' : (v > 0 ? '+' : '−') + int.format(Math.abs(v));
 

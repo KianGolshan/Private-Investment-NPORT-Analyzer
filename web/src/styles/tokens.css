@@ -89,7 +89,7 @@
     --border-strong: #3a4656;
     --text: #e6ebf2;
     --text-2: #b2bccb;
-    --text-3: #8591a3;
+    --text-3: #8c98aa; /* ≥ 4.8:1 on every dark surface, group rows included (review F-15) */
     --link: #8db8f2;
     --focus: #6ea1f0;
     --pos: #4ade80;
@@ -128,7 +128,7 @@
   --border-strong: #3a4656;
   --text: #e6ebf2;
   --text-2: #b2bccb;
-  --text-3: #8591a3;
+  --text-3: #8c98aa; /* ≥ 4.8:1 on every dark surface, group rows included (review F-15) */
   --link: #8db8f2;
   --focus: #6ea1f0;
   --pos: #4ade80;

@@ -3,7 +3,8 @@ import { qs, useApi } from '../../api/client';
 import type { FirmBook, Freshness } from '../../api/types';
 import { longDate, moneyC, num } from '../../lib/format';
 import { useParam, useScope } from '../../scope/scope';
-import { ErrorBox, Kpi, Loading, Tabs, WatchButton } from '../../ui/bits';
+import { ErrorBox, isNotFound, Kpi, Loading, Tabs, WatchButton } from '../../ui/bits';
+import NotFound from '../NotFound';
 import { BookOverview } from '../book/BookOverview';
 import { MarksVsOthers } from '../book/MarksVsOthers';
 import { Timeline } from '../book/Timeline';
@@ -34,6 +35,7 @@ export default function Firm() {
   const book = useApi<FirmBook>(Number.isInteger(id) ? `/api/firms/${id}${qs({ date: scope.asof })}` : null);
   const b = book.data;
   const newest = fresh.data?.newestReportDate ?? null;
+  if (isNotFound(book.error)) return <NotFound />;
   return (
     <div class="stack">
       <ErrorBox error={book.error} />

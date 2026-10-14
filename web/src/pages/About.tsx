@@ -7,7 +7,9 @@ export interface WarehouseStats {
   firstFilingDate: string | null;
   newestFilingDate: string | null;
   funds: number;
+  /** Operating companies; the fund interests, CLOs and insurance vehicles are in privateByCategory. */
   privateCompanies: number;
+  privateByCategory?: Partial<Record<'company' | 'fund' | 'clo' | 'insurance', number>>;
   trackedCompanies: number;
   firms: number;
   newestReportDate: string | null;
@@ -48,7 +50,10 @@ export default function About() {
             {s && (
               <li>
                 Today: {num(s.filings)} N-PORT filings from {num(s.funds)} funds, filed {longDate(s.firstFilingDate)} to{' '}
-                {longDate(s.newestFilingDate)}; {num(s.privateCompanies)} private companies, {num(s.firms)} firms.
+                {longDate(s.newestFilingDate)}; {num(s.privateCompanies)} private companies, plus{' '}
+                {num(s.privateByCategory?.fund ?? 0)} fund interests, {num(s.privateByCategory?.clo ?? 0)} CLOs and{' '}
+                {num(s.privateByCategory?.insurance ?? 0)} insurance vehicles that funds report beside them;{' '}
+                {num(s.firms)} firms.
               </li>
             )}
           </ul>
@@ -72,7 +77,8 @@ export default function About() {
             <li>
               <strong>Private</strong> means the company is private, from a reviewed company list. It does not mean
               fair-value Level 3: funds label real private holdings Level 1 or 2 too. After a company lists, its rows
-              are not counted as private holdings.
+              are not counted as private holdings. Funds also report stakes in private-equity funds, CLOs and
+              reinsurance vehicles; these are labeled as such and listed apart from operating companies.
             </li>
             <li>
               <strong>Marks</strong> are the fair values funds report. A per-share mark is the reported value divided by
@@ -99,8 +105,9 @@ export default function About() {
             </li>
             <li>
               <strong>Reconciliation with EDGAR</strong>, monthly: the filings stored are compared with EDGAR’s own
-              indexes, and a sample is fetched again and compared value by value. On 2026-10-08: no stored filing was
-              missing from EDGAR, and none of 300 re-fetched filings had changed.
+              indexes, and a sample is fetched again and compared value by value. The last run, on 2026-10-08, found no
+              stored filing withdrawn from EDGAR and none of 300 re-fetched filings changed. It also found 117 newer
+              filings that EDGAR labels “NT NPORT-P” missing; the nightly catch-up now loads that form too.
             </li>
             <li>
               <strong>Refresh</strong>: new filings load every night as a new, validated version of the data; the{' '}
@@ -133,8 +140,8 @@ export default function About() {
               cannot be traced to a company and are left out.
             </li>
             <li>
-              History is read with today’s reviewed company list: a company that has since listed drops out of earlier
-              periods too.
+              History is read with today’s reviewed company list, in both directions: a company that has since listed
+              drops out of earlier periods, and one that was listed then but is private now is counted in them.
             </li>
             <li>
               Share splits are recognized for standard ratios. An unusual exchange can show as a position change plus a

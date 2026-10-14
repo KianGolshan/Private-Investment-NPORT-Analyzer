@@ -122,7 +122,8 @@ function Topbar({ onSearch }: { onSearch: () => void }) {
   const cycle: Record<ThemePref, ThemePref> = { system: 'light', light: 'dark', dark: 'system' };
   return (
     <header class="topbar">
-      <button class="search-trigger" type="button" onClick={onSearch} aria-label="Search (⌘K)">
+      {/* its name is its visible text, which a voice user can say (WCAG 2.5.3, review F-15) */}
+      <button class="search-trigger" type="button" onClick={onSearch} aria-keyshortcuts="Meta+K Control+K">
         <span aria-hidden="true">⌕</span>
         <span>Search companies, funds, firms…</span>
         <span class="spacer" />

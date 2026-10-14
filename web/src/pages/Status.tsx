@@ -11,7 +11,22 @@ interface Readiness {
   reason: string | null;
   refreshAgeHours: number | null;
   build: string;
+  /** The last scheduled runs (null before the first one). */
+  checks?: Record<'nightly' | 'monthly', RunCheck | null>;
 }
+interface RunCheck {
+  status: 'ok' | 'warn' | 'fail';
+  finishedAt: string;
+  smoke: string | null;
+  reconcile: string | null;
+}
+
+// "ok, Wed, 14 Oct 2026 04:36:52 GMT (golden numbers checked: passed)"
+const runText = (r: RunCheck | null | undefined, step: 'smoke' | 'reconcile', what: string, none: string) =>
+  !r
+    ? none
+    : `${r.status === 'ok' ? 'passed' : r.status === 'warn' ? 'passed with notes' : 'failed'}, ${new Date(r.finishedAt).toUTCString()}` +
+      (r[step] ? ` (${what}: ${r[step] === 'ok' ? 'passed' : r[step]})` : '');
 interface Config {
   public: boolean;
   build: string;
@@ -100,12 +115,33 @@ export default function Status() {
                   <tr>
                     <th scope="row">Companies</th>
                     <td>
-                      {num(stats.privateCompanies)} private, {num(stats.trackedCompanies)} tracked
+                      {num(stats.privateCompanies)} private companies, {num(stats.trackedCompanies)} tracked; plus{' '}
+                      {num(stats.privateByCategory?.fund ?? 0)} fund interests, {num(stats.privateByCategory?.clo ?? 0)}{' '}
+                      CLOs and {num(stats.privateByCategory?.insurance ?? 0)} insurance vehicles
                     </td>
                   </tr>
                   <tr>
                     <th scope="row">Firms</th>
                     <td>{num(stats.firms)}</td>
+                  </tr>
+                </>
+              )}
+              {ready?.checks && (
+                <>
+                  <tr>
+                    <th scope="row">Nightly run</th>
+                    <td>{runText(ready.checks.nightly, 'smoke', 'golden numbers on this site', 'not run yet')}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Monthly EDGAR check</th>
+                    <td>
+                      {runText(
+                        ready.checks.monthly,
+                        'reconcile',
+                        'stored filings against EDGAR',
+                        'not run yet; it runs on the 3rd of each month'
+                      )}
+                    </td>
                   </tr>
                 </>
               )}

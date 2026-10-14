@@ -264,3 +264,35 @@ test('readiness starts the first warm-up itself when nothing has; ready once it 
   await w;
   assert.equal(router.readiness({ now: AFTER_REFRESH }).ready, true);
 });
+
+// Review F-06: /status shows when the scheduled checks last ran and how they
+// ended, from the runs' own records, and nothing else from them.
+test('readiness reports the last nightly and monthly runs: status, time and the check that matters, no details', async () => {
+  const { dbPath } = tmpWarehouse();
+  await runJob('curation', () => ({}), { dbPath });
+  const router = warehouseRouter(() => openWarehouseReadOnly(dbPath), { runsPath: dbPath });
+  await router.warm();
+  assert.deepEqual(router.readiness({ now: AFTER_REFRESH }).checks, { nightly: null, monthly: null }, 'never run');
+  const nightly = {
+    run: 'nightly',
+    startedAt: '2026-10-14T04:32:31Z',
+    finishedAt: '2026-10-14T04:36:52Z',
+    status: 'warn',
+    steps: [
+      { name: 'refresh', status: 'ok', detail: 'published' },
+      { name: 'backup', status: 'ok', detail: 'backed up: /var/lib/vantage/backups/secret-path.db' },
+      { name: 'smoke', status: 'ok', detail: '17 checks passed' },
+    ],
+  };
+  fs.writeFileSync(`${dbPath}.nightly.json`, JSON.stringify(nightly));
+  fs.writeFileSync(`${dbPath}.monthly.json`, '{ not json');
+  const r = router.readiness({ now: AFTER_REFRESH });
+  assert.deepEqual(r.checks, {
+    nightly: { status: 'warn', finishedAt: '2026-10-14T04:36:52Z', smoke: 'ok', reconcile: null },
+    monthly: null,
+  });
+  assert.doesNotMatch(JSON.stringify(r), /secret-path|backups/);
+  // a run still going (no finishedAt) is not reported as a result
+  fs.writeFileSync(`${dbPath}.monthly.json`, JSON.stringify({ run: 'monthly', status: 'running', steps: [] }));
+  assert.equal(router.readiness({ now: AFTER_REFRESH }).checks.monthly, null);
+});

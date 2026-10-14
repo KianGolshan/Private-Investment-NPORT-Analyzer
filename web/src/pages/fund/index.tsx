@@ -3,7 +3,8 @@ import { useApi } from '../../api/client';
 import type { ChangeEvent, Envelope, Freshness, FundFilings, FundInfo } from '../../api/types';
 import { longDate, moneyC, num } from '../../lib/format';
 import { useParam } from '../../scope/scope';
-import { Badge, Card, ErrorBox, FilingRef, Kpi, Loading, Tabs, WatchButton } from '../../ui/bits';
+import { Badge, Card, ErrorBox, FilingRef, isNotFound, Kpi, Loading, Tabs, WatchButton } from '../../ui/bits';
+import NotFound from '../NotFound';
 import { ChangesTable } from '../../ui/ChangesTable';
 import { DataTable } from '../../ui/DataTable';
 import { BookOverview } from '../book/BookOverview';
@@ -41,6 +42,7 @@ export default function Fund() {
   const d = f.data;
   const name = d ? d.fund.seriesName || d.fund.registrant : key;
   const newest = fresh.data?.newestReportDate ?? null;
+  if (isNotFound(f.error)) return <NotFound />;
   return (
     <div class="stack">
       <ErrorBox error={f.error} />
