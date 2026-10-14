@@ -348,3 +348,22 @@ LinkedIn, a personal website and a resume. It refreshes itself nightly from the 
 
 **Rollback:** keep the previous image tag deployable. The warehouse is independent of app deploys (it
 lives on the volume and in the replica), so rolling back the app never touches data.
+
+---
+
+## Phase 10: launch review remediation (2026-10-13; review on the live site, user said "fix everything")
+
+**Entry gate:** the top-to-bottom review of the live site (20 findings F-01..F-20, graded B; the report is a private
+artifact). Decisions by the user: Oracle Pay As You Go (done by the user), off-site backups "if easy" (Oracle Object
+Storage, the user's clicks pending), keep fund interests and CLOs labeled apart, no domain for now, v1 and Private
+Credit kept outside the live project, load test after the heavy-route cap is live.
+
+| Wave   | Scope                                                                                                                                                                                                                                                                                                                   | State                                    |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| **W0** | On the server: the first nightly (it ran out of memory; fixed with a heap ceiling and run again: generation 34), key-only SSH without root, rpcbind off, Dependabot #17–#20 merged                                                                                                                                      | **Done 2026-10-14**                      |
+| **W1** | v1 removed (tag `v1-archive`), heavy-route guard and headers, company categories (migration 0022) with Market defaulting to operating companies, CLO families and firm labels, two listings, nightly heap and crash wording, `/status` checks, UI and wording fixes (F-03..F-19), off-site backup to Oracle or R2, docs | Built on `v2-review-fixes`; sign-off due |
+| W2     | After the merge: the load test at 50 and 100 users, the off-site bucket (user's clicks), 14 unattended nights                                                                                                                                                                                                           | Waiting on W1                            |
+
+**Deferred from the review:** class labels such as "Indirect via ANTHROPIC SERIES H 1 PREFERRED STOCK" (changing them
+re-keys share classes, so it needs a warehouse-wide diff first); a domain (the user's call); the major upgrades
+(Express 5, Preact 11, TypeScript 7), one at a time.

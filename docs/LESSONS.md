@@ -1,6 +1,7 @@
 # Lessons (how we work)
 
 The rules we learned building v2; the stories behind each are in [archive/LESSONS-full.md](archive/LESSONS-full.md).
+Numbering restarts in "Running jobs" and "Working with the user"; code and docs cite those numbers, so they stay.
 Data traps are in [DATA-QUALITY.md](DATA-QUALITY.md). Numbers are stable: code and docs cite them.
 
 ## Verifying numbers
@@ -62,6 +63,13 @@ Data traps are in [DATA-QUALITY.md](DATA-QUALITY.md). Numbers are stable: code a
 39. **Metadata travels with the data it labels.** An export's Source came from a separate "latest" fetch (V07);
     display and export disagreed on hidden values (V08). Labels come from the same response as the rows, and one
     function decides what a cell shows and what it exports.
+40. **The first run on a new machine is a test, not a formality.** The server's first nightly ran out of memory: Node
+    sizes its heap from the service's memory cap (half of `MemoryMax`), which the Mac never had, and the crash was
+    then reported as "the time limit". Give long jobs an explicit heap, report how a child ended in words, and watch
+    the first scheduled run of anything new (2026-10-14).
+41. **A label is a claim; check it against what it groups.** "Private companies" held CLO notes and fund stakes, a
+    CLO "company" named after one vintage held six, and the firm "Boston" joined two unrelated advisers by a shared
+    word. Before showing a group's name, read the filer keys and titles behind it (traps 60–62).
 
 ## Running jobs
 
