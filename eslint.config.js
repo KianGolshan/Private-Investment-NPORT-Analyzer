@@ -4,12 +4,12 @@ const eslintConfigPrettier = require('eslint-config-prettier');
 
 module.exports = [
   {
-    ignores: ['node_modules/**', 'public/index.html', 'cache.db*', 'warehouse.db*', 'web/**'],
+    ignores: ['node_modules/**', 'cache.db*', 'warehouse.db*', 'web/**'],
   },
   js.configs.recommended,
   eslintConfigPrettier,
   {
-    // server.js, cache.js, parsers.js, lib/, scripts/, test/, deploy/ — Node/CommonJS
+    // server.js, parsers.js, lib/, scripts/, test/, deploy/ — Node/CommonJS
     files: ['*.js', 'lib/**/*.js', 'scripts/**/*.js', 'test/**/*.js', 'deploy/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
@@ -21,27 +21,7 @@ module.exports = [
     rules: {
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
       // Several call sites deliberately swallow a failure they can't act on
-      // (e.g. an optional /api/config check at boot) — see cache.js/app.js.
-      'no-empty': ['error', { allowEmptyCatch: true }],
-    },
-  },
-  {
-    // public/app.js — browser, plus the CDN-loaded globals it relies on
-    // (Chart.js, SheetJS, jsPDF) that have no local import/require.
-    files: ['public/**/*.js'],
-    languageOptions: {
-      ecmaVersion: 2022,
-      sourceType: 'script',
-      globals: {
-        ...globals.browser,
-        Chart: 'readonly',
-        XLSX: 'readonly',
-      },
-    },
-    rules: {
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
-      // localStorage access (watchlist) intentionally degrades silently if
-      // unavailable (e.g. private browsing) — see getWatchlist/saveWatchlist.
+      // (e.g. an optional /api/config check at boot).
       'no-empty': ['error', { allowEmptyCatch: true }],
     },
   },

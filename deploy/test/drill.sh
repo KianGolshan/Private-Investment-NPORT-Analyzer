@@ -72,7 +72,6 @@ HOST="127.0.0.1"
 VANTAGE_PUBLIC="1"
 SEC_USER_AGENT="Vantage deploy drill drill@example.com"
 WAREHOUSE_DB_PATH="$VANTAGE_DATA/warehouse.db"
-CACHE_DB_PATH="$VANTAGE_DATA/cache.db"
 EOF
 (cd "$SRC" && WAREHOUSE=$VANTAGE_DATA/warehouse.db node deploy/test/make-warehouse.js)
 A=$(git -C "$T/work" rev-parse HEAD)

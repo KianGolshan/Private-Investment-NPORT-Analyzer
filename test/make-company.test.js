@@ -210,50 +210,6 @@ test('admin job: the child process runs to its end on a warehouse file and repor
   }
 });
 
-test('the page: a local admin sees "Make this a company" on an unreviewed name, and lands on the new company', async () => {
-  const { loadApp } = require('./helpers/loadApp');
-  const { jsonResponse } = require('./helpers/fakes');
-  const { warehouseRouter } = require('../lib/api/warehouse');
-  const db = reviewedWarehouse();
-  db.prepare("INSERT INTO refresh_runs (started_at, finished_at, status) VALUES ('a', 'b', 'ok')").run();
-  const dir = reviewCopy();
-  const app = express();
-  app.use(
-    '/api',
-    warehouseRouter(() => db)
-  );
-  app.use('/api/admin', adminRouter({ enabled: () => true, runJob: async args => makeCompany(db, { ...args, dir }) }));
-  const posts = [];
-  const fetchImpl = async (url, init = {}) => {
-    if (url === '/api/config') return jsonResponse({ userAgentConfigured: true, admin: true });
-    const req =
-      init.method === 'POST'
-        ? request(app).post(url).set(init.headers).send(JSON.parse(init.body))
-        : request(app).get(url);
-    if (init.method === 'POST') posts.push(JSON.parse(init.body));
-    const r = await req;
-    return jsonResponse(r.body, { ok: r.status < 400, status: r.status });
-  };
-  const { window, document } = await loadApp({ fetchImpl, url: 'http://localhost/name/VERILY%20HEALTH' });
-  await new Promise(r => window.setTimeout(r, 150));
-  assert.ok(document.getElementById('makeCompanyBtn'), 'the admin form is on the page');
-  assert.equal(document.getElementById('makeCompanyName').value, 'VERILY LIFE SCIENCES LLC');
-  document.getElementById('makeCompanyName').value = 'Verily Life Sciences';
-  await window.makeThisACompany();
-  await new Promise(r => window.setTimeout(r, 150));
-  assert.deepEqual(posts, [{ key: 'VERILY HEALTH', name: 'Verily Life Sciences', status: 'private', track: 'N' }]);
-  assert.match(window.location.pathname, /^\/company\/\d+-verily-life-sciences$/);
-  assert.match(document.getElementById('companyContainer').textContent, /Verily Life Sciences\s*Private/);
-
-  // Not an admin: no form.
-  const plain = await loadApp({
-    fetchImpl: async url => (url === '/api/config' ? jsonResponse({ admin: false }) : fetchImpl(url)),
-    url: 'http://localhost/name/APPNEXUS',
-  });
-  await new Promise(r => plain.window.setTimeout(r, 150));
-  assert.equal(plain.document.getElementById('makeCompanyBtn'), null);
-});
-
 test('lock: a curation job killed at its 10-minute timeout stops blocking after 15 minutes, a refresh after 2 hours', () => {
   const db = reviewedWarehouse();
   const t0 = new Date('2026-10-01T00:00:00Z');

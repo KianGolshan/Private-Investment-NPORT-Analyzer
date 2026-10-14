@@ -5,7 +5,7 @@
 // it checks what visitors get, through the CDN and the proxy.
 //
 //   node scripts/smoke.js https://vantage.example.com
-//   node scripts/smoke.js http://127.0.0.1:3002 --no-public   # a local server (live routes on)
+//   node scripts/smoke.js http://127.0.0.1:3002 --no-public   # a local, non-public server
 //   node scripts/smoke.js http://127.0.0.1:3002 --no-goldens  # a test warehouse (the deploy drill)
 //
 // Goldens (docs/GOLDEN-NUMBERS.md, by company as the app reads them; the
@@ -37,13 +37,15 @@ const GOLDENS = [
   { name: 'A5 Stripe 2026-06-30', path: '/api/companies/5/exposure?date=2026-06-30', funds: 37, billions: [2.44, 2] },
   { name: 'A6 Databricks 2026-06-30', path: '/api/companies/2/exposure?date=2026-06-30', funds: 120 },
 ];
-const LIVE_ROUTES = ['/api/search-nport?q=Anthropic', '/api/parse-10q?cik=1&accession=000000000000000000'];
+// v1's per-filing routes called the SEC for each visitor; they were removed from
+// the live project (git tag v1-archive), so a deploy that brought one back fails.
+const V1_ROUTES = ['/api/search-nport?q=Anthropic', '/api/parse-10q?cik=1&accession=000000000000000000'];
 const TIMEOUT_MS = 30000;
 
 const round = (v, places) => Math.round(v * 10 ** places) / 10 ** places;
 
 // fetchImpl: injected by tests. publicSite: the URL is the public deployment
-// (live routes and v1 off); false for a local or development server.
+// (public mode on); false for a local or development server.
 // goldens: false skips the golden numbers (a test warehouse, deploy/test/drill.sh).
 async function runSmoke(base, { fetchImpl = fetch, publicSite = true, goldens = true } = {}) {
   const root = String(base).replace(/\/$/, '');
@@ -124,14 +126,16 @@ async function runSmoke(base, { fetchImpl = fetch, publicSite = true, goldens = 
     await step('public mode', async () => {
       const c = await get('/api/config');
       check('public mode', c.body?.public === true, `config public: ${c.body?.public}`);
-      for (const p of LIVE_ROUTES) {
-        const r = await get(p);
-        check(`live route off ${p.split('?')[0]}`, r.status === 410, `status ${r.status}`);
-      }
-      const legacy = await get('/legacy', { headers: { Accept: 'text/html' } });
-      check('v1 page off', legacy.status === 410, `status ${legacy.status}`);
     });
   }
+  await step('v1 removed', async () => {
+    for (const p of V1_ROUTES) {
+      const r = await get(p);
+      check(`no live SEC route ${p.split('?')[0]}`, r.status === 404, `status ${r.status}`);
+    }
+    const legacy = await get('/legacy', { headers: { Accept: 'text/html' } });
+    check('v1 page gone', legacy.status === 404, `status ${legacy.status}`);
+  });
   return { url: root, ok: checks.every(c => c.ok), checks };
 }
 

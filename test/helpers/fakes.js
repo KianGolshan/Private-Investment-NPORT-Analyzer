@@ -5,7 +5,7 @@ function jsonResponse(body, { ok = true, status = 200 } = {}) {
   return { ok, status, json: async () => body };
 }
 
-// routes: { '/api/search-nport': (params, url) => body | Response-like }
+// routes: { '/api/companies/1': (params, url) => body | Response-like }
 function mockBackend(routes, calls = []) {
   return async url => {
     calls.push(url);

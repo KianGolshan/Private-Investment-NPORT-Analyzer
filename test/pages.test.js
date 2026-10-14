@@ -71,10 +71,7 @@ test("renderIndex replaces the built page's title and description, keeps the res
 });
 
 test('robots.txt and sitemap.xml: static pages, companies with slugs and dates, firms; escaped; no warehouse', () => {
-  assert.equal(
-    pages.robotsTxt('https://x.test'),
-    'User-agent: *\nDisallow: /legacy\nSitemap: https://x.test/sitemap.xml\n'
-  );
+  assert.equal(pages.robotsTxt('https://x.test'), 'User-agent: *\nAllow: /\nSitemap: https://x.test/sitemap.xml\n');
   const xml = pages.sitemapXml('https://x.test', {
     companies: [
       { id: 1, name: 'Anthropic PBC', as_of: '2026-08-31' },

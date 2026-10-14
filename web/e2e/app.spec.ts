@@ -38,8 +38,7 @@ test('the workspace is served with a strict script policy and its main routes lo
     await page.goto(path);
     await expect(page.locator('h1').first()).toBeVisible();
   }
-  const legacy = await page.request.get('/legacy');
-  expect(legacy.headers()['content-security-policy']).toMatch(/'unsafe-inline'/);
+  expect((await page.request.get('/legacy')).status()).toBe(404); // v1 removed (git tag v1-archive)
   expect(errors).toEqual([]);
 });
 

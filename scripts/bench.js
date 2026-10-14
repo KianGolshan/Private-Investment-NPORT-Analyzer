@@ -24,7 +24,7 @@
 const os = require('os');
 const { monitorEventLoopDelay } = require('perf_hooks');
 const { openWarehouseReadOnly } = require('../lib/warehouse/db');
-const { TOP_FUND_GROUPS } = require('../public/fund-groups');
+const { TOP_FUND_GROUPS } = require('../lib/entities/fund-groups');
 
 const SEARCHES = ['Chobani', 'FHU', 'FHUS', 'fhu us holdings', 'Open AI', 'OpenAir', 'Databrick', 'Databriks'];
 SEARCHES.push('Hub International', 'Vercel', 'Stripe', 'Pfizer', 'SpaceX', 'Anthropic');

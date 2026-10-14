@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Restores the warehouse from the newest backup in Cloudflare R2 (P9 restore
+# Restores the warehouse from the newest off-site backup (Oracle Object Storage or R2; P9 restore
 # drill, docs/DEPLOY.md): download, verify its SHA-256, publish it as a new
 # generation, restart the instances. Run as root: sudo vantage-restore [file name]
 set -Eeuo pipefail

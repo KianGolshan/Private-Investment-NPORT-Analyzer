@@ -13,7 +13,6 @@ WorkingDirectory=/opt/vantage/staging/current
 EnvironmentFile=/etc/vantage/vantage.env
 EnvironmentFile=-/var/lib/vantage/build-staging.env
 Environment=PORT=3010
-Environment=CACHE_DB_PATH=/var/lib/vantage/staging-cache.db
 Environment=VANTAGE_CDN_MAX_AGE=0
 ExecStart=/usr/bin/node /opt/vantage/staging/current/server.js
 Restart=always

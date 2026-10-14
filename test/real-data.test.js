@@ -1,29 +1,20 @@
 // Offline tests whose inputs are REAL values captured from live SEC filings
 // (documented next to each case) — the regression suite for bugs that only
 // real data exposed: stock splits read as purchases, dummy CUSIPs pairing
-// unrelated holdings, "N/A" issuer names, multi-series trusts.
+// unrelated holdings, "N/A" issuer names.
 //
 // Sources: NPORT-P filings for Destiny Tech100 (CIK 1843974), Private Shares
-// Fund (CIK 1557265), Fidelity Advisor Series I (CIK 722574), T. Rowe Price
-// Global Stock Fund (CIK 313212), SMALLCAP World Fund (CIK 858744).
+// Fund (CIK 1557265), T. Rowe Price Global Stock Fund (CIK 313212).
 //
 // Run with: npm test
-
-process.env.CACHE_DB_PATH = ':memory:';
-process.env.SEC_MIN_INTERVAL_MS = '0';
-process.env.SEC_USER_AGENT = 'Test Suite test@example.com';
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const nock = require('nock');
-const request = require('supertest');
 
-const app = require('../server');
-const { detectSplit } = require('../public/splits.js');
+const { detectSplit } = require('../lib/analytics/splits');
 const {
-  extractHoldings,
   extractAllHoldings,
   buildFundXRayComparison,
   buildPositionReturns,
@@ -41,15 +32,6 @@ const parseXml = file =>
     tagNameProcessors: [xml2js.processors.stripPrefix],
   }).parseStringPromise(fs.readFileSync(path.join(FIXTURES, file), 'utf8'));
 const close = (a, b, eps = 1e-6) => Math.abs(a - b) < eps;
-const SEC = 'https://www.sec.gov';
-const DATA_SEC = 'https://data.sec.gov';
-
-test.beforeEach(() => {
-  nock.cleanAll();
-  nock.disableNetConnect();
-  nock.enableNetConnect(/127\.0\.0\.1/);
-});
-test.after(() => nock.enableNetConnect());
 
 const pos = (over = {}) => ({
   name: over.name || 'DXYZ SpaceX I LLC',
@@ -274,124 +256,10 @@ test('capital structure: T. Rowe-style holdings (issuer empty, name = full descr
   assert.ok(close(db.totalValueUSD, 28480000 + 14170000 + 6540000));
 });
 
-// ── multi-series trusts (real Fidelity Advisor Series I payloads) ──────────
-
-test('GET /api/fund-series-filings: returns one series’ own NPORT-P history from EDGAR’s series feed, with report dates joined from the registrant', async () => {
-  const feed = fs.readFileSync(path.join(FIXTURES, 'edgar_series_feed_S000017684.xml'), 'utf8');
-  // Real registrant history for Fidelity Advisor Series I (newest filings): two DIFFERENT funds filed for
-  // 2026-07-31 (…006134 Capital and Income, …006133 Floating Rate High Income) — the multi-series signature.
-  const submissions = {
-    name: 'FIDELITY ADVISOR SERIES I',
-    filings: {
-      recent: {
-        form: ['NPORT-P', 'NPORT-P', 'NPORT-P'],
-        accessionNumber: ['0000035402-26-006134', '0000035402-26-006133', '0000035402-26-004039'],
-        filingDate: ['2026-09-23', '2026-09-23', '2026-06-26'],
-        reportDate: ['2026-07-31', '2026-07-31', '2026-04-30'],
-        primaryDocument: ['primary_doc.xml', 'primary_doc.xml', 'primary_doc.xml'],
-      },
-      files: [],
-    },
-  };
-  nock(DATA_SEC).get('/submissions/CIK0000722574.json').reply(200, submissions);
-  nock(SEC)
-    .get('/cgi-bin/browse-edgar')
-    .query(q => q.CIK === 'S000017684' && q.type === 'NPORT-P')
-    .reply(200, feed);
-
-  const res = await request(app).get('/api/fund-series-filings?cik=0000722574&seriesId=S000017684');
-  assert.equal(res.status, 200);
-  assert.equal(res.body.filings.length, 28, 'the series feed has 28 real NPORT-P filings');
-  assert.equal(res.body.filings[0].accession, '0000035402-26-006134');
-  assert.equal(res.body.filings[0].reportDate, '2026-07-31', 'report date joined from registrant history');
-  assert.equal(res.body.filings[1].reportDate, '2026-04-30');
-  assert.ok(res.body.filings.every(f => /^\d{10}-\d{2}-\d{6}$/.test(f.accession)));
-});
-
-test('GET /api/fund-series-filings: validates the series id', async () => {
-  assert.equal((await request(app).get('/api/fund-series-filings?cik=1&seriesId=nope')).status, 400);
-  assert.equal((await request(app).get('/api/fund-series-filings?seriesId=S000017684')).status, 400);
-});
-
-test('GET /api/fund-series: a single-series registrant (real SMALLCAP World Fund history) is reported as such, without header fetches', async () => {
-  const submissions = JSON.parse(
-    fs.readFileSync(path.join(FIXTURES, 'submissions_smallcap_world_fund_recent.json'), 'utf8')
-  );
-  nock(DATA_SEC).get('/submissions/CIK0000858744.json').reply(200, submissions);
-  const res = await request(app).get('/api/fund-series?cik=858744');
-  assert.equal(res.status, 200);
-  assert.equal(res.body.multiSeries, false);
-  assert.deepEqual(res.body.series, []);
-});
-
-test('GET /api/fund-series: a multi-series trust lists each fund by reading only the filing headers (two real Fidelity Advisor headers)', async () => {
-  const ci = fs.readFileSync(path.join(FIXTURES, 'nport_header_fidelity_advisor_capital_income.xml'), 'utf8');
-  const frhi = fs.readFileSync(path.join(FIXTURES, 'nport_header_fidelity_advisor_floating_rate.xml'), 'utf8');
-  // Registrant history is cached from the previous test (same real payload): two funds filed for 2026-07-31.
-  nock(SEC)
-    .get('/Archives/edgar/data/722574/000003540226006134/primary_doc.xml')
-    .reply(200, ci, { 'Content-Type': 'text/xml' });
-  nock(SEC)
-    .get('/Archives/edgar/data/722574/000003540226006133/primary_doc.xml')
-    .reply(200, frhi, { 'Content-Type': 'text/xml' });
-  nock(SEC)
-    .get('/Archives/edgar/data/722574/000003540226004039/primary_doc.xml')
-    .reply(200, ci, { 'Content-Type': 'text/xml' });
-
-  const res = await request(app).get('/api/fund-series?cik=0000722574');
-  assert.equal(res.status, 200);
-  assert.equal(res.body.multiSeries, true);
-  assert.deepEqual(
-    res.body.series.map(s => [s.seriesId, s.seriesName]),
-    [
-      ['S000017684', 'Fidelity Advisor Capital and Income Fund'],
-      ['S000017683', 'Fidelity Advisor Floating Rate High Income Fund'],
-    ].sort((a, b) => a[1].localeCompare(b[1])),
-    'both real funds listed once each, alphabetically'
-  );
-});
-
-test('GET /api/fund-series: one filing per period but a duplicated period (an amendment, real: SkyBridge G II Fund) does not invent a fund picker', async () => {
-  // Same registrant CIK is reused with a different real history shape via a fresh CIK path.
-  const ci = fs.readFileSync(path.join(FIXTURES, 'nport_header_fidelity_advisor_capital_income.xml'), 'utf8');
-  const submissions = {
-    name: 'SKYBRIDGE G II FUND',
-    filings: {
-      recent: {
-        form: ['NPORT-P', 'NPORT-P'],
-        accessionNumber: ['0001520568-22-000005', '0001520568-22-000004'],
-        filingDate: ['2022-05-27', '2022-05-26'],
-        reportDate: ['2022-03-31', '2022-03-31'],
-        primaryDocument: ['primary_doc.xml', 'primary_doc.xml'],
-      },
-      files: [],
-    },
-  };
-  nock(DATA_SEC).get('/submissions/CIK0001520568.json').reply(200, submissions);
-  nock(SEC)
-    .get(/\/Archives\/edgar\/data\/1520568\/00015205682200000[45]\/primary_doc\.xml/)
-    .times(2)
-    .reply(200, ci, { 'Content-Type': 'text/xml' });
-  const res = await request(app).get('/api/fund-series?cik=1520568');
-  assert.equal(res.body.multiSeries, false, 'both filings are the same fund → nothing to choose between');
-  assert.deepEqual(res.body.series, []);
-});
-
 // ── real T. Rowe Price filing where <name> is the literal "N/A" ─────────────
 
-test('real T. Rowe NPORT-P (Global Stock Fund, 2024-10-31): holdings named "N/A" are found by company search via their title, and carry series and instrument ids', async () => {
+test('real T. Rowe NPORT-P (Global Stock Fund, 2024-10-31): holdings named "N/A" take their title as the name, and carry instrument ids', async () => {
   const xml = await parseXml('nport_trowe_na_names.xml');
-  const found = extractHoldings(xml, 'Databricks');
-  assert.deepEqual(
-    found.map(h => [h.name, h.shares, Math.round(h.pricePerShare * 100) / 100, h.seriesName]),
-    [
-      ['DATABRICKS INC PP', 307914, 87.37, 'T. Rowe Price Global Stock Fund'],
-      ['DATABRICKS SER I CVT PFD STOCK PP', 37125, 87.37, 'T. Rowe Price Global Stock Fund'],
-    ],
-    'searching "Databricks" found nothing before: <name> was "N/A" and only name/issuer/ticker were searched'
-  );
-  assert.equal(extractHoldings(xml, 'Lightmatter').length, 1);
-
   const all = extractAllHoldings(xml);
   assert.equal(all.length, 3);
   assert.ok(
