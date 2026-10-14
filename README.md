@@ -8,6 +8,8 @@ since 2019, by company, share class, fund and firm. Every number links to its fi
 
 ## Live site and deployment
 
+**Live:** [vantage-kian.duckdns.org](https://vantage-kian.duckdns.org)
+
 The public site runs on one small free VM, refreshes from the SEC every night, and deploys `main` on every green CI
 run with zero downtime and automatic rollback ([ADR 0006](docs/decisions/0006-hosting.md)). It runs either on a free
 DuckDNS name with HTTPS from the server itself (the server pulls each green commit), or on your own domain behind

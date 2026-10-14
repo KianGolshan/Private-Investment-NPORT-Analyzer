@@ -1,10 +1,10 @@
 # Vantage v2 Status
 
-**Phase:** **P9** (public deployment). W1–W3 are merged to `main` (PR #9, 2026-10-09; the merge was the
-sign-off). The user chose a **free start with no domain**: the direct edge (a DuckDNS name, HTTPS from the server,
-pull-based auto-deploy) is built on `v2-p9-duckdns`, awaiting sign-off. Next: the user's steps in
-[DEPLOY.md](DEPLOY.md) part 1A, then go-live checks. The Cloudflare path (1B) stays for when a domain is bought. P8
-is paused; its open items are under [Deferred](#deferred). Live warehouse: generation 32.
+**Phase:** **P9 is live.** Vantage is public at **https://vantage-kian.duckdns.org**. It runs on an Oracle Cloud
+Always Free VM on the direct edge: a DuckDNS name, HTTPS from Caddy, nightly SEC refresh, and auto-deploy of every
+green commit on `main` ([DEPLOY.md](DEPLOY.md) part 1A, ADR 0006). Everything is merged; `main` is the only branch.
+The go-live follow-ups and everything else not built are under [Deferred](#deferred). Server warehouse: generation
+33 (the contents of 32).
 
 ## Phase tracker
 
@@ -18,9 +18,9 @@ is paused; its open items are under [Deferred](#deferred). Live warehouse: gener
 - [ ] P7: MCP server (deferred)
 - [~] P8: operations. W1 (pre-flight fixes), W2 (backups and nightly) and W3 (reconciliation and watch) are
   signed off and merged. The W4 research and the P8 checkpoint (30 unattended nights) are deferred.
-- [~] P9: public deployment. W1, W2 signed off 2026-10-08; W3 (deployment as code) built, awaiting sign-off; then
-  the user's setup ([DEPLOY.md](DEPLOY.md)) and go-live checks
-  ([plan](plans/P9-deployment.md))
+- [x] P9: public deployment. W1–W3 and the direct edge merged (PRs #9, #15, #16; 2026-10-09..14); **live
+      2026-10-14** at https://vantage-kian.duckdns.org ([plan](plans/P9-deployment.md), [DEPLOY.md](DEPLOY.md)). The
+      remaining go-live checks are under [Deferred](#deferred).
 
 ## What the app answers now (all from the warehouse, every row with mark date and accession)
 
@@ -141,14 +141,21 @@ disk.
 
 ## Decisions waiting on the user
 
-1. **Run a refresh** (about 1 minute) to load the 117 NT NPORT-P reports? CLAUDE.md asks before a refresh.
-2. **Install the launchd jobs:** `npm run nightly` daily at 06:15 and `npm run monthly` monthly (plists in
-   ARCHITECTURE §Refresh lifecycle). The P8 checkpoint, 30 unattended nights, starts here.
-3. **Choose the backup location** (`VANTAGE_BACKUP_DIR`): an external disk, iCloud Drive or another machine. Today
-   backups go to `~/Vantage-backups` on the same disk, and the doctor warns.
-4. **Alert URL (optional):** a dead-man's switch such as healthchecks.io (`VANTAGE_ALERT_URL`).
-5. **Delete the leftover temp directories** (about 1,250 `vantage-*` folders, ~14.7 GiB, from test runs before the W1
-   fix; the doctor counts them). The permission classifier blocked the sweep. Command:
+The server now runs the nightly and monthly jobs, the backups and the alerts. The P8 questions about launchd and a
+local backup folder on this Mac no longer apply.
+
+1. **Optional free add-ons on the server** (DEPLOY.md 1A.1 step 4):
+   - a healthchecks.io ping URL (`VANTAGE_ALERT_URL`), so a failed night emails you;
+   - Cloudflare R2 for off-site backups;
+   - an uptime monitor on `/readyz?fresh=1`.
+
+   Add them with `sudoedit /etc/vantage/vantage.env`, or by re-running `setup.sh`.
+
+2. **A domain** (about $10 a year) when the link goes on a resume: DEPLOY.md "Moving from 1A to a domain".
+3. **Major dependency upgrades** (Express 5, dotenv 18, Preact 11, TypeScript 7, @types/node 26): Dependabot no
+   longer proposes majors (PRs #13 and #14 were closed). Do them deliberately, one at a time, with the full gates.
+4. **Delete the leftover temp directories on this Mac** (about 1,250 `vantage-*` folders, ~14.7 GiB, from test runs
+   before the P8 W1 fix). Command:
    `find -E "$TMPDIR" -maxdepth 1 -type d -mmin +60 -regex '.*/vantage-(job|review|cache|ncen|zip|admin|curation|ro)-[A-Za-z0-9]{6}' -exec rm -rf {} +`
 
 ## Calls made, open to overrule
@@ -260,13 +267,29 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
 - **Explore's firm picker** lists every firm holding private value (~170), including small advisers with terse
   N-CEN names.
 
-### Performance and capacity (mostly P9)
+### P9 go-live follow-ups (on the live server)
 
-- The warm-up (8.4 s) blocks the event loop for up to ~2.7 s once per new generation. The fix is to precompute in
-  the job or use a worker thread.
-- The server memo is bounded by entry count (200), not bytes; large responses are gzipped on the event loop (R17).
-- The SEC request budget is per process; a shared budget across the web server and jobs is a P9 item (R11). So are
-  the verified proxy/origin boundary, caps on queued work and a measured concurrency envelope.
+- **The first refresh on the server.** The data loaded is from 2026-10-07; `sudo systemctl start vantage-nightly`,
+  or wait for the 06:15 New York timer. `/readyz?fresh=1` says "not fresh" until then.
+- **Auto-deploy observed live.** Merging PR #16 and the close-out commits should show a new app version on
+  `/status` within about 10 minutes of green CI (`journalctl -u vantage-autodeploy`).
+- **The plan's §6 checks, not run yet against the live site:**
+  - the load test at 50 and 100 users (from the server against `http://127.0.0.1:8080`, or with a raised rate
+    limit, because one IP hits the per-visitor limit);
+  - a nightly and a deploy under load;
+  - the restore drill (`vantage-restore` needs R2);
+  - Lighthouse on the live URL;
+  - the LinkedIn Post Inspector.
+- **14 unattended nights** with healthchecks.io (needs the alert URL).
+
+### Performance and capacity
+
+- The warm-up still blocks one process's event loop for up to ~2.7 s per new generation. It now happens before
+  the swap, the second instance a minute later, and Caddy routes around it (P9 W1). A worker thread would remove
+  it.
+- Large responses are gzipped on the event loop (R17); the memo is bounded by bytes (P9 W1).
+- The SEC request budget is per process (R11). Public mode leaves only the nightly job calling the SEC, so it no
+  longer matters for visitors.
 
 ### Product (remaining P6 items)
 
@@ -285,20 +308,28 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
 
 ## Next session
 
-> Resume Vantage v2 P9 on `v2-p9-deploy` ([plans/P9-deployment.md](plans/P9-deployment.md)).
-> W1–W3 are built (W3 awaiting sign-off). Next: the user follows [DEPLOY.md](DEPLOY.md) part 1 (accounts, VM,
-> setup.sh, data load, tunnel, GitHub secrets), then go-live verification (DEPLOY.md 1.6 and the plan's §6: smoke,
-> load test at 50/100 users, a nightly under load, a deploy under load, the restore drill, Lighthouse, LinkedIn
-> preview). PR `v2-p9-deploy` → main needs the user's yes. Read CLAUDE.md, this file and the plan first.
+> Vantage v2 is live at https://vantage-kian.duckdns.org (P0–P9 done; P7 MCP not started). `main` is the only
+> branch. Start with CLAUDE.md, this file, docs/DEPLOY.md and docs/ROADMAP.md. The user's next step is a
+> comprehensive top-to-bottom review of the project: functionality, data accuracy, UI, the published site and
+> operations. Open items are under "Decisions waiting on the user" and "Deferred". Server: `ssh ubuntu@129.146.24.191`
+> (the user's key); `sudo vantage-run npm run doctor` checks it.
 >
 > This Mac has 8 GB of memory: run one heavy job at a time in the foreground, run tests with
 > `--test-concurrency=2`, and ask before a refresh, the e2e suite or the LIVE suite. Gates:
 >
 > - `npm test`, `npm run lint`, `npm run format:check`;
 > - `npm run test:web`, `npm run lint:web`;
-> - `npm run build:web`, then `npm run test:e2e`.
+> - `npm run build:web`, then `npm run test:e2e`;
+> - for the live site: `node scripts/smoke.js https://vantage-kian.duckdns.org`.
 
 ## Log
+
+- **2026-10-14 (close-out):** PR #16 merged (Caddy log ownership; the DEPLOY.md upload command).
+  - Dependabot: #12 (dev tools) and #11 (`actions/checkout` v7) merged; `actions/setup-node` v7 (#10) applied
+    directly after it conflicted. #13 (Express 5, dotenv 18) and #14 (Preact 11, TypeScript 7; failing CI) were
+    closed. Dependabot no longer proposes npm majors.
+  - All feature branches deleted, locally and on GitHub; `main` is the only branch. STATUS, ROADMAP and README are
+    current.
 
 - **2026-10-14 (P9 live):** Vantage is live at **https://vantage-kian.duckdns.org**, on the direct edge:
   - an Oracle Cloud Always Free VM in US West (Phoenix), VM.Standard.A1.Flex, 2 OCPU, 12 GB, 100 GB, Ubuntu 24.04;

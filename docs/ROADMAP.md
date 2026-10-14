@@ -236,7 +236,9 @@ items, P7 and P9 are listed in [STATUS "Deferred"](STATUS.md#deferred).
 > backup details below. It uses an Oracle Always Free VM with Cloudflare Tunnel, CDN and Access; two app instances
 > behind Caddy; nightly `npm run nightly` with an rclone copy to R2; and auto-deploy from GitHub Actions. Litestream
 > is dropped: ADR 0009 publishes a new generation file each time instead of updating one database through its WAL.
-> W1 (public mode, health, seamless switch, CDN headers, smoke and load test) is built.
+> **Done and live 2026-10-14** at https://vantage-kian.duckdns.org: W1–W3 plus a free direct edge (DuckDNS, HTTPS
+> from the server, pull-based auto-deploy; ADR 0006 amendment). Runbook: [DEPLOY.md](DEPLOY.md). The remaining
+> go-live checks are in STATUS "Deferred".
 
 **Goal:** a public, always-current Vantage at a stable URL (e.g. `vantage.<your-domain>`), fit to share on
 LinkedIn, a personal website and a resume. It refreshes itself nightly from the SEC with no manual steps.
