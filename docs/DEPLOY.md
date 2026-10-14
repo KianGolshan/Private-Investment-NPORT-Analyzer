@@ -193,7 +193,7 @@ scp ~/Vantage-backups/vantage-g<N>-<time>.db ~/Vantage-backups/vantage-g<N>-<tim
 On the server:
 
 ```bash
-sudo mv /tmp/vantage-g*.db* /var/lib/vantage/incoming/ && sudo chown vantage: /var/lib/vantage/incoming/*
+sudo sh -c 'mv /tmp/vantage-g*.db* /var/lib/vantage/incoming/ && chown vantage: /var/lib/vantage/incoming/*'
 sudo vantage-run npm run backup -- --restore /var/lib/vantage/incoming/vantage-g<N>-<time>.db
 sudo systemctl restart vantage@3003 vantage@3002
 curl -s http://127.0.0.1:8080/readyz

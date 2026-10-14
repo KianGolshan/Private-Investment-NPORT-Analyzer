@@ -216,6 +216,9 @@ CADDYFILE=$SRC/Caddyfile
 [[ $EDGE == direct ]] && CADDYFILE=$SRC/Caddyfile.direct
 sed "s/__DOMAIN__/$DOMAIN/g" "$CADDYFILE" >/etc/caddy/Caddyfile
 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+# validating as root creates the log file as root; Caddy runs as caddy and must own it
+install -d -o caddy -g caddy /var/log/caddy
+chown -R caddy:caddy /var/log/caddy
 cat >/etc/sudoers.d/vantage-deploy <<'EOF'
 # deploy.sh restarts the app instances, and nothing else (P9)
 vantage ALL=(root) NOPASSWD: /usr/bin/systemctl restart vantage@3002, /usr/bin/systemctl restart vantage@3003, /usr/bin/systemctl restart vantage-staging
