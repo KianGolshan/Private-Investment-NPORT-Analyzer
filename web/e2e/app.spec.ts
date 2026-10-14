@@ -77,7 +77,13 @@ test('About and Status read the warehouse; the nav links them', async ({ page })
   await page.goto('/status');
   await expect(page.getByRole('heading', { name: 'Data status' })).toBeVisible();
   await expect(page.getByText('Filings through', { exact: true })).toBeVisible();
-  await expect(page.getByRole('cell', { name: /[\d,]+ private, [\d,]+ tracked/ })).toBeVisible();
+  await expect(
+    page.getByRole('cell', {
+      name: /[\d,]+ private companies, [\d,]+ tracked; plus [\d,]+ fund interests, [\d,]+ CLOs and [\d,]+ insurance vehicles/,
+    })
+  ).toBeVisible();
+  // the last scheduled checks (review F-06): a fresh warehouse has none yet
+  await expect(page.getByRole('row', { name: /Monthly EDGAR check/ })).toBeVisible();
   expect(errors).toEqual([]);
 });
 
