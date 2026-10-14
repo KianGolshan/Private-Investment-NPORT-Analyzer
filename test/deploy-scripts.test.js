@@ -173,3 +173,11 @@ test('releases install the build tools whatever NODE_ENV the caller has (auto-de
   assert.equal(installs.length, 2);
   for (const i of installs) assert.match(i, /--include=dev/, i);
 });
+
+test('setup leaves Caddy able to write its log (validating as root creates it as root)', () => {
+  const setup = read('setup.sh');
+  const validate = setup.indexOf('caddy validate');
+  const chown = setup.indexOf('chown -R caddy:caddy /var/log/caddy');
+  assert.ok(validate > 0 && chown > validate, 'the log directory is handed to caddy after validation');
+  assert.ok(setup.indexOf('systemctl restart caddy') > chown, 'before Caddy starts');
+});

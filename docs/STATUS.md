@@ -300,6 +300,24 @@ Everything known and not built, in one place (2026-10-08). Each item says why it
 
 ## Log
 
+- **2026-10-14 (P9 live):** Vantage is live at **https://vantage-kian.duckdns.org**, on the direct edge:
+  - an Oracle Cloud Always Free VM in US West (Phoenix), VM.Standard.A1.Flex, 2 OCPU, 12 GB, 100 GB, Ubuntu 24.04;
+  - the user set it up by following DEPLOY.md part 1A;
+  - the data was restored from backup g32, so the server is at generation 33.
+  - **Smoke from the Mac:** 17/17. Every golden matches GOLDEN-NUMBERS, the headers are on, admin answers 403, and
+    the live routes answer 410.
+  - **Two setup bugs found on the real server (PR #16):**
+    - `caddy validate` as root created `/var/log/caddy/vantage.log` as root, so Caddy could not start;
+    - DEPLOY.md's move-and-chown expanded `*` as the login user, who cannot list the vantage-owned folder.
+
+    Both were fixed by hand on the server, and PR #16 fixes the script and the guide.
+
+  - **Open:**
+    - the first refresh on the server (the data is from 2026-10-07);
+    - merging PR #16, the first live test of auto-deploy;
+    - optional healthchecks.io, R2 backups and an uptime monitor;
+    - the load test against the live site (ask first).
+
 - **2026-10-09 (P9 direct edge):** the user merged PR #9 to `main` and asked for a free start without a domain.
   Built on `v2-p9-duckdns`:
   - **`setup.sh` asks for the edge.**
