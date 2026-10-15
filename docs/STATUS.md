@@ -1,11 +1,11 @@
 # Vantage v2 Status
 
-**Phase:** **P11 W1 is merged and live** (`34dc409`, 2026-10-15); **W2 built on `v2-p11-wave2`, waiting for
-sign-off** (the 2026-10-14 engineering and security review, graded B+; ROADMAP §11). Vantage is live
-at **https://vantage-kian.duckdns.org** (Oracle Cloud Always Free VM on Pay As You Go, DuckDNS, HTTPS from Caddy,
-nightly SEC refresh, auto-deploy of every green commit on `main`; [DEPLOY.md](DEPLOY.md)). `main` is the only working
-branch (`archive/v1` keeps v1). Next: the user signs off W2; after its merge, re-run setup.sh on the server
-(SSH, the `vantage-web` user, reports dir, accepted local backups), and the user's M2 and M4 clicks (DEPLOY.md 1A.6).
+**Phase:** **P11 is complete and live** (the 2026-10-14 engineering and security review, graded B+: W1 `34dc409`,
+W2 `090cbd1` plus the server's setup re-run, W3 `2ae79ee`, all 2026-10-15; ROADMAP §11). Vantage is live at
+**https://vantage-kian.duckdns.org** (Oracle Cloud Always Free VM on Pay As You Go, DuckDNS, HTTPS from Caddy, nightly
+SEC refresh, auto-deploy of every green commit on `main`; [DEPLOY.md](DEPLOY.md)). **`main` is protected:** changes go
+through a pull request with the CI checks green (`archive/v1` keeps v1). Waiting on the user: the Oracle security-list
+rule for SSH (DEPLOY.md 1A.6). Next: the user's instructions.
 
 ## Phase tracker
 
@@ -17,7 +17,8 @@ branch (`archive/v1` keeps v1). Next: the user signs off W2; after its merge, re
   are deferred.
 - [x] P9: public deployment, live 2026-10-14 ([plan](plans/P9-deployment.md), [DEPLOY.md](DEPLOY.md)).
 - [x] P10: launch review remediation (ROADMAP §10). W0 and W1 live; W2 done except off-site backups (not now).
-- [~] P11: engineering and security review remediation (ROADMAP §11). W1 live; W2 built (`v2-p11-wave2`); W3 next.
+- [x] P11: engineering and security review remediation (ROADMAP §11). W1, W2, W3 live 2026-10-15; the user's
+      Oracle SSH rule pending.
 
 ## What the app answers now (all from the warehouse, every row with mark date and accession)
 
@@ -58,35 +59,25 @@ On the server: `sudo vantage-run npm run doctor`; timers `vantage-nightly` (06:1
 `vantage-autodeploy` (5 min), `vantage-duckdns`. Units come from `setup.sh`, not from deploys; the live server also
 has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB cap, 3 GB heap; 2026-10-14).
 
-## Where things stand (2026-10-14)
+## Where things stand (2026-10-15)
 
 - **Review (2026-10-14, private artifact, grade B+):** 27/27 raw-EDGAR checks (18 random live positions, 8 with 2026Q3
   mark dates; 8 catch-up rows of 0001193125-26-413969; one exit), cross-checks equal, no injection or XSS path, 0
   advisories. 2 high (H1: `/api/market/tracked?date=` held a process 4.8 s per new date, off the heavy list; H2:
   `/API/...` skipped the heavy guard), 7 medium, 11 low, 6 docs; fix plan in ROADMAP §11.
-- **P11 W2 (built, not merged):**
-  - a failed deploy whose review import published a generation republishes the previous one, with the previous
-    release's code (M5); a newer generation published meanwhile is left alone and logged;
-  - a held lock (the nightly, another deploy) makes a deploy exit 75 with nothing changed; auto-deploy tries the same
-    commit next run instead of marking it failed (M6); review-aliases.js exits 75 on a busy lock (`JobError.busy`);
-  - warnings that need a person page (`/fail`), the watch report's suggestions do not; `VANTAGE_BACKUP_LOCAL_OK=1`
-    (setup.sh, no off-site copy) makes the accepted local backups ok (M7);
-  - the web runs as `vantage-web` in a systemd sandbox, no write access, no vantage group, the jobs' secrets unset
-    (M3); `$DATA` 751, `.ssh` 700; nightly and monthly write `/var/lib/vantage` only; reports in
-    `VANTAGE_REPORTS_DIR` (L7);
-  - applied on the server only by re-running setup.sh, which now restarts the instances one at a time and stops if
-    one is not ready.
-- **P11 W1 (live 2026-10-15, `34dc409`):** live checks: `/API/analysis/pivot` 404, `/healthz` shows only ok and the
-  build, new tracked dates 0.59–0.91 s (were 4.8 s), smoke 17/17.
-  - every API answer's real time is charged to the visitor who asked (15 s of server time a minute per process,
-    `VISITOR_MS_PER_MIN`; IPv6 by /56); load shedding refuses heavy routes only to visitors over 2 s this minute;
-  - paths case-sensitive (`/API/...` is 404); the heavy pattern matches any case;
-  - the tracked dashboard reads each company's class marks and history once per generation (memo pinned): a new
-    date 0.29–0.46 s locally (was ~4 s), answers byte-identical to the old code at five dates;
-  - `/healthz` memory and event-loop figures only on loopback; `ok` and `build` for anyone;
-  - setup.sh: `AllowUsers <login user>` (plus vantage on the Cloudflare edge), no X11 or agent forwarding; applied
-    by re-running setup on the server after the merge;
-  - the user's clicks for branch protection and the SSH rule: DEPLOY.md 1A.6.
+- **P11 (the 2026-10-14 review), closed out 2026-10-15.** Every finding is fixed and live, except one click:
+  - H1/H2/M1: per-visitor time budget on every API route, fair shedding, case-sensitive paths; the tracked dashboard
+    at a new date 0.6–0.9 s live (was 4.8 s);
+  - M2: `main` protected (pull request, the 7 CI checks, no force push, admins included); Dependabot security
+    updates on;
+  - M3: the web runs as `vantage-web` in a systemd sandbox (exposure 1.7 "OK", was 7.8), without the jobs' secrets;
+  - M4: SSH `AllowUsers ubuntu`, no X11 or agent forwarding (setup.sh); **the Oracle security-list rule (port 22
+    from the user's home address only) is the user's click** (DEPLOY.md 1A.6);
+  - M5/M6/M7: data rolled back with a failed deploy; a busy lock is "try later"; warnings that need a person page,
+    accepted local backups are ok;
+  - L1–L11 and D1–D6: fixed (L4 changed 0 of 68,004 private-company legs; it only affects a listed company's stored
+    rows); L11's old commits under test@test.com stay in history (this repo sets its own identity).
+  - Server after setup: web as vantage-web, smoke 17/17, doctor all ok, backup of generation 36.
 
 - **Server:** the first nightly ran out of memory (Node sized its heap at 1.5 GB from `MemoryMax=3G`) and was
   reported as "killed after the time limit". With a 3 GB heap and a 5 GB cap it ran in 4.4 min: 2026q3 bulk (14,066
@@ -243,13 +234,12 @@ Everything known and not built (2026-10-14). Each item says why it waits.
 
 ## Next session
 
-> Vantage v2 is live at https://vantage-kian.duckdns.org (generation 36). P11 W1 is live; W2 (deploy and alert
-> reliability, the `vantage-web` sandbox) is on `v2-p11-wave2` waiting for sign-off. Start with CLAUDE.md, this file
-> and docs/ROADMAP.md §11. After W2's merge and deploy, with the user's yes: on the server
-> `cd ~/vantage-setup && git pull && sudo bash deploy/setup.sh`, then check `ps -o user= -C node` shows vantage-web
-> for 3002/3003, `/readyz` 200, smoke 17/17, `sudo vantage-run npm run doctor` (backup ok "by choice"), and
-> `systemd-analyze security vantage@3002`. Confirm the user did DEPLOY.md 1A.6. Then W3. Do not ask about off-site
-> backups. Server: `ssh ubuntu@129.146.24.191`; `sudo vantage-run npm run doctor`.
+> Vantage v2 is live at https://vantage-kian.duckdns.org. P11 (the 2026-10-14 engineering and security review) is
+> closed out and live. `main` is protected: work on a branch, open a pull request, merge when CI is green (the user
+> merges, or says to). Start with CLAUDE.md, this file and docs/ROADMAP.md. Waiting on the user: the Oracle
+> security-list rule for SSH (DEPLOY.md 1A.6); then their next instructions. Do not ask about off-site backups.
+> Server: `ssh ubuntu@129.146.24.191`; `sudo vantage-run npm run doctor`; a server-side change ships with
+> `cd ~/vantage-setup && git pull && sudo bash deploy/setup.sh` (keeps every answer; ASK_AGAIN to change one).
 >
 > This Mac has 8 GB of memory: one heavy job at a time in the foreground, `--test-concurrency=2`, and ask before a
 > refresh, the e2e suite or the LIVE suite. Gates: `npm test`, `npm run lint`, `npm run format:check`,
@@ -257,6 +247,15 @@ Everything known and not built (2026-10-14). Each item says why it waits.
 > `node scripts/smoke.js https://vantage-kian.duckdns.org`.
 
 ## Log
+
+- **2026-10-15 (P11 closed out):** the user said "continue, finish out the entire review". W2 merged (`090cbd1`,
+  deployed); the server's setup re-run first stalled on a prompt (a `git log` pager ate the answers; stopped with
+  nothing changed), so setup.sh now keeps blank optional answers (`0ec92e3`, `ASK_AGAIN` re-asks) and the re-run
+  succeeded: web as vantage-web, SSH AllowUsers ubuntu, reports and accepted backups set, instances restarted one at
+  a time. W3 merged (`2ae79ee`, deployed; live checks: SpaceX `source: 'listed'`, the L1 redirect keeps the query,
+  smoke 17/17). Backup of generation 36 taken; doctor all ok. `main` protected and Dependabot security updates on
+  (GitHub API). Gates on W3: backend 449 (445 pass, 4 skipped), web 48/48, lint, lint:web, format, build; CI green on
+  all 7 jobs for every merge. Not run: e2e locally (CI ran it), LIVE, bench, a load test.
 
 - **2026-10-15 (P11 W1 live, W2 built):** the user said "merge push": `34dc409` fast-forwarded to `main` (CI green on
   the branch, all 7 jobs) and auto-deployed in 30 s; live checks in "Where things stand". W2 built on
