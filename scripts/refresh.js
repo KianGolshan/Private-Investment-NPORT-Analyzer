@@ -7,9 +7,9 @@
 //
 //   npm run refresh
 require('dotenv').config();
-const path = require('path');
 const { refreshIngest } = require('../lib/warehouse/refresh');
 const { runJob } = require('../lib/warehouse/job');
+const { reportsDir } = require('../lib/warehouse/job-state');
 
 async function main() {
   const started = Date.now();
@@ -24,7 +24,7 @@ async function main() {
       if (x.problems.length) log(`PARTIAL: ${x.problems.join('; ')}`);
       return { status: x.problems.length ? 'partial' : 'ok', note: x.problems.join('; ') || null, ingest: x };
     },
-    { log, entityReport: path.join(__dirname, '..', 'reports', 'entities') }
+    { log, entityReport: reportsDir('entities') }
   );
   const x = r.ingest;
   console.log(

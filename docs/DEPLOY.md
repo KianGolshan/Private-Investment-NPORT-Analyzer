@@ -142,8 +142,10 @@ SSH answers only from your home address:
 4. If your home address changes, SSH stops answering: edit the rule again in the console the same way (nothing on
    the server needs to change). Port 80 and 443 stay open to everyone.
 
-Setup also limits SSH logins to the user that ran it (`AllowUsers`), with no X11 or agent forwarding:
-`cd ~/vantage-setup && git pull && sudo bash deploy/setup.sh` applies it (it keeps every answer).
+Setup also limits SSH logins to the user that ran it (`AllowUsers`), with no X11 or agent forwarding, runs the web
+instances as `vantage-web` in a sandbox, keeps reports in `/var/lib/vantage/reports`, and (with no off-site copy)
+records that backups stay on this disk by choice. `cd ~/vantage-setup && git pull && sudo bash deploy/setup.sh`
+applies all of it (it keeps every answer) and restarts the instances one at a time, each ready before the next.
 
 ### Off-site backups (Oracle Object Storage)
 
@@ -387,7 +389,10 @@ On the server, `sudo -u vantage vantage-deploy deploy production main` deploys b
 ## 5. Recovery
 
 **Bad deploy.** Run the Deploy workflow with ref `rollback`, or `sudo -u vantage vantage-deploy deploy production
-rollback`. A deploy that fails its own checks has already rolled itself back.
+rollback`. A deploy that fails its own checks has already rolled itself back, and when its review import had
+published a generation, the data too (`deploy.log` says "data rolled back"; if a newer generation was published in
+between, it says "DATA NOT ROLLED BACK" with the command to run). A deploy that finds a lock held (the nightly job,
+another deploy) changes nothing and is tried again by auto-deploy five minutes later.
 
 **Bad data** (a refresh or import published something wrong):
 

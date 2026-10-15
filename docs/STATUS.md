@@ -1,10 +1,11 @@
 # Vantage v2 Status
 
-**Phase:** **P11 W1 built on `v2-p11-wave1`, waiting for sign-off** (the 2026-10-14 engineering and security review,
-graded B+, signed off; ROADMAP §11). P10 is merged and live (generation 36). Vantage is live
+**Phase:** **P11 W1 is merged and live** (`34dc409`, 2026-10-15); **W2 built on `v2-p11-wave2`, waiting for
+sign-off** (the 2026-10-14 engineering and security review, graded B+; ROADMAP §11). Vantage is live
 at **https://vantage-kian.duckdns.org** (Oracle Cloud Always Free VM on Pay As You Go, DuckDNS, HTTPS from Caddy,
 nightly SEC refresh, auto-deploy of every green commit on `main`; [DEPLOY.md](DEPLOY.md)). `main` is the only working
-branch (`archive/v1` keeps v1). Next: the user signs off W1 and does the M2 and M4 clicks (DEPLOY.md 1A.6).
+branch (`archive/v1` keeps v1). Next: the user signs off W2; after its merge, re-run setup.sh on the server
+(SSH, the `vantage-web` user, reports dir, accepted local backups), and the user's M2 and M4 clicks (DEPLOY.md 1A.6).
 
 ## Phase tracker
 
@@ -16,7 +17,7 @@ branch (`archive/v1` keeps v1). Next: the user signs off W1 and does the M2 and 
   are deferred.
 - [x] P9: public deployment, live 2026-10-14 ([plan](plans/P9-deployment.md), [DEPLOY.md](DEPLOY.md)).
 - [x] P10: launch review remediation (ROADMAP §10). W0 and W1 live; W2 done except off-site backups (not now).
-- [~] P11: engineering and security review remediation (ROADMAP §11). W1 built (`v2-p11-wave1`); W2, W3 next.
+- [~] P11: engineering and security review remediation (ROADMAP §11). W1 live; W2 built (`v2-p11-wave2`); W3 next.
 
 ## What the app answers now (all from the warehouse, every row with mark date and accession)
 
@@ -63,7 +64,20 @@ has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB 
   mark dates; 8 catch-up rows of 0001193125-26-413969; one exit), cross-checks equal, no injection or XSS path, 0
   advisories. 2 high (H1: `/api/market/tracked?date=` held a process 4.8 s per new date, off the heavy list; H2:
   `/API/...` skipped the heavy guard), 7 medium, 11 low, 6 docs; fix plan in ROADMAP §11.
-- **P11 W1 (built, not merged):**
+- **P11 W2 (built, not merged):**
+  - a failed deploy whose review import published a generation republishes the previous one, with the previous
+    release's code (M5); a newer generation published meanwhile is left alone and logged;
+  - a held lock (the nightly, another deploy) makes a deploy exit 75 with nothing changed; auto-deploy tries the same
+    commit next run instead of marking it failed (M6); review-aliases.js exits 75 on a busy lock (`JobError.busy`);
+  - warnings that need a person page (`/fail`), the watch report's suggestions do not; `VANTAGE_BACKUP_LOCAL_OK=1`
+    (setup.sh, no off-site copy) makes the accepted local backups ok (M7);
+  - the web runs as `vantage-web` in a systemd sandbox, no write access, no vantage group, the jobs' secrets unset
+    (M3); `$DATA` 751, `.ssh` 700; nightly and monthly write `/var/lib/vantage` only; reports in
+    `VANTAGE_REPORTS_DIR` (L7);
+  - applied on the server only by re-running setup.sh, which now restarts the instances one at a time and stops if
+    one is not ready.
+- **P11 W1 (live 2026-10-15, `34dc409`):** live checks: `/API/analysis/pivot` 404, `/healthz` shows only ok and the
+  build, new tracked dates 0.59–0.91 s (were 4.8 s), smoke 17/17.
   - every API answer's real time is charged to the visitor who asked (15 s of server time a minute per process,
     `VISITOR_MS_PER_MIN`; IPv6 by /56); load shedding refuses heavy routes only to visitors over 2 s this minute;
   - paths case-sensitive (`/API/...` is 404); the heavy pattern matches any case;
@@ -229,12 +243,13 @@ Everything known and not built (2026-10-14). Each item says why it waits.
 
 ## Next session
 
-> Vantage v2 is live at https://vantage-kian.duckdns.org (generation 36). The 2026-10-14 engineering review is
-> signed off; P11 W1 (keep the site up) is built on `v2-p11-wave1` and waits for the user's sign-off and merge. Start
-> with CLAUDE.md, this file and docs/ROADMAP.md §11. After the merge: re-run setup.sh on the server (SSH settings),
-> confirm the user did DEPLOY.md 1A.6, re-check `/API/...` (404) and a new tracked date on the live site, and ask
-> before a load test. Then W2 (deploy and alert reliability). Do not ask about off-site backups. Server:
-> `ssh ubuntu@129.146.24.191`; `sudo vantage-run npm run doctor`.
+> Vantage v2 is live at https://vantage-kian.duckdns.org (generation 36). P11 W1 is live; W2 (deploy and alert
+> reliability, the `vantage-web` sandbox) is on `v2-p11-wave2` waiting for sign-off. Start with CLAUDE.md, this file
+> and docs/ROADMAP.md §11. After W2's merge and deploy, with the user's yes: on the server
+> `cd ~/vantage-setup && git pull && sudo bash deploy/setup.sh`, then check `ps -o user= -C node` shows vantage-web
+> for 3002/3003, `/readyz` 200, smoke 17/17, `sudo vantage-run npm run doctor` (backup ok "by choice"), and
+> `systemd-analyze security vantage@3002`. Confirm the user did DEPLOY.md 1A.6. Then W3. Do not ask about off-site
+> backups. Server: `ssh ubuntu@129.146.24.191`; `sudo vantage-run npm run doctor`.
 >
 > This Mac has 8 GB of memory: one heavy job at a time in the foreground, `--test-concurrency=2`, and ask before a
 > refresh, the e2e suite or the LIVE suite. Gates: `npm test`, `npm run lint`, `npm run format:check`,
@@ -242,6 +257,12 @@ Everything known and not built (2026-10-14). Each item says why it waits.
 > `node scripts/smoke.js https://vantage-kian.duckdns.org`.
 
 ## Log
+
+- **2026-10-15 (P11 W1 live, W2 built):** the user said "merge push": `34dc409` fast-forwarded to `main` (CI green on
+  the branch, all 7 jobs) and auto-deployed in 30 s; live checks in "Where things stand". W2 built on
+  `v2-p11-wave2` (M3, M5, M6, M7, L7; L8 moved to W3). Gates: backend 443 (439 pass, 4 skipped), lint, format; CI
+  green with the new drill steps 3b (data put back) and 6b (a held lock is "not now"). Not run: e2e locally, LIVE,
+  bench, load test. Not yet on the server: setup.sh (waits for the merge and the user's yes).
 
 - **2026-10-14 (P11 W1, built):** the user signed off the review and asked for W1 (H2, H1, M1, L10) with the clicks
   for M2 and M4. Built on `v2-p11-wave1`: `lib/api/heavy.js` (visitor time budget, fair shedding, any-case pattern),

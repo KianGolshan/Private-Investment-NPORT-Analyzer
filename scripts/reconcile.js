@@ -10,6 +10,7 @@ const fs = require('fs');
 const path = require('path');
 const { openWarehouseReadOnly } = require('../lib/warehouse/db');
 const { reconcile } = require('../lib/warehouse/reconcile');
+const { reportsDir } = require('../lib/warehouse/job-state');
 
 async function main() {
   const at = process.argv.indexOf('--sample');
@@ -21,7 +22,7 @@ async function main() {
   } finally {
     db.close();
   }
-  const dir = path.join(__dirname, '..', 'reports', 'reconcile');
+  const dir = reportsDir('reconcile');
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, `${r.until}.json`);
   fs.writeFileSync(file, JSON.stringify(r, null, 1));

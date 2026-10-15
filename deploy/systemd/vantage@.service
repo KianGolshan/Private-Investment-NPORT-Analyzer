@@ -7,8 +7,10 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=vantage
-Group=vantage
+# vantage-web (review M3): reads the release and the published data, writes nothing,
+# and is not the user that owns the code, the data or the deploy settings.
+User=vantage-web
+Group=vantage-web
 WorkingDirectory=/opt/vantage/prod/current
 EnvironmentFile=/etc/vantage/vantage.env
 # APP_BUILD (the deployed commit), written by deploy.sh
@@ -21,14 +23,34 @@ Restart=always
 RestartSec=2
 TimeoutStopSec=20
 MemoryMax=2G
+# Sandbox (review M3): the web user writes nothing anywhere and owns nothing it
+# runs from or reads; no capabilities, devices, kernel or namespace access, and
+# only the system calls and address families a network service needs.
 NoNewPrivileges=yes
 PrivateTmp=yes
+PrivateDevices=yes
 ProtectSystem=strict
 ProtectHome=yes
-ReadWritePaths=/var/lib/vantage
 ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
 ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
 RestrictSUIDSGID=yes
+LockPersonality=yes
+RemoveIPC=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+UMask=0077
+# the web needs none of the jobs' secrets (they stay in the job units' environment)
+UnsetEnvironment=DUCKDNS_TOKEN VANTAGE_ALERT_URL VANTAGE_R2_ACCESS_KEY_ID VANTAGE_R2_SECRET_ACCESS_KEY VANTAGE_OFFSITE_CMD
 
 [Install]
 WantedBy=multi-user.target

@@ -196,7 +196,11 @@ Fund calendars are staggered, so "as of D" mixes mark dates. The UI always shows
   one fails. The result goes to `warehouse.db.nightly.json` (and `.nightly.log`); the doctor reports it. On a
   failure it shows a macOS notification (`VANTAGE_NOTIFY=0` turns it off) and exits 1. With `VANTAGE_ALERT_URL` (a
   dead-man's switch such as healthchecks.io) it pings the URL on success and `<url>/fail` with the summary on a
-  failure, so a night that never runs is caught too.
+  failure, so a night that never runs is caught too. A warning that needs a person (the doctor's checks, a failed
+  off-site copy) pings `/fail` too and the night stays "warn" (exit 0); the watch report's review suggestions never
+  page (`alert: false`). Backups kept on the warehouse's own disk by choice (`VANTAGE_BACKUP_LOCAL_OK=1`, set by
+  setup.sh when no off-site copy is configured) are not a warning (review M7). Reports (watch, entities,
+  reconciliation) go to `VANTAGE_REPORTS_DIR` (on the server `/var/lib/vantage/reports`), never into the code.
 - **Backups** (`npm run backup`, `lib/warehouse/backup.js`): a copy of the published generation in
   `VANTAGE_BACKUP_DIR` (default `~/Vantage-backups`), checked against the source's SHA-256 and SQLite's
   `quick_check`, with a `.sha256` beside it, keeping the newest 3. A generation already backed up is skipped. On
@@ -257,12 +261,17 @@ room for the next one), `npm run warehouse` (generations and the last job), `cat
 
 - **Shape:** one Oracle Cloud Always Free VM (Ampere A1, 2 OCPU, 12 GB, Ubuntu 24.04) under a DuckDNS name. Caddy
   serves HTTPS (Let's Encrypt) and balances two Node instances (`vantage@3002`, `vantage@3003`) by readiness;
-  a staging instance listens on loopback only.
+  a staging instance listens on loopback only. The instances run as `vantage-web` in a systemd sandbox: no write
+  access anywhere, no capabilities, and none of the jobs' secrets in their environment; the jobs and deploys run
+  as `vantage`, which owns the code and the data (review M3).
 - **Data:** the instances read the published generation read-only; the nightly job writes a new one (ADR 0009),
   which each instance warms and then switches to.
 - **Shipping:** the server polls GitHub and deploys a commit on `main` once its Test run is green
   (`vantage-autodeploy`, every 5 minutes): a release per commit, a review import when migrations or
-  `data/review` change, a rolling restart gated on `/readyz`, the smoke check, rollback on any failure.
+  `data/review` change, a rolling restart gated on `/readyz`, the smoke check, rollback on any failure (with the
+  data too, when the deploy's review import published a generation: review M5). A deploy that meets a held lock
+  (another deploy, or a warehouse job such as the nightly) exits 75 with nothing changed, and auto-deploy tries the
+  same commit again on its next run (review M6).
 - **Around it:** the nightly backup (3 kept) and an optional off-site copy (Oracle Object Storage or Cloudflare R2,
   `deploy/bin/vantage-offsite`); a healthchecks.io ping per night; `/status` shows the last nightly and monthly
   results.

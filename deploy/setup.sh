@@ -123,7 +123,16 @@ say "The vantage user and directories"
 id vantage >/dev/null 2>&1 || useradd --system --home-dir "$DATA" --shell /bin/bash vantage
 # no password, but not locked: key-only SSH (the deploy key's forced command) must work
 usermod -p '*' vantage
-install -d -o vantage -g vantage -m 750 "$DATA" "$DATA/backups" "$DATA/incoming" "$DATA/.ssh"
+# The web instances run as vantage-web (review M3): no home, no shell, no group
+# with vantage. It reads the release (755) and, by path, the published data in
+# $DATA (751: it can open known files but not list the directory) and nothing
+# else of vantage's: backups, incoming, .ssh, .config and /etc/vantage stay closed.
+id vantage-web >/dev/null 2>&1 ||
+  useradd --system --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin vantage-web
+install -d -o vantage -g vantage -m 751 "$DATA"
+install -d -o vantage -g vantage -m 750 "$DATA/backups" "$DATA/incoming"
+install -d -o vantage -g vantage -m 700 "$DATA/.ssh"
+install -d -o vantage -g vantage -m 755 "$DATA/generations" "$DATA/reports"
 install -d -o vantage -g vantage -m 755 "$APP" "$APP/prod" "$APP/staging"
 install -d -m 750 -g vantage "$ETC"
 if [[ ! -d $APP/repo/.git ]]; then sudo -u vantage git clone --quiet "$REPO_URL" "$APP/repo"; fi
@@ -157,6 +166,9 @@ R2_KEY=''
 R2_SECRET=''
 R2_BUCKET=''
 OFFSITE=''
+# no off-site endpoint: backups stay on this disk by choice, which the doctor
+# then reports as ok rather than warning every night (review M7)
+BACKUP_LOCAL_OK=1
 if [[ -n $R2_ENDPOINT ]]; then
   [[ $R2_ENDPOINT =~ ^https://[a-z0-9.-]+\.(r2\.cloudflarestorage\.com|compat\.objectstorage\.[a-z0-9-]+\.oraclecloud\.com)$ ]] ||
     die "not an R2 or Oracle Object Storage endpoint: $R2_ENDPOINT"
@@ -165,6 +177,7 @@ if [[ -n $R2_ENDPOINT ]]; then
   R2_BUCKET=$(ask VANTAGE_R2_BUCKET "Bucket name (Enter for vantage-backups)")
   R2_BUCKET=${R2_BUCKET:-vantage-backups}
   OFFSITE=/usr/local/bin/vantage-offsite
+  BACKUP_LOCAL_OK=0
 fi
 CDN_MAX_AGE=300
 [[ $EDGE == direct ]] && CDN_MAX_AGE=0 # no shared cache in front
@@ -187,6 +200,8 @@ SEC_USER_AGENT="$UA"
 WAREHOUSE_DB_PATH="$DATA/warehouse.db"
 VANTAGE_BACKUP_DIR="$DATA/backups"
 VANTAGE_OFFSITE_CMD="$OFFSITE"
+VANTAGE_BACKUP_LOCAL_OK="$BACKUP_LOCAL_OK"
+VANTAGE_REPORTS_DIR="$DATA/reports"
 VANTAGE_ALERT_URL="$ALERT"
 VANTAGE_STATUS_URL="$STATUS_URL"
 VANTAGE_ANALYTICS_TOKEN="$ANALYTICS"
@@ -318,6 +333,34 @@ for target in production staging; do
   sudo -u vantage -H env FIRST=1 bash "$first" "$target" "$sha"
   rm -f "$first"
 done
+
+# A re-run with data loaded: the units may have changed (the web user and its
+# sandbox, review M3), so restart the running instances one at a time, each
+# ready before the next, as a deploy does. One that does not come up stops here.
+if [[ -e $DATA/warehouse.db ]]; then
+  say "Restarting the web instances under the current units"
+  for unit_port in vantage@3003:3003 vantage@3002:3002 vantage-staging:3010; do
+    unit=${unit_port%%:*}
+    port=${unit_port##*:}
+    systemctl is-active --quiet "$unit" || continue
+    systemctl restart "$unit"
+    ready=0
+    for _ in $(seq 1 90); do
+      if curl -fsS -o /dev/null --max-time 3 "http://127.0.0.1:$port/readyz"; then
+        ready=1
+        break
+      fi
+      sleep 2
+    done
+    if [[ $ready == 1 ]]; then
+      echo "$unit ready"
+    elif [[ $unit == vantage-staging ]]; then
+      echo "warning: $unit did not become ready (journalctl -u $unit -n 50)" >&2
+    else
+      die "$unit did not become ready after the restart: journalctl -u $unit -n 50"
+    fi
+  done
+fi
 systemctl start vantage-nightly.timer vantage-monthly.timer
 [[ $EDGE == direct ]] && systemctl start vantage-autodeploy.timer vantage-duckdns.timer
 

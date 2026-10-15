@@ -11,9 +11,10 @@
 //   node scripts/entities-report.js [--threshold 50] [--out dir]   # $M; components at or above it are flagged
 const path = require('path');
 const { runJob } = require('../lib/warehouse/job');
+const { reportsDir } = require('../lib/warehouse/job-state');
 const { writeEntityReport, overdue } = require('../lib/entities/report');
 
-const DEFAULT_OUT = path.join(__dirname, '..', 'reports', 'entities');
+const DEFAULT_OUT = reportsDir('entities');
 
 async function main() {
   const args = process.argv.slice(2);

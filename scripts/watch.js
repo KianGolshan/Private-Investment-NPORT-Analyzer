@@ -10,9 +10,10 @@ const path = require('path');
 const Database = require('better-sqlite3');
 const { openWarehouseReadOnly, defaultWarehousePath, generationOf } = require('../lib/warehouse/db');
 const { generations } = require('../lib/warehouse/job');
+const { reportsDir } = require('../lib/warehouse/job-state');
 const { watchReport, watchMarkdown } = require('../lib/warehouse/watch');
 
-function runWatch(dbPath = defaultWarehousePath(), { dir = path.join(__dirname, '..', 'reports', 'watch') } = {}) {
+function runWatch(dbPath = defaultWarehousePath(), { dir = reportsDir('watch') } = {}) {
   const current = openWarehouseReadOnly(dbPath);
   const prior = generations(dbPath).find(g => !g.published);
   const previous = prior ? new Database(prior.file, { readonly: true, fileMustExist: true }) : null;

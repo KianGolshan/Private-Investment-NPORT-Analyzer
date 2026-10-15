@@ -211,16 +211,18 @@ test('nightly: every step runs and is recorded; a failure alerts (notification a
   const notified = [];
   const notify = async (title, message) => notified.push({ title, message }) && true;
   try {
+    // review suggestions only (alert: false): a warn night that pings success
     const ok = await nightly(
       dbPath,
       {
         refresh: async () => ({ status: 'ok', detail: 'published' }),
         backup: async () => ({ status: 'ok', detail: 'backed up' }),
-        doctor: async () => ({ status: 'warn', detail: 'backup warn: not off-host' }),
+        watch: async () => ({ status: 'warn', alert: false, detail: '2 new item(s) to review' }),
       },
       { alertUrl: url, notify }
     );
     assert.equal(ok.status, 'warn');
+    assert.deepEqual(ok.alerting, []);
     assert.deepEqual(notified, [], 'no notification without a failure');
     assert.deepEqual(
       pings.map(p => p.url),
@@ -228,6 +230,22 @@ test('nightly: every step runs and is recorded; a failure alerts (notification a
       'success ping'
     );
     assert.equal(lastNightly(dbPath).status, 'warn');
+    // a doctor warning needs a person (review M7): it pings /fail, the night stays "warn" (exit 0)
+    const warned = await nightly(
+      dbPath,
+      {
+        refresh: async () => ({ status: 'ok', detail: 'published' }),
+        doctor: async () => ({ status: 'warn', detail: 'filings warn: newest filing 9.0 days old' }),
+        watch: async () => ({ status: 'warn', alert: false, detail: '1 new item(s) to review' }),
+      },
+      { alertUrl: url, notify }
+    );
+    assert.equal(warned.status, 'warn');
+    assert.deepEqual(warned.alerting, ['doctor']);
+    assert.deepEqual(notified, [], 'a macOS notification is for failures only');
+    assert.equal(pings.at(-1).url, '/ping/abc/fail');
+    assert.match(pings.at(-1).body, /doctor warn: filings warn: newest filing 9\.0 days old/);
+    pings.length = 1;
 
     const order = [];
     const bad = await nightly(
@@ -257,7 +275,7 @@ test('nightly: every step runs and is recorded; a failure alerts (notification a
     assert.equal(pings[1].url, '/ping/abc/fail');
     assert.match(pings[1].body, /refresh fail: exit code 1/);
     assert.equal(lastNightly(dbPath).status, 'fail');
-    assert.equal(fs.readFileSync(`${dbPath}.nightly.log`, 'utf8').trim().split('\n').length, 2);
+    assert.equal(fs.readFileSync(`${dbPath}.nightly.log`, 'utf8').trim().split('\n').length, 3);
     // the doctor reports the failed night
     const d = doctor(dbPath, { tmp: tmpDir('doctor-tmp'), processes: () => [], backups: tmpDir('no-backups') });
     const night = d.checks.find(c => c.name === 'nightly');
@@ -289,8 +307,14 @@ test('doctor: the backup check says when there is none, when it is behind, and w
   backup(dbPath, { dir });
   // the test's backup directory is on the same disk as the test warehouse
   assert.match(check().detail, /not off-host \(set VANTAGE_BACKUP_DIR or VANTAGE_OFFSITE_CMD\)/);
+  // kept on this disk by choice (VANTAGE_BACKUP_LOCAL_OK, review M7): ok, and said so
+  const chosen = doctor(dbPath, { ...opts, backupLocalOk: true }).checks.find(c => c.name === 'backup');
+  assert.equal(chosen.status, 'ok');
+  assert.match(chosen.detail, /on this disk by choice \(VANTAGE_BACKUP_LOCAL_OK\)$/);
   await runJob('curation', () => ({}), { dbPath });
   assert.match(check().detail, /behind the published generation/);
+  // a behind backup still warns when the disk is accepted
+  assert.equal(doctor(dbPath, { ...opts, backupLocalOk: true }).checks.find(c => c.name === 'backup').status, 'warn');
 });
 
 // P9: the off-site copy (VANTAGE_OFFSITE_CMD) after the nightly backup.

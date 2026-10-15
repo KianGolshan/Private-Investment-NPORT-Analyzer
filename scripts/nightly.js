@@ -31,13 +31,15 @@ async function main() {
       last
         ? runOffsite(dbPath, { dir: backupDir(), file: last.file, generation: last.generation })
         : Promise.resolve({ status: 'warn', detail: 'no backup to copy (the backup step failed)' }),
-    // suggestions for review (lib/warehouse/watch.js): new items make the night "warn"
+    // suggestions for review (lib/warehouse/watch.js): new items make the night
+    // "warn", as information (alert: false: they never page)
     watch: async () => {
       const w = runWatch(dbPath);
       const c = w.counts;
       const fresh = c.queueNew + c.listingNew + c.identityNew + c.splitNew;
       return {
         status: fresh ? 'warn' : 'ok',
+        alert: false,
         detail:
           `${fresh} new item(s) to review (queue ${c.queueNew}, listing ${c.listingNew}, identity ${c.identityNew}, split ${c.splitNew}); ` +
           w.file,

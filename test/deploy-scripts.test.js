@@ -87,7 +87,8 @@ test('the systemd units run scripts that exist, from the release link, as the va
   }
   for (const u of units.filter(f => f.endsWith('.service') && !/autodeploy|duckdns/.test(f))) {
     const s = read(`systemd/${u}`);
-    assert.match(s, /^User=vantage$/m, u);
+    const web = u === 'vantage@.service' || u === 'vantage-staging.service';
+    assert.match(s, web ? /^User=vantage-web$/m : /^User=vantage$/m, u);
     assert.match(s, /^EnvironmentFile=\/etc\/vantage\/vantage\.env$/m, u);
     assert.match(s, /^ProtectSystem=strict$/m, u);
     const exec = /^ExecStart=\/usr\/bin\/node \/opt\/vantage\/(prod|staging)\/current\/(.+)$/m.exec(s);
@@ -126,6 +127,8 @@ test('Caddy, the tunnel and deploy.sh agree on ports; setup writes every product
     'WAREHOUSE_DB_PATH=',
     'VANTAGE_BACKUP_DIR=',
     'VANTAGE_OFFSITE_CMD="$OFFSITE"',
+    'VANTAGE_BACKUP_LOCAL_OK="$BACKUP_LOCAL_OK"',
+    'VANTAGE_REPORTS_DIR="$DATA/reports"',
     'OFFSITE=/usr/local/bin/vantage-offsite',
     'VANTAGE_ALERT_URL=',
     'VANTAGE_PUBLIC_URL=',
@@ -140,6 +143,8 @@ test('Caddy, the tunnel and deploy.sh agree on ports; setup writes every product
     'VANTAGE_PUBLIC',
     'VANTAGE_CDN_MAX_AGE',
     'VANTAGE_OFFSITE_CMD',
+    'VANTAGE_BACKUP_LOCAL_OK',
+    'VANTAGE_REPORTS_DIR',
     'VANTAGE_PUBLIC_URL',
     'VANTAGE_SMOKE_URL',
   ])
@@ -210,4 +215,56 @@ test('SSH (review M4): keys only, no X11 or agent forwarding, only the login use
   assert.doesNotMatch(run({ SUDO_USER: 'root', EDGE: 'direct' }), /AllowUsers/);
   assert.doesNotMatch(run({ EDGE: 'direct' }), /AllowUsers/);
   assert.doesNotMatch(setup, /AllowTcpForwarding no/, 'staging is opened through ssh -L');
+});
+
+test('M3: the web runs as vantage-web in a sandbox and writes nothing; jobs write the data only, never the code', () => {
+  for (const u of ['vantage@.service', 'vantage-staging.service']) {
+    const s = read(`systemd/${u}`);
+    assert.match(s, /^User=vantage-web$/m, u);
+    assert.match(s, /^Group=vantage-web$/m, u);
+    assert.doesNotMatch(s, /ReadWritePaths|SupplementaryGroups/, `${u}: no write access, no vantage group`);
+    for (const line of [
+      'NoNewPrivileges=yes',
+      'PrivateTmp=yes',
+      'PrivateDevices=yes',
+      'ProtectSystem=strict',
+      'ProtectHome=yes',
+      'ProtectKernelModules=yes',
+      'ProtectKernelTunables=yes',
+      'CapabilityBoundingSet=',
+      'RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX',
+      'RestrictNamespaces=yes',
+      'SystemCallFilter=@system-service',
+      'LockPersonality=yes',
+    ])
+      assert.match(s, new RegExp(`^${line}$`, 'm'), `${u}: ${line}`);
+    // ps must still see the job's process (job-state.holderGone): no hidepid
+    assert.doesNotMatch(s, /ProtectProc=invisible/, u);
+    // the jobs' secrets are not in the web's environment
+    const unset = /^UnsetEnvironment=(.+)$/m.exec(s)?.[1].split(' ') ?? [];
+    for (const k of ['DUCKDNS_TOKEN', 'VANTAGE_ALERT_URL', 'VANTAGE_R2_SECRET_ACCESS_KEY', 'VANTAGE_R2_ACCESS_KEY_ID'])
+      assert.ok(unset.includes(k), `${u} unsets ${k}`);
+    // the server needs this one (it refuses to start in production without it)
+    assert.ok(!unset.includes('SEC_USER_AGENT'));
+  }
+  for (const u of ['vantage-nightly.service', 'vantage-monthly.service']) {
+    const s = read(`systemd/${u}`);
+    assert.match(s, /^ReadWritePaths=\/var\/lib\/vantage$/m, `${u}: the data only (L7)`);
+  }
+  const setup = read('setup.sh');
+  assert.match(
+    setup,
+    /useradd --system --no-create-home --home-dir \/nonexistent --shell \/usr\/sbin\/nologin vantage-web/
+  );
+  assert.match(setup, /install -d -o vantage -g vantage -m 751 "\$DATA"$/m, 'web can open known data files, not list');
+  assert.match(setup, /install -d -o vantage -g vantage -m 700 "\$DATA\/\.ssh"$/m);
+  assert.doesNotMatch(
+    setup,
+    /usermod -aG vantage vantage-web/,
+    'never in the vantage group (it can read /etc/vantage)'
+  );
+  // a re-run restarts the instances one at a time and stops on one that is not ready
+  const restart = setup.indexOf('for unit_port in vantage@3003:3003 vantage@3002:3002 vantage-staging:3010');
+  assert.ok(restart > setup.indexOf('systemctl daemon-reload'), 'after the new units are loaded');
+  assert.match(setup.slice(restart), /die "\$unit did not become ready after the restart/);
 });

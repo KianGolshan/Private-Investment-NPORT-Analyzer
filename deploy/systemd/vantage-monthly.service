@@ -21,7 +21,8 @@ NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=/var/lib/vantage /opt/vantage
+# the data only: reports go to VANTAGE_REPORTS_DIR, never into the code (review L7)
+ReadWritePaths=/var/lib/vantage
 
 [Install]
 WantedBy=multi-user.target
