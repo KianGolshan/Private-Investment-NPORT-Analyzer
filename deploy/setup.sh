@@ -32,11 +32,16 @@ die() {
 
 # The value of KEY in the env file, if set.
 current() { [[ -f $ENV_FILE ]] && sed -n "s/^$1=\"\(.*\)\"$/\1/p" "$ENV_FILE" | tail -n 1; }
-# Asks for KEY unless it is already set; rejects characters that would break the file.
+# Whether the env file has KEY at all (an optional answer may be empty).
+answered() { [[ -f $ENV_FILE ]] && grep -q "^$1=" "$ENV_FILE"; }
+# Asks for KEY unless it was answered before (a re-run keeps every answer, an
+# optional one left empty too) or is named in ASK_AGAIN (space-separated keys, e.g.
+# ASK_AGAIN=VANTAGE_R2_ENDPOINT to add off-site backups later); rejects characters
+# that would break the file.
 ask() {
   local key=$1 prompt=$2 secret=${3:-} value
   value=$(current "$key")
-  if [[ -n $value ]]; then
+  if [[ " ${ASK_AGAIN:-} " != *" $key "* ]] && { [[ -n $value ]] || answered "$key"; }; then
     printf '%s' "$value"
     return
   fi

@@ -161,10 +161,10 @@ The nightly backup (3 kept) is on the server's own disk. To keep a copy off it, 
 On the server:
 
 ```bash
-cd ~/vantage-setup && git pull && sudo bash deploy/setup.sh
+cd ~/vantage-setup && git pull && sudo ASK_AGAIN=VANTAGE_R2_ENDPOINT bash deploy/setup.sh
 ```
 
-Answer the off-site questions (the rest keep their values; Enter skips the other optional ones):
+Answer the off-site questions (every other answer, blank ones included, keeps its value):
 
 | Asked for              | Answer                                                              |
 | ---------------------- | ------------------------------------------------------------------- |

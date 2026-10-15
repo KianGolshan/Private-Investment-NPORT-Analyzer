@@ -268,3 +268,30 @@ test('M3: the web runs as vantage-web in a sandbox and writes nothing; jobs writ
   assert.ok(restart > setup.indexOf('systemctl daemon-reload'), 'after the new units are loaded');
   assert.match(setup.slice(restart), /die "\$unit did not become ready after the restart/);
 });
+
+test('a re-run keeps every answer, blank optional ones too, and never waits on a prompt; ASK_AGAIN re-asks', () => {
+  const setup = read('setup.sh');
+  const fns = setup.slice(setup.indexOf('# The value of KEY in the env file'), setup.indexOf('tunnel_setup() {'));
+  const dir = require('./helpers/tmp').tmpDir('setup-ask');
+  const env = path.join(dir, 'vantage.env');
+  fs.writeFileSync(env, 'VANTAGE_STATUS_URL=""\nSEC_USER_AGENT="Jane Doe jane@example.com"\n');
+  // no terminal: a prompt would fail (read </dev/tty) instead of answering
+  const ask = (key, extra = {}) =>
+    spawnSync('bash', ['-c', `${fns}\nask ${key} "prompt"`], {
+      env: { PATH: process.env.PATH, ENV_FILE: env, ...extra },
+      stdio: ['ignore', 'pipe', 'pipe'],
+      detached: true,
+    });
+  const blank = ask('VANTAGE_STATUS_URL');
+  assert.equal([blank.status, blank.stdout.toString()].join('|'), '0|', 'a blank answer is kept without asking');
+  const set = ask('SEC_USER_AGENT');
+  assert.equal(set.stdout.toString(), 'Jane Doe jane@example.com');
+  // never answered, or named in ASK_AGAIN: asked (here there is no terminal, so the read fails)
+  assert.equal(ask('VANTAGE_R2_ENDPOINT').stdout.toString(), '');
+  assert.notEqual(ask('VANTAGE_R2_ENDPOINT').stderr.toString(), '', 'it tried to ask');
+  assert.notEqual(
+    ask('VANTAGE_STATUS_URL', { ASK_AGAIN: 'VANTAGE_R2_ENDPOINT VANTAGE_STATUS_URL' }).stderr.toString(),
+    '',
+    'ASK_AGAIN asks again'
+  );
+});
