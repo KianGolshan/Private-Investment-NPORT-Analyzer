@@ -266,25 +266,30 @@ room for the next one), `npm run warehouse` (generations and the last job), `cat
 - **Around it:** the nightly backup (3 kept) and an optional off-site copy (Oracle Object Storage or Cloudflare R2,
   `deploy/bin/vantage-offsite`); a healthchecks.io ping per night; `/status` shows the last nightly and monthly
   results.
-- **Limits:** per-visitor API rate limit, a smaller one on the heavy analysis routes plus load shedding
-  (`lib/api/heavy.js`), and public mode (no admin, no SEC call from a visitor request).
+- **Limits** (`lib/api/heavy.js`): per visitor, a request count on every API route and a smaller one on the heavy
+  analysis routes, and a time budget (every answer's real time is charged to whoever asked, 15 s of server time a
+  minute); load shedding refuses heavy routes only to the visitors filling the process. Paths are case-sensitive.
+  Counters are per process. Public mode: no admin, no SEC call from a visitor request; `/healthz` details (memory,
+  event-loop stalls) only on loopback.
 
 ## Configuration
 
-| Env var                    | Default             | Purpose                                                               |
-| -------------------------- | ------------------- | --------------------------------------------------------------------- |
-| `SEC_USER_AGENT`           | required            | SEC fair-access identity                                              |
-| `WAREHOUSE_DB_PATH`        | `./warehouse.db`    | Warehouse file (git-ignored)                                          |
-| `SEC_MIN_INTERVAL_MS`      | 110                 | Outbound pacing (≤10 req/s)                                           |
-| `LIVE_SEC`                 | unset               | Enables network tests                                                 |
-| `VANTAGE_ADMIN`            | unset               | `1` enables the local admin action "make this a company" (P5b)        |
-| `VANTAGE_JOB_TIMEOUT_MIN`  | 180                 | A warehouse job's time limit (P8 W1)                                  |
-| `VANTAGE_BACKUP_DIR`       | `~/Vantage-backups` | Where `npm run backup` writes (point it at another disk for off-host) |
-| `VANTAGE_ALERT_URL`        | unset               | Dead-man's-switch URL the nightly run pings (`/fail` on a failure)    |
-| `VANTAGE_NOTIFY`           | on (macOS)          | `0` turns off the nightly run's failure notification                  |
-| `VANTAGE_REFRESH_HEAP_MB`  | 3072                | The nightly refresh's heap ceiling                                    |
-| `HEAVY_RATE_LIMIT_PER_MIN` | 90                  | Per-visitor budget on the heavy analysis routes (`lib/api/heavy.js`)  |
-| `HEAVY_BUSY_SHARE`         | 0.6                 | Share of the last 10 s of heavy work after which they answer "busy"   |
+| Env var                    | Default             | Purpose                                                                |
+| -------------------------- | ------------------- | ---------------------------------------------------------------------- |
+| `SEC_USER_AGENT`           | required            | SEC fair-access identity                                               |
+| `WAREHOUSE_DB_PATH`        | `./warehouse.db`    | Warehouse file (git-ignored)                                           |
+| `SEC_MIN_INTERVAL_MS`      | 110                 | Outbound pacing (≤10 req/s)                                            |
+| `LIVE_SEC`                 | unset               | Enables network tests                                                  |
+| `VANTAGE_ADMIN`            | unset               | `1` enables the local admin action "make this a company" (P5b)         |
+| `VANTAGE_JOB_TIMEOUT_MIN`  | 180                 | A warehouse job's time limit (P8 W1)                                   |
+| `VANTAGE_BACKUP_DIR`       | `~/Vantage-backups` | Where `npm run backup` writes (point it at another disk for off-host)  |
+| `VANTAGE_ALERT_URL`        | unset               | Dead-man's-switch URL the nightly run pings (`/fail` on a failure)     |
+| `VANTAGE_NOTIFY`           | on (macOS)          | `0` turns off the nightly run's failure notification                   |
+| `VANTAGE_REFRESH_HEAP_MB`  | 3072                | The nightly refresh's heap ceiling                                     |
+| `HEAVY_RATE_LIMIT_PER_MIN` | 90                  | Per-visitor budget on the heavy analysis routes (`lib/api/heavy.js`)   |
+| `HEAVY_BUSY_SHARE`         | 0.6                 | Share of the last 10 s of API work after which heavy routes say "busy" |
+| `VISITOR_MS_PER_MIN`       | 15000               | Server time (ms) one visitor's API answers may use per minute          |
+| `BUSY_VISITOR_MS`          | 2000                | When busy, heavy routes refuse only visitors who used more than this   |
 
 The public deployment's settings (`VANTAGE_PUBLIC`, `APP_BUILD`, `VANTAGE_OFFSITE_CMD` and the rest) are listed in
 `.env.example` and DEPLOY.md.

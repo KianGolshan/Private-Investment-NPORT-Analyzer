@@ -9,6 +9,10 @@ const { heavyGuard } = require('./lib/api/heavy');
 const pages = require('./lib/api/pages');
 
 const app = express();
+// Paths are case-sensitive (review H2): /API/analysis/pivot is a 404, never the
+// same handler under a spelling the rate limits do not recognise. Set before any
+// route; the routers in lib/api are created case-sensitive too.
+app.set('case sensitive routing', true);
 // The frontend is served from this same Express instance and never calls
 // /api/* cross-origin, so no CORS grant is needed at all.
 // Security headers. The analyst workspace (web/dist) loads only its own
@@ -176,14 +180,22 @@ if (!USER_AGENT) {
 const loopDelay = require('perf_hooks').monitorEventLoopDelay({ resolution: 20 });
 loopDelay.enable();
 setInterval(() => loopDelay.reset(), 60000).unref();
-app.get('/healthz', (_req, res) =>
+// The memory and stall figures only to this machine (review L10: they would tell
+// a visitor whether a flood is working); behind the proxy, req.ip is the
+// forwarded address, which Caddy sets and a client cannot.
+const LOOPBACK_IP = /^(127\.\d+\.\d+\.\d+|::1|::ffff:127\.\d+\.\d+\.\d+)$/;
+app.get('/healthz', (req, res) =>
   res.set('Cache-Control', 'no-store').json({
     ok: true,
     build: BUILD,
-    uptimeS: Math.round(process.uptime()),
-    rssMB: Math.round(process.memoryUsage.rss() / 1048576),
-    loopP99Ms: Math.round(loopDelay.percentile(99) / 1e6),
-    loopMaxMs: Math.round(loopDelay.max / 1e6),
+    ...(LOOPBACK_IP.test(req.ip || '')
+      ? {
+          uptimeS: Math.round(process.uptime()),
+          rssMB: Math.round(process.memoryUsage.rss() / 1048576),
+          loopP99Ms: Math.round(loopDelay.percentile(99) / 1e6),
+          loopMaxMs: Math.round(loopDelay.max / 1e6),
+        }
+      : {}),
   })
 );
 app.get('/readyz', (req, res) => {
@@ -211,8 +223,9 @@ const apiLimiter = rateLimit({
   message: { error: 'Too many requests — please slow down and try again shortly.' },
 });
 app.use('/api/', apiLimiter);
-// The expensive warehouse routes get their own, smaller budget and shed load
-// when heavy work fills the process (lib/api/heavy.js, review F-05).
+// Each visitor's API time is budgeted, the expensive routes get their own,
+// smaller count, and they shed load when heavy work fills the process
+// (lib/api/heavy.js, reviews F-05, H1, M1).
 app.use(heavyGuard());
 
 // Warehouse routes (Phase 5a, ADR 0008): search, companies and unreviewed

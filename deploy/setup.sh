@@ -112,14 +112,7 @@ Unattended-Upgrade::Automatic-Reboot "true";
 Unattended-Upgrade::Automatic-Reboot-Time "04:00";
 EOF
 systemctl enable --now unattended-upgrades fail2ban
-# key-only SSH and no root login; rpcbind (an NFS helper Ubuntu ships) is not needed
-cat >/etc/ssh/sshd_config.d/50-vantage.conf <<'EOF'
-# Vantage (setup.sh): no root login; the login user with a key only
-PermitRootLogin no
-PasswordAuthentication no
-KbdInteractiveAuthentication no
-EOF
-sshd -t && systemctl reload ssh
+# rpcbind (an NFS helper Ubuntu ships) is not needed; SSH is set up once the edge is known (below)
 systemctl disable --now rpcbind.socket rpcbind.service 2>/dev/null || true
 if ! swapon --show | grep -q .; then
   fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
@@ -204,6 +197,30 @@ VANTAGE_R2_BUCKET="$R2_BUCKET"
 EOF
 install -m 640 -o root -g vantage "$ENV_FILE.tmp" "$ENV_FILE" && rm -f "$ENV_FILE.tmp"
 umask 022
+
+# Key-only SSH, no root login, no X11 or agent forwarding (review M4). Only the
+# login user that ran this script may log in (and, with the Cloudflare edge,
+# vantage for GitHub's deploy key): the web service runs as vantage and can write
+# its home, so on the direct edge vantage must never be an SSH login (review M3).
+# TCP forwarding stays on: staging is opened through `ssh -L`.
+LOGIN_USER=${SUDO_USER:-}
+SSH_USERS=
+if [[ -n $LOGIN_USER && $LOGIN_USER != root ]]; then
+  SSH_USERS=$LOGIN_USER
+  if [[ $EDGE == cloudflare ]]; then SSH_USERS="$SSH_USERS vantage"; fi
+else
+  echo "warning: run setup.sh with sudo from your login user to limit SSH to it; AllowUsers not set" >&2
+fi
+{
+  echo "# Vantage (setup.sh): no root login; keys only; no X11 or agent forwarding"
+  echo "PermitRootLogin no"
+  echo "PasswordAuthentication no"
+  echo "KbdInteractiveAuthentication no"
+  echo "X11Forwarding no"
+  echo "AllowAgentForwarding no"
+  if [[ -n $SSH_USERS ]]; then echo "AllowUsers $SSH_USERS"; fi
+} >/etc/ssh/sshd_config.d/50-vantage.conf
+sshd -t && systemctl reload ssh
 # the second instance warms a new generation a minute after the first
 printf 'VANTAGE_WARM_DELAY_MS="60000"\n' >"$ETC/instance-3003.env"
 # rclone's off-site remote (named "r2" whichever provider), for the vantage user

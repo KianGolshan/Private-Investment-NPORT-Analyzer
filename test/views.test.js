@@ -286,6 +286,28 @@ test('R14: dashboard fund counts are distinct funds, and a past date never reads
   truncated.close();
 });
 
+test('H1: the dashboard reads each company once per generation; every date answers as if asked alone', () => {
+  const Database = require('better-sqlite3');
+  const { trackedDashboard } = require('../lib/services/dashboard');
+  const { memo } = require('../lib/services/memo');
+  // first, middle and latest dates, and one before any filing
+  const dates = ['2019-06-30', '2020-12-31', '2023-06-30', '2026-03-31', '2026-06-30'];
+  const shared = new Database(db.serialize());
+  const first = trackedDashboard(shared, { date: dates[2] });
+  const inOrder = dates.map(d => trackedDashboard(shared, { date: d }));
+  assert.deepEqual(inOrder[2], first);
+  // the per-company inputs were read once and are still kept: asking for them
+  // again never computes
+  const inputs = memo(shared, 'dashboard:inputs', () => assert.fail('the inputs were read again'));
+  assert.ok(inputs.size > 0);
+  for (const [i, d] of dates.entries()) {
+    const alone = new Database(db.serialize());
+    assert.deepEqual(trackedDashboard(alone, { date: d }), inOrder[i], d);
+    alone.close();
+  }
+  shared.close();
+});
+
 test('V08: the company stale-marks panel reads history only through the page date', async () => {
   const { staleMarks } = require('../lib/services/marks');
   const id = idOf('Databricks');

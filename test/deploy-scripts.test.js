@@ -181,3 +181,33 @@ test('setup leaves Caddy able to write its log (validating as root creates it as
   assert.ok(validate > 0 && chown > validate, 'the log directory is handed to caddy after validation');
   assert.ok(setup.indexOf('systemctl restart caddy') > chown, 'before Caddy starts');
 });
+
+test('SSH (review M4): keys only, no X11 or agent forwarding, only the login user (and vantage only for the Cloudflare deploy key)', () => {
+  const setup = read('setup.sh');
+  const start = setup.indexOf('LOGIN_USER=${SUDO_USER:-}');
+  const end = setup.indexOf('} >/etc/ssh/sshd_config.d/50-vantage.conf');
+  assert.ok(start > setup.indexOf('EDGE=$(ask VANTAGE_EDGE'), 'written once the edge is known');
+  assert.ok(end > start && setup.indexOf('sshd -t && systemctl reload ssh', end) > end, 'checked before the reload');
+  // the block as setup runs it, printing the file instead of writing it
+  const block = `${setup.slice(start, end)}}`;
+  const run = env => spawnSync('bash', ['-c', block], { env: { PATH: process.env.PATH, ...env } }).stdout.toString();
+  const direct = run({ SUDO_USER: 'ubuntu', EDGE: 'direct' });
+  for (const line of [
+    'PermitRootLogin no',
+    'PasswordAuthentication no',
+    'KbdInteractiveAuthentication no',
+    'X11Forwarding no',
+    'AllowAgentForwarding no',
+  ])
+    assert.match(direct, new RegExp(`^${line}$`, 'm'), line);
+  assert.match(
+    direct,
+    /^AllowUsers ubuntu$/m,
+    'on the direct edge vantage never logs in (the web service can write its home)'
+  );
+  assert.match(run({ SUDO_USER: 'ubuntu', EDGE: 'cloudflare' }), /^AllowUsers ubuntu vantage$/m);
+  // run as root directly: no AllowUsers rather than locking everyone out
+  assert.doesNotMatch(run({ SUDO_USER: 'root', EDGE: 'direct' }), /AllowUsers/);
+  assert.doesNotMatch(run({ EDGE: 'direct' }), /AllowUsers/);
+  assert.doesNotMatch(setup, /AllowTcpForwarding no/, 'staging is opened through ssh -L');
+});

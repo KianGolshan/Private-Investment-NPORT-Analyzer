@@ -71,6 +71,11 @@ Data traps are in [DATA-QUALITY.md](DATA-QUALITY.md). Numbers are stable: code a
     CLO "company" named after one vintage held six, and the firm "Boston" joined two unrelated advisers by a shared
     word. Before showing a group's name, read the filer keys and titles behind it (traps 60–62).
 
+42. **Guard the cost, not a list of paths.** The heavy-route guard matched a lower-case pattern: Express also answered
+    `/API/...`, and the slowest route (the tracked dashboard, 4.8 s at a new date) was not on the list. Charge each
+    answer's real time to the visitor who asked, make paths case-sensitive, and test a route the list forgot
+    (2026-10-14 review, H1, H2).
+
 ## Running jobs
 
 9. Long jobs run in the foreground, in timed batches under 10 minutes, resumable; no background waiters without an

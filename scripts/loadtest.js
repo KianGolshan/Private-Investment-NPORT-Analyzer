@@ -3,8 +3,10 @@
 // Vantage for a while, each opening pages the way the workspace does (a page's
 // API calls in parallel, then a pause), and the run reports latency
 // percentiles, errors and status codes per page, plus the server's own memory
-// and event-loop delay from /healthz. scripts/bench.js measures each route on
-// this machine; this measures the whole site under concurrent use, over HTTP.
+// and event-loop delay from /healthz (shown only to the server itself, review
+// L10: run it on the server against http://127.0.0.1:8080 to see them).
+// scripts/bench.js measures each route on this machine; this measures the
+// whole site under concurrent use, over HTTP.
 //
 //   node scripts/loadtest.js https://vantage.example.com --users 50 --seconds 300
 //   node scripts/loadtest.js http://127.0.0.1:3002 --users 10 --seconds 20   # a quick local check
@@ -148,7 +150,7 @@ function report({ stats, health }, { users, seconds }) {
       `errors ${errors}, rate-limited ${limited}` +
       (rss.length
         ? `; server (one instance per poll) RSS max ${Math.max(...rss)} MB, event-loop max ${Math.max(...loop)} ms`
-        : '')
+        : '; server memory and event-loop figures are shown only on the server (run it against http://127.0.0.1:8080 there)')
   );
   return { errors, p95 };
 }

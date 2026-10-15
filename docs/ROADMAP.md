@@ -367,3 +367,14 @@ Credit kept outside the live project, load test after the heavy-route cap is liv
 **Deferred from the review:** class labels such as "Indirect via ANTHROPIC SERIES H 1 PREFERRED STOCK" (changing them
 re-keys share classes, so it needs a warehouse-wide diff first); a domain (the user's call); the major upgrades
 (Express 5, Preact 11, TypeScript 7), one at a time.
+
+## Phase 11: engineering and security review remediation (2026-10-14; review graded B+, a private artifact)
+
+**Entry gate:** the review of the repository and the live site (2 high, 7 medium, 11 low, 6 doc findings; 27/27
+raw-EDGAR checks). The user signed it off and asked for Wave 1, with the clicks for M2 and M4.
+
+| Wave   | Scope                                                                                                                                                                                                                                                                                                                                                              | State                   |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------- |
+| **W1** | Keep the site up: case-sensitive paths (H2); a per-visitor time budget on every API route and the tracked dashboard's per-company inputs read once per generation (H1: 4.8 s → ~0.3 s a new date); fair load shedding (M1); `/healthz` details on loopback (L10); setup.sh's SSH settings (M4); the user's clicks for branch protection (M2) and the SSH rule (M4) | Built on `v2-p11-wave1` |
+| W2     | Deploy and alert reliability: data rollback with code rollback (M5), a busy lock is "try later" (M6), accepted warnings and fail pings (M7), the `vantage-web` user and systemd hardening (M3), reports outside the release (L7), reboots on `/status` (L8)                                                                                                        | Not started             |
+| W3     | Correctness polish and docs: L1–L6, L9, D1–D6 (L4 with a warehouse-wide position-facts diff)                                                                                                                                                                                                                                                                       | Not started             |

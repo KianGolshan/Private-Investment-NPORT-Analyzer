@@ -117,6 +117,34 @@ sudo -u vantage vantage-deploy deploy staging staging
 
 Open it through SSH: `ssh -L 3010:127.0.0.1:3010 ubuntu@<server-ip>`, then <http://localhost:3010>.
 
+### 1A.6 Protect `main` and SSH (review M2, M4)
+
+Auto-deploy ships every commit on `main` whose Test run passed, so `main` takes changes only through a pull request:
+
+1. GitHub → the repository → **Settings** → **Branches** → **Add classic branch protection rule**.
+2. **Branch name pattern:** `main`.
+3. Tick **Require a pull request before merging**; set **Required approvals** to **0** (you cannot approve your own
+   pull request).
+4. Tick **Require status checks to pass before merging** and **Require branches to be up to date before merging**.
+   In the search box add each check: `test (22.x)`, `test (24.x)`, `lint`, `web`, `e2e`, `deploy-scripts`,
+   `deploy-drill` (a check appears in the list once it has run on a pull request).
+5. Leave **Allow force pushes** and **Allow deletions** unticked. **Create**.
+6. **Settings** → **Code security** → **Dependabot security updates** → **Enable**.
+
+SSH answers only from your home address:
+
+1. Find your home address at <https://ifconfig.me> (from home, not a VPN).
+2. Oracle Cloud console → ☰ → **Networking** → **Virtual cloud networks** → your VCN → **Subnets** → the subnet →
+   **Security** (or **Security Lists**) → **Default Security List for …** → **Security rules** (or **Ingress
+   Rules**).
+3. On the rule with **Destination Port Range** `22` and **Source CIDR** `0.0.0.0/0`: **⋮** → **Edit** → **Source
+   CIDR** `<your address>/32` → **Save changes**.
+4. If your home address changes, SSH stops answering: edit the rule again in the console the same way (nothing on
+   the server needs to change). Port 80 and 443 stay open to everyone.
+
+Setup also limits SSH logins to the user that ran it (`AllowUsers`), with no X11 or agent forwarding:
+`cd ~/vantage-setup && git pull && sudo bash deploy/setup.sh` applies it (it keeps every answer).
+
 ### Off-site backups (Oracle Object Storage)
 
 The nightly backup (3 kept) is on the server's own disk. To keep a copy off it, in the Oracle Cloud console:

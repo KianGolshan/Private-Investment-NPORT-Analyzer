@@ -68,6 +68,28 @@ test('config says public and the build; health and readiness are not rate-limite
   assert.deepEqual([report.body.ready, report.body.fresh], [false, false], 'same body, always 200');
 });
 
+test('paths are case-sensitive (review H2): /API/... is a 404, never the API under a spelling the limits miss', async () => {
+  await request(app).get('/api/search?q=anthropic').expect(503); // the real route (no warehouse here)
+  for (const url of ['/API/search?q=anthropic', '/Api/Analysis/Pivot', '/api/Analysis/pivot', '/API/admin/companies'])
+    await request(app).get(url).set('Accept', 'application/json').expect(404);
+  await request(app).post('/API/admin/companies').send({}).expect(404);
+});
+
+test('health details only from this machine (review L10); ok and the build for anyone', async () => {
+  const local = await request(app).get('/healthz').expect(200);
+  assert.ok(Number.isFinite(local.body.rssMB), 'loopback sees the details');
+  app.set('trust proxy', 1); // as on the server behind Caddy
+  try {
+    const remote = await request(app).get('/healthz').set('X-Forwarded-For', '203.0.113.9').expect(200);
+    assert.deepEqual(remote.body, { ok: true, build: 'test-build-1' });
+    // the loopback listener's smoke and load checks come through Caddy as 127.0.0.1
+    const smoke = await request(app).get('/healthz').set('X-Forwarded-For', '127.0.0.1').expect(200);
+    assert.ok(Number.isFinite(smoke.body.loopMaxMs));
+  } finally {
+    app.set('trust proxy', false);
+  }
+});
+
 test('static files are served from the app folder whatever the working directory (og.png for link previews)', async () => {
   const og = await request(app).get('/og.png').expect(200);
   assert.equal(og.headers['content-type'], 'image/png');

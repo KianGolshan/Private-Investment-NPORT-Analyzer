@@ -1,9 +1,10 @@
 # Vantage v2 Status
 
-**Phase:** **P10 W1 is merged and live** (PR #21, deployed 2026-10-15 as `eb1697e`, generation 36). Vantage is live
+**Phase:** **P11 W1 built on `v2-p11-wave1`, waiting for sign-off** (the 2026-10-14 engineering and security review,
+graded B+, signed off; ROADMAP §11). P10 is merged and live (generation 36). Vantage is live
 at **https://vantage-kian.duckdns.org** (Oracle Cloud Always Free VM on Pay As You Go, DuckDNS, HTTPS from Caddy,
 nightly SEC refresh, auto-deploy of every green commit on `main`; [DEPLOY.md](DEPLOY.md)). `main` is the only working
-branch (`archive/v1` keeps v1). Next: the user's professional bug and security review of the whole project.
+branch (`archive/v1` keeps v1). Next: the user signs off W1 and does the M2 and M4 clicks (DEPLOY.md 1A.6).
 
 ## Phase tracker
 
@@ -15,6 +16,7 @@ branch (`archive/v1` keeps v1). Next: the user's professional bug and security r
   are deferred.
 - [x] P9: public deployment, live 2026-10-14 ([plan](plans/P9-deployment.md), [DEPLOY.md](DEPLOY.md)).
 - [x] P10: launch review remediation (ROADMAP §10). W0 and W1 live; W2 done except off-site backups (not now).
+- [~] P11: engineering and security review remediation (ROADMAP §11). W1 built (`v2-p11-wave1`); W2, W3 next.
 
 ## What the app answers now (all from the warehouse, every row with mark date and accession)
 
@@ -56,6 +58,21 @@ On the server: `sudo vantage-run npm run doctor`; timers `vantage-nightly` (06:1
 has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB cap, 3 GB heap; 2026-10-14).
 
 ## Where things stand (2026-10-14)
+
+- **Review (2026-10-14, private artifact, grade B+):** 27/27 raw-EDGAR checks (18 random live positions, 8 with 2026Q3
+  mark dates; 8 catch-up rows of 0001193125-26-413969; one exit), cross-checks equal, no injection or XSS path, 0
+  advisories. 2 high (H1: `/api/market/tracked?date=` held a process 4.8 s per new date, off the heavy list; H2:
+  `/API/...` skipped the heavy guard), 7 medium, 11 low, 6 docs; fix plan in ROADMAP §11.
+- **P11 W1 (built, not merged):**
+  - every API answer's real time is charged to the visitor who asked (15 s of server time a minute per process,
+    `VISITOR_MS_PER_MIN`; IPv6 by /56); load shedding refuses heavy routes only to visitors over 2 s this minute;
+  - paths case-sensitive (`/API/...` is 404); the heavy pattern matches any case;
+  - the tracked dashboard reads each company's class marks and history once per generation (memo pinned): a new
+    date 0.29–0.46 s locally (was ~4 s), answers byte-identical to the old code at five dates;
+  - `/healthz` memory and event-loop figures only on loopback; `ok` and `build` for anyone;
+  - setup.sh: `AllowUsers <login user>` (plus vantage on the Cloudflare edge), no X11 or agent forwarding; applied
+    by re-running setup on the server after the merge;
+  - the user's clicks for branch protection and the SSH rule: DEPLOY.md 1A.6.
 
 - **Server:** the first nightly ran out of memory (Node sized its heap at 1.5 GB from `MemoryMax=3G`) and was
   reported as "killed after the time limit". With a 3 GB heap and a 5 GB cap it ran in 4.4 min: 2026q3 bulk (14,066
@@ -118,7 +135,7 @@ has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB 
 | Backup / restore              | —                    | server backups 2026-10-14 (g33, g34); restore drill on the same disk only (2026-10-07); off-site: W2                                                                                                                                                                                                                                                                        |
 | Lighthouse (live)             | ≥90                  | after W1 (2026-10-15): Market mobile **98** (was 68; layout shift 0), company mobile 98, company desktop 87 (layout shift 0.268 from the chart card); accessibility **100**, best practices 100, SEO 100                                                                                                                                                                    |
 | Accessibility (axe, WCAG 2.1) | 0 serious            | **0** on 32 pages × light/dark (W1 build: local crawl and CI e2e)                                                                                                                                                                                                                                                                                                           |
-| Data accuracy (review)        | exact                | 12/12 random live rows and 6/6 special cases (amendment, $0, exit, 3:1 split, as-of) equal raw EDGAR                                                                                                                                                                                                                                                                        |
+| Data accuracy (review)        | exact                | 2026-10-14: 27/27 (18 random live positions incl. 8 with 2026Q3 mark dates, 8 catch-up rows, 1 exit); 2026-10-13: 12/12 rows and 6/6 special cases (amendment, $0, exit, 3:1 split, as-of)                                                                                                                                                                                  |
 | Suite                         | green                | 2026-10-15 on `main`: backend 431 (427 pass, 4 skipped); web 47/47; e2e green in CI (PR #21)                                                                                                                                                                                                                                                                                |
 
 ## Decisions waiting on the user
@@ -212,10 +229,12 @@ Everything known and not built (2026-10-14). Each item says why it waits.
 
 ## Next session
 
-> Vantage v2 is live at https://vantage-kian.duckdns.org; P10 (launch review remediation) is merged and deployed
-> (generation 36). `main` is the only working branch. Start with CLAUDE.md, this file and docs/ROADMAP.md §10. The
-> user's next step is a professional review of the whole project for bugs, issues and security. Do not ask about
-> off-site backups. Server: `ssh ubuntu@129.146.24.191`; `sudo vantage-run npm run doctor`.
+> Vantage v2 is live at https://vantage-kian.duckdns.org (generation 36). The 2026-10-14 engineering review is
+> signed off; P11 W1 (keep the site up) is built on `v2-p11-wave1` and waits for the user's sign-off and merge. Start
+> with CLAUDE.md, this file and docs/ROADMAP.md §11. After the merge: re-run setup.sh on the server (SSH settings),
+> confirm the user did DEPLOY.md 1A.6, re-check `/API/...` (404) and a new tracked date on the live site, and ask
+> before a load test. Then W2 (deploy and alert reliability). Do not ask about off-site backups. Server:
+> `ssh ubuntu@129.146.24.191`; `sudo vantage-run npm run doctor`.
 >
 > This Mac has 8 GB of memory: one heavy job at a time in the foreground, `--test-concurrency=2`, and ask before a
 > refresh, the e2e suite or the LIVE suite. Gates: `npm test`, `npm run lint`, `npm run format:check`,
@@ -223,6 +242,14 @@ Everything known and not built (2026-10-14). Each item says why it waits.
 > `node scripts/smoke.js https://vantage-kian.duckdns.org`.
 
 ## Log
+
+- **2026-10-14 (P11 W1, built):** the user signed off the review and asked for W1 (H2, H1, M1, L10) with the clicks
+  for M2 and M4. Built on `v2-p11-wave1`: `lib/api/heavy.js` (visitor time budget, fair shedding, any-case pattern),
+  case-sensitive routing (`server.js`, both routers), the dashboard's per-generation inputs (`dashboard.js`,
+  `marks.staleMarks` takes them; memo `dashboard:inputs` pinned), `/healthz` details on loopback, `setup.sh` SSH
+  settings, DEPLOY.md 1A.6, LESSONS 42, ROADMAP §11. Gates: backend 441 (437 pass, 4 skipped), web 47/47, lint,
+  lint:web, format, build. Browser on the local warehouse (public mode): Tracked, company, Explore and firm pages,
+  every API call 200, no console errors; `/API/analysis/pivot` 404. Not run: e2e, LIVE, bench, load test (ask first).
 
 - **2026-10-15 (P10 close-out):** the user merged PR #21 on GitHub (one e2e assertion matched the old Status wording;
   fixed before the merge). Auto-deploy shipped `eb1697e` 8 minutes after the merge, ran the review import
