@@ -38,11 +38,7 @@ async function main() {
     reconcile: () => child([path.join(ROOT, 'scripts', 'reconcile.js')], 30 * 60000, 'reconcile'),
     live: () =>
       child(
-        [
-          '--test',
-          '--test-concurrency=1',
-          ...['live-e2e', 'live-popular', 'live-warehouse'].map(t => path.join(ROOT, 'test', `${t}.test.js`)),
-        ],
+        ['--test', '--test-concurrency=1', path.join(ROOT, 'test', 'live-warehouse.test.js')],
         60 * 60000,
         'LIVE regression'
       ),

@@ -38,8 +38,7 @@ test('the workspace is served with a strict script policy and its main routes lo
     await page.goto(path);
     await expect(page.locator('h1').first()).toBeVisible();
   }
-  const legacy = await page.request.get('/legacy');
-  expect(legacy.headers()['content-security-policy']).toMatch(/'unsafe-inline'/);
+  expect((await page.request.get('/legacy')).status()).toBe(404); // v1 removed (git tag v1-archive)
   expect(errors).toEqual([]);
 });
 
@@ -78,7 +77,13 @@ test('About and Status read the warehouse; the nav links them', async ({ page })
   await page.goto('/status');
   await expect(page.getByRole('heading', { name: 'Data status' })).toBeVisible();
   await expect(page.getByText('Filings through', { exact: true })).toBeVisible();
-  await expect(page.getByRole('cell', { name: /[\d,]+ private, [\d,]+ tracked/ })).toBeVisible();
+  await expect(
+    page.getByRole('cell', {
+      name: /[\d,]+ private companies, [\d,]+ tracked; plus [\d,]+ fund interests, [\d,]+ CLOs and [\d,]+ insurance vehicles/,
+    })
+  ).toBeVisible();
+  // the last scheduled checks (review F-06): a fresh warehouse has none yet
+  await expect(page.getByRole('row', { name: /Monthly EDGAR check/ })).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -94,7 +99,7 @@ test('an open tab offers a reload when the server is deployed again', async ({ p
 test('a failed search says so and can be retried; it is never "no match" (F13)', async ({ page }) => {
   await page.goto('/firms');
   await page.route('**/api/search?*', r => r.fulfill({ status: 503, json: { error: 'warehouse is busy' } }));
-  await page.getByRole('button', { name: 'Search (⌘K)' }).click();
+  await page.getByRole('button', { name: /Search companies, funds, firms/ }).click();
   await page.getByRole('dialog').getByLabel('Search', { exact: true }).fill('stripe');
   await expect(page.getByRole('alert')).toContainText('Search failed (warehouse is busy)');
   await expect(page.getByText(/matches “stripe”/)).toHaveCount(0);
@@ -119,7 +124,7 @@ test('the position drawer takes focus, closes on Escape and draws one mark line 
 
 test('dialogs keep focus and give it back; clickable rows open from the keyboard (F18)', async ({ page }) => {
   await page.goto('/firms');
-  const trigger = page.getByRole('button', { name: 'Search (⌘K)' });
+  const trigger = page.getByRole('button', { name: /Search companies, funds, firms/ });
   await trigger.click();
   const palette = page.getByRole('dialog');
   await expect(palette.getByLabel('Search', { exact: true })).toBeFocused();

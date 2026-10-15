@@ -3,6 +3,7 @@ import { useCallback, useMemo } from 'preact/hooks';
 import { qs, useApi } from '../api/client';
 import type { Drill, DrillEvent, Freshness, Pivot, PivotMetric } from '../api/types';
 import {
+  count,
   escapeHtml,
   companyPath,
   firmPath,
@@ -520,10 +521,10 @@ function DrillView({
         <>
           <div class="row wrap" style={{ padding: '8px 12px' }}>
             <strong class={level ? '' : tone(d.total)}>
-              {d.metric === 'holders' ? `${num(d.total)} funds` : level ? moneyC(d.total) : moneyDelta(d.total)}
+              {d.metric === 'holders' ? count(d.total, 'fund') : level ? moneyC(d.total) : moneyDelta(d.total)}
             </strong>
             <span class="muted small">
-              {d.label}. {num(d.count)} filings, {num(d.legCount)} legs, {num(d.funds)} funds
+              {d.label}. {num(d.count)} filings, {num(d.legCount)} legs, {count(d.funds, 'fund')}
               {d.count > d.events.length ? `; the ${d.events.length} largest shown` : ''}. The legs sum to the cell.
             </span>
           </div>

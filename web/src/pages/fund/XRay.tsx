@@ -333,6 +333,10 @@ export function Compare({ fund, name }: Props) {
       {c.loading && !cmp && <Loading rows={6} />}
       {cmp && (
         <>
+          <p class="muted small" style={{ margin: 0 }}>
+            Holdings are matched instrument by instrument, with the names as filed. The Changes tab matches by company
+            and share class, as the company pages do, so its split between position and mark can differ slightly.
+          </p>
           <div class="kpis">
             <Kpi
               label="Private value"
@@ -508,14 +512,14 @@ export function Returns({ fund, name }: Props) {
         <>
           <div class="kpis">
             <Kpi
-              label="Mark-implied MOIC"
+              label="Mark-implied MOIC (proxy)"
               value={x(d.summary.moic)}
               sub={`${num(d.summary.positionCount)} positions, ${num(d.summary.periodCount)} filings`}
             />
             <Kpi
-              label="Mark-implied IRR"
+              label="Mark-implied IRR (proxy)"
               value={irr(d.summary.irr)}
-              sub={`${d.summary.firstDate} → ${d.summary.lastDate}`}
+              sub={`${d.summary.firstDate} → ${d.summary.lastDate}; from marks, not a fund return`}
             />
             <Kpi label="Proxy invested" value={moneyC(d.summary.invested)} />
             <Kpi

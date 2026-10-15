@@ -30,7 +30,8 @@ marks, new positions, adds, reductions, exits and trends. Keep that goal in view
   `docs/DATA-QUALITY.md` for amendments, blank series IDs, exits, dead funds, debt vs. equity, SPVs and
   splits.
 - **"Private" means the company's status** (the `companies` table), not fair-value Level 3 alone. Real
-  filers label private holdings Level 1 or 2.
+  filers label private holdings Level 1 or 2. Each reviewed company also has a category (company, fund, clo,
+  insurance; migration 0022): Market shows operating companies by default.
 - Exits are reported as "no longer reported"; never guess why a fund exited. Changes are worded as the filings
   allow: first reported, added, reduced, reported at $0, mark moved.
 - **Group by identity, display by name:** fund_key, company id, instrument key; names are labels (trap 48).
@@ -38,9 +39,9 @@ marks, new positions, adds, reductions, exits and trends. Keep that goal in view
 ## Engineering rules
 
 - Reuse, don't re-implement. For parsing, use `extractAllHoldings`, `extractFundMeta`, `classifyInstrument`,
-  `issuerKeyOf` and `instrumentKey` in `parsers.js`. For splits, use the logic in `public/splits.js`. A scratch
+  `issuerKeyOf` and `instrumentKey` in `parsers.js`. For splits, use the logic in `lib/analytics/splits.js`. A scratch
   parser that skipped `assetConditional` once dropped a real $1.09B Anthropic position.
-- All SEC HTTP calls go through the paced `fetchWithRetry` (SEC fair access is about 10 req/s, and a real
+- All SEC HTTP calls go through the paced `fetchWithRetry` (`lib/edgar.js`, via `secGet` in the jobs) (SEC fair access is about 10 req/s, and a real
   User-Agent is required).
 - Ingest is idempotent and transactional (one transaction per quarter or batch), logs row counts to
   `ingest_log`, and fails loudly.
@@ -53,11 +54,12 @@ marks, new positions, adds, reductions, exits and trends. Keep that goal in view
 - Schema changes go in numbered migrations (`db/migrations/NNNN_*.sql`). No ORM.
 - Company and firm ids are stable (ADR 0008, 0009): `data/review/company_ids.csv` and `manager_ids.csv` are the
   ledgers; the review import reads and rewrites them. Never renumber or reuse an id.
-- Keep the warehouse (`warehouse.db`) separate from the request cache (`cache.db`). Readers (web server,
-  MCP server) open it with `openWarehouseReadOnly`; only jobs migrate or write.
+- Readers of the warehouse (`warehouse.db`: web server, MCP server) open it with `openWarehouseReadOnly`; only jobs
+  migrate or write.
 - The app answers private companies, funds, firms and the market from the warehouse (`lib/services`,
-  `lib/analytics`; module map and API in `docs/ARCHITECTURE.md`); v1's per-filing routes are a compatibility layer
-  for the live path only. Warehouse size budget: 1 GB. Admin actions are local, behind `VANTAGE_ADMIN=1`, and run as jobs.
+  `lib/analytics`; module map and API in `docs/ARCHITECTURE.md`). No visitor request calls the SEC. v1 (the live
+  per-filing routes, Private Credit) was removed from the live project on 2026-10-13 and is kept at the git tag
+  `v1-archive`. Warehouse size budget: 1 GB. Admin actions are local, behind `VANTAGE_ADMIN=1`, and run as jobs.
 - Match the surrounding code style: Prettier config, ESLint flat config, Node ≥22, CommonJS.
 - **Fix completeness** (LESSONS 37–39): a fix is done when its neighbours are tested too: every exit path
   (try/catch/finally), empty, header-only and zero inputs, the first, middle and latest item in time, interleaved
@@ -103,7 +105,7 @@ node scripts/verify-edgar.js CIK PATTERN ACCESSION...   # raw primary_doc.xml ro
 
 - In scope: private equity-type exposure and marks (common, preferred, warrants, SPV/fund interests) in
   N-PORT; firm/fund/class analytics; the tracked-company list; the MCP server.
-- Deferred: enhancements to private credit (BDC 10-Q/10-K path stays as is).
+- Out of the live project: private credit (BDC 10-Q/10-K), kept in v1 at the git tag `v1-archive`.
 - Adopted after real-data checks: Form N-CEN advisers for manager mapping (ADR 0007).
 - Rejected after real-data checks: 13F, 13D/G, N-PX, insider forms, fund flows, Form ADV, Form D and XBRL
   as primary sources. Keyword (full-text) search is on-demand only, because it cannot see exits or opaque SPVs.

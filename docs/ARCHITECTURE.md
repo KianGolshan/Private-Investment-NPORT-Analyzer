@@ -10,7 +10,6 @@ All figures below were measured against real SEC data on 2026-09-27. Decision re
 | **SEC DERA N-PORT bulk datasets** (`/files/dera/data/form-n-port-data-sets/<yyyy>q<n>_nport.zip`) | History backbone                                                         | Every NPORT-P and NPORT-P/A since 2019Q4. For 80 random funds, EDGAR lists 7,046 filings; **0 missing**. Identical to the app's parser on 617 of 617 overlapping filings          | Filings through quarter-end, posted about 1–7 weeks later (2026Q2: 7/9/2026; 2026Q1: 4/6; 2025Q4: 1/7; 2025Q3: 11/18/2025) | 27 zips, 240–720 MB each, about 8 s download. About 35–180 s per quarter with the equity filter                                                                                         |
 | **EDGAR form index (`full-index/<yyyy>/QTR<n>/form.idx`) + `primary_doc.xml`**                    | Catch-up for the current quarter                                         | Every filing, including exits, dead funds and SPVs                                                                                                                                | Same day                                                                                                                   | About 11.7k NPORT-P per quarter; `primary_doc` median 352 KB, max 15 MB. **Measured: 11,822 filings in 26.9 min (about 9/s, the SEC rate limit)**; a night with nothing new takes 1.1 s |
 | **EDGAR full-text search (EFTS)**                                                                 | On-demand "anything new for X" check, and names not yet in the warehouse | Only filings containing the typed words. Capped at 1,000 hits per query; date-windowing avoids the cap (filed Jul 1–Sep 27, 2026: Anthropic 223, Databricks 259, Stripe 160 hits) | Same day                                                                                                                   | Cheap per name. **Cannot see exits or opaque SPVs**, so it isn't used as a backbone                                                                                                     |
-| BDC 10-Q/10-K HTML                                                                                | Private Credit tab (unchanged)                                           | See README                                                                                                                                                                        | Same day                                                                                                                   | Per filing                                                                                                                                                                              |
 
 Bulk dataset tables used: `SUBMISSION` (accession, filing date, form type, report date), `REGISTRANT` (CIK,
 name, address), `FUND_REPORTED_INFO` (series ID and name, net assets), `FUND_REPORTED_HOLDING` (issuer
@@ -222,7 +221,12 @@ Fund calendars are staggered, so "as of D" mixes mark dates. The UI always shows
   firm's changes 0.2–0.3 s. The warm-up takes ~8 s and blocks the event loop for up to ~2.7 s once per generation
   (a P9 item: precompute or a worker).
 
-**Scheduling on macOS (launchd).** This is not installed automatically. Save the following as
+**Scheduling.** On the public server, systemd timers run the nightly (06:15 New York) and monthly (the 3rd)
+jobs (`deploy/systemd/`, [DEPLOY.md](DEPLOY.md)). The nightly job gives the refresh its own heap ceiling
+(`--max-old-space-size`, 3 GB, `VANTAGE_REFRESH_HEAP_MB`): Node otherwise sizes it from the service's memory cap,
+and the server's first nightly, which loaded a new bulk quarter, ran out of memory at 1.5 GB (2026-10-14).
+
+**Scheduling on macOS (launchd)**, for a local copy. This is not installed automatically. Save the following as
 `~/Library/LaunchAgents/com.vantage.refresh.plist` and load it with
 `launchctl load ~/Library/LaunchAgents/com.vantage.refresh.plist`. It runs daily at 06:15 local time. EDGAR
 publishes the day's index overnight, and filings cluster about 60 days after each quarter-end.
@@ -249,33 +253,41 @@ Check health with `npm run doctor` (exits 1 when the last job failed or was inte
 room for the next one), `npm run warehouse` (generations and the last job), `cat warehouse.db.jobs.log`,
 `sqlite3 warehouse.db "select * from generation_meta order by id desc limit 5"` and `select * from ingest_errors`.
 
-## Deployment (planned, Phase 9)
+## Deployment (live since 2026-10-14; runbook: [DEPLOY.md](DEPLOY.md), ADR 0006)
 
-- **Shape:** one always-on container or VM with a persistent volume.
-  - The Express app serves reads from `warehouse.db` (after P5, visitors never call the SEC).
-  - A scheduled `npm run refresh` on the same machine writes to it.
-  - Jobs build a candidate and publish a new generation file (ADR 0009); readers never see a half-built one.
-- **Around it:**
-  - Litestream replication to object storage, for backup and restore-on-boot.
-  - A dead-man's-switch health check on the nightly refresh.
-  - Cache-Control headers valid until the next refresh, with a CDN in front for traffic spikes.
-- Details, gates and success criteria are in ROADMAP §Phase 9. The hosting provider gets its own ADR
-  (0006) once chosen.
+- **Shape:** one Oracle Cloud Always Free VM (Ampere A1, 2 OCPU, 12 GB, Ubuntu 24.04) under a DuckDNS name. Caddy
+  serves HTTPS (Let's Encrypt) and balances two Node instances (`vantage@3002`, `vantage@3003`) by readiness;
+  a staging instance listens on loopback only.
+- **Data:** the instances read the published generation read-only; the nightly job writes a new one (ADR 0009),
+  which each instance warms and then switches to.
+- **Shipping:** the server polls GitHub and deploys a commit on `main` once its Test run is green
+  (`vantage-autodeploy`, every 5 minutes): a release per commit, a review import when migrations or
+  `data/review` change, a rolling restart gated on `/readyz`, the smoke check, rollback on any failure.
+- **Around it:** the nightly backup (3 kept) and an optional off-site copy (Oracle Object Storage or Cloudflare R2,
+  `deploy/bin/vantage-offsite`); a healthchecks.io ping per night; `/status` shows the last nightly and monthly
+  results.
+- **Limits:** per-visitor API rate limit, a smaller one on the heavy analysis routes plus load shedding
+  (`lib/api/heavy.js`), and public mode (no admin, no SEC call from a visitor request).
 
 ## Configuration
 
-| Env var                   | Default             | Purpose                                                               |
-| ------------------------- | ------------------- | --------------------------------------------------------------------- |
-| `SEC_USER_AGENT`          | required            | SEC fair-access identity                                              |
-| `WAREHOUSE_DB_PATH`       | `./warehouse.db`    | Warehouse file (git-ignored)                                          |
-| `CACHE_DB_PATH`           | `./cache.db`        | Existing request cache                                                |
-| `SEC_MIN_INTERVAL_MS`     | 110                 | Outbound pacing (≤10 req/s)                                           |
-| `LIVE_SEC`                | unset               | Enables network tests                                                 |
-| `VANTAGE_ADMIN`           | unset               | `1` enables the local admin action "make this a company" (P5b)        |
-| `VANTAGE_JOB_TIMEOUT_MIN` | 180                 | A warehouse job's time limit (P8 W1)                                  |
-| `VANTAGE_BACKUP_DIR`      | `~/Vantage-backups` | Where `npm run backup` writes (point it at another disk for off-host) |
-| `VANTAGE_ALERT_URL`       | unset               | Dead-man's-switch URL the nightly run pings (`/fail` on a failure)    |
-| `VANTAGE_NOTIFY`          | on (macOS)          | `0` turns off the nightly run's failure notification                  |
+| Env var                    | Default             | Purpose                                                               |
+| -------------------------- | ------------------- | --------------------------------------------------------------------- |
+| `SEC_USER_AGENT`           | required            | SEC fair-access identity                                              |
+| `WAREHOUSE_DB_PATH`        | `./warehouse.db`    | Warehouse file (git-ignored)                                          |
+| `SEC_MIN_INTERVAL_MS`      | 110                 | Outbound pacing (≤10 req/s)                                           |
+| `LIVE_SEC`                 | unset               | Enables network tests                                                 |
+| `VANTAGE_ADMIN`            | unset               | `1` enables the local admin action "make this a company" (P5b)        |
+| `VANTAGE_JOB_TIMEOUT_MIN`  | 180                 | A warehouse job's time limit (P8 W1)                                  |
+| `VANTAGE_BACKUP_DIR`       | `~/Vantage-backups` | Where `npm run backup` writes (point it at another disk for off-host) |
+| `VANTAGE_ALERT_URL`        | unset               | Dead-man's-switch URL the nightly run pings (`/fail` on a failure)    |
+| `VANTAGE_NOTIFY`           | on (macOS)          | `0` turns off the nightly run's failure notification                  |
+| `VANTAGE_REFRESH_HEAP_MB`  | 3072                | The nightly refresh's heap ceiling                                    |
+| `HEAVY_RATE_LIMIT_PER_MIN` | 90                  | Per-visitor budget on the heavy analysis routes (`lib/api/heavy.js`)  |
+| `HEAVY_BUSY_SHARE`         | 0.6                 | Share of the last 10 s of heavy work after which they answer "busy"   |
+
+The public deployment's settings (`VANTAGE_PUBLIC`, `APP_BUILD`, `VANTAGE_OFFSITE_CMD` and the rest) are listed in
+`.env.example` and DEPLOY.md.
 
 ## Performance budgets
 
@@ -293,7 +305,7 @@ room for the next one), `npm run warehouse` (generations and the last job), `cat
 Built in P1–P4.5 (later additions follow below, by wave):
 
 ```
-lib/edgar.js                       fetchWithRetry, pace (moved from server.js; shared by server and jobs)
+lib/edgar.js                       fetchWithRetry, pace (the jobs' paced SEC client, via delta.js secGet)
 lib/warehouse/db.js                connection, migrations; openWarehouseReadOnly for readers (no create, no
                                    migrate, fails if the schema is behind)
 lib/warehouse/bulk-source.js       published-quarter list, verified zip download
@@ -309,7 +321,7 @@ lib/warehouse/edgar-rows.js        one primary_doc.xml -> the same rows, via the
 lib/warehouse/delta.js             EDGAR form-index catch-up (resumable, retries, .txt fallback)
 lib/warehouse/ncen.js              N-CEN advisers: data sets + EDGAR top-up
 lib/warehouse/refresh.js           nightly: bulk quarters, catch-up, N-CEN, entity upkeep
-lib/analytics/asof.js              exposureAsOf, instrumentHistory (splits via public/splits.js)
+lib/analytics/asof.js              exposureAsOf, instrumentHistory (splits via lib/analytics/splits.js)
 lib/entities/seed.js               review-file suggestions (companies, aliases, SPVs, status, managers)
 lib/entities/review.js, csv.js     import of the reviewed CSVs (transactional, fails loudly)
 lib/entities/resolve.js            holdings.company_id / via_spv from the aliases
@@ -323,7 +335,8 @@ scripts/ingest-bulk.js, ingest-delta.js, refresh.js, ingest-ncen.js
 scripts/seed-entities.js, review-aliases.js, entities-report.js, backfill-leis.js, backfill-listing-evidence.js
 data/review/{aliases,managers,disclosed_exposure}.csv, curation.json   reviewed entity decisions (imported;
                                    curation.json also holds curated statuses, e.g. SpaceX public)
-public/splits.js, public/fund-groups.js   shared by the browser and Node (split detection; v1's firm list)
+lib/analytics/splits.js            split detection (moved from public/ with v1's removal)
+lib/entities/fund-groups.js        v1's curated firm list, which seeds firm groupings
 ```
 
 Built in P5a:
@@ -347,7 +360,6 @@ lib/warehouse/capital-structure.js debt rows kept beside a private-candidate row
 lib/warehouse/totals-backfill.js   one-off backfill of both (scripts/backfill-filing-totals.js)
 lib/warehouse/fund-names.js        fund list + word index, rebuilt by refresh and the ingest scripts
 lib/services/fund.js               fund search, canonical filings, X-Ray / compare / returns on the warehouse
-lib/analytics/peer.js              velocity, outliers, ledger, leaderboard (UMD; the browser loads /peer.js)
 lib/entities/review-import.js      the review import (npm run review:aliases and the admin job)
 lib/entities/make-company.js       "make this a company": review files + import, run as a warehouse job
 lib/warehouse/job.js               runJob: the one write path (lock, candidate, derived rebuild, validate, publish)
@@ -370,15 +382,14 @@ lib/analytics/activity.js          position changes per fund filing: companyActi
                                    fundChanges (a fund, a firm's funds, or every filing made since a date)
 lib/services/errors.js             ServiceError and shared input checks
 lib/services/memo.js               whole-warehouse answers kept until the next refresh run
-lib/services/market.js             top private companies as of D, by country, the what's-new feed
+lib/services/market.js             top private companies as of D (by category, migration 0022), by country, the feed
 lib/services/firm.js               firms (N-CEN adviser, registrant fallback), firm book, firm marks, firm changes
 lib/services/marks.js              share classes as of D, per-class mark history, stale marks
 lib/services/dashboard.js          the tracked-list dashboard
-public/views.js                    company Activity / Trend / Share classes; Market & What's New; Firms
 ```
 
 Built in P6b W0 (2026-10-01), the analyst workspace (`web/`, Vite + Preact + TypeScript, ESM; its own
-`package.json`; built into `web/dist`, which `server.js` serves at `/` and the app routes, with v1 at `/legacy`):
+`package.json`; built into `web/dist`, which `server.js` serves at `/` and the app routes; v1 is kept at the git tag `v1-archive`):
 
 ```
 web/src/app.tsx                    shell: sidebar, top bar (⌘K, freshness, theme, density), mobile nav, routes (preact-iso)
@@ -472,7 +483,7 @@ web/src/pages/company/markLines.ts   per-class, per-lineage split-adjusted marks
 web/src/lib/export.ts csvText        spreadsheet-formula-safe CSV text; format.ts escapeHtml for chart tooltips
 web/e2e/                Playwright suite (app.spec.ts, a11y.spec.ts with axe) on the golden warehouse
 test/oracle.test.js     raw-EDGAR oracle (test/fixtures/oracle, scripts/verify-edgar.js rawHoldings)
-public/ (v1, /legacy)   only Private Credit Analysis is shown; the retired tabs link to their replacements
+lib/api/heavy.js        per-visitor budget and load shedding on the heavy routes (review F-05)
 ```
 
 ECharts loads after the page's load event, when the browser is idle (`ui/Chart.tsx`): the text and tables paint first.
@@ -513,6 +524,7 @@ curation and code revisions) and `job` (the last job's state). A retired firm id
 /api/analysis/compare?rows=company|firm|fund|class&key=…&key=…&period=&from=&to=   2 to 5 keys (class: id:label)
 /api/market/movers?from=&to=&tracked=1&limit=    mark effect and net position flow per company, top each way
 /api/market/new?from=&to=                        companies first reported (first stored holding) in the window
+  the three Market routes take ?category=company,fund,clo,insurance (default: every category; migration 0022)
 /api/watchlist?company=&firm=&fund=&date=        each item now and a year earlier, the year's effects (≤100 each)
   /api/feed takes ?firm=&fund= (echoed as `filters`); /api/analysis/pivot takes ?tracked=1
 ```

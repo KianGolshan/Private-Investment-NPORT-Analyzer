@@ -36,12 +36,17 @@ export default function Overview({ base, sq, subject, name, newest }: ViewProps)
   // The periods inside the range (all when none): their indexes into the pivot arrays.
   const [i0, i1] = useMemo(() => {
     if (!ends.length) return [0, -1];
-    if (!range) return [0, ends.length - 1];
+    if (!range) {
+      // no range picked: open at the period before the first reported holding,
+      // not at 2019Q4 with years of $0 in front (review F-19)
+      const first = p?.total.value.findIndex(v => v > 0) ?? -1;
+      return [Math.max(0, first - 1), ends.length - 1];
+    }
     const a = ends.findIndex(d => d > scope.from);
     let b = ends.findIndex(d => d > scope.to) - 1;
     if (b < 0) b = ends.length - 1;
     return [Math.max(0, a), b];
-  }, [ends, range, scope.from, scope.to]);
+  }, [ends, range, scope.from, scope.to, p]);
 
   const onZoom = useCallback(
     (_p: unknown, chart: { getOption: () => unknown }) => {

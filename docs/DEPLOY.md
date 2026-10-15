@@ -59,7 +59,9 @@ That makes 1A good for testing and showing people, and 1B the version for your r
 3. **healthchecks.io** (free, recommended): create a check `vantage-nightly`, period 1 day, grace 6 hours. Keep its
    **ping URL**. It emails you if a nightly refresh fails or never runs.
 4. Optional, any time later:
-   - **Cloudflare R2** for off-site backups (1.1 step 2). Without it, backups stay on the server.
+   - **Off-site backups**: Oracle Object Storage in the same account (free up to 20 GB; steps in
+     [Off-site backups](#off-site-backups-oracle-object-storage)) or Cloudflare R2 (1.1 step 2). Without one,
+     backups stay on the server.
    - An uptime monitor (UptimeRobot, free) on `https://<name>.duckdns.org/readyz?fresh=1`.
 
 ### 1A.2 The server
@@ -86,7 +88,7 @@ sudo bash ~/vantage-setup/deploy/setup.sh
 | DuckDNS token       | from 1A.1                                        |
 | SEC user agent      | `Your Name you@example.com` (an SEC requirement) |
 | healthchecks.io URL | from 1A.1 (Enter to skip)                        |
-| The optional ones   | Enter to skip (status page, analytics, R2)       |
+| The optional ones   | Enter to skip (status page, analytics, off-site) |
 
 Setup also points the DuckDNS name at the server, opens ports 80 and 443 in the server's firewall, and turns on
 **auto-deploy**. Every 5 minutes the server checks GitHub, and when `main` has a new commit whose CI passed, it
@@ -114,6 +116,36 @@ sudo -u vantage vantage-deploy deploy staging staging
 ```
 
 Open it through SSH: `ssh -L 3010:127.0.0.1:3010 ubuntu@<server-ip>`, then <http://localhost:3010>.
+
+### Off-site backups (Oracle Object Storage)
+
+The nightly backup (3 kept) is on the server's own disk. To keep a copy off it, in the Oracle Cloud console:
+
+1. ☰ menu → **Storage** → **Buckets** → **Create Bucket**. Name `vantage-backups`, leave the rest, **Create**.
+2. Your profile (top right) → **Tenancy: …** → copy the **Object storage namespace**.
+3. Note your region identifier (for Phoenix, `us-phoenix-1`; shown under ☰ → **Governance** → **Tenancy details**
+   or in the region menu).
+4. Your profile → **My profile** → **Customer secret keys** → **Generate secret key**, name `vantage`. Copy the
+   **secret** now (it is shown once), then copy the **Access key** from the list.
+
+On the server:
+
+```bash
+cd ~/vantage-setup && git pull && sudo bash deploy/setup.sh
+```
+
+Answer the off-site questions (the rest keep their values; Enter skips the other optional ones):
+
+| Asked for              | Answer                                                              |
+| ---------------------- | ------------------------------------------------------------------- |
+| Off-site endpoint      | `https://<namespace>.compat.objectstorage.<region>.oraclecloud.com` |
+| Access key id / secret | from step 4                                                         |
+| Bucket name            | Enter (`vantage-backups`)                                           |
+
+Check it with `sudo -u vantage -H rclone lsf r2:vantage-backups` after the next nightly (the remote is called `r2`
+whichever provider it is), or run the copy now:
+`sudo -u vantage -H env BACKUP_DIR=/var/lib/vantage/backups vantage-offsite`. The doctor then counts the backup as
+off-host. Three backups use about 1.8 GB of the 20 GB free.
 
 ### Moving from 1A to a domain (1B) later
 
@@ -298,28 +330,29 @@ On the server, `sudo -u vantage vantage-deploy deploy production main` deploys b
 
 ## 3. What runs on its own
 
-| When                        | What                                                                                                                                                 | Where to look                                                                       |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Every night, 06:15 New York | `vantage-nightly`: refresh from the SEC (a new generation), backup, R2 copy, watch report, doctor, smoke check; pings healthchecks.io (fail = email) | `journalctl -u vantage-nightly`, healthchecks.io, `/status`                         |
-| The 3rd of each month       | `vantage-monthly`: EDGAR reconciliation and the LIVE regression                                                                                      | `journalctl -u vantage-monthly`; `sudo vantage-run npm run doctor` shows its result |
-| After each new generation   | Each instance warms the new data beside the old one, then swaps (the second a minute later); open tabs update within seconds                         | `/status`                                                                           |
-| Security updates            | Installed daily; reboot at 04:00 when needed (the services start on boot)                                                                            | `/var/log/unattended-upgrades/`                                                     |
-| Every 5 minutes             | The uptime monitor checks `/readyz?fresh=1`                                                                                                          | its dashboard                                                                       |
+| When                        | What                                                                                                                                                       | Where to look                                                                       |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Every night, 06:15 New York | `vantage-nightly`: refresh from the SEC (a new generation), backup, off-site copy, watch report, doctor, smoke check; pings healthchecks.io (fail = email) | `journalctl -u vantage-nightly`, healthchecks.io, `/status`                         |
+| The 3rd of each month       | `vantage-monthly`: EDGAR reconciliation and the LIVE regression                                                                                            | `journalctl -u vantage-monthly`; `sudo vantage-run npm run doctor` shows its result |
+| After each new generation   | Each instance warms the new data beside the old one, then swaps (the second a minute later); open tabs update within seconds                               | `/status`                                                                           |
+| Security updates            | Installed daily; reboot at 04:00 when needed (the services start on boot)                                                                                  | `/var/log/unattended-upgrades/`                                                     |
+| Every 5 minutes             | The uptime monitor checks `/readyz?fresh=1`                                                                                                                | its dashboard                                                                       |
 
 ---
 
 ## 4. Operating
 
-| Task                                       | Command (on the server)                                                                                                                                                                                                                                                    |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Health of everything                       | `sudo vantage-run npm run doctor`                                                                                                                                                                                                                                          |
-| Generations, last job                      | `sudo vantage-run npm run warehouse`                                                                                                                                                                                                                                       |
-| Logs                                       | `journalctl -u vantage@3002 -u vantage@3003 --since today`, `journalctl -u vantage-nightly`, `/var/lib/vantage/deploy.log`, `/var/log/caddy/vantage.log`                                                                                                                   |
-| Refresh now                                | `sudo systemctl start vantage-nightly`                                                                                                                                                                                                                                     |
-| Change a setting                           | `sudoedit /etc/vantage/vantage.env`, then `sudo systemctl restart vantage@3003 vantage@3002 vantage-staging`                                                                                                                                                               |
-| Rotate the SEC user agent, R2 or alert URL | the same; for R2 also `sudo bash ~/vantage-setup/deploy/setup.sh` (rewrites the rclone config from the env file)                                                                                                                                                           |
-| Disk                                       | `df -h /`; the doctor warns when a job lacks room (two generations of ~0.6 GB, three backups, releases)                                                                                                                                                                    |
-| Load test                                  | from your Mac: `node scripts/loadtest.js https://<domain> --users 50 --seconds 300`. One IP hits the per-visitor limits (1,500/min app, the WAF rule): run it against `http://127.0.0.1:8080` on the server for the origin, or raise `API_RATE_LIMIT_PER_MIN` for the test |
+| Task                                             | Command (on the server)                                                                                                                                                                                                                                                                              |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Health of everything                             | `sudo vantage-run npm run doctor`                                                                                                                                                                                                                                                                    |
+| Generations, last job                            | `sudo vantage-run npm run warehouse`                                                                                                                                                                                                                                                                 |
+| Logs                                             | `journalctl -u vantage@3002 -u vantage@3003 --since today`, `journalctl -u vantage-nightly`, `/var/lib/vantage/deploy.log`, `/var/log/caddy/vantage.log`                                                                                                                                             |
+| Refresh now                                      | `sudo systemctl start vantage-nightly`                                                                                                                                                                                                                                                               |
+| Change a setting                                 | `sudoedit /etc/vantage/vantage.env`, then `sudo systemctl restart vantage@3003 vantage@3002 vantage-staging`                                                                                                                                                                                         |
+| Rotate the SEC user agent, off-site or alert URL | the same; for the off-site keys also `sudo bash ~/vantage-setup/deploy/setup.sh` (rewrites the rclone config from the env file)                                                                                                                                                                      |
+| A changed `deploy/systemd` unit or `setup.sh`    | auto-deploy ships the app, not the units: `cd ~/vantage-setup && git pull && sudo bash deploy/setup.sh` (keeps every answer). On the live server, `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB, a 3 GB heap; 2026-10-14) does the same as the units in the repository |
+| Disk                                             | `df -h /`; the doctor warns when a job lacks room (two generations of ~0.6 GB, three backups, releases)                                                                                                                                                                                              |
+| Load test                                        | from your Mac: `node scripts/loadtest.js https://<domain> --users 50 --seconds 300`. One IP hits the per-visitor limits (1,500/min app, the WAF rule): run it against `http://127.0.0.1:8080` on the server for the origin, or raise `API_RATE_LIMIT_PER_MIN` for the test                           |
 
 ---
 
@@ -342,7 +375,7 @@ This publishes the previous generation as a new one. The servers switch to it wi
 sudo vantage-restore
 ```
 
-It downloads the newest backup from R2, verifies its SHA-256, publishes it as a new generation and restarts the
+It downloads the newest off-site backup (Oracle Object Storage or R2), verifies its SHA-256, publishes it as a new generation and restarts the
 instances. Then:
 
 ```bash

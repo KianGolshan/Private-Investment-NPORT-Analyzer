@@ -69,7 +69,7 @@ export default function Activity() {
           </p>
         </div>
         <span class="spacer" />
-        <div class="row">
+        <div class="row wrap">
           <label class="row small">
             Filed since
             <input

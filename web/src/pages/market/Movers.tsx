@@ -6,6 +6,7 @@ import { companyPath, longDate, moneyC, moneyDelta, num, tone } from '../../lib/
 import { ScopeBar } from '../../scope/ScopeBar';
 import { isRange, useParam, useScope } from '../../scope/scope';
 import { Card, ErrorBox, Kpi, Loading } from '../../ui/bits';
+import { CategoryBadge, CategorySwitch, useCategoryFilter } from '../../ui/Category';
 import { Chart } from '../../ui/Chart';
 import { DataTable, type Column } from '../../ui/DataTable';
 import { baseOption, type ChartTheme } from '../../ui/theme';
@@ -25,13 +26,14 @@ const addYears = (iso: string, n: number) => {
 export default function Movers() {
   const [scope] = useScope();
   const [tracked, setTracked] = useParam('tracked');
+  const cat = useCategoryFilter();
   const fresh = useApi<Freshness>('/api/freshness');
   const newest = fresh.data?.newestReportDate ?? null;
   const range = isRange(scope);
   const to = range ? scope.to : (newest ?? '');
   const from = range ? scope.from : newest ? addYears(newest, -1) : '';
   const m = useApi<MoversAnswer>(
-    to ? `/api/market/movers${qs({ from, to, tracked: tracked === '1', limit: 25 })}` : null
+    to ? `/api/market/movers${qs({ from, to, tracked: tracked === '1', limit: 25, category: cat.category })}` : null
   );
   const d = m.data;
 
@@ -41,8 +43,15 @@ export default function Movers() {
       id: 'name',
       header: 'Company',
       value: r => r.name,
-      render: r => <a href={href(r)}>{r.name}</a>,
-      exportAs: [{ header: 'Company id', value: r => r.companyId }],
+      render: r => (
+        <span>
+          <a href={href(r)}>{r.name}</a> <CategoryBadge category={r.category} />
+        </span>
+      ),
+      exportAs: [
+        { header: 'Company id', value: r => r.companyId },
+        { header: 'Category', value: r => r.category },
+      ],
     },
     {
       id: main,
@@ -108,6 +117,7 @@ export default function Movers() {
           reduced or no longer reported, at the prior marks.
         </p>
         <span class="spacer" />
+        <CategorySwitch />
         <ScopeBar supports={{ range: true }} newest={newest} />
         <label class="row small">
           <input

@@ -106,12 +106,21 @@ if ! command -v cloudflared >/dev/null; then
   apt-get update -q && apt-get install -y -q cloudflared
 fi
 
-say "Security updates (automatic, reboot at 04:00 when needed), fail2ban, swap"
+say "Security updates (automatic, reboot at 04:00 when needed), fail2ban, SSH, swap"
 cat >/etc/apt/apt.conf.d/52vantage-upgrades <<'EOF'
 Unattended-Upgrade::Automatic-Reboot "true";
 Unattended-Upgrade::Automatic-Reboot-Time "04:00";
 EOF
 systemctl enable --now unattended-upgrades fail2ban
+# key-only SSH and no root login; rpcbind (an NFS helper Ubuntu ships) is not needed
+cat >/etc/ssh/sshd_config.d/50-vantage.conf <<'EOF'
+# Vantage (setup.sh): no root login; the login user with a key only
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+EOF
+sshd -t && systemctl reload ssh
+systemctl disable --now rpcbind.socket rpcbind.service 2>/dev/null || true
 if ! swapon --show | grep -q .; then
   fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
   grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >>/etc/fstab
@@ -146,17 +155,21 @@ UA=$(ask SEC_USER_AGENT "SEC user agent: your name and email (e.g. Jane Doe jane
 ALERT=$(ask VANTAGE_ALERT_URL "healthchecks.io ping URL (https://hc-ping.com/...)")
 STATUS_URL=$(ask VANTAGE_STATUS_URL "Public uptime status page URL (optional, Enter to skip)")
 ANALYTICS=$(ask VANTAGE_ANALYTICS_TOKEN "Cloudflare Web Analytics token (optional, Enter to skip)")
-# Off-site backups to Cloudflare R2 (free, no domain needed): optional; without
-# them backups stay on this server and the doctor says so.
-R2_ENDPOINT=$(ask VANTAGE_R2_ENDPOINT "R2 endpoint for off-site backups (https://<account-id>.r2.cloudflarestorage.com; Enter to skip)")
+# Off-site backups (optional; without them backups stay on this server and the
+# doctor says so) to any S3-compatible bucket: Oracle Object Storage (free 20 GB
+# in the same Oracle account) or Cloudflare R2 (free 10 GB). The VANTAGE_R2_*
+# names are kept for existing servers; they hold either one.
+R2_ENDPOINT=$(ask VANTAGE_R2_ENDPOINT "Off-site backup endpoint: Oracle (https://<namespace>.compat.objectstorage.<region>.oraclecloud.com) or R2 (https://<account-id>.r2.cloudflarestorage.com); Enter to skip")
 R2_KEY=''
 R2_SECRET=''
 R2_BUCKET=''
 OFFSITE=''
 if [[ -n $R2_ENDPOINT ]]; then
-  R2_KEY=$(ask VANTAGE_R2_ACCESS_KEY_ID "R2 access key id")
-  R2_SECRET=$(ask VANTAGE_R2_SECRET_ACCESS_KEY "R2 secret access key" secret)
-  R2_BUCKET=$(ask VANTAGE_R2_BUCKET "R2 bucket name (Enter for vantage-backups)")
+  [[ $R2_ENDPOINT =~ ^https://[a-z0-9.-]+\.(r2\.cloudflarestorage\.com|compat\.objectstorage\.[a-z0-9-]+\.oraclecloud\.com)$ ]] ||
+    die "not an R2 or Oracle Object Storage endpoint: $R2_ENDPOINT"
+  R2_KEY=$(ask VANTAGE_R2_ACCESS_KEY_ID "Access key id (Oracle: the Customer Secret Key's access key)")
+  R2_SECRET=$(ask VANTAGE_R2_SECRET_ACCESS_KEY "Secret access key" secret)
+  R2_BUCKET=$(ask VANTAGE_R2_BUCKET "Bucket name (Enter for vantage-backups)")
   R2_BUCKET=${R2_BUCKET:-vantage-backups}
   OFFSITE=/usr/local/bin/vantage-offsite
 fi
@@ -179,7 +192,6 @@ VANTAGE_PUBLIC_URL="https://$DOMAIN"
 VANTAGE_SMOKE_URL="http://127.0.0.1:8080"
 SEC_USER_AGENT="$UA"
 WAREHOUSE_DB_PATH="$DATA/warehouse.db"
-CACHE_DB_PATH="$DATA/cache.db"
 VANTAGE_BACKUP_DIR="$DATA/backups"
 VANTAGE_OFFSITE_CMD="$OFFSITE"
 VANTAGE_ALERT_URL="$ALERT"
@@ -194,17 +206,25 @@ install -m 640 -o root -g vantage "$ENV_FILE.tmp" "$ENV_FILE" && rm -f "$ENV_FIL
 umask 022
 # the second instance warms a new generation a minute after the first
 printf 'VANTAGE_WARM_DELAY_MS="60000"\n' >"$ETC/instance-3003.env"
-# rclone's R2 remote, for the vantage user
+# rclone's off-site remote (named "r2" whichever provider), for the vantage user
 install -d -o vantage -g vantage -m 700 "$DATA/.config" "$DATA/.config/rclone"
-[[ -n $R2_ENDPOINT ]] && cat >"$DATA/.config/rclone/rclone.conf" <<EOF
+if [[ -n $R2_ENDPOINT ]]; then
+  if [[ $R2_ENDPOINT == *.oraclecloud.com ]]; then
+    # Oracle's S3 API needs its region and path-style bucket addresses
+    OCI_REGION=$(sed -E 's#.*compat\.objectstorage\.([a-z0-9-]+)\.oraclecloud\.com$#\1#' <<<"$R2_ENDPOINT")
+    PROVIDER_LINES=$(printf 'provider = Other\nregion = %s\nforce_path_style = true' "$OCI_REGION")
+  else
+    PROVIDER_LINES=$(printf 'provider = Cloudflare\nacl = private')
+  fi
+  cat >"$DATA/.config/rclone/rclone.conf" <<EOF
 [r2]
 type = s3
-provider = Cloudflare
+$PROVIDER_LINES
 access_key_id = $R2_KEY
 secret_access_key = $R2_SECRET
 endpoint = $R2_ENDPOINT
-acl = private
 EOF
+fi
 if [[ -f $DATA/.config/rclone/rclone.conf ]]; then
   chown vantage:vantage "$DATA/.config/rclone/rclone.conf" && chmod 600 "$DATA/.config/rclone/rclone.conf"
 fi

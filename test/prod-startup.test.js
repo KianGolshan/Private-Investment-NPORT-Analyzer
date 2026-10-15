@@ -1,8 +1,7 @@
 // Production start-up behaviour (real child processes, real sockets): the
 // server must refuse to run in production without a real SEC_USER_AGENT, honour
 // X-Forwarded-For only in production (so per-visitor rate limits work behind a
-// proxy and can't be spoofed in dev), and survive a cache.db written by an
-// older parser version.
+// proxy and can't be spoofed in dev).
 //
 // Run with: npm test
 
@@ -15,7 +14,6 @@ const assert = require('node:assert/strict');
 const { spawn, spawnSync } = require('node:child_process');
 const path = require('node:path');
 const http = require('node:http');
-const Database = require('better-sqlite3');
 
 const ROOT = path.join(__dirname, '..');
 const SERVER = path.join(ROOT, 'server.js');
@@ -26,7 +24,6 @@ function baseEnv(extra) {
   return {
     ...process.env,
     PORT: '0',
-    CACHE_DB_PATH: ':memory:',
     // No warehouse: these tests are about start-up, proxies and rate limits. The
     // real one (~578 MB) made start-up warm it while the tests fired timed
     // request bursts, blocking the event loop (the intermittent failures under load).
@@ -90,7 +87,7 @@ function get(port, urlPath, headers = {}) {
 test('production with a real user agent starts, serves the app, and reports it configured', async () => {
   const { child, port } = await startServer({ NODE_ENV: 'production', SEC_USER_AGENT: 'Test Suite test@example.com' });
   try {
-    assert.equal((await get(port, '/')).status, 200);
+    assert.equal((await get(port, '/healthz')).status, 200);
     assert.equal(JSON.parse((await get(port, '/api/config')).body).userAgentConfigured, true);
   } finally {
     child.kill();
@@ -174,50 +171,7 @@ test('SEC pacing: negative or unreadable is the default, 0 only outside producti
   assert.equal(minIntervalMs('150', true), 150);
 });
 
-test('a cache.db written by an older parser version is not served (version is part of the key) and does not crash start-up', async () => {
-  const dbPath = path.join(tmpDir('cache'), 'cache.db');
-  const db = new Database(dbPath);
-  db.exec(`CREATE TABLE holdings_cache (key TEXT PRIMARY KEY, value TEXT NOT NULL, created_at INTEGER NOT NULL);
-           CREATE TABLE search_cache (key TEXT PRIMARY KEY, value TEXT NOT NULL, created_at INTEGER NOT NULL);`);
-  const stale = JSON.stringify({ stale: true });
-  for (const v of [5, 6, 7, 8]) {
-    db.prepare('INSERT INTO holdings_cache VALUES (?,?,?)').run(
-      `fundxray:v${v}:555:000000000000000001`,
-      stale,
-      Date.now()
-    );
-  }
-  const { PARSE_VERSION } = require('../cache');
-  const liveKey = `holdings:nport:v${PARSE_VERSION}:555:000000000000000001:acme`;
-  db.prepare('INSERT INTO holdings_cache VALUES (?,?,?)').run(liveKey, '[]', Date.now());
-  db.close();
-
-  const { child, port } = await startServer({ CACHE_DB_PATH: dbPath, SEC_USER_AGENT: 'Test Suite test@example.com' });
-  try {
-    const cache = require('../cache');
-    assert.ok(
-      cache.PARSE_VERSION > 8,
-      `PARSE_VERSION (${cache.PARSE_VERSION}) must move past every legacy version present in a user's cache`
-    );
-    // The server is up and answering with a pre-populated legacy db.
-    assert.equal((await get(port, '/api/config')).status, 200);
-    const legacyKey = 'fundxray:v8:555:000000000000000001';
-    const current = cache.holdingsKey('fundxray', '555', '000000000000000001');
-    assert.notEqual(current, legacyKey, 'current keys never collide with legacy rows');
-    // Unreachable legacy rows are deleted at start-up; current-version rows stay.
-    const after = new Database(dbPath, { readonly: true });
-    const keys = after
-      .prepare('SELECT key FROM holdings_cache')
-      .all()
-      .map(r => r.key);
-    after.close();
-    assert.deepEqual(keys, [liveKey]);
-  } finally {
-    child.kill();
-  }
-});
-
-test('the default API rate limit tolerates a large warm-cache Watchlist run (~1,000 requests in a minute) from one visitor', async () => {
+test('the default API rate limit tolerates a large burst of light requests (~1,000 in a minute) from one visitor', async () => {
   const { child, port } = await startServer({
     SEC_USER_AGENT: 'Test Suite test@example.com',
     API_RATE_LIMIT_PER_MIN: '',

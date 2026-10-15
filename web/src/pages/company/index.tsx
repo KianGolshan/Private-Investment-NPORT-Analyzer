@@ -5,7 +5,9 @@ import { qs, useApi } from '../../api/client';
 import type { ClassesAsOf, Company as CompanyT, CompanyStats, Envelope, Freshness, TrendPoint } from '../../api/types';
 import { longDate, money, moneyC, num } from '../../lib/format';
 import { useParam } from '../../scope/scope';
-import { Badge, Empty, ErrorBox, Kpi, Loading, Tabs, WatchButton } from '../../ui/bits';
+import { Badge, Empty, ErrorBox, isNotFound, Kpi, Loading, Tabs, WatchButton } from '../../ui/bits';
+import NotFound from '../NotFound';
+import { CATEGORY_LABEL } from '../../ui/Category';
 import { Chart } from '../../ui/Chart';
 import type { ChartTheme } from '../../ui/theme';
 import { PositionDrawer } from './PositionDrawer';
@@ -104,6 +106,7 @@ export default function Company() {
   }, [classes.data]);
 
   if (!valid) return <Empty>Not a company id.</Empty>;
+  if (isNotFound(head.error)) return <NotFound />;
   const view: ViewProps = {
     base,
     sq,
@@ -120,7 +123,15 @@ export default function Company() {
         <>
           <div class="page-head">
             <div>
-              <div class="eyebrow">{isEntity ? 'Unreviewed name' : 'Private company'}</div>
+              <div class="eyebrow">
+                {isEntity
+                  ? 'Unreviewed name'
+                  : h.company?.status === 'public'
+                    ? 'Listed company'
+                    : h.company?.category && h.company.category !== 'company'
+                      ? CATEGORY_LABEL[h.company.category]
+                      : 'Private company'}
+              </div>
               <h1>{name}</h1>
               <div class="row wrap" style={{ marginTop: '6px' }}>
                 {h.company?.status === 'public' ? (

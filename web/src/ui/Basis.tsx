@@ -28,10 +28,15 @@ export function useProvenance(on = true): string {
 
 export function BasisNote() {
   const p = useProvenance();
+  // Folded by default (review F-08): the method is one click away, not the first
+  // thing a visitor reads. Exports carry the same text (DataTable basis).
   return (
-    <p class="muted small" style={{ margin: 0 }}>
-      {BASIS}
-      {p ? ` (${p})` : ''}. A company that has since listed is not counted in earlier periods.
-    </p>
+    <details class="basis-note small">
+      <summary>How these numbers are read</summary>
+      <p class="muted">
+        {BASIS}. A company that has since listed is not counted in earlier periods, and one that was listed then but is
+        private now is counted in them.{p ? ` Data version: ${p}.` : ''}
+      </p>
+    </details>
   );
 }

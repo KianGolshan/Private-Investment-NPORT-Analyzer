@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'preact/hooks';
 import type { Bridge, Pivot } from '../api/types';
-import { escapeHtml, moneyC, moneyDelta, num, tone } from '../lib/format';
+import { count, escapeHtml, moneyC, moneyDelta, num, tone } from '../lib/format';
 import { Card, Kpi } from './bits';
 import { Chart } from './Chart';
 import { DataTable } from './DataTable';
@@ -96,7 +96,7 @@ export function BridgeView({ bridge: b, name }: { bridge: Bridge; name: string }
   return (
     <>
       <div class="kpis">
-        <Kpi label={`Value as of ${b.from}`} value={moneyC(b.start.value)} sub={`${num(b.start.funds)} funds`} />
+        <Kpi label={`Value as of ${b.from}`} value={moneyC(b.start.value)} sub={count(b.start.funds, 'fund')} />
         <Kpi
           label="From positions"
           value={<span class={tone(b.positionEffect)}>{moneyDelta(b.positionEffect)}</span>}
@@ -107,7 +107,7 @@ export function BridgeView({ bridge: b, name }: { bridge: Bridge; name: string }
           value={<span class={tone(b.markEffect)}>{moneyDelta(b.markEffect)}</span>}
           sub="new marks on the shares held"
         />
-        <Kpi label={`Value as of ${b.to}`} value={moneyC(b.end.value)} sub={`${num(b.end.funds)} funds`} />
+        <Kpi label={`Value as of ${b.to}`} value={moneyC(b.end.value)} sub={count(b.end.funds, 'fund')} />
       </div>
       <Card
         title="Bridge"

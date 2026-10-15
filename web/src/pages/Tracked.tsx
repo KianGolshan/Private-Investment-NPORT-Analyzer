@@ -3,6 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { qs, useApi } from '../api/client';
 import type { Freshness, TrackedDashboard, UnifiedHit, WatchKind, WatchlistAnswer } from '../api/types';
 import {
+  count,
   companyPath,
   firmPath,
   fundPath,
@@ -204,8 +205,8 @@ function Watchlist() {
         r.funds == null
           ? '—'
           : r.kind === 'company'
-            ? `${num(r.funds)} funds (${signedNum(r.funds - (r.fundsYearAgo ?? 0))})`
-            : `${num(r.companies)} companies${r.kind === 'firm' ? ` · ${num(r.funds)} funds` : ''}`,
+            ? `${count(r.funds, 'fund')} (${signedNum(r.funds - (r.fundsYearAgo ?? 0))})`
+            : `${num(r.companies)} companies${r.kind === 'firm' ? ` · ${count(r.funds, 'fund')}` : ''}`,
     },
     {
       id: 'remove',

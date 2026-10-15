@@ -5,6 +5,7 @@ import { companyPath, fundPath, longDate, moneyC, num } from '../../lib/format';
 import { ScopeBar } from '../../scope/ScopeBar';
 import { isRange, useScope } from '../../scope/scope';
 import { Badge, Card, ErrorBox, FilingRef, Kpi, Loading } from '../../ui/bits';
+import { CategoryBadge, CategorySwitch, useCategoryFilter } from '../../ui/Category';
 import { DataTable, type Column } from '../../ui/DataTable';
 
 // Newly reported (P6b W4): companies whose first stored holding (any fund,
@@ -26,7 +27,8 @@ export default function NewlyReported() {
   const range = isRange(scope);
   const to = range ? scope.to : (newest ?? '');
   const from = range ? scope.from : newest ? addYears(newest, -1) : '';
-  const n = useApi<Answer>(to ? `/api/market/new${qs({ from, to })}` : null);
+  const cat = useCategoryFilter();
+  const n = useApi<Answer>(to ? `/api/market/new${qs({ from, to, category: cat.category })}` : null);
   const d = n.data;
 
   const columns: Column<Row>[] = [
@@ -36,10 +38,14 @@ export default function NewlyReported() {
       value: r => r.name,
       render: r => (
         <span>
-          <a href={companyPath(r.companyId, r.name)}>{r.name}</a> {r.tracked && <Badge tone="accent">Tracked</Badge>}
+          <a href={companyPath(r.companyId, r.name)}>{r.name}</a> {r.tracked && <Badge tone="accent">Tracked</Badge>}{' '}
+          <CategoryBadge category={r.category} />
         </span>
       ),
-      exportAs: [{ header: 'Company id', value: r => r.companyId }],
+      exportAs: [
+        { header: 'Company id', value: r => r.companyId },
+        { header: 'Category', value: r => r.category },
+      ],
       wrap: true,
     },
     {
@@ -84,9 +90,10 @@ export default function NewlyReported() {
           {d
             ? `${d.label[0]!.toUpperCase()}${d.label.slice(1)}.`
             : 'Companies first reported by any fund in the range.'}{' '}
-          Reviewed private companies only.
+          Reviewed {cat.all ? 'private holdings' : 'operating companies'} only.
         </p>
         <span class="spacer" />
+        <CategorySwitch />
         <ScopeBar supports={{ range: true }} newest={newest} />
       </div>
       <ErrorBox error={n.error} />

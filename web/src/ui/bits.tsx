@@ -38,7 +38,8 @@ export function Card({
     <section class="card">
       {(title || actions) && (
         <div class="card-head">
-          {typeof title === 'string' ? <h3>{title}</h3> : title}
+          {/* h2 under the page's h1: headings never skip a level (review F-15) */}
+          {typeof title === 'string' ? <h2>{title}</h2> : title}
           <span class="spacer" />
           {actions}
         </div>
@@ -80,6 +81,9 @@ export function Loading({ rows = 4 }: { rows?: number }) {
     </div>
   );
 }
+
+/** True for an API answer that says the subject does not exist (the page then shows NotFound). */
+export const isNotFound = (error: Error | null) => !!error && (error as { status?: number }).status === 404;
 
 export function ErrorBox({ error }: { error: Error | null }) {
   if (!error) return null;

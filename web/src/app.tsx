@@ -36,16 +36,8 @@ const NAV: { href: string; label: string; match: (p: string) => boolean }[] = [
   { href: '/firms', label: 'Firms', match: p => p.startsWith('/firm') },
 ];
 
-// /api/config: the public site (P9) has no v1 page; the link shows only when
-// the server says it is there.
-interface Config {
-  public: boolean;
-  build: string;
-}
-
 function Sidebar() {
   const { path } = useLocation();
-  const config = useApi<Config>('/api/config').data;
   return (
     <aside class="sidebar">
       <a class="brandmark" href="/" style={{ textDecoration: 'none' }}>
@@ -78,11 +70,6 @@ function Sidebar() {
         <a href="/status" aria-current={path === '/status' ? 'page' : undefined}>
           Status
         </a>
-        {config && !config.public && (
-          <a href="/legacy" target="_top">
-            Private Credit (v1)
-          </a>
-        )}
       </nav>
       <div class="sidebar-foot">
         Private holdings and marks from SEC N-PORT filings. Every number links its filing. Not investment advice.
@@ -135,7 +122,8 @@ function Topbar({ onSearch }: { onSearch: () => void }) {
   const cycle: Record<ThemePref, ThemePref> = { system: 'light', light: 'dark', dark: 'system' };
   return (
     <header class="topbar">
-      <button class="search-trigger" type="button" onClick={onSearch} aria-label="Search (⌘K)">
+      {/* its name is its visible text, which a voice user can say (WCAG 2.5.3, review F-15) */}
+      <button class="search-trigger" type="button" onClick={onSearch} aria-keyshortcuts="Meta+K Control+K">
         <span aria-hidden="true">⌕</span>
         <span>Search companies, funds, firms…</span>
         <span class="spacer" />

@@ -7,6 +7,7 @@ import { companyPath, longDate, moneyC, num } from '../lib/format';
 import { ScopeBar } from '../scope/ScopeBar';
 import { useParam, useScope } from '../scope/scope';
 import { Badge, Card, Empty, ErrorBox, Kpi, Loading, Tabs } from '../ui/bits';
+import { CategoryBadge, CategorySwitch, useCategoryFilter } from '../ui/Category';
 import { Chart } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
 import type { ChartTheme } from '../ui/theme';
@@ -17,7 +18,9 @@ type Row = TopCompanies['results'][number];
 function Top() {
   const [scope] = useScope();
   const fresh = useApi<Freshness>('/api/freshness');
-  const top = useApi<TopCompanies>(`/api/market/top${qs({ date: scope.asof, limit: 300 })}`);
+  const cat = useCategoryFilter();
+  const top = useApi<TopCompanies>(`/api/market/top${qs({ date: scope.asof, limit: 300, category: cat.category })}`);
+  const noun = cat.all ? 'private holdings' : 'private companies';
   const d = top.data;
 
   const build = useCallback(
@@ -61,10 +64,13 @@ function Top() {
       render: r => (
         <span>
           <a href={companyPath(r.companyId, r.name) + (scope.asof ? `?asof=${scope.asof}` : '')}>{r.name}</a>{' '}
-          {r.tracked && <Badge tone="accent">Tracked</Badge>}
+          {r.tracked && <Badge tone="accent">Tracked</Badge>} <CategoryBadge category={r.category} />
         </span>
       ),
-      exportAs: [{ header: 'Company id', value: r => r.companyId }],
+      exportAs: [
+        { header: 'Company id', value: r => r.companyId },
+        { header: 'Category', value: r => r.category },
+      ],
     },
     { id: 'funds', header: 'Funds', value: r => r.funds, num: true },
     { id: 'value', header: 'Value', value: r => r.value, num: true, render: r => moneyC(r.value) },
@@ -94,29 +100,38 @@ function Top() {
           As of {scope.asof ? longDate(scope.asof) : 'the newest filings'}: each fund's latest N-PORT on or before that
           date. Funds report on staggered fiscal quarters, so mark dates differ by fund.
         </p>
-        <BasisNote />
         <span class="spacer" />
+        <CategorySwitch />
         <ScopeBar supports={{ asof: true }} newest={fresh.data?.newestReportDate ?? null} />
       </div>
+      <BasisNote />
       <ErrorBox error={top.error} />
       {top.loading && !d && <Loading rows={6} />}
       {d && (
         <>
           <div class="kpis">
-            <Kpi label="Private companies" value={num(d.companies)} />
+            <Kpi
+              label={cat.all ? 'Private holdings' : 'Private companies'}
+              value={num(d.companies)}
+              sub={cat.all ? 'companies, fund interests, CLOs, insurance vehicles' : 'operating companies'}
+            />
             <Kpi label="Value held" value={moneyC(d.totalValue)} sub="direct and through SPVs" />
             <Kpi label="Largest" value={d.results[0]?.name ?? '—'} sub={moneyC(d.results[0]?.value)} />
-            <Kpi label="As of" value={scope.asof ? longDate(scope.asof) : 'Latest'} />
+            <Kpi
+              label="As of"
+              value={longDate(scope.asof || d.date)}
+              sub={scope.asof ? 'each fund at its own mark date' : 'the newest marks filed'}
+            />
           </div>
           <div class="grid-2">
             <Card title="Top 15 by value">
               {d.results.length ? (
-                <Chart build={build} height={420} label="Top 15 private companies by value" />
+                <Chart build={build} height={420} label={`Top 15 ${noun} by value`} />
               ) : (
                 <Empty>None.</Empty>
               )}
             </Card>
-            <Card title="All private companies" flush>
+            <Card title={cat.all ? 'All private holdings' : 'All private companies'} flush>
               <DataTable
                 basis={BASIS}
                 source={d}
@@ -124,8 +139,8 @@ function Top() {
                 rows={d.results}
                 rowKey={r => String(r.companyId)}
                 sort={{ id: 'value', desc: true }}
-                exportName={`private-companies-${scope.asof || 'latest'}`}
-                filterPlaceholder="Filter companies…"
+                exportName={`private-${cat.all ? 'holdings' : 'companies'}-${scope.asof || 'latest'}`}
+                filterPlaceholder="Filter by name…"
                 maxHeight={420}
               />
             </Card>
@@ -153,6 +168,16 @@ export default function Market() {
         <div>
           <div class="eyebrow">Market</div>
           <h1>Private companies held by registered funds</h1>
+          <p class="lede">
+            Which mutual funds and ETFs hold stakes in private companies, what each fund says a share is worth, and how
+            that changed, from the holdings reports funds file with the SEC.
+          </p>
+          <p class="small muted try">
+            Try: <a href="/company/1-anthropic?tab=holders">who holds Anthropic</a> ·{' '}
+            <a href="/company/5-stripe?tab=marks">how funds mark Stripe</a> ·{' '}
+            <a href="/?view=movers">the biggest mark moves this year</a> ·{' '}
+            <a href="/firm/9">Capital Group's private book</a>
+          </p>
         </div>
       </div>
       <Tabs

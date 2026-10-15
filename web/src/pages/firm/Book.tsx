@@ -1,7 +1,7 @@
 import { BASIS } from '../../ui/Basis';
 import { useCallback, useMemo } from 'preact/hooks';
 import type { FirmBook } from '../../api/types';
-import { escapeHtml, companyPath, fundPath, money, moneyC, num, pctOfNav, price, share } from '../../lib/format';
+import { count, escapeHtml, companyPath, fundPath, money, moneyC, num, pctOfNav, price, share } from '../../lib/format';
 import { ScopeBar } from '../../scope/ScopeBar';
 import { useParam } from '../../scope/scope';
 import { Badge, Card, Empty, FilingRef, Segmented } from '../../ui/bits';
@@ -173,7 +173,7 @@ export function Book({ id, book: b, newest }: { id: number; book: FirmBook; newe
                     <a href={companyPath(c.companyId, c.name) + `?firm=${id}`}>{c.name}</a>
                     {c.tracked && <Badge tone="accent">Tracked</Badge>}
                     <span class="spacer" />
-                    <span class="muted small">{num(c.funds)} funds</span>
+                    <span class="muted small">{count(c.funds, 'fund')}</span>
                     <span class="num" style={{ minWidth: '90px' }}>
                       {moneyC(c.value)}
                     </span>
@@ -224,7 +224,7 @@ export function Book({ id, book: b, newest }: { id: number; book: FirmBook; newe
             sort={{ id: 'value', desc: true }}
             exportName={`${b.firm.name}-funds-${b.date}`}
             filterPlaceholder="Filter funds…"
-            totals={rs => ({ fund: `${num(rs.length)} funds`, value: moneyC(rs.reduce((s, f) => s + f.value, 0)) })}
+            totals={rs => ({ fund: count(rs.length, 'fund'), value: moneyC(rs.reduce((s, f) => s + f.value, 0)) })}
           />
         </Card>
       )}

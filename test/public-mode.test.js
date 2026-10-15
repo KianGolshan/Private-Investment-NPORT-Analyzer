@@ -1,12 +1,11 @@
 // P9 W1: the public site (VANTAGE_PUBLIC=1). Visitors never cause an SEC
-// request: v1's live per-filing routes answer 410 without a fetch, and its page
-// is off. Health routes, the config a tab compares builds with, and the smoke
-// check against this server. Node runs each test file in its own process, so the
-// environment is set before server.js loads. Public mode off is pinned in
-// test/server.test.js (the live routes keep working there).
+// request: every route answers from the warehouse (v1's live per-filing routes
+// were removed; git tag v1-archive). Health routes, the config a tab compares
+// builds with, and the smoke check against this server. Node runs each test file
+// in its own process, so the environment is set before server.js loads. Public
+// mode off is pinned in test/server.test.js.
 process.env.VANTAGE_PUBLIC = '1';
 process.env.APP_BUILD = 'test-build-1';
-process.env.CACHE_DB_PATH = ':memory:';
 process.env.SEC_MIN_INTERVAL_MS = '0';
 process.env.SEC_USER_AGENT = 'Test Suite test@example.com';
 
@@ -34,37 +33,15 @@ test.beforeEach(() => {
 });
 test.after(() => nock.enableNetConnect());
 
-const LIVE = [
-  '/api/search-nport?q=Anthropic',
-  '/api/parse-nport?cik=44201&accession=0001193125-26-182055',
-  '/api/search-10q?q=West%20Star',
-  '/api/parse-10q?cik=1&accession=000000000000000000',
-  '/api/search-fund?q=Growth%20Fund',
-  '/api/fund-series?cik=44201',
-  '/api/fund-series-filings?cik=44201&seriesId=S000009228',
-  '/api/fund-xray?cik=44201&accession=0001193125-26-182055',
-  '/api/fund-xray-compare?cik=44201&current=0001193125-26-182055&prior=0001193125-26-182055',
-  '/api/fund-xray-returns?cik=44201&accessions=0001193125-26-182055',
-  '/api/search-nport/', // a trailing slash is the same route
-];
-
-test('every live per-filing route answers 410 on the public site, without an SEC request', async () => {
-  for (const url of LIVE) {
-    const r = await request(app).get(url).expect(410);
-    assert.match(r.body.error, /Live SEC lookups are off on the public site/, url);
-    assert.equal(r.headers['cache-control'], 'no-store', url);
+test('no route calls the SEC: the former live routes are gone, and nothing reaches the network', async () => {
+  for (const url of ['/api/search-nport?q=Anthropic', '/api/parse-10q?cik=1&accession=0', '/api/fund-xray?cik=1']) {
+    await request(app).get(url).expect(404);
   }
   assert.ok(nock.isDone(), 'no outbound request was attempted');
-  // ?refresh=1 cannot get around it
-  await request(app).get('/api/search-nport?q=Anthropic&refresh=1').expect(410);
 });
 
-test("v1's page and its index are off; the workspace routes and warehouse API still answer", async () => {
-  for (const url of ['/legacy', '/index.html']) {
-    const r = await request(app).get(url).expect(410);
-    assert.match(r.text, /not part of the public site/);
-    assert.match(r.headers['content-security-policy'], /default-src 'self'/);
-  }
+test("v1's page is gone; the workspace routes and warehouse API still answer", async () => {
+  for (const url of ['/legacy', '/index.html', '/app.js']) await request(app).get(url).expect(404);
   // no warehouse here: the warehouse routes say 503, never a live fallback
   await request(app).get('/api/search?q=anthropic').expect(503);
   // the workspace's HTML (built or not) is never v1's page in public mode
@@ -95,7 +72,6 @@ test('static files are served from the app folder whatever the working directory
   const og = await request(app).get('/og.png').expect(200);
   assert.equal(og.headers['content-type'], 'image/png');
   assert.equal(og.body.length, fs.statSync(path.join(__dirname, '..', 'public', 'og.png')).size);
-  await request(app).get('/splits.js').expect(200);
 });
 
 test('admin is refused on the public site', async () => {
@@ -126,8 +102,8 @@ test('smoke: the safety checks pass here; missing goldens and readiness fail the
   assert.equal(by['security headers'].ok, true);
   assert.equal(by['admin refused'].ok, true);
   assert.equal(by['public mode'].ok, true);
-  assert.equal(by['v1 page off'].ok, true);
-  assert.equal(by['live route off /api/search-nport'].ok, true);
+  assert.equal(by['v1 page gone'].ok, true);
+  assert.equal(by['no live SEC route /api/search-nport'].ok, true);
   assert.equal(by['A1 Anthropic 2026-03-31'].ok, false);
   assert.match(by['A1 Anthropic 2026-03-31'].detail, /status 503/);
   // a site that is not public (--no-public) skips the public checks

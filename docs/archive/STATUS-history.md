@@ -1,7 +1,497 @@
-# Archive: STATUS through P6b W5 and P6c
+# Archive: STATUS through P9
 
 Verbatim copies of docs/STATUS.md, taken when it was shortened to the current state (2026-10-01, and 2026-10-06 after P6b and P6c; the newer section first). Phase results,
 measurements and decisions per phase, oldest at the bottom. Not read at session start.
+
+## P8–P9 (verbatim from STATUS, moved 2026-10-14 when P10 began)
+
+### Decisions, calls and deferred items as of 2026-10-14 (before P10)
+
+#### Decisions waiting on the user (P9)
+
+The server now runs the nightly and monthly jobs, the backups and the alerts. The P8 questions about launchd and a
+local backup folder on this Mac no longer apply.
+
+1. **Optional free add-ons on the server** (DEPLOY.md 1A.1 step 4):
+   - a healthchecks.io ping URL (`VANTAGE_ALERT_URL`), so a failed night emails you;
+   - Cloudflare R2 for off-site backups;
+   - an uptime monitor on `/readyz?fresh=1`.
+
+   Add them with `sudoedit /etc/vantage/vantage.env`, or by re-running `setup.sh`.
+
+2. **A domain** (about $10 a year) when the link goes on a resume: DEPLOY.md "Moving from 1A to a domain".
+3. **Major dependency upgrades** (Express 5, dotenv 18, Preact 11, TypeScript 7, @types/node 26): Dependabot no
+   longer proposes majors (PRs #13 and #14 were closed). Do them deliberately, one at a time, with the full gates.
+4. **Delete the leftover temp directories on this Mac** (about 1,250 `vantage-*` folders, ~14.7 GiB, from test runs
+   before the P8 W1 fix). Command:
+   `find -E "$TMPDIR" -maxdepth 1 -type d -mmin +60 -regex '.*/vantage-(job|review|cache|ncen|zip|admin|curation|ro)-[A-Za-z0-9]{6}' -exec rm -rf {} +`
+
+#### Calls made, open to overrule
+
+- **P8:**
+  - jobs have a 3 h time limit and need room for a candidate plus 1 GiB;
+  - 3 backups are kept, and a restore is a new generation;
+  - the nightly and monthly runs continue after a failed step, and a doctor warning makes the night "warn";
+  - below-zero values count as $0 and read "reported below $0 (counted as $0)" (trap 57);
+  - the trap 58 rules: one company per fund vintage or CLO, unless the filer's instrument id and share count carry
+    over (then one company); no fund named and no evidence means unreviewed; the 3 Partners Group "NEA 18" rows
+    follow their title.
+- **P6d:**
+  - rollback is a new generation;
+  - a live local job is never taken over;
+  - staged curation with `--sync-curation`;
+  - N-CEN drift fails the load;
+  - empty-section filings are a warning (trap 55);
+  - "reported at $0" is kept for a zero+exit position;
+  - the proxy is trusted only on a loopback `HOST` or by `TRUST_PROXY`;
+  - 5 retry attempts;
+  - the export `Source` column.
+- **P6c and W5 (archive):**
+  - mark observation per fund (F06);
+  - $0 class semantics (F05);
+  - formula-safe CSV;
+  - generation files plus a symlink;
+  - shrink limits;
+  - `partial` publication;
+  - Last-Modified re-post detection;
+  - firm rename by identical keys;
+  - feed paging and basis labels;
+  - v1 tab code hidden, not deleted;
+  - light-theme contrast colors;
+  - ECharts deferred to idle;
+  - drill payload not trimmed.
+- **W4 and earlier:**
+  - the watchlist lives in the browser;
+  - Compare keeps Batch's spread and mark age;
+  - movers rank dollars;
+  - two VIP funds are set `public`;
+  - trap 52;
+  - dated firm attribution not adopted;
+  - trap 45;
+  - the 1 GB budget.
+
+#### Deferred
+
+Everything known and not built, in one place (2026-10-08). Each item says why it waits.
+
+##### P8 (operations), remaining
+
+- **W4 research.** Check real filings first, build only if the data holds, and report negative findings.
+  - _Last private mark vs first listed price:_ `companies.public_since` is empty for all 504 listed companies, and
+    the keep rule drops post-listing rows, so a listing date and price source must come from filings. This also
+    fixes the next item.
+  - _Historical views use today's curation:_ a company that later listed drops out of earlier periods (labeled on
+    screen and in exports).
+  - _Fund type from N-CEN_ (ETF, open-end, closed-end, interval: which holders are retail-accessible). Only advisers
+    are loaded from N-CEN today; check the field's coverage first (trap 21).
+- **P8 checkpoint:** 30 unattended nightly runs with no gaps, and a green monthly run. This needs decision 2. The
+  monthly run (reconcile plus LIVE) has never run on a schedule; `npm run reconcile` ran by hand on 2026-10-08. LIVE
+  last passed at W5.
+- **Off-host backup and an alert URL:** decisions 3 and 4. The restore drill was done on the same disk only.
+- **Crash drills at the publication boundary (R09).** The SIGKILL drill kills a job mid-run, and the fault-injection
+  sweeps fail every post-commit step. A process killed exactly at the link rename (or between the generation rename
+  and the link swap) has not been drilled.
+- **Watch report gaps (ROADMAP §8):** status changes cover listing evidence (likely IPOs) only. Delistings
+  (listed → private) and post-IPO lock-up or PIPE signals are not detected yet; check how real filings label them
+  first.
+- **Intermittent single-test failures under heavy load**, none reproduced on rerun:
+  - "scope: … post-filter" (2026-10-05);
+  - "API goldens: Stripe A5" (2026-10-06);
+  - prod-startup ECONNRESET at load 16–20;
+  - analysis unified search;
+  - edge-cases "cik/accession are validated".
+
+  None were seen in the 2026-10-07/08 runs (load 2–6). Likely timing under load; not investigated.
+
+- **Leftover temp directories:** decision 5.
+
+##### Data and curation (review items, each needs evidence before a change)
+
+- **Watch report** (`reports/watch/2026-10-08.md`, local and git-ignored; `npm run watch` regenerates it), suggestions
+  not yet reviewed:
+  - 7 listing-evidence hits (Endeavor, Altice France, Talwandi Sabo);
+  - 12 identity links (e.g. Alliant Holdings, Melange Capital Partners, Windstream / Uniti);
+  - 23 split instrument ids: Windstream Parent and New Windstream share one id in 14 funds, and Ascent Resources and
+    Ascent CNR share one in 3. These are corporate events, not filer relabels.
+- **Vehicle families still grouped** under one company (not vintages, so trap 58 did not split them):
+  - Five Arrows co-invests;
+  - HOF Capital SPVs;
+  - Parthenon Kairos;
+  - Greenbriar co-invests;
+  - EQT VIII co-investment;
+  - Disruptive Technology Solutions series;
+  - FTAI SPVs;
+  - Beacon Re Committed / Uncommitted.
+- **`issuerKeyOf` strips a trailing one-letter or two-digit numeral** as a class (the root of trap 58). Curation now
+  works around it with regex aliases. Changing the parser would re-key every stored row, so it needs a
+  warehouse-wide diff and a curation re-key.
+- **`public/splits.js` knows only a fixed list of ratios (2–100):**
+  - a 60:1 share exchange (Nscale 2026-05-31) reads as a class change;
+  - a non-split exchange reads as "added" plus "mark moved". Mesquite Energy (×2.41, Fidelity 2026-04-30, F52) is
+    Market's largest mark move down, −$801.4M, with a +$561.2M position flow. The bridge still reconciles.
+- **Fidelity's opaque per-fund vehicles** (~$0.6B) stay unresolved: no filing names their targets.
+- **Below-zero values:** activity legs carry the counted $0; only the holders list and the Filings tab show the
+  filed negative value (trap 57).
+- **Explore's firm picker** lists every firm holding private value (~170), including small advisers with terse
+  N-CEN names.
+
+##### P9 go-live follow-ups (on the live server)
+
+- **The first refresh on the server.** The data loaded is from 2026-10-07; `sudo systemctl start vantage-nightly`,
+  or wait for the 06:15 New York timer. `/readyz?fresh=1` says "not fresh" until then.
+- ~~Auto-deploy observed live~~: done 2026-10-14. CI on `main` went green (run 38506208169) and the server
+  deployed `f7b1fa6` by itself within minutes (`/healthz` build).
+- **The plan's §6 checks, not run yet against the live site:**
+  - the load test at 50 and 100 users (from the server against `http://127.0.0.1:8080`, or with a raised rate
+    limit, because one IP hits the per-visitor limit);
+  - a nightly and a deploy under load;
+  - the restore drill (`vantage-restore` needs R2);
+  - Lighthouse on the live URL;
+  - the LinkedIn Post Inspector.
+- **14 unattended nights** with healthchecks.io (needs the alert URL).
+
+##### Performance and capacity
+
+- The warm-up still blocks one process's event loop for up to ~2.7 s per new generation. It now happens before
+  the swap, the second instance a minute later, and Caddy routes around it (P9 W1). A worker thread would remove
+  it.
+- Large responses are gzipped on the event loop (R17); the memo is bounded by bytes (P9 W1).
+- The SEC request budget is per process (R11). Public mode leaves only the nightly job calling the SEC, so it no
+  longer matters for visitors.
+
+##### Product (remaining P6 items)
+
+- An indirect-exposure view: named SPVs, per-fund vehicles and disclosed ranges in one section.
+- Entity editing (rename, merge, track) through the admin job, like "make this a company".
+- Split `public/app.js` (v1, 4.6k lines), and delete v1's retired tabs with their ~30 regression tests once the user
+  agrees nothing more is needed from them.
+
+##### Phases not started
+
+- **P7: MCP server** (ROADMAP §7; the services exist).
+
+##### Housekeeping
+
+- The global git identity is "Test User <test@test.com>" (`git config --global`); this repo sets its own.
+
+#### Next session
+
+> Vantage v2 is live at https://vantage-kian.duckdns.org (P0–P9 done; P7 MCP not started). `main` is the only
+> branch. Start with CLAUDE.md, this file, docs/DEPLOY.md and docs/ROADMAP.md. The user's next step is a
+> comprehensive top-to-bottom review of the project: functionality, data accuracy, UI, the published site and
+> operations. Open items are under "Decisions waiting on the user" and "Deferred". Server: `ssh ubuntu@129.146.24.191`
+> (the user's key); `sudo vantage-run npm run doctor` checks it.
+>
+> This Mac has 8 GB of memory: run one heavy job at a time in the foreground, run tests with
+> `--test-concurrency=2`, and ask before a refresh, the e2e suite or the LIVE suite. Gates:
+>
+> - `npm test`, `npm run lint`, `npm run format:check`;
+> - `npm run test:web`, `npm run lint:web`;
+> - `npm run build:web`, then `npm run test:e2e`;
+> - for the live site: `node scripts/smoke.js https://vantage-kian.duckdns.org`.
+
+### Log, 2026-10-08 (P9 W3) and earlier
+
+- **2026-10-08 (P9 W3):** W2 signed off ("continue"). W3 built: deployment as code.
+  - **`deploy/setup.sh`** is the idempotent Ubuntu 24.04 bootstrap:
+    - installs Node 22, Caddy, cloudflared, rclone, fail2ban, unattended upgrades (reboot at 04:00) and swap;
+    - creates the `vantage` user, `/etc/vantage/vantage.env` (640, asked once), the R2 rclone remote, the units,
+      sudoers limited to three restarts, and the first release;
+    - generates a deploy key pinned to a forced command;
+    - `--tunnel` creates the tunnel and the DNS for the apex, `www.`, `staging.` and `ssh.`.
+  - **`deploy/deploy.sh`:**
+    - a git worktree per release, so jobs still record `code_rev` and `curation_rev`;
+    - one review import job when migrations or `data/review` change (it migrates the warehouse);
+    - a one-step `current` switch, then a rolling restart gated on `/readyz`, then the smoke check through Caddy;
+    - automatic rollback; the previous build's chunks are kept 14 days for open tabs; 4 releases are kept.
+    - It runs from the commit being deployed, via `git show <sha>:deploy/deploy.sh`.
+  - **`deploy/bin`:**
+    - `vantage-deploy`, the SSH forced command, accepts only `deploy|status <target> <sha|main|staging|rollback>`;
+      it refused every injection tried;
+    - `vantage-run`, `vantage-offsite` (rclone to R2) and `vantage-restore` (the restore drill).
+  - **Units and proxies:**
+    - `vantage@.service` (3002, 3003; the second warms 60 s later) and `vantage-staging` (3010, read-only on
+      production's warehouse);
+    - nightly at 06:15 New York and monthly on the 3rd, all `ProtectSystem=strict`;
+    - Caddy: least-conn, `/readyz` health checks, the visitor IP from `CF-Connecting-IP` (`client_ip_headers`);
+    - `cloudflared.yml`.
+  - **GitHub:**
+    - `deploy.yml`: after green CI on main (production) or staging; automatic only when the variable
+      `DEPLOY_ENABLED` is `true`; manual runs take any SHA or `rollback`; SSH through Cloudflare Access with a
+      service token;
+    - `dependabot.yml`;
+    - CI jobs `deploy-scripts` (shellcheck) and **`deploy-drill`**, which runs real deploys in a temporary tree with
+      real server processes: a first deploy, a `data/review` change (review import, new generation), a broken
+      release that rolls itself back, `rollback`, and a no-op redeploy.
+  - **Docs:** [DEPLOY.md](DEPLOY.md) (setup, shipping, operating, recovery), ADR 0006 (hosting; Litestream
+    rejected), README "Live site and deployment", CHANGELOG v2.0.0. The plan now points to DEPLOY.md, and Bot Fight
+    Mode stays off.
+  - **Small app changes:** the nightly smoke check reads `VANTAGE_SMOKE_URL` (the server's own Caddy, so no CDN bot
+    check gets in the way); `smoke.js --no-goldens`; the deploy paths can be overridden for the drill only.
+  - **Fixed in review:** a first deploy would have looked like an upgrade (`readlink -f` on a missing link) and run
+    an import. Asset pruning could have deleted an old release's own chunks on rollback.
+  - **CI, run 37872168537, all 7 jobs green.** The deploy drill took 2m15s and passed every check:
+    - a first deploy;
+    - B, with a `data/review` change, ran the import, served a new generation and kept A for rollback;
+    - broken C failed readiness and rolled back to B in 4 s;
+    - `rollback` brought A back;
+    - a no-op redeploy.
+
+    The first drill run hung: the stand-in systemctl's servers inherited the deploy lock's descriptor. Restarts
+    now close fd 9, and the drill's lock wait is 60 s. Shellcheck found one unquoted array split in `deploy.sh`
+    (fixed).
+
+  - **Local:** backend 665 (632 pass, 31 skipped). 2 v1 jsdom tests failed at load about 7 and passed alone (the
+    known load flakes); CI is green.
+
+- **2026-10-08 (P9 W2):** W1 signed off ("continue"). W2 built:
+  - **Open tabs stay current:**
+    - a new deploy shows "A new version of Vantage is available" with Reload (the build from `/api/config`,
+      checked every 5 min and on focus);
+    - a new data version shows "Data updated: filings through …" for 8 s;
+    - a page whose code chunk is gone reloads once, but not without session storage, so it can never loop;
+    - Vite's `vite:preloadError` is handled the same way.
+  - **`/about`:** sources, how the numbers are read (staggered calendars, the 123-day as-of rule, private by company
+    status, marks, change words), how it is checked, known limits, disclaimer and privacy. Counts come from the new
+    `/api/stats`, and the page links GOLDEN-NUMBERS, DATA-QUALITY and ARCHITECTURE on GitHub (the repo is public).
+  - **`/status`:** filings and marks through, the last refresh, the data version, details and readiness, plus an
+    optional `VANTAGE_STATUS_URL` link to the uptime page.
+  - **Link previews** (`lib/api/pages.js`): the server writes each page's title, description, canonical URL and
+    Open Graph and Twitter tags.
+    - A company's description uses its stored stats: Anthropic reads "123 funds reported $18.16B as of Aug 31,
+      2026", the same as company_stats and STATUS.
+    - The image is `public/og.png` (1200×630, no numbers).
+    - Unknown pages, companies, funds and firms answer 404 with `noindex`, and unreviewed `/name/` pages are
+      `noindex`.
+    - `robots.txt` and `sitemap.xml` (static pages, private companies, firms; 520 URLs).
+  - **Optional Cloudflare Web Analytics** (`VANTAGE_ANALYTICS_TOKEN`, validated) adds the beacon and its CSP hosts.
+  - **Nav and footer:** About and Status in the nav. A footer (About · Status · Source code · "Not investment
+    advice") is on every page; on a phone it is the only way to About and Status.
+  - **Verified** in public mode on generation 32:
+    - About and Status in dark and light, at 375 px with no horizontal scroll (the Status table now wraps);
+    - the 404s, robots, sitemap and the og image;
+    - smoke 17/17; console clean.
+  - **Tests:** backend 659 (627 pass, 31 skipped, 0 fail; new `test/pages.test.js`; the edge-case title check now
+    accepts page titles); web 45/45 (new `notices.test.ts`); e2e adds heads and 404s, About and Status, the reload
+    offer, and axe on `/about`, `/status` and a 404 page.
+  - **CI caught four things, all fixed with regression tests; CI is now green on every job (run 37809812736):**
+    - W1's push had failed on Node 22: the stagger timer was unref'd, so a test process could exit mid-switch.
+    - e2e F02: after warm-then-swap, an open tab only noticed new data at its next 5-minute check. Now
+      `/api/freshness` says `switching` and the tab asks again every 2 s until the swap.
+    - `express.static('public')` resolved against the working directory, so og.png and v1's scripts were missing
+      when the server started elsewhere. It now uses the app folder.
+    - The Status page read `/readyz?fresh=1`, which is 503 by design when the data is stale. It now reads
+      `?report=1`, which is always 200, and a process nobody warmed warms itself on the first readiness check.
+
+- **2026-10-08 (P9 W1):** the user approved the P9 plan (readiness assessment, Oracle + Cloudflare, concurrency,
+  seamless refresh and updates). W1 built on `v2-p9-deploy`:
+  - **Public mode** (`VANTAGE_PUBLIC=1`): v1's ten live per-filing routes answer 410 without an SEC request, and
+    `/legacy` and `/index.html` answer 410. `/api/config` gains `public` and `build`, and the nav hides "Private
+    Credit (v1)". The workspace never called these routes (checked by grep).
+  - **Health:** `/healthz` (build, uptime, RSS, event-loop p99/max over the last minute) and `/readyz` (200 once
+    warmed; `?fresh=1` also needs a refresh within 48 h and a last job that did not fail). Both sit outside the rate
+    limits and are `no-store`.
+  - **Seamless data:** a new generation is opened beside the old one and warmed, then swapped in one step. The old
+    one answers meanwhile. `VANTAGE_WARM_DELAY_MS` staggers a second instance, and the server checks for a new
+    generation every 15 s, so an idle instance switches too. A failed open keeps the old generation and retries. Found
+    while testing: an open that threw at once left the switch marked as running forever (fixed, with a regression
+    test).
+  - **CDN:** `VANTAGE_CDN_MAX_AGE` gives warehouse answers `public, max-age=0, must-revalidate, s-maxage=N`.
+    Errors are `no-store` and drop the generation ETag. `APP_BUILD` is one ETag build for every instance.
+  - **Memo** bounded by bytes (`VANTAGE_MEMO_MAX_MB`, 256), with the whole-warehouse tables pinned (R17).
+  - **Off-site backup** (`VANTAGE_OFFSITE_CMD`, e.g. rclone to R2) is a nightly step; a failure is "warn". The doctor
+    counts a recent off-site copy as off-host.
+  - **`scripts/smoke.js`:** health, headers, goldens A1/A2/A4/A5/A6 (by company), admin 403 and public-mode 410s. It
+    is a nightly step when `VANTAGE_PUBLIC_URL` is set.
+  - **`scripts/loadtest.js`:** N visitors over the workspace's real page mix, reading the server's RSS and event-loop
+    delay.
+  - **Verified** on generation 32, in public mode on this Mac:
+    - smoke: 17/17, every golden equal to GOLDEN-NUMBERS;
+    - load test, 10 users for 20 s at load 2.9, warmed: 345 requests, **0 errors**, p50 12 ms, p95 137 ms,
+      p99 201 ms, RSS 314 MB, event-loop max 359 ms;
+    - browser: no v1 link, console clean;
+    - headers: CSP, `s-maxage=300` with ETag `W/"r32-local-p9"`, freshness `no-store`.
+  - **Tests:** backend 653 (621 pass, 31 skipped, 0 fail; 22 new across public-mode, deploy-readiness and backup
+    off-site); web 39/39; lint, format, lint:web and build clean. e2e not run (not asked).
+
+- **2026-10-08:** the user signed off P8 W3 and asked for the PR and merge: `v2-p8-operations` merged to `main`.
+
+- **2026-10-08 (close-out):** the user stopped P8 ("Stop. Status report."). W3 is built and not signed off;
+  W4 and every open item moved to Deferred. Verified on bbc513f:
+  - backend 607/0/31 skipped; web 39/39; e2e 27/27; lint, format and audits clean; CI green on the branch;
+  - every route answered 200 on generation 32;
+  - Anthropic $18.16B in 123 funds; Market shows 365 private companies;
+  - the retired id 880 redirects to Formentera Partners Fund II;
+  - the console was clean.
+
+- **2026-10-08 (P8 W3):** W2 signed off. W3 built.
+  - **Real-data checks first (R12):**
+    - every quarter's EDGAR index against all 355,007 stored filings: **0 deleted**, 0 missing as NPORT-P;
+    - a 200-filing re-fetch, then 100 more by `npm run reconcile`: **0 changed** under the same accession;
+    - 580 stored filings are typed "NT NPORT-P" on EDGAR but are complete N-PORTs, and the catch-up skipped such
+      filings: **117 missing** since 2026-07-01 (trap 59, fixed in `delta.js`).
+  - **New:** `npm run reconcile` and `npm run monthly` (reconcile plus `test:live`, with alerts; doctor reports
+    them); `npm run watch` (four kinds of review suggestions, a nightly step); `runSteps`; and warm-on-switch, which
+    also warms the 12 largest firms' change pages. The bench warms up first, and `--cold` skips it.
+  - **Trap 58 correction:** the watch report's split-identity check found BlackRock relabels (DF Residential I to
+    III; Formentera "I" is Fund II) and iCapital's KKR III rows filed under IV. The two were merged back (ids 880
+    and 883 retired with redirects; generation 32, 43 rows moved, diff checked).
+  - **Bench after the warm-up** (load 2.6): every route within budget, and the loop max during passes fell from
+    1.4 s to 0.3 s.
+  - **Tests:** backend 607/0/31 skipped (reconcile, watch, warm-on-switch, NT index line). No temp directories
+    are left.
+
+- **2026-10-07 (P8 W2):** W1 signed off ("sign off, continue to W2"). W2 built:
+  - `npm run backup`: a verified copy (SHA-256 against the source, `quick_check`, `.sha256` beside it, 3 kept),
+    and `--restore <file>`, which publishes the backup as a new generation (`job.restoreBackup`; rollback now
+    shares its `republish`);
+  - `npm run nightly`: refresh, backup and doctor; a failure gives a macOS notification and exit 1, and an
+    optional `VANTAGE_ALERT_URL` dead-man's switch is pinged;
+  - the doctor reports the backup (missing, old, behind, same disk) and the last nightly run;
+  - bench reports RSS and event-loop delay (R17).
+
+  Live drill: generation 31 backed up in 2.9 s and restored onto an empty directory in 2.6 s. Its counts and the
+  Anthropic and Stripe answers were identical.
+
+  Tests: 7 new (restore drill, bad or missing checksum, restore over live, rotation, nightly alerts, doctor).
+  Backend 603/0/31 skipped, with no temp directories left (the V03 test's stage now lands in a removed
+  directory). The bench at load 4.1 shows three routes over 200 ms p95 and loop stalls up to 1.4 s, a W3 item.
+
+- **2026-10-07 (P8 W1):** the user said "proceed with full fixes". Every pre-flight finding is fixed, each with
+  a regression test. Detail is in the plan's "Outcome".
+  - New: `test/helpers/tmp.js` (a full run leaves 0 temp directories, was ~280), the download idle limit, the
+    `runJob` time limit and disk check, removal of stale candidates, lock and state identity (`holderGone`), the
+    `interrupted` job state and pill, `npm run doctor`, trap 57 wording, and `countsRule` used once.
+  - The SIGKILL crash drill passes; it found that a killed job's candidate was left on disk (fixed).
+  - Trap 58, found while checking the negative rows on EDGAR: 20 companies merged several funds, so they were
+    split through two review imports (generations 30 and 31). The diff found 2,955 rows that changed company,
+    all within 24 companies; 98 are now unreviewed.
+  - Gates: backend 596/0/31 skipped; lint, format, web 39/39, lint:web and build are green. e2e and LIVE were not
+    run (not asked). The browser on generation 31 shows Icon Partners IV and V apart, Triton Fund 6's filings row
+    "−$82.1K (below $0, counted as $0)", and the "Last job interrupted" pill (state file restored after).
+
+- **2026-10-07:** PR #7 merged; branch `v2-p8-operations` made. P8 pre-flight analysis
+  ([plans/P8-preflight-analysis.md](plans/P8-preflight-analysis.md)): backend 582/0/31 skipped, lint, format, web,
+  audits and main CI all green. The analysis found:
+  - four high operational defects: the test temp leak (26 GB), no idle timeout or job cap (a stalled download hangs
+    the job while it holds the lock), a pid-only lock check (pid reuse after a reboot), and a "running" state that
+    is never cleared;
+  - below-zero marks labeled "$0" (18 rows);
+  - the counting rule written twice;
+  - a misleading curation label (company 743 is the ASF VIII Sidecar).
+
+- **2026-10-06:** P6e W2 signed off; PR #7 to `main` opened. V11: the Finastra private-credit live test, run alone at a
+  load of 3.0, **passed in 35.2 s** (deadline 420 s). Codex's 564 s timeout was at a load of about 23, with suites
+  overlapping, so it was machine contention, not an app defect. Next phase: P8 (user's choice).
+
+- **2026-10-06 (P6e W2):** W1 signed off ("continue"). W2 built:
+  - **V05:** `job.warning` in freshness; the client refreshes `/api/freshness` in place when only the job changed; a
+    top-bar pill shows "Job running", "Last job failed" or "Published with warnings";
+  - **V07:** DataTable's Source comes from the rows' own answer (`source` prop, full digest) on all 34 exporting
+    tables, guarded by `test/invariants.test.js`;
+  - **V08:**
+    - `hidden(row)` keeps screen and export equal (X-Ray Returns), and the returns export carries the proxy caveat;
+    - the company stale panel honors the page date;
+    - leadership is labeled "first at mark date";
+  - **V09:**
+    - nodemon replaced by `node --watch`; `npm audit fix`; root and web all-dependency audits clean, and CI gates
+      them;
+    - Vitest `maxWorkers: 2`.
+
+  Verification:
+  - every new regression fails on the W1 code;
+  - backend 581/0/31 skipped; web 39/39; e2e 27/27;
+  - browser on a scratch clone: the failed-job pill at a constant generation, and a Market CSV whose Source is
+    "generation 30, curation sha256 327a4489…" (full digest).
+
+  V11 (Finastra live re-run) waits for the user's yes.
+
+- **2026-10-06 (P6e W1):** the Codex verification review checked; V01–V11 all real. W1 built:
+  - **V01:** a stale lock is taken by rename and verified;
+  - **V02:** `lib/warehouse/curation.js` is the only curation reader; a refresh uses the generation's snapshot;
+  - **V03:** commit-aware cleanup in `runJob` and `rollback`;
+  - **V04:** N-CEN coverage of at least half the funds (real 99.8%), and a filing is never replaced by zero advisers
+    (trap 56);
+  - **V06:** the newest empty filing warns; the shared label "no longer reported (the filing lists no holdings)"
+    covers holders, activity and legs;
+  - **V10:** the live test opens the warehouse read-only.
+
+  Guards:
+  - post-commit fault-injection sweeps for jobs and rollbacks (the first run found that a directory-sync failure was
+    only logged);
+  - `test/invariants.test.js`;
+  - LESSONS 37–39 and CLAUDE.md fix-completeness rules;
+  - `npm test` runs two files at a time.
+
+  The prod-startup flake was traced: its servers warmed the real 578 MB warehouse during timed request bursts; now
+  isolated. All 10 new regressions fail on 81496b8. Backend 579/0/31 skipped in 115 s; web 37/37.
+
+- **2026-10-06 (close-out):** PR #5 merged to `main` (e5eca00) by the user; `v2-p6b-workspace` deleted on GitHub and
+  locally; `main` is the only branch. Local alignment:
+  - clean `npm ci` (root, web) and `build:web`;
+  - refresh → generation 29, built by e5eca00;
+  - gates on `main`: backend 567/0/31 skipped, web 37/37, e2e 27/27;
+  - the LIVE suite was stopped unfinished: running everything back to back overloaded this 8 GB machine. Re-run it
+    alone, at a quiet moment.
+- **Paused (future builds, the user's call):** P7 MCP server, P8 operations, P9 public deployment (ROADMAP §7–9). Nothing
+  else is open.
+
+- **2026-10-06:** P6d W3 signed off; P6d complete. Git cleaned up: `v2-phase6` deleted (fully contained in
+  `v2-p6b-workspace`), remote refs pruned, stray build artifacts removed.
+
+- **2026-10-06 (P6d W3):** W2 signed off ("continue"). W3 built:
+  - R10: proxy-addr 2.0.8 (lockfile only) and a CI step `npm audit --omit=dev --audit-level=high` for root and web;
+  - R11: a `HOST` env (default 127.0.0.1; Vite's proxy now targets 127.0.0.1), `TRUST_PROXY` hop count, and an
+    `SEC_MIN_INTERVAL_MS` floor;
+  - R12: `ingest_errors` retried outside the index window (attempts < 5); ADR 0001 states the index lag and what
+    is not reconciled;
+  - R08: `/freshness` has no generation ETag;
+  - R18: `curationDigest` in freshness, `basis`, the basis note and export `Source` columns;
+  - R20: `runReviewImport` takes `rebuild`; jobs no longer run the derived chain twice. The live import took
+    56.1 s against 47.0 s before, under load 3–8, so no gain was measured.
+
+  Backend 567/0/31 skipped; web 37/37; e2e 27/27. Live: no-change import → generation 28. Browser: the server on
+  127.0.0.1, and the basis note shows generation 28 and digest `327a448900d2`.
+  - `npm audit fix --omit=dev` pruned dev dependencies from `node_modules`; restored with `npm ci`.
+  - One prod-startup run failed at load 22 (known flake) and passed on rerun.
+
+- **2026-10-06 (P6d W2):** W1 signed off ("continue"). W2 built:
+  - R06: in the zeroed branch, a gone class is an exit leg (position) and a class re-keyed to $0 is paired. The
+    warehouse-wide `position_facts` diff found 1 changed leg of 68,277, $6.52 moved from mark to position (Monitronics,
+    Goldman Sachs Multi-Manager Non-Core Fixed Income, 2023-10-31, verified on raw EDGAR, F54, trap 54);
+  - R07: a disclosed range needs its own accession to be the canonical filing (all 11 live ranges already are);
+  - R13: strict calendar dates (2026-02-31 is a 400); X-Ray `pct_nav` is null when not filed and there is no
+    net-asset substitution.
+    - Real empty filings checked: 339 have no rows. Guinness Atkinson (final filing), Guggenheim ($0 net assets) and
+      BMO 2020-11-30 ($1.9B, plain omission) all lack `<invstOrSecs>`.
+    - Rejecting them would be wrong; none follows private-company rows today.
+    - Jobs now warn on a new one (trap 55).
+  - R14: distinct funds, and as-of staleness;
+  - R15: subject status in compare and the watchlist; the Compare page shows "not in the warehouse";
+  - R16: X-Ray `truncated` type and notice ("largest N rows by value").
+
+  Every new regression fails on the old code. Backend 563/0/31 skipped; web 37/37; e2e 27/27. Live: refresh →
+  generation 27. Browser: Compare with id 999999 shows a status badge and dashes; GFA X-Ray renders.
+
+- **2026-10-06 (P6d W1):** the staff full-stack review checked against the code. All seven P1 findings were confirmed;
+  R10, R11 and R17 are deployment concerns, and R02 follows from R01. W1 built:
+  - generation ids from `generations/SEQUENCE`, and rollback as a new generation (R01, R02);
+  - a lock token, `assertOwned` before the publish, and no takeover of a live local job (R03);
+  - N-CEN required columns, adviser-type domain and orphan check, plus `ncen_advisers` in the shrink check (R04;
+    the real 2026q2 data set loads: 501 filings, 3,959 rows);
+  - staged curation with `curation_snapshot` and digest, written back after the publish (R05, R18);
+  - post-commit warnings instead of failure, and fsync (R09);
+  - 0444 generations.
+
+  Verification:
+  - 13 new regressions fail on c697a12;
+  - backend 552/0/31 skipped; web 35/35;
+  - on a clone of the live warehouse: job 25, rollback 26, review import 27 (82.5 s, files unchanged), job 28, then
+    rollback 29; the open company page followed 28 and 29 without a reload;
+  - live: refresh → generation 25, review import → 26.
+
+- **2026-10-06:** W5 signed off by the user; P6b and P6c complete. STATUS shortened to the current state: the P6b W1–W5
+  and P6c log, the pre-W4 snapshot and the decisions as recorded moved verbatim to the archive.
 
 ## P6b W4–W5 and P6c (signed off by the user 2026-10-05..06; verbatim from STATUS)
 
