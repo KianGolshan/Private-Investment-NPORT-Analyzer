@@ -317,6 +317,24 @@ test('doctor: the backup check says when there is none, when it is behind, and w
   assert.equal(doctor(dbPath, { ...opts, backupLocalOk: true }).checks.find(c => c.name === 'backup').status, 'warn');
 });
 
+test('doctor (review L8): a pending security reboot is ok for a day, a warning after two', async () => {
+  const { dbPath } = tmpWarehouse();
+  const opts = { tmp: tmpDir('doctor-tmp'), processes: () => [], freeBytes: () => 100 * 1024 ** 3 };
+  const flag = path.join(tmpDir('reboot'), 'reboot-required');
+  const now = Date.parse('2026-10-15T12:00:00Z');
+  const check = () =>
+    doctor(dbPath, { ...opts, now, rebootFlag: flag, bootedAt: Date.parse('2026-10-15T04:01:00Z') }).checks.find(
+      c => c.name === 'reboot'
+    );
+  assert.deepEqual([check().status, check().detail], ['ok', 'none pending; booted 2026-10-15T04:01:00.000Z']);
+  fs.writeFileSync(flag, '*** System restart required ***\n');
+  fs.utimesSync(flag, new Date(now - 6 * 3600 * 1000), new Date(now - 6 * 3600 * 1000));
+  assert.equal(check().status, 'ok');
+  assert.match(check().detail, /^pending for 0\.3 days .*automatic at 04:00 UTC/);
+  fs.utimesSync(flag, new Date(now - 3 * 86400 * 1000), new Date(now - 3 * 86400 * 1000));
+  assert.equal(check().status, 'warn', 'the automatic reboot is not happening');
+});
+
 // P9: the off-site copy (VANTAGE_OFFSITE_CMD) after the nightly backup.
 test('off-site copy: unset is skipped; success is recorded and counts as off-host; failure and the time limit warn', async () => {
   const { runOffsite, lastOffsite } = require('../lib/warehouse/nightly');

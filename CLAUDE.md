@@ -1,7 +1,7 @@
 # CLAUDE.md: standing rules for Vantage
 
-Vantage tracks **private-investment exposure and valuation marks** reported by SEC-registered funds (N-PORT-P),
-plus BDC private-credit marks (10-Q/10-K). We are building **Vantage v2**: real, SEC-verified data from 2019Q4,
+Vantage tracks **private-investment exposure and valuation marks** reported by SEC-registered funds (N-PORT-P).
+(BDC private-credit marks from 10-Q/10-K were v1, kept at the git tag `v1-archive`.) We are building **Vantage v2**: real, SEC-verified data from 2019Q4,
 refreshed automatically, analyzable by **security (class) → issuer → fund → manager** at any date, with per-share
 marks, new positions, adds, reductions, exits and trends. Keep that goal in view in every change.
 

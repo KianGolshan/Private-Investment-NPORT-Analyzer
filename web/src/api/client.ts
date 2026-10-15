@@ -21,6 +21,21 @@ export class ApiError extends Error {
 
 const cache = new Map<string, unknown>();
 let cacheRefreshId: number | null = null;
+// At most this many answers are kept (review L9: a long Explore or Compare session
+// kept every answer of the generation, some ~1 MB each); the least recently used
+// goes first. A view that is still mounted keeps its own copy; one that remounts
+// fetches again.
+export const MAX_CACHED = 150;
+function remember(url: string, body: unknown): void {
+  cache.delete(url); // most recent last
+  cache.set(url, body);
+  while (cache.size > MAX_CACHED) cache.delete(cache.keys().next().value as string);
+}
+function recall(url: string): unknown {
+  const body = cache.get(url);
+  remember(url, body);
+  return body;
+}
 const listeners = new Set<() => void>();
 const REVALIDATE_MS = 5 * 60 * 1000;
 
@@ -43,7 +58,7 @@ function adopt(rid: unknown): boolean {
 // re-render.
 const urlListeners = new Map<string, Set<(body: unknown) => void>>();
 function replaceCached(url: string, body: unknown): void {
-  cache.set(url, body);
+  remember(url, body);
   for (const fn of [...(urlListeners.get(url) ?? [])]) fn(body);
 }
 
@@ -105,7 +120,7 @@ export function qs(params: Record<string, string | number | boolean | null | und
 }
 
 export async function getJSON<T>(url: string, signal?: AbortSignal): Promise<T> {
-  if (cache.has(url)) return cache.get(url) as T;
+  if (cache.has(url)) return recall(url) as T;
   for (let attempt = 0; ; attempt++) {
     const res = await fetch(url, { signal, headers: { Accept: 'application/json' } });
     let body: unknown = null;
@@ -121,7 +136,7 @@ export async function getJSON<T>(url: string, signal?: AbortSignal): Promise<T> 
     const current = adopt((body as { refreshId?: number } | null)?.refreshId);
     // an older generation than one already seen: ask once more, else show it uncached
     if (!current && attempt === 0) continue;
-    if (current) cache.set(url, body);
+    if (current) remember(url, body);
     return body as T;
   }
 }

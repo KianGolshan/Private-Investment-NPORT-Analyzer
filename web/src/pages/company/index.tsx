@@ -84,7 +84,7 @@ export default function Company() {
   const head = useApi<Head>(valid ? base : null);
   const h = head.data;
   const name = h?.company?.name ?? h?.entity?.name ?? '';
-  const listed = h?.answeredBy?.source === 'live';
+  const listed = h?.answeredBy?.source === 'listed';
   const sq = useMemo<Record<string, number>>(() => (stored ? { stored: 1 } : ({} as Record<string, number>)), [stored]);
   const showViews = !!h && (!listed || !!stored);
   const trend = useApi<Envelope & { points: TrendPoint[] }>(showViews ? `${base}/trend${qs(sq)}` : null);

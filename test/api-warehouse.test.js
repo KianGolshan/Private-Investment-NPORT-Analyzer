@@ -167,14 +167,17 @@ test('API history: Anthropic from 2023-04-28, Stripe from 2019-12-31, Databricks
   assert.equal(split.split, 3);
 });
 
-test('API routing: a listed company answers from the live path, never from its stored rows (SpaceX is public)', async () => {
+test('API routing: a listed company is not answered from its stored rows by default (SpaceX is public)', async () => {
   const id = idOf('Space Exploration Technologies');
   const info = (await api(`/api/companies/${id}`).expect(200)).body;
   assert.equal(info.company.status, 'public');
-  assert.equal(info.answeredBy.source, 'live');
+  assert.equal(info.answeredBy.source, 'listed');
+  // no live path since v1's removal (review L5): the answer never points at one
+  assert.doesNotMatch(JSON.stringify(info), /live (EDGAR|path)/);
   const r = (await api(`/api/companies/${id}/exposure?date=2026-06-30`).expect(200)).body;
-  assert.equal(r.source, 'live');
-  assert.equal(r.liveQuery, 'Space Exploration Technologies');
+  assert.equal(r.source, 'listed');
+  assert.match(r.reason, /stored=1/);
+  assert.ok(!('liveQuery' in r));
   assert.ok(!('holdings' in r) && !('total' in r));
 });
 
@@ -200,6 +203,11 @@ test('API ids: a merged id redirects to its successor, a dropped id is gone, bad
   ).run();
   const r = await api('/api/companies/99001/exposure?date=2026-06-30').expect(301);
   assert.equal(r.headers.location, `/api/companies/${anthropic}/exposure?date=2026-06-30`);
+  // the path's id changes, never the query (review L1: this looped back to 99001)
+  const q = await api('/api/companies/99001/exposure?note=/companies/77&firm=9').expect(301);
+  assert.equal(q.headers.location, `/api/companies/${anthropic}/exposure?note=/companies/77&firm=9`);
+  const bare = await api('/api/companies/99001').expect(301);
+  assert.equal(bare.headers.location, `/api/companies/${anthropic}`);
   await api('/api/companies/99002').expect(410);
   await api('/api/companies/424242').expect(404);
   await api('/api/companies/abc').expect(400);
@@ -273,7 +281,7 @@ test('history labels: two funds with one name stay two funds (Capital World Grow
 test('listed companies: stored rows answer only on request, labeled, with exits as "not in stored rows" (SpaceX)', async () => {
   const id = idOf('Space Exploration Technologies');
   const head = (await api(`/api/companies/${id}`).expect(200)).body;
-  assert.equal(head.answeredBy.source, 'live');
+  assert.equal(head.answeredBy.source, 'listed');
   assert.match(head.stored.note, /private-era marks/);
   const h = (await api(`/api/companies/${id}/history?stored=1`).expect(200)).body;
   assert.equal(h.source, 'warehouse');
@@ -306,6 +314,10 @@ test('unreviewed names: a key a review gave to a company answers 301 to the comp
     .get(`/api/entities/${encodeURIComponent(e.key)}/history`)
     .expect(301);
   assert.equal(r.headers.location, '/api/companies/9001/history');
+  const q = await request(a)
+    .get(`/api/entities/${encodeURIComponent(e.key)}/history?x=/entities/OTHER&from=2020-01-31`)
+    .expect(301);
+  assert.equal(q.headers.location, '/api/companies/9001/history?x=/entities/OTHER&from=2020-01-31');
 });
 
 test('API answers are gzipped for clients that accept it', async () => {

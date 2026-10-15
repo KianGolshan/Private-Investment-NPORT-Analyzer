@@ -33,13 +33,15 @@ daily index ─(ingest-delta)┘        │
 N-CEN (data sets + EDGAR) ─► advisers ─► fund_advisers ─► managers (reviewed CSV)
              entities (companies, aliases, spv_map, disclosed_exposure, tracked; reviewed CSV)
                                     │
-                 lib/analytics (asof, marks, splits, peer)
+                 lib/analytics (asof, activity, splits)
                                     │
-                    lib/services ──► Express API + UI   (read-only; ADR 0008)
-                                  └► MCP server (stdio, read-only)
-live EDGAR ─► listed companies and debt (labeled "live, not warehoused", ADR 0008)
-EFTS keyword search ─► on-demand check (labeled "live, not yet warehoused")
+                    lib/services ──► Express API + workspace (web/)   (read-only; ADR 0008)
+                                  └► MCP server (planned, P7)
 ```
+
+No visitor request reaches the SEC. Listed companies answer only from their stored rows, on request (`?stored=1`,
+labeled); debt is not stored. The v1 live path (per-filing EDGAR, EFTS keyword search, Private Credit) was removed on
+2026-10-13 and is kept at the git tag `v1-archive`.
 
 ## Schema
 

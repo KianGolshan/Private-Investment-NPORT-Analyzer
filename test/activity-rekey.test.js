@@ -285,3 +285,39 @@ test('R06: a partial class exit beside a priced class stays exit + mark (control
   assert.deepEqual(legOf(ev, 'A1'), ['unchanged', '0.00', '50.00']);
   assert.deepEqual(legOf(ev, 'B1'), ['class no longer reported', '-200.00', '0.00']);
 });
+
+// Review L4: a share lot and a lot without a share count under one filer id
+// (Carlyle Partners VII, 0001410368-26-090305: 12,439,939.46 sh worth
+// $13,732,809.93 beside a 0-balance OU lot of $3,159,462.30). Worked by hand: the
+// mark is the share lot's own $1.10393 (13,732,809.93 / 12,439,939.46), not the
+// blended $1.35791; the share-less lot's value is "value only".
+const lot = (row_key, balance, unit, value_usd) => ({
+  ...row(row_key, 'CARLYLE PARTNERS VII, L.P.', 'C7', '000000000', 'EC', balance, value_usd),
+  unit,
+  counts: true,
+});
+test('L4: a share lot sets the mark alone; a lot without shares under the same id is value only', () => {
+  const prev = [lot('1', 15736700, 'NS', 19146601.46)];
+  const cur = [lot('1', 12439939.46, 'NS', 13732809.93), lot('2', 0, 'OU', 3159462.3)];
+  const ev = diffPosition(prev, cur);
+  assert.equal(ev.instruments.length, 1, 'one position');
+  const l = ev.instruments[0];
+  assert.equal(l.price.toFixed(5), '1.10393');
+  assert.equal(l.value.toFixed(2), (13732809.93 + 3159462.3).toFixed(2));
+  assert.equal(l.otherEffect.toFixed(2), '3159462.30');
+  assert.ok(Math.abs(l.positionEffect + l.markEffect + l.otherEffect - (l.value - l.prevValue)) < 1e-6, 'effects sum');
+  // the other way round (lots listed share-less first), and both sides mixed
+  const both = diffPosition(
+    [lot('2', 0, 'OU', 1000), lot('1', 100, 'NS', 200)],
+    [lot('2', 0, 'OU', 1500), lot('1', 100, 'NS', 300)]
+  );
+  const b = both.instruments[0];
+  assert.deepEqual([b.prevPrice, b.price, b.markEffect, b.otherEffect, b.positionEffect], [2, 3, 100, 500, 0]);
+  // two share-less lots stay one value-only position, as before
+  const none = diffPosition(
+    [lot('2', 0, 'OU', 1000), lot('3', null, 'OU', 500)],
+    [lot('2', 0, 'OU', 900), lot('3', null, 'OU', 500)]
+  );
+  assert.equal(none.instruments[0].change, 'value only');
+  assert.equal(none.instruments[0].otherEffect, -100);
+});

@@ -69,7 +69,7 @@ That makes 1A good for testing and showing people, and 1B the version for your r
 1. Create the instance as in **1.2**: Ubuntu 24.04 aarch64, VM.Standard.A1.Flex, 2 OCPU, 12 GB, 100 GB boot
    volume, and your Mac's SSH public key.
 2. In the instance's subnet **security list**, add ingress rules:
-   - TCP **22** from your home IP;
+   - TCP **22** from your home IP (not `0.0.0.0/0`: to change it later, see 1A.6);
    - TCP **80** from `0.0.0.0/0` (Let's Encrypt checks it to issue the certificate);
    - TCP **443** from `0.0.0.0/0`.
 

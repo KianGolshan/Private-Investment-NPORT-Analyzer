@@ -607,5 +607,7 @@ test('firm ids: the API answers a merged id with 301 and a dropped one with 410 
   );
   const moved = await request(app).get('/api/firms/2/changes?since=2026-01-01').expect(301);
   assert.equal(moved.headers.location, '/api/firms/1/changes?since=2026-01-01');
+  const q = await request(app).get('/api/firms/2/changes?company=/firms/5').expect(301);
+  assert.equal(q.headers.location, '/api/firms/1/changes?company=/firms/5', 'the query is kept as sent (L1)');
   assert.match((await request(app).get('/api/firms/3').expect(410)).body.error, /firm 3 \(C\) was dropped/);
 });

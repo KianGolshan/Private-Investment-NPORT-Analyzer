@@ -385,3 +385,19 @@ test('cross-company answers say how they read history; company answers do not ne
   }
   assert.equal((await api(`/api/companies/${idOf('Stripe')}/exposure?date=2026-06-30`)).body.basis, undefined);
 });
+
+test('L3: monthEnds gives none for a missing or invalid date, and the first, middle and last month otherwise', () => {
+  const { monthEnds } = require('../lib/analytics/asof');
+  assert.deepEqual(monthEnds('2020-01-15', null), []);
+  assert.deepEqual(monthEnds(null, '2020-03-31'), []);
+  assert.deepEqual(monthEnds('2020-01-15', 'not-a-date'), []);
+  assert.deepEqual(monthEnds('2020-01-15', '2020-03-31'), ['2020-01-31', '2020-02-29', '2020-03-31']);
+  assert.deepEqual(monthEnds('2020-03-31', '2020-03-30'), []);
+});
+
+test('L6: one threshold for "mark moved" and the monthly mark-up/down counts', () => {
+  const { activityByMonth, MARK_MOVE_PCT } = require('../lib/analytics/activity');
+  const ev = (pct, type = 'unchanged') => ({ markDate: '2026-03-31', type, markChangePct: pct });
+  const [m] = activityByMonth([ev(0.01), ev(-0.01), ev(MARK_MOVE_PCT), ev(0.004), ev(null)]);
+  assert.deepEqual([m.markUps, m.markDowns], [1, 1], 'a 0.01% move counts; at or under the threshold does not');
+});

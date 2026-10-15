@@ -6,6 +6,9 @@ private-era marks; a listed company still answers from the live path, and its st
 (`?stored=1`), labeled, with exits read as "not in stored rows" (DATA-QUALITY trap 49). Search marks the one result
 that may open by itself (`strong`).
 
+**Amended 2026-10-15 (P11 W3, review L5):** the live path is gone with v1 (git tag `v1-archive`). A listed
+company answers `source: 'listed'` and nothing else unless its stored rows are asked for (`?stored=1`, labeled).
+
 ## Context
 
 Checked against the code and the live warehouse on 2026-09-30 (archive/STATUS-history.md, "Phase 5 planning"):

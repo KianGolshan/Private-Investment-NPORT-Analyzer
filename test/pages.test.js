@@ -168,3 +168,16 @@ test('/api/stats: counts from the tables; the router gives sitemap entries and p
   assert.equal(none.sitemapEntries(), null);
   assert.equal(none.pageMeta('/company/1'), null);
 });
+
+test('renderIndex: filer text with $ patterns goes in as written (LESSONS 28, review L2)', () => {
+  const html = '<html><head><title>x</title></head><body><div id="app"></div></body></html>';
+  for (const name of ['Fund $` Trust', "Fund $' Trust", 'Fund $& Trust', 'Fund $1 Trust', 'iBoxx $ High Yield']) {
+    const out = pages.renderIndex(
+      html,
+      pages.headTags({ title: name, description: 'd', origin: 'https://x', path: '/fund/S1' })
+    );
+    assert.equal((out.match(/<head>/g) || []).length, 1, name);
+    assert.equal((out.match(/<body>/g) || []).length, 1, name);
+    assert.ok(out.includes(`<title>${pages.escapeHtml(name)} · Vantage</title>`), name);
+  }
+});

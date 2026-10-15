@@ -3,7 +3,7 @@
 // an answer from an older generation never replaces a newer one.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, waitFor } from '@testing-library/preact';
-import { clearApiCache, getJSON, revalidate, useApi } from '../src/api/client';
+import { MAX_CACHED, clearApiCache, getJSON, revalidate, useApi } from '../src/api/client';
 
 let generation = 1;
 let calls: string[] = [];
@@ -130,5 +130,18 @@ describe('api client freshness', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('keeps at most MAX_CACHED answers, the least recently used going first (review L9)', async () => {
+    serve();
+    for (let i = 0; i < MAX_CACHED; i++) await getJSON(`/u${i}`);
+    await getJSON('/u0'); // used again: now the most recent
+    await getJSON('/extra'); // one over the cap: /u1 (least recent) goes
+    calls = [];
+    await getJSON('/u0');
+    await getJSON(`/u${MAX_CACHED - 1}`);
+    expect(calls).toEqual([]);
+    await getJSON('/u1');
+    expect(calls).toEqual(['/u1']);
   });
 });
