@@ -7,6 +7,10 @@
 #
 #   deploy.sh <production|staging> <40-hex sha>
 #
+# Exit codes: 0 deployed (or already running); 75 not now and nothing changed
+# (another deploy or a warehouse job holds its lock: try again later, review M6);
+# anything else: failed, and the previous release and its data are serving.
+#
 # Layout:
 #   /opt/vantage/repo                       git clone (fetch only)
 #   /opt/vantage/<prod|staging>/releases/   one git worktree per commit (provenance: git rev-parse works)
@@ -55,9 +59,27 @@ fail() {
   exit 1
 }
 
-# One deploy per target at a time; a second waits up to 30 minutes.
+TEMPFAIL=75
+# One deploy per target at a time; a second waits up to 30 minutes, then says
+# "not now" (75) so an auto-deploy tries the same commit again later.
 exec 9>"$DATA/deploy-$TARGET.lock"
-flock -w "${VANTAGE_DEPLOY_LOCK_WAIT:-1800}" 9 || fail "another $TARGET deploy holds the lock"
+if ! flock -w "${VANTAGE_DEPLOY_LOCK_WAIT:-1800}" 9; then
+  log "another $TARGET deploy holds the lock; nothing changed, try again later"
+  exit "$TEMPFAIL"
+fi
+
+# The published warehouse generation (the id in the link's target), or empty.
+WAREHOUSE=$(
+  set -a
+  # shellcheck source=/dev/null
+  . "$ENV_FILE"
+  echo "${WAREHOUSE_DB_PATH:-$DATA/warehouse.db}"
+)
+generation_now() {
+  local t
+  t=$(readlink "$WAREHOUSE" 2>/dev/null) || return 0
+  if [[ $t =~ warehouse-([0-9]+)\.db$ ]]; then echo "${BASH_REMATCH[1]}"; fi
+}
 
 # (readlink -f prints a path even when the link is missing: check the link first)
 PREV=
@@ -115,13 +137,36 @@ switch_to() {
 }
 
 SWITCHED=0
+GEN_BEFORE= # the generation published before this deploy's review import
+GEN_IMPORTED= # the generation the import published
+# A failed deploy whose review import published a generation puts the data back
+# too (review M5): the previous generation's contents are republished, by the
+# previous release's code (its own migrations), unless a newer generation was
+# published meanwhile (a nightly), which is left for a person to judge.
+rollback_data() {
+  [[ -n $GEN_IMPORTED && -n $GEN_BEFORE && $GEN_IMPORTED != "$GEN_BEFORE" ]] || return 0
+  local now
+  now=$(generation_now)
+  if [[ $now != "$GEN_IMPORTED" ]]; then
+    log "DATA NOT ROLLED BACK: generation $now was published after the import's $GEN_IMPORTED; to undo the import: npm run warehouse -- --rollback --to $GEN_BEFORE"
+    return 0
+  fi
+  if in_release "$PREV" node scripts/warehouse.js --rollback --to "$GEN_BEFORE" >>"$LOG" 2>&1; then
+    log "data rolled back: generation ${GEN_BEFORE}'s contents published again (the import's $GEN_IMPORTED abandoned)"
+  else
+    log "DATA ROLLBACK FAILED (see above): npm run warehouse -- --rollback --to $GEN_BEFORE"
+  fi
+}
 rollback() {
   local code=$?
   trap - ERR EXIT
-  if [[ $code -ne 0 && $SWITCHED == 1 && -n $PREV && -d $PREV ]]; then
-    log "rolling back to ${PREV_SHA:0:12}"
-    switch_to "$PREV"
-    if restart_all; then log "rolled back; the previous release is serving"; else log "ROLLBACK FAILED: check journalctl -u vantage@3002"; fi
+  if [[ $code -ne 0 && -n $PREV && -d $PREV ]]; then
+    rollback_data
+    if [[ $SWITCHED == 1 ]]; then
+      log "rolling back to ${PREV_SHA:0:12}"
+      switch_to "$PREV"
+      if restart_all; then log "rolled back; the previous release is serving"; else log "ROLLBACK FAILED: check journalctl -u vantage@3002"; fi
+    fi
   fi
   exit "$code"
 }
@@ -156,21 +201,28 @@ fi
 # 2. Data that must change with the code (production only; staging reads
 # production's warehouse). A new migration or reviewed files run one review
 # import job, which migrates the warehouse and re-imports data/review as a new
-# generation; the running servers switch to it on their own. Retried while the
-# nightly job holds the warehouse lock.
+# generation; the running servers switch to it on their own. While another job
+# (the nightly) holds the warehouse lock it is tried again a few times, then the
+# deploy says "not now" (75) and the next auto-deploy run tries again (M6); an
+# import that fails for any other reason fails the deploy at once.
 if [[ $TARGET == production && -n $PREV ]]; then
   if ! git -C "$REPO" diff --quiet "$PREV_SHA" "$SHA" -- db/migrations data/review 2>/dev/null; then
     log "migrations or reviewed files changed: running the review import job"
-    ok=0
-    for attempt in 1 2 3 4 5 6; do
-      if in_release "$REL" node scripts/review-aliases.js >>"$LOG" 2>&1; then
-        ok=1
-        break
+    GEN_BEFORE=$(generation_now)
+    tries=${VANTAGE_DEPLOY_IMPORT_TRIES:-6}
+    for ((attempt = 1; ; attempt++)); do
+      rc=0
+      in_release "$REL" node scripts/review-aliases.js >>"$LOG" 2>&1 || rc=$?
+      [[ $rc == 0 ]] && break
+      [[ $rc == "$TEMPFAIL" ]] || fail "the review import job failed (exit $rc, see $LOG); nothing was switched"
+      if ((attempt >= tries)); then
+        log "the warehouse job lock is still held (a nightly or another job); nothing changed, try again later"
+        exit "$TEMPFAIL"
       fi
-      log "review import attempt $attempt failed; retrying in 60 s"
-      sleep 60
+      log "a warehouse job holds the lock (attempt $attempt of $tries); trying again in ${VANTAGE_DEPLOY_IMPORT_WAIT:-60} s"
+      sleep "${VANTAGE_DEPLOY_IMPORT_WAIT:-60}"
     done
-    [[ $ok == 1 ]] || fail "the review import job failed (see $LOG); nothing was switched"
+    GEN_IMPORTED=$(generation_now)
   fi
 fi
 

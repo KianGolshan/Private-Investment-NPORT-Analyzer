@@ -243,6 +243,36 @@ test('lock fencing: a job whose lock was taken over cannot release or publish (R
   assert.ok(!fs.existsSync(lockFile));
 });
 
+test('M6: a lock held by a live job is "busy" (try later); the review import then exits 75 and changes nothing', () => {
+  const { dbPath } = tmpWarehouse();
+  const lock = acquireLock(dbPath, 'refresh');
+  try {
+    assert.throws(
+      () => acquireLock(dbPath, 'curation'),
+      err => err.status === 409 && err.busy === true && /already running/.test(err.message)
+    );
+    const before = publishedFile(dbPath);
+    const r = spawnSync(process.execPath, [path.join(__dirname, '..', 'scripts', 'review-aliases.js')], {
+      env: { ...process.env, WAREHOUSE_DB_PATH: dbPath },
+      encoding: 'utf8',
+      timeout: 120000,
+    });
+    assert.equal(r.status, 75, r.stderr);
+    assert.match(r.stderr, /review import waiting: a refresh job is already running/);
+    assert.equal(publishedFile(dbPath), before, 'nothing published');
+  } finally {
+    lock.release();
+  }
+  // any other failure is not "busy": exit 1
+  const bad = spawnSync(
+    process.execPath,
+    [path.join(__dirname, '..', 'scripts', 'review-aliases.js'), '--dir', path.join(tmpDir('review'), 'missing')],
+    { env: { ...process.env, WAREHOUSE_DB_PATH: path.join(tmpDir('ro'), 'none', 'warehouse.db') }, encoding: 'utf8' }
+  );
+  assert.equal(bad.status, 1, bad.stderr);
+  assert.match(bad.stderr, /review import failed/);
+});
+
 test('lock: a live process on this host is never taken over, however old its heartbeat (R03)', () => {
   const { dbPath } = tmpWarehouse();
   const lock = acquireLock(dbPath, 'refresh');

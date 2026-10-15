@@ -8,10 +8,13 @@
 #   2. a new commit that changes data/review runs the review import job (a new
 #      generation), switches, and records the previous release;
 #   3. a broken commit fails its readiness check and puts the previous release back;
+#      one that also changed data/review puts the data back too (review M5);
 #   4. "rollback" deploys the recorded previous release again;
 #   5. status reports what runs;
 #   6. vantage-autodeploy (the direct edge) waits for a green Test run, deploys
-#      main's new commit, does nothing twice, and does not retry a failed one.
+#      main's new commit, does nothing twice, and does not retry a failed one;
+#      a commit whose review import meets a held job lock is tried again later,
+#      never marked failed (review M6).
 # Needs: bash, git, node with this repository's npm ci, curl, flock (Linux).
 set -Eeuo pipefail
 
@@ -117,6 +120,26 @@ check '[[ $(build_of 3002) == "$B" && $(build_of 3003) == "$B" ]]' "both instanc
 check 'grep -q "rolled back; the previous release is serving" "$VANTAGE_DATA/deploy.log"' "the rollback is logged"
 check '[[ $(cat "$VANTAGE_DATA/previous-production") == "$A" ]]' "a failed deploy leaves the rollback target alone"
 
+step "3b. a broken commit that changes data/review puts the data back too"
+GEN_B=$(node -pe 'require(process.argv[1]).generation' "$VANTAGE_DATA/warehouse.db.job.json")
+(
+  cd "$T/work"
+  "${GIT[@]}" checkout -q -B drill-c2 "$B"
+  node -e 'const f="data/review/curation.json";const fs=require("fs");fs.writeFileSync(f,JSON.stringify(JSON.parse(fs.readFileSync(f,"utf8")))+"\n")'
+  printf "throw new Error('drill: broken with new data');\n" | cat - server.js >server.tmp && mv server.tmp server.js
+  "${GIT[@]}" commit -qam "drill: broken server and new curation"
+  "${GIT[@]}" push -q origin HEAD:refs/heads/drill-c2
+)
+C2=$(git -C "$T/work" rev-parse HEAD)
+if deploy deploy production "$C2"; then
+  echo "drill FAILED: the broken deploy succeeded" >&2
+  exit 1
+fi
+check '[[ $(current) == "$B" ]]' "current is B again"
+check 'grep -q "data rolled back: generation ${GEN_B}" "$VANTAGE_DATA/deploy.log"' "the import's generation was rolled back"
+check 'node -e "const j=require(process.argv[1]); process.exit(j.kind === \"rollback\" && /restores generation $GEN_B /.test(j.note) ? 0 : 1)" "$VANTAGE_DATA/warehouse.db.job.json"' "B's data is published again"
+check '[[ $(cat "$VANTAGE_DATA/previous-production") == "$A" ]]' "the rollback target is still A"
+
 step "4. rollback"
 deploy deploy production rollback
 check '[[ $(current) == "$A" ]]' "current is A"
@@ -169,5 +192,29 @@ check '[[ $(current) == "$D" && $(cat "$VANTAGE_DATA/autodeploy-failed-productio
 lines=$(wc -l <"$VANTAGE_DATA/deploy.log")
 bash "$SRC/deploy/bin/vantage-autodeploy"
 check '[[ $(wc -l <"$VANTAGE_DATA/deploy.log") == "$lines" ]]' "a failed commit is not retried"
+
+step "6b. a held job lock means 'not now', never 'failed'"
+(
+  cd "$T/work"
+  "${GIT[@]}" checkout -q -B drill-f "$D"
+  node -e 'const f="data/review/curation.json";const fs=require("fs");fs.writeFileSync(f,JSON.stringify(JSON.parse(fs.readFileSync(f,"utf8")),null,3)+"\n")'
+  "${GIT[@]}" commit -qam "drill: new curation on main"
+  git push -q -f origin HEAD:refs/heads/main
+)
+F=$(git -C "$T/work" rev-parse HEAD)
+ci Test "$F" success
+# a live job holds the warehouse lock (it ends by itself after 90 s; cleanup kills it)
+node -e 'require(process.argv[1]).acquireLock(process.argv[2], "refresh"); setTimeout(() => process.exit(0), 90000)' \
+  "$SRC/lib/warehouse/job.js" "$VANTAGE_DATA/warehouse.db" &
+echo $! >"$VANTAGE_DATA/run/holder.pid"
+sleep 1
+VANTAGE_DEPLOY_IMPORT_TRIES=2 VANTAGE_DEPLOY_IMPORT_WAIT=1 bash "$SRC/deploy/bin/vantage-autodeploy" | tee "$T/auto.txt"
+check 'grep -q "not now" "$T/auto.txt" && [[ $(current) == "$D" ]]' "the deploy waits and D keeps serving"
+check '[[ $(cat "$VANTAGE_DATA/autodeploy-failed-production") == "$E" ]]' "F is not marked failed"
+kill "$(cat "$VANTAGE_DATA/run/holder.pid")" 2>/dev/null || true
+rm -f "$VANTAGE_DATA/run/holder.pid"
+sleep 1
+bash "$SRC/deploy/bin/vantage-autodeploy"
+check '[[ $(current) == "$F" && $(build_of 3002) == "$F" ]]' "once the lock is free, the next run deploys F"
 
 step "passed"

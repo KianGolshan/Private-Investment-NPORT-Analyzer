@@ -28,9 +28,12 @@ async function main() {
   console.log(`published generation ${r.generation} in ${((Date.now() - t) / 1000).toFixed(1)} s`);
 }
 
+// Exit 75 (EX_TEMPFAIL) when another job holds the lock: nothing changed and the
+// same import can run later (deploy.sh tries again; review M6). Any other failure: 1.
 main().catch(err => {
-  console.error(`review import failed: ${err.message}`);
-  process.exitCode = 1;
+  const code = err.busy ? 75 : 1;
+  console.error(`review import ${err.busy ? 'waiting' : 'failed'}: ${err.message}`);
+  process.exitCode = code;
   // A job past its time limit may leave work running (runJob); exit anyway.
-  setTimeout(() => process.exit(1), 1000).unref();
+  setTimeout(() => process.exit(code), 1000).unref();
 });

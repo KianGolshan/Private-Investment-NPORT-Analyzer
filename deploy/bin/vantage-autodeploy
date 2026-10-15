@@ -4,7 +4,9 @@
 # commit whose Test workflow passed on GitHub, it deploys it through
 # vantage-deploy (rolling restart, smoke check, automatic rollback). No secret and
 # no inbound SSH: it reads the public repository and GitHub's public API.
-# A commit whose deploy failed is not retried; the next commit is.
+# A commit whose deploy failed is not retried; the next commit is. A deploy that
+# says "not now" (exit 75: another deploy or a warehouse job holds a lock) is
+# tried again on the next run (review M6).
 #
 #   vantage-autodeploy [production|staging]   # staging follows the staging branch
 set -Eeuo pipefail
@@ -58,8 +60,12 @@ if ! jq -e --arg sha "$sha" \
 fi
 
 echo "deploying ${sha:0:12} to $TARGET"
-if SSH_ORIGINAL_COMMAND="deploy $TARGET $sha" "$DEPLOY"; then
+rc=0
+SSH_ORIGINAL_COMMAND="deploy $TARGET $sha" "$DEPLOY" || rc=$?
+if [[ $rc == 0 ]]; then
   rm -f "$failed_file"
+elif [[ $rc == 75 ]]; then
+  echo "not now: a lock is held (another deploy or a warehouse job); ${sha:0:12} is tried again on the next run"
 else
   echo "$sha" >"$failed_file"
   echo "deploy of ${sha:0:12} failed; the previous release is serving (see $DATA/deploy.log)" >&2
