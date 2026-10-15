@@ -1,10 +1,9 @@
 # Vantage v2 Status
 
-**Phase:** **P10, launch review remediation.** Vantage is live at **https://vantage-kian.duckdns.org** (Oracle
-Cloud Always Free VM on Pay As You Go, DuckDNS, HTTPS from Caddy, nightly SEC refresh, auto-deploy of every green
-commit on `main`; [DEPLOY.md](DEPLOY.md)). The review of 2026-10-13 graded it B and listed 20 findings (F-01..F-20).
-W0 is done on the server; W1 is built on **`v2-review-fixes`** and waits for the user's sign-off before merge (a
-merge deploys). Server warehouse: **generation 34** (2026Q3 bulk loaded, filings through 2026-10-13).
+**Phase:** **P10 W1 is merged and live** (PR #21, deployed 2026-10-15 as `eb1697e`, generation 36). Vantage is live
+at **https://vantage-kian.duckdns.org** (Oracle Cloud Always Free VM on Pay As You Go, DuckDNS, HTTPS from Caddy,
+nightly SEC refresh, auto-deploy of every green commit on `main`; [DEPLOY.md](DEPLOY.md)). `main` is the only working
+branch (`archive/v1` keeps v1). Next: the user's professional bug and security review of the whole project.
 
 ## Phase tracker
 
@@ -15,7 +14,7 @@ merge deploys). Server warehouse: **generation 34** (2026Q3 bulk loaded, filings
 - [~] P8: operations. W1–W3 signed off. W4 research and the checkpoint (30 unattended nights, a green monthly run)
   are deferred.
 - [x] P9: public deployment, live 2026-10-14 ([plan](plans/P9-deployment.md), [DEPLOY.md](DEPLOY.md)).
-- [~] P10: launch review remediation (ROADMAP §10). W0 done; **W1 built, awaiting sign-off**; W2 after the merge.
+- [x] P10: launch review remediation (ROADMAP §10). W0 and W1 live; W2 done except off-site backups (not now).
 
 ## What the app answers now (all from the warehouse, every row with mark date and accession)
 
@@ -61,8 +60,8 @@ has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB 
 - **Server:** the first nightly ran out of memory (Node sized its heap at 1.5 GB from `MemoryMax=3G`) and was
   reported as "killed after the time limit". With a 3 GB heap and a 5 GB cap it ran in 4.4 min: 2026q3 bulk (14,066
   filings), 35 EDGAR filings, N-CEN 2026q3, generation 34 published, backed up (591.3 MB), smoke 17/17. SSH is
-  key-only without root; rpcbind is off. healthchecks.io is set; no off-site copy yet (W2).
-- **Branch `v2-review-fixes`** (two commits plus docs): everything in ROADMAP §10 W1. Gates: backend 431 (427 pass,
+  key-only without root; rpcbind is off. healthchecks.io is set; no off-site copy (the user: not now).
+- **W1, PR #21 (live 2026-10-15):** everything in ROADMAP §10 W1. Gates: backend 431 (427 pass,
   4 skipped, 0 fail), web 47/47, lint, lint:web, format clean. e2e runs in CI on the PR (the local Playwright needs a
   browser download after the Dependabot bump). A local crawl of 32 pages × light/dark × desktop/375 px on the new
   build: 0 axe violations, 0 console errors on real pages, no horizontal overflow (Activity fixed after the crawl).
@@ -111,27 +110,27 @@ has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB 
 
 ## Measurements
 
-| Metric                        | Budget               | Latest                                                                                                                                               |
-| ----------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Warehouse size                | ≤1 GB per generation | **591.3 MB** (server generation 34, with 2026q3)                                                                                                     |
-| Nightly run (server)          | ≤5 min refresh       | 4.4 min for the whole nightly with a new bulk quarter (2026-10-14); 1.9 GB peak memory on the failed run                                             |
-| API p95, all routes           | <200ms               | 25.2 / 27.0 ms after the warm-up (P8 W3). Uncached heavy routes on the live server: 1.0–1.5 s (now guarded, `lib/api/heavy.js`). Load test: W2       |
-| Backup / restore              | —                    | server backups 2026-10-14 (g33, g34); restore drill on the same disk only (2026-10-07); off-site: W2                                                 |
-| Lighthouse (live, before W1)  | ≥90                  | desktop: Market 99, company 85, Explore 99, firm 96; mobile: Market **68** (layout shift 0.285), company 93, Explore 93, firm 95; a11y 98 everywhere |
-| Accessibility (axe, WCAG 2.1) | 0 serious            | live before W1: 1 (dark Firm → Book contrast); local W1 build: **0** on 32 pages × light/dark                                                        |
-| Data accuracy (review)        | exact                | 12/12 random live rows and 6/6 special cases (amendment, $0, exit, 3:1 split, as-of) equal raw EDGAR                                                 |
-| Suite                         | green                | 2026-10-14 on `v2-review-fixes`: backend 431 (427 pass, 4 skipped); web 47/47; e2e in CI                                                             |
+| Metric                        | Budget               | Latest                                                                                                                                                                                                                                                                                                                                                                      |
+| ----------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Warehouse size                | ≤1 GB per generation | **591.3 MB** (server generation 34, with 2026q3)                                                                                                                                                                                                                                                                                                                            |
+| Nightly run (server)          | ≤5 min refresh       | 4.4 min for the whole nightly with a new bulk quarter (2026-10-14); the scheduled 10:16 UTC run the same day succeeded on its own                                                                                                                                                                                                                                           |
+| API p95, all routes           | <200ms               | Load test on the server (127.0.0.1:8080, one client address), 2026-10-15: **50 users** 3,691 requests, p95 48 ms, p99 124 ms, 0 errors; **100 users** 7,252 requests (121/s), p95 48 ms, p99 139 ms, 0 errors, RSS 318 MB, event-loop max 312 ms. The 429s (296; 2,601) are the per-visitor caps on one address; a 5.4 s stall in the first run was the post-deploy warm-up |
+| Backup / restore              | —                    | server backups 2026-10-14 (g33, g34); restore drill on the same disk only (2026-10-07); off-site: W2                                                                                                                                                                                                                                                                        |
+| Lighthouse (live)             | ≥90                  | after W1 (2026-10-15): Market mobile **98** (was 68; layout shift 0), company mobile 98, company desktop 87 (layout shift 0.268 from the chart card); accessibility **100**, best practices 100, SEO 100                                                                                                                                                                    |
+| Accessibility (axe, WCAG 2.1) | 0 serious            | **0** on 32 pages × light/dark (W1 build: local crawl and CI e2e)                                                                                                                                                                                                                                                                                                           |
+| Data accuracy (review)        | exact                | 12/12 random live rows and 6/6 special cases (amendment, $0, exit, 3:1 split, as-of) equal raw EDGAR                                                                                                                                                                                                                                                                        |
+| Suite                         | green                | 2026-10-15 on `main`: backend 431 (427 pass, 4 skipped); web 47/47; e2e green in CI (PR #21)                                                                                                                                                                                                                                                                                |
 
 ## Decisions waiting on the user
 
-1. **Sign off W1** (branch `v2-review-fixes`) and say "merge": the merge deploys it.
-2. **Off-site backups:** about 5 clicks in the Oracle console, then one command on the server
-   ([DEPLOY.md, Off-site backups](DEPLOY.md#off-site-backups-oracle-object-storage)).
-3. **A domain** (about $10 a year): declined for now (2026-10-13).
-4. **Major dependency upgrades** (Express 5, dotenv 18, Preact 11, TypeScript 7, @types/node 26): one at a time, with
+1. **A domain** (about $10 a year): declined for now (2026-10-13).
+2. **Major dependency upgrades** (Express 5, dotenv 18, Preact 11, TypeScript 7, @types/node 26): one at a time, with
    the full gates.
-5. **Leftover temp directories on this Mac** (~1,250 `vantage-*` folders, ~14.7 GiB, from before P8 W1):
+3. **Leftover temp directories on this Mac** (~1,250 `vantage-*` folders, ~14.7 GiB, from before P8 W1):
    `find -E "$TMPDIR" -maxdepth 1 -type d -mmin +60 -regex '.*/vantage-(job|review|cache|ncen|zip|admin|curation|ro)-[A-Za-z0-9]{6}' -exec rm -rf {} +`
+
+Off-site backups: **not now, and do not ask again** (the user, 2026-10-15). The code and the steps are ready
+([DEPLOY.md](DEPLOY.md#off-site-backups-oracle-object-storage)); backups stay on the server and on this Mac.
 
 ## Calls made, open to overrule
 
@@ -157,13 +156,13 @@ has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB 
 
 Everything known and not built (2026-10-14). Each item says why it waits.
 
-### P10 W2 (after the merge)
+### P10 W2 (remaining)
 
-- The load test at 50 and 100 users, on the server against `http://127.0.0.1:8080` (the user approved it for after
-  the heavy-route guard is live).
-- The off-site bucket (decision 2), then the restore drill from it (`sudo vantage-restore`) onto a fresh directory.
+- Off-site backups and a restore drill from them: the user's call (see above).
 - 14 unattended nights with healthchecks.io (P9 criterion); the first scheduled monthly run on 2026-11-03.
-- Lighthouse on the live site again after W1 (layout shift and mobile Market).
+- The company page on desktop still shifts as its chart card loads (Lighthouse layout shift 0.268): reserve the
+  chart's height before data arrives.
+- A load test from many client addresses (the server-side run shares one address, so the caps answer 429).
 
 ### Data and curation (each needs evidence before a change)
 
@@ -213,12 +212,10 @@ Everything known and not built (2026-10-14). Each item says why it waits.
 
 ## Next session
 
-> Vantage v2 is live at https://vantage-kian.duckdns.org. P10 (launch review remediation): W1 is on branch
-> `v2-review-fixes`, waiting for the user's sign-off and "merge" (a merge deploys). Start with CLAUDE.md, this file,
-> docs/ROADMAP.md §10 and docs/DEPLOY.md. After the merge: watch the deploy (`journalctl -u vantage-autodeploy` on the
-> server; the review import runs because `data/review` and migrations changed), run the smoke check, then W2: the load
-> test (approved), the off-site bucket once the user has made it, Lighthouse on the live URL. Server:
-> `ssh ubuntu@129.146.24.191`; `sudo vantage-run npm run doctor`.
+> Vantage v2 is live at https://vantage-kian.duckdns.org; P10 (launch review remediation) is merged and deployed
+> (generation 36). `main` is the only working branch. Start with CLAUDE.md, this file and docs/ROADMAP.md §10. The
+> user's next step is a professional review of the whole project for bugs, issues and security. Do not ask about
+> off-site backups. Server: `ssh ubuntu@129.146.24.191`; `sudo vantage-run npm run doctor`.
 >
 > This Mac has 8 GB of memory: one heavy job at a time in the foreground, `--test-concurrency=2`, and ask before a
 > refresh, the e2e suite or the LIVE suite. Gates: `npm test`, `npm run lint`, `npm run format:check`,
@@ -226,6 +223,13 @@ Everything known and not built (2026-10-14). Each item says why it waits.
 > `node scripts/smoke.js https://vantage-kian.duckdns.org`.
 
 ## Log
+
+- **2026-10-15 (P10 close-out):** the user merged PR #21 on GitHub (one e2e assertion matched the old Status wording;
+  fixed before the merge). Auto-deploy shipped `eb1697e` 8 minutes after the merge, ran the review import
+  (generation 36: 197 companies, 159 fund interests, 23 CLOs, 13 insurance vehicles; firm 531 Boston Partners) and
+  restarted both instances. Smoke 17/17 on the live URL; load test at 50 and 100 users and Lighthouse after W1 in
+  Measurements. The scheduled nightly of 2026-10-14 10:16 UTC ran on its own (generation 35). The user declined
+  off-site backups for now. Branch `v2-review-fixes` deleted.
 
 - **2026-10-14 (P10 W1, built):** the user decided the review's questions (Pay As You Go done; off-site "if easy";
   categories; no domain now; v1 kept outside the live project; "fix everything, go").
