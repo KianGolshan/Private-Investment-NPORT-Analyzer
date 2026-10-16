@@ -70,7 +70,7 @@ export default function Holders({ base, sq, name, newest, openPosition }: ViewPr
   const deltaCell = (r: PosRow, v: (l: FactLeg) => number, fmt: (n: number) => string) => {
     if (r.mergedInto)
       return (
-        <span class="muted small" title="One class across keys (trap 52)">
+        <span class="muted small" title="One class the fund files under several ids, measured as one position">
           in {r.mergedInto}
         </span>
       );

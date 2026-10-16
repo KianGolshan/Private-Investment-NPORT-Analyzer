@@ -12,6 +12,7 @@ import { Chart } from '../../ui/Chart';
 import type { ChartTheme } from '../../ui/theme';
 import { PositionDrawer } from './PositionDrawer';
 import type { ViewProps } from './shared';
+import { PAGE_TITLES, itemTitle, usePageTitle } from '../../lib/title';
 
 // The company workbench (P6b W2): one private company across every fund that
 // reports it. Overview (value by firm, fund or class over time), Holders (as of
@@ -84,6 +85,7 @@ export default function Company() {
   const head = useApi<Head>(valid ? base : null);
   const h = head.data;
   const name = h?.company?.name ?? h?.entity?.name ?? '';
+  usePageTitle(isNotFound(head.error) ? PAGE_TITLES.notFound : name ? itemTitle.company(name) : 'Company');
   const listed = h?.answeredBy?.source === 'listed';
   const sq = useMemo<Record<string, number>>(() => (stored ? { stored: 1 } : ({} as Record<string, number>)), [stored]);
   const showViews = !!h && (!listed || !!stored);
@@ -163,8 +165,8 @@ export default function Company() {
           </div>
           {listed && (
             <div class="notice warn">
-              This company is listed. The warehouse keeps its private-era marks and restricted rows only; funds holding
-              its listed stock are not in these rows.{' '}
+              This company is listed. Vantage keeps its private-era marks and restricted rows only; funds holding its
+              listed stock are not in these rows.{' '}
               <button class="btn sm" type="button" onClick={() => setStored(stored ? '' : '1')}>
                 {stored ? 'Hide stored rows' : 'Show stored private-era rows'}
               </button>

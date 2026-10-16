@@ -346,9 +346,7 @@ export default function Marks({ base, sq, name, newest }: ViewProps) {
       {classes.data && classes.data.withinFiling.length > 0 && (
         <Card
           title="Classes marked apart within one filing"
-          actions={
-            <span class="muted small">each class against the filing’s lowest mark (F30); no method guessed</span>
-          }
+          actions={<span class="muted small">each class against the filing’s lowest mark; no method guessed</span>}
           flush
         >
           <DataTable

@@ -21,6 +21,7 @@ import { ScopeBar } from '../scope/ScopeBar';
 import { useParam, useScope } from '../scope/scope';
 import { Badge, Card, Empty, ErrorBox, Kpi, Loading, Tabs } from '../ui/bits';
 import { DataTable, type Column } from '../ui/DataTable';
+import { PAGE_TITLES, usePageTitle } from '../lib/title';
 
 // Tracked & Watchlist (P6b W4): the viewer's own list of companies, firms and
 // funds (kept in this browser; numbers from the server, the as-of rule now and
@@ -36,6 +37,7 @@ const hrefOf = (kind: WatchKind, key: string | number, label: string) =>
       : fundPath(String(key));
 
 export default function Tracked() {
+  usePageTitle(PAGE_TITLES.tracked);
   const [view, setView] = useParam('view');
   const current = view === 'tracked' ? 'tracked' : 'watchlist';
   const [scope] = useScope();
@@ -117,7 +119,7 @@ type WRow = WatchlistAnswer['items'][number];
 // Why a saved item has no numbers (never shown as a zero).
 const STATUS_NOTE: Record<WRow['status']['state'], string> = {
   live: '',
-  listed: 'listed company: not in the private warehouse',
+  listed: 'listed company: not among private holdings',
   merged: 'merged into another; moving it there',
   dropped: 'dropped from the reviewed list',
   unknown: 'no longer exists',
@@ -241,7 +243,7 @@ function Watchlist() {
                 onClick={() => {
                   const r = importV1();
                   setImported(
-                    `${r.added} companies added from the v1 watchlist${r.skipped ? `; ${r.skipped} names v1 never matched to a reviewed company stay in Legacy` : ''}.`
+                    `${r.added} companies added from the v1 watchlist${r.skipped ? `; ${r.skipped} names v1 never matched to a reviewed company were left out` : ''}.`
                   );
                 }}
               >

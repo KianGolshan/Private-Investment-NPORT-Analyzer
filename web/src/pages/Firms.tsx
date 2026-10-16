@@ -6,8 +6,10 @@ import { ScopeBar } from '../scope/ScopeBar';
 import { useScope } from '../scope/scope';
 import { Card, ErrorBox, Loading } from '../ui/bits';
 import { DataTable } from '../ui/DataTable';
+import { PAGE_TITLES, usePageTitle } from '../lib/title';
 
 export default function Firms() {
+  usePageTitle(PAGE_TITLES.firms);
   const [scope] = useScope();
   const fresh = useApi<Freshness>('/api/freshness');
   const firms = useApi<Envelope & { date: string; results: Firm[] }>(`/api/firms${qs({ date: scope.asof })}`);

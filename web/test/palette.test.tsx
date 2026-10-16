@@ -102,7 +102,7 @@ describe('palette failures (F13)', () => {
     expect(r.container.textContent).not.toContain('matches');
     up = true;
     fireEvent.click(r.getByText('Retry'));
-    await vi.waitFor(() => expect(r.container.textContent).toContain('No private company, fund or firm'));
+    await vi.waitFor(() => expect(r.container.textContent).toContain('Nothing matches'));
     vi.unstubAllGlobals();
   });
 });

@@ -27,7 +27,7 @@ export function useProvenance(on = true): string {
 }
 
 export function BasisNote() {
-  const p = useProvenance();
+  const id = useApi<Freshness>('/api/freshness').data?.generation?.id;
   // Folded by default (review F-08): the method is one click away, not the first
   // thing a visitor reads. Exports carry the same text (DataTable basis).
   return (
@@ -35,7 +35,13 @@ export function BasisNote() {
       <summary>How these numbers are read</summary>
       <p class="muted">
         {BASIS}. A company that has since listed is not counted in earlier periods, and one that was listed then but is
-        private now is counted in them.{p ? ` Data version: ${p}.` : ''}
+        private now is counted in them.
+        {id ? (
+          <>
+            {' '}
+            Data version #{id}; the <a href="/status">status page</a> has the details.
+          </>
+        ) : null}
       </p>
     </details>
   );

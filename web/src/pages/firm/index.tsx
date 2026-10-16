@@ -10,6 +10,7 @@ import { MarksVsOthers } from '../book/MarksVsOthers';
 import { Timeline } from '../book/Timeline';
 import { Book } from './Book';
 import { FirmChanges } from './Changes';
+import { PAGE_TITLES, itemTitle, usePageTitle } from '../../lib/title';
 
 // A manager (P6b W3): every fund it advises (current N-CEN adviser). Overview
 // (its private book over time and the bridge for a range), the investment
@@ -34,6 +35,7 @@ export default function Firm() {
   const fresh = useApi<Freshness>('/api/freshness');
   const book = useApi<FirmBook>(Number.isInteger(id) ? `/api/firms/${id}${qs({ date: scope.asof })}` : null);
   const b = book.data;
+  usePageTitle(isNotFound(book.error) ? PAGE_TITLES.notFound : b ? itemTitle.firm(b.firm.name) : 'Firm');
   const newest = fresh.data?.newestReportDate ?? null;
   if (isNotFound(book.error)) return <NotFound />;
   return (

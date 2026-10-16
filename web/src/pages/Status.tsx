@@ -4,6 +4,7 @@ import type { Envelope, Freshness } from '../api/types';
 import { longDate, num } from '../lib/format';
 import { Badge, Card, ErrorBox, Kpi, Loading } from '../ui/bits';
 import type { WarehouseStats } from './About';
+import { PAGE_TITLES, usePageTitle } from '../lib/title';
 
 interface Readiness {
   ready: boolean;
@@ -44,6 +45,7 @@ const ageText = (h: number | null) =>
 
 /** How current the data is (P9): the published generation, the last refresh and job, and what is stored. */
 export default function Status() {
+  usePageTitle(PAGE_TITLES.status);
   const fresh = useApi<Freshness>('/api/freshness');
   const stats = useApi<Envelope & { stats: WarehouseStats }>('/api/stats').data?.stats;
   const config = useApi<Config>('/api/config').data;
@@ -82,7 +84,11 @@ export default function Status() {
       {f && (
         <div class="kpis">
           <Kpi label="Filings through" value={longDate(f.newestFilingDate)} sub="newest filing date loaded" />
-          <Kpi label="Marks through" value={longDate(f.newestReportDate)} sub="newest report date with marks" />
+          <Kpi
+            label="Newest mark"
+            value={longDate(f.newestPrivateMark ?? null)}
+            sub="the latest mark date of any private holding"
+          />
           <Kpi
             label="Last refresh"
             value={ageText(ready?.refreshAgeHours ?? null)}

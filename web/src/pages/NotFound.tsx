@@ -1,4 +1,7 @@
+import { PAGE_TITLES, usePageTitle } from '../lib/title';
+
 export default function NotFound() {
+  usePageTitle(PAGE_TITLES.notFound);
   return (
     <div class="empty">
       <div class="eyebrow">404</div>

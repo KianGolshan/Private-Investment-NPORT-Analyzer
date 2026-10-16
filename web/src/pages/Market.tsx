@@ -12,6 +12,7 @@ import { Chart } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
 import type { ChartTheme } from '../ui/theme';
 import { baseOption } from '../ui/theme';
+import { usePageTitle } from '../lib/title';
 
 type Row = TopCompanies['results'][number];
 
@@ -118,9 +119,13 @@ function Top() {
             <Kpi label="Value held" value={moneyC(d.totalValue)} sub="direct and through SPVs" />
             <Kpi label="Largest" value={d.results[0]?.name ?? '—'} sub={moneyC(d.results[0]?.value)} />
             <Kpi
-              label="As of"
+              label="Data as of"
               value={longDate(scope.asof || d.date)}
-              sub={scope.asof ? 'each fund at its own mark date' : 'the newest marks filed'}
+              sub={
+                d.newestMark
+                  ? `each fund at its own mark date; newest mark ${longDate(d.newestMark)}`
+                  : 'each fund at its own mark date'
+              }
             />
           </div>
           <div class="grid-2">
@@ -131,7 +136,7 @@ function Top() {
                 <Empty>None.</Empty>
               )}
             </Card>
-            <Card title={cat.all ? 'All private holdings' : 'All private companies'} flush>
+            <Card title={cat.all ? 'All private holdings' : 'Operating companies'} flush>
               <DataTable
                 basis={BASIS}
                 source={d}
@@ -158,6 +163,7 @@ const lazyNew = lazy(() => import('./market/NewlyReported'));
 // range (largest mark moves and net position flows) and the companies first
 // reported in a range.
 export default function Market() {
+  usePageTitle(null);
   const [view, setView] = useParam('view');
   const current = view === 'movers' || view === 'new' ? view : 'top';
   const Movers = lazyMovers;

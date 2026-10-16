@@ -3,6 +3,7 @@ import { LocationProvider, Router, Route, lazy, ErrorBoundary, useLocation } fro
 import { useApi } from './api/client';
 import type { Freshness } from './api/types';
 import { CommandPalette } from './ui/CommandPalette';
+import { PageBoundary } from './ui/PageBoundary';
 import { density, themePref, type ThemePref } from './lib/prefs';
 import { longDate } from './lib/format';
 import { reloadOnce, watchBuild, withReload } from './lib/notices';
@@ -52,9 +53,7 @@ function Sidebar() {
             stroke-linejoin="round"
           />
         </svg>
-        <span>
-          Vantage <small>v2</small>
-        </span>
+        <span>Vantage</span>
       </a>
       <nav class="nav" aria-label="Main">
         <div class="nav-section">Explore</div>
@@ -72,7 +71,7 @@ function Sidebar() {
         </a>
       </nav>
       <div class="sidebar-foot">
-        Private holdings and marks from SEC N-PORT filings. Every number links its filing. Not investment advice.
+        Private holdings and marks from SEC N-PORT filings. Every number links to its filing. Not investment advice.
       </div>
     </aside>
   );
@@ -134,9 +133,10 @@ function Topbar({ onSearch }: { onSearch: () => void }) {
       {f && (
         <span
           class="muted small hide-sm"
-          title={`Bulk data through ${f.latestBulkQuarter}; catch-up through filings of ${f.newestFilingDate}; refresh #${f.refreshId}`}
+          title={`SEC bulk data through ${f.latestBulkQuarter}, then the nightly EDGAR catch-up. The newest mark is the latest mark date of any private holding; funds file 30 to 60 days after it.`}
         >
-          Filings through {longDate(f.newestFilingDate)} · marks to {longDate(f.newestReportDate)}
+          Filings to {longDate(f.newestFilingDate)}
+          {f.newestPrivateMark ? ` · newest mark ${longDate(f.newestPrivateMark)}` : ''}
         </span>
       )}
       <button
@@ -208,6 +208,7 @@ function Notices() {
 }
 
 function Shell() {
+  const { path } = useLocation();
   const [open, setOpen] = useState(false);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -226,23 +227,25 @@ function Shell() {
       <Topbar onSearch={() => setOpen(true)} />
       <main class="main" id="main">
         <div class="page">
-          <ErrorBoundary>
-            <Router>
-              <Route path="/" component={Market} />
-              <Route path="/company/:slug" component={Company} />
-              <Route path="/name/:key" component={Company} />
-              <Route path="/firms" component={Firms} />
-              <Route path="/firm/:id" component={Firm} />
-              <Route path="/fund/:key" component={Fund} />
-              <Route path="/activity" component={Activity} />
-              <Route path="/explore" component={Explore} />
-              <Route path="/tracked" component={Tracked} />
-              <Route path="/compare" component={Compare} />
-              <Route path="/about" component={About} />
-              <Route path="/status" component={Status} />
-              <Route default component={NotFound} />
-            </Router>
-          </ErrorBoundary>
+          <PageBoundary path={path}>
+            <ErrorBoundary>
+              <Router>
+                <Route path="/" component={Market} />
+                <Route path="/company/:slug" component={Company} />
+                <Route path="/name/:key" component={Company} />
+                <Route path="/firms" component={Firms} />
+                <Route path="/firm/:id" component={Firm} />
+                <Route path="/fund/:key" component={Fund} />
+                <Route path="/activity" component={Activity} />
+                <Route path="/explore" component={Explore} />
+                <Route path="/tracked" component={Tracked} />
+                <Route path="/compare" component={Compare} />
+                <Route path="/about" component={About} />
+                <Route path="/status" component={Status} />
+                <Route default component={NotFound} />
+              </Router>
+            </ErrorBoundary>
+          </PageBoundary>
         </div>
         <footer class="site-foot">
           <a href="/about">About the data</a>

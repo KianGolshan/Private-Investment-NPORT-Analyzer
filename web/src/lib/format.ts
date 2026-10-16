@@ -31,9 +31,11 @@ export function moneyC(v: number | null | undefined): string {
   if (bad(v)) return '—';
   const sign = v < 0 ? '−' : '';
   const a = Math.abs(v);
-  if (a >= 1e9) return `${sign}$${(a / 1e9).toFixed(2)}B`;
-  if (a >= 1e6) return `${sign}$${(a / 1e6).toFixed(1)}M`;
-  if (a >= 1e3) return `${sign}$${(a / 1e3).toFixed(1)}K`;
+  // the unit is picked after rounding, so $999,960 reads $1.0M, never $1000.0K (review 2026-10-15 T3)
+  const rounds = (div: number, digits: number) => Number((a / div).toFixed(digits)) >= 1000;
+  if (a >= 1e9 || rounds(1e6, 1)) return `${sign}$${(a / 1e9).toFixed(2)}B`;
+  if (a >= 1e6 || rounds(1e3, 1)) return `${sign}$${(a / 1e6).toFixed(1)}M`;
+  if (a >= 1e3 || rounds(1, 0)) return `${sign}$${(a / 1e3).toFixed(1)}K`;
   return `${sign}$${a.toFixed(0)}`;
 }
 
