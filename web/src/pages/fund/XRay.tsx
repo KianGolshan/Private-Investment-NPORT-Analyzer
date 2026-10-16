@@ -4,6 +4,7 @@ import type { FundFilings, Xray, XrayCompare, XrayHolding, XrayReturns } from '.
 import {
   companyPath,
   entityPath,
+  isCleanSplit,
   money,
   moneyC,
   moneyDelta,
@@ -13,6 +14,7 @@ import {
   price,
   share,
   signedNum,
+  splitText,
   tone,
 } from '../../lib/format';
 import { useParam } from '../../scope/scope';
@@ -393,7 +395,7 @@ export function Compare({ fund, name }: Props) {
                   header: 'Δ shares',
                   value: p => p.shares.delta,
                   num: true,
-                  render: p => (p.splitRatio ? `split ${p.splitRatio}:1` : signedNum(p.shares.delta)),
+                  render: p => (p.splitRatio ? splitText(p.splitRatio) : signedNum(p.shares.delta)),
                 },
                 {
                   id: 'price',
@@ -490,7 +492,11 @@ export function Returns({ fund, name }: Props) {
     if (adds) n.push(`added ${adds}×`);
     if (p.events.some(e => e.type === 'partial_realization')) n.push('reduced');
     for (const e of p.events.filter(e => e.type === 'split'))
-      n.push(`${e.ratio! >= 1 ? `${e.ratio}-for-1` : `1-for-${Math.round(1 / e.ratio!)}`} split ${e.date}`);
+      n.push(
+        isCleanSplit(e.ratio!)
+          ? `${e.ratio! >= 1 ? `${e.ratio}-for-1` : `1-for-${Math.round(1 / e.ratio!)}`} split ${e.date}`
+          : `${splitText(e.ratio!)} ${e.date}`
+      );
     if (p.status === 'exited') n.push(`no longer reported after ${p.lastDate}`);
     return n.join('; ') || '—';
   };

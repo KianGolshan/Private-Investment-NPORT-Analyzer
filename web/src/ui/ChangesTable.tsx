@@ -1,5 +1,5 @@
 import type { ChangeEvent, Envelope, Leg } from '../api/types';
-import { companyPath, fundPath, moneyC, moneyDelta, num, pct, price, tone } from '../lib/format';
+import { companyPath, fundPath, moneyC, moneyDelta, num, pct, price, splitText, tone } from '../lib/format';
 import { Badge, FilingRef } from './bits';
 import { DataTable, type Column } from './DataTable';
 
@@ -57,7 +57,7 @@ export function legLines(e: Pick<ChangeEvent, 'type' | 'instruments'>): { key: s
 export function legText(l: Leg): string {
   const shares =
     l.prevBalance != null && l.balance != null
-      ? `${num(l.prevBalance)} → ${num(l.balance)}${l.split ? ` (split ${l.split}:1)` : ''}`
+      ? `${num(l.prevBalance)} → ${num(l.balance)}${l.split ? ` (${splitText(l.split)})` : ''}`
       : l.balance != null
         ? num(l.balance)
         : l.prevBalance != null

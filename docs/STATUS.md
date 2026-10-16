@@ -104,7 +104,7 @@ has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB 
   without an explicit yes.
 - **Real data only.** Check any new metric's definition on real rows _before_ building it. Every new number shown as a
   finding goes to GOLDEN-NUMBERS after a raw-EDGAR check: `node scripts/verify-edgar.js <cik> <pattern> <accession>…`
-  (fails closed when nothing matches; needs `SEC_USER_AGENT` from `.env`). Last golden: **F57**.
+  (fails closed when nothing matches; needs `SEC_USER_AGENT` from `.env`). Last golden: **F58**.
 - **One definition, held equal by tests.** New answers must equal `exposureAsOf` / `companyActivity` / `firmBook`
   where they overlap (`test/analysis.test.js` pattern). Where shared code could be wrong, add an independent check
   to the oracle (`test/fixtures/oracle/build-oracle.js`, hand-picked rows, plain arithmetic).
@@ -247,6 +247,12 @@ Everything known and not built (2026-10-14). Each item says why it waits.
 > `node scripts/smoke.js https://vantage-kian.duckdns.org`.
 
 ## Log
+
+- **2026-10-15 (units-restated fix, branch `v2-fix-unit-restatement`):** a product review found filers restating a
+  holding in other units at the same value read as giant trades (live: Ferrellgas 2021 "added $153.27B", mark
+  −$153.27B; Explore 2021 "added" $156.4B). `detectSplit` now restates the prior side by the exact ratio when shares
+  change 10× or more at a value within 1% (trap 63, F58); the views say "units restated ×k". Warehouse-wide diff: 11 of
+  68,004 legs changed, nothing else. The user asked for this fix only; the rest of the review is not adopted.
 
 - **2026-10-15 (P11 closed out):** the user said "continue, finish out the entire review". W2 merged (`090cbd1`,
   deployed); the server's setup re-run first stalled on a prompt (a `git log` pager ate the answers; stopped with
