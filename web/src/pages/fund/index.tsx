@@ -11,6 +11,7 @@ import { BookOverview } from '../book/BookOverview';
 import { MarksVsOthers } from '../book/MarksVsOthers';
 import { Timeline } from '../book/Timeline';
 import { Compare, Returns, XRay } from './XRay';
+import { PAGE_TITLES, itemTitle, usePageTitle } from '../../lib/title';
 
 // One fund (P6b W3): the same layout as a firm at fund scope (its private book
 // over time and the bridge, the investment timeline, marks against other
@@ -41,6 +42,7 @@ export default function Fund() {
   );
   const d = f.data;
   const name = d ? d.fund.seriesName || d.fund.registrant : key;
+  usePageTitle(isNotFound(f.error) ? PAGE_TITLES.notFound : d ? itemTitle.fund(name) : 'Fund');
   const newest = fresh.data?.newestReportDate ?? null;
   if (isNotFound(f.error)) return <NotFound />;
   return (

@@ -67,6 +67,42 @@ test('each page has its own title, description and Open Graph tags; unknown page
   expect(errors.filter(e => !/404/.test(e))).toEqual([]);
 });
 
+// Copy and UX review 2026-10-15, W1: dates that say what they mean, ranks with no
+// gaps, and a tab title that follows the page.
+test('freshness names the newest mark, Market ranks 1..n, and the tab title follows the page', async ({ page }) => {
+  const errors = errorsOf(page);
+  const f = await page.request.get('/api/freshness').then(r => r.json());
+  expect(f.newestPrivateMark <= f.newestReportDate).toBe(true);
+  await page.goto('/');
+  const chip = page.locator('.topbar').getByText(/^Filings to /);
+  await expect(chip).toContainText('newest mark');
+  await expect(chip).not.toContainText('marks to');
+  await expect(page.getByText('Data as of', { exact: true })).toBeVisible();
+  await expect(page.getByText(/newest mark [A-Z][a-z]{2} \d{1,2}, \d{4}/).first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Operating companies' })).toBeVisible();
+  const ranks = await page.evaluate(() => {
+    const table = [...document.querySelectorAll('table')].find(t =>
+      t.querySelector('th')?.textContent?.trim().startsWith('#')
+    );
+    return [...(table?.querySelectorAll('tbody tr') ?? [])]
+      .slice(0, 30)
+      .map(r => r.querySelector('td')?.textContent?.trim());
+  });
+  // the golden warehouse holds a handful of operating companies: every one is listed, ranked 1..n
+  const top = await page.request.get('/api/market/top?category=company&limit=300').then(r => r.json());
+  expect(top.companies).toBeGreaterThan(1);
+  expect(ranks.length).toBe(Math.min(30, top.companies));
+  expect(ranks).toEqual(ranks.map((_, i) => String(i + 1)));
+  await expect(page).toHaveTitle('Vantage: private holdings and marks from SEC N-PORT');
+  await page.getByRole('navigation', { name: 'Main' }).first().getByRole('link', { name: 'Firms' }).click();
+  await expect(page).toHaveTitle('Firms by private value · Vantage');
+  await page.goto(`/firm/9`);
+  await expect(page).toHaveTitle(/: private-company book · Vantage$/);
+  await page.goto('/status');
+  await expect(page.getByText('Newest mark', { exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test('About and Status read the warehouse; the nav links them', async ({ page }) => {
   const errors = errorsOf(page);
   await page.goto('/');

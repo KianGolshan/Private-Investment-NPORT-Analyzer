@@ -7,6 +7,7 @@ import { ScopeBar } from '../scope/ScopeBar';
 import { scopeParams, useParam, useScope } from '../scope/scope';
 import { Card, ErrorBox, Kpi, Loading } from '../ui/bits';
 import { ChangesTable } from '../ui/ChangesTable';
+import { PAGE_TITLES, usePageTitle } from '../lib/title';
 
 // What's new: position changes in filings made in a window (by filing date,
 // at most 92 days per request), tracked companies or every private company,
@@ -23,6 +24,7 @@ const daysBefore = (iso: string, n: number) => {
 };
 
 export default function Activity() {
+  usePageTitle(PAGE_TITLES.activity);
   const fresh = useApi<Freshness>('/api/freshness');
   const [scope] = useScope();
   const [since, setSince] = useParam('since');

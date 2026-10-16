@@ -192,7 +192,7 @@ export function ChangesTable({
             </div>
           ))}
           {e.instruments.some(l => l.mergedKeys?.length) && (
-            <div class="muted" title="One class held under several filer ids, measured as one position (trap 52)">
+            <div class="muted" title="One class held under several filer ids, measured as one position">
               one class across ids (
               {e.instruments
                 .filter(l => l.mergedKeys?.length)

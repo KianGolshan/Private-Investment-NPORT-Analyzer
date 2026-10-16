@@ -10,6 +10,7 @@ import { Badge, Card, Empty, ErrorBox, Loading, Segmented } from '../ui/bits';
 import { Chart } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
 import { baseOption, type ChartTheme } from '../ui/theme';
+import { PAGE_TITLES, usePageTitle } from '../lib/title';
 
 // Compare (P6b W4, replaces v1's Batch): 2 to 5 companies, firms, funds or
 // share classes overlaid: value at each period end (the pivot's rows), the
@@ -35,7 +36,7 @@ const nameOf = (r: Row) => r.label ?? String(r.key);
 // null when nothing is known (a subject that is not live), never a plausible 0
 const sum = (xs: (number | null)[]) => (xs.some(v => v != null) ? xs.reduce<number>((t, v) => t + (v ?? 0), 0) : null);
 const STATE_LABEL = {
-  unknown: 'not in the warehouse',
+  unknown: 'not in the data',
   listed: 'listed: no private book',
   merged: 'merged',
   dropped: 'dropped',
@@ -50,6 +51,7 @@ function hrefOf(rows: Rows, r: Row): string {
 }
 
 export default function Compare() {
+  usePageTitle(PAGE_TITLES.compare);
   const [scope] = useScope();
   const loc = useLocation();
   const setParams = useSetParams();

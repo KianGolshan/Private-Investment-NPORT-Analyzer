@@ -1,6 +1,7 @@
 import { useApi } from '../api/client';
 import type { Envelope } from '../api/types';
 import { longDate, num } from '../lib/format';
+import { PAGE_TITLES, usePageTitle } from '../lib/title';
 
 export interface WarehouseStats {
   filings: number;
@@ -20,6 +21,7 @@ const doc = (path: string) => `${REPO}/blob/main/${path}`;
 
 /** About the data: sources, rules and limits (P9). Counts come from the warehouse (/api/stats). */
 export default function About() {
+  usePageTitle(PAGE_TITLES.about);
   const s = useApi<Envelope & { stats: WarehouseStats }>('/api/stats').data?.stats;
   return (
     <div class="stack prose">
@@ -88,7 +90,7 @@ export default function About() {
             <li>
               <strong>Changes</strong> are worded as the filings allow: first reported, added, reduced, no longer
               reported, reported at $0, mark moved. A change in value is split into position (shares) and mark (price).
-              Vantage never guesses why a fund bought, sold or exited.
+              Vantage never guesses why a position changed or stopped being reported.
             </li>
           </ul>
         </div>
@@ -105,9 +107,8 @@ export default function About() {
             </li>
             <li>
               <strong>Reconciliation with EDGAR</strong>, monthly: the filings stored are compared with EDGAR’s own
-              indexes, and a sample is fetched again and compared value by value. The last run, on 2026-10-08, found no
-              stored filing withdrawn from EDGAR and none of 300 re-fetched filings changed. It also found 117 newer
-              filings that EDGAR labels “NT NPORT-P” missing; the nightly catch-up now loads that form too.
+              indexes, and a sample is fetched again and compared value by value. The <a href="/status">status page</a>{' '}
+              shows when it last ran and what it found.
             </li>
             <li>
               <strong>Refresh</strong>: new filings load every night as a new, validated version of the data; the{' '}
@@ -127,13 +128,14 @@ export default function About() {
           <h2>Known limits</h2>
           <ul>
             <li>
-              Only what funds report: mutual funds, ETFs, closed-end and interval funds that file N-PORT. Venture funds,
-              private funds and company cap tables are not in these filings, and neither are total share counts, so
-              Vantage shows no company valuations.
+              Only what funds report: mutual funds, ETFs, closed-end and interval funds that file N-PORT. Hedge funds,
+              venture funds, private funds and company cap tables are not in these filings, and neither are total share
+              counts, so Vantage shows no company valuations.
             </li>
             <li>
               Marks arrive late: a quarter’s report can be filed up to 60 days after the quarter ends, so the newest
-              marks describe a date a month or two back.
+              marks describe a date a month or two back. Every value is as of the fund’s report (mark) date, not the
+              date it was filed.
             </li>
             <li>
               Some holdings are held through vehicles that the filings do not name (a fund’s own SPV or feeder); those

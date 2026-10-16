@@ -22,6 +22,7 @@ import { Badge, Card, Empty, ErrorBox, FilingRef, Kpi, Loading, Segmented } from
 import { Chart } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
 import type { ChartTheme } from '../ui/theme';
+import { PAGE_TITLES, usePageTitle } from '../lib/title';
 
 // Explore (P6b W4): one pivot across the warehouse. Rows are firms, funds,
 // companies or share classes; columns are months, quarters or years. Levels
@@ -68,6 +69,7 @@ function rowHref(rows: Rows, r: { key: string | number; label: string | null }):
 }
 
 export default function Explore() {
+  usePageTitle(PAGE_TITLES.explore);
   const [scope] = useScope();
   const fresh = useApi<Freshness>('/api/freshness');
   const newest = fresh.data?.newestReportDate ?? null;

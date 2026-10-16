@@ -22,7 +22,10 @@ export interface Freshness extends Envelope {
   switching?: boolean;
   refreshedAt: string | null;
   newestFilingDate: string | null;
+  /** The default as-of date: the newest report date in the warehouse (any fund, private holdings or not). */
   newestReportDate: string | null;
+  /** The newest mark date of any private holding in force at newestReportDate; what "newest mark" means on screen. */
+  newestPrivateMark?: string | null;
   latestBulkQuarter: string | null;
   /** The published generation (ADR 0009); null on a warehouse from before generations. */
   generation?: {
@@ -412,6 +415,8 @@ export interface TopCompanies extends Envelope {
   date: string;
   companies: number;
   totalValue: number;
+  /** The newest mark date in force among every row of the list (null when empty). */
+  newestMark: string | null;
   results: {
     rank: number;
     companyId: number;

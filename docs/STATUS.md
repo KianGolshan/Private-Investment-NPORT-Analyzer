@@ -5,7 +5,9 @@ W2 `090cbd1` plus the server's setup re-run, W3 `2ae79ee`, all 2026-10-15; ROADM
 **https://vantage-kian.duckdns.org** (Oracle Cloud Always Free VM on Pay As You Go, DuckDNS, HTTPS from Caddy, nightly
 SEC refresh, auto-deploy of every green commit on `main`; [DEPLOY.md](DEPLOY.md)). **`main` is protected:** changes go
 through a pull request with the CI checks green (`archive/v1` keeps v1). Waiting on the user: the Oracle security-list
-rule for SSH (DEPLOY.md 1A.6). Next: the user's instructions.
+rule for SSH (DEPLOY.md 1A.6). **Now: the copy and UX review (2026-10-15)**, four waves; W1 (truth and trust) is
+built on `v2-w1-truth-and-trust`, in review as a pull request. Next: the user's sign-off, then W2 (navigation and
+names).
 
 ## Phase tracker
 
@@ -44,22 +46,44 @@ tag **`v1-archive`** (and branch `archive/v1`).
 
 ## Operations: what runs and how to check it
 
-| Command             | What it does                                                                                                     |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `npm run doctor`    | read-only health: freshness, last job, lock, disk room, backup, nightly/monthly, leftovers; exit 1 = act         |
-| `npm run refresh`   | one warehouse job: new bulk quarters, the EDGAR catch-up (NT NPORT-P included), N-CEN, derived rebuild           |
-| `npm run nightly`   | refresh (own 3 GB heap), backup, off-site copy, watch report, doctor, smoke; healthchecks.io ping, exit 1 = fail |
-| `npm run monthly`   | `npm run reconcile` (EDGAR indexes vs stored filings, re-fetch sample) plus the LIVE regression, with alerts     |
-| `npm run backup`    | verified copy of the published generation (`-- --list`, `-- --restore FILE`), 3 kept                             |
-| `npm run watch`     | review suggestions against the previous generation (`reports/watch/`), never applied                             |
-| `npm run warehouse` | generations and the last job; `-- --rollback`, `-- --sync-curation`                                              |
-| `npm run bench`     | p50/p95 per route, RSS and event-loop delay, after the warm-up (`--cold` without)                                |
+| Command             | What it does                                                                                                                                 |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run doctor`    | read-only health: freshness, last job, lock, disk room, backup, nightly/monthly, leftovers; exit 1 = act                                     |
+| `npm run refresh`   | one warehouse job: new bulk quarters, the EDGAR catch-up (NT NPORT-P included), N-CEN, derived rebuild                                       |
+| `npm run nightly`   | refresh (own 3 GB heap), backup, watch report, doctor, smoke (+ off-site copy if configured; none live); healthchecks.io ping, exit 1 = fail |
+| `npm run monthly`   | `npm run reconcile` (EDGAR indexes vs stored filings, re-fetch sample) plus the LIVE regression, with alerts                                 |
+| `npm run backup`    | verified copy of the published generation (`-- --list`, `-- --restore FILE`), 3 kept                                                         |
+| `npm run watch`     | review suggestions against the previous generation (`reports/watch/`), never applied                                                         |
+| `npm run warehouse` | generations and the last job; `-- --rollback`, `-- --sync-curation`                                                                          |
+| `npm run bench`     | p50/p95 per route, RSS and event-loop delay, after the warm-up (`--cold` without)                                                            |
 
 On the server: `sudo vantage-run npm run doctor`; timers `vantage-nightly` (06:15 New York), `vantage-monthly` (3rd),
 `vantage-autodeploy` (5 min), `vantage-duckdns`. Units come from `setup.sh`, not from deploys; the live server also
 has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB cap, 3 GB heap; 2026-10-14).
 
 ## Where things stand (2026-10-15)
+
+- **Copy and UX review (2026-10-15, private artifact https://claude.ai/artifact/BGQE1NEZR9dRVe9CYgVv8N):** product,
+  copy and UX review of docs, workspace and live site. Plan: W1 truth and trust, W2 navigation and names, W3 words,
+  definitions and exports (incl. one position-effect definition, bridge tiles that add up), W4 positioning, About
+  with the author line (Kian Golshan, kiangolshan.com, LinkedIn `kian-golshan-058b32144`, confirmed), mobile polish.
+- **W1 (branch `v2-w1-truth-and-trust`):**
+  - freshness: new `newestPrivateMark` (`/api/freshness`, `/api/stats`; `market.newestPrivateMark`) and
+    `newestMark` on `/api/market/top`. The header reads "Filings to … · newest mark …", Market "Data as of … newest
+    mark …", Status "Newest mark". The old "marks to" used the newest report date (live Sep 30) while no private
+    mark is newer than Jul 31 (golden F59);
+  - Market rank within the list shown (was over every category: 177 of 192 live rows off);
+  - `moneyC` and the server's page-text money pick the unit after rounding ("$1000.0K" → "$1.0M");
+  - tab titles per page (`web/src/lib/title.ts`, held equal to `lib/api/pages.js`); `PageBoundary` fallback;
+  - copy: About (no dated reconciliation, hedge funds, report-date rule, no "bought, sold"), no "trap 52"/"F30"/
+    "asset category OTHER"/"warehouse"/"Legacy" in visitor text, the Basis note shows "Data version #N" (exports
+    keep the full provenance), the "v2" badge gone; README, CHANGELOG, STATUS no longer claim an off-site copy.
+  - Gates: backend 454 (450 pass, 4 skipped, 0 fail); web 14 files, 53 tests; lint, lint:web, format clean;
+    browser: Market, Company, Firms, Status, About, 404 in light and dark at 1280 px and 375 px, no overflow, no
+    console errors besides the expected 404s. e2e (a new W1 test) runs in CI on the PR.
+  - Note for local previews: `vantage-public` pins `APP_BUILD=local-p9`, so after a code change the browser can
+    revalidate an API answer to the old body (same ETag) until the data version changes; live deploys set
+    `APP_BUILD` to the commit, so visitors are not affected.
 
 - **Review (2026-10-14, private artifact, grade B+):** 27/27 raw-EDGAR checks (18 random live positions, 8 with 2026Q3
   mark dates; 8 catch-up rows of 0001193125-26-413969; one exit), cross-checks equal, no injection or XSS path, 0
@@ -104,7 +128,7 @@ has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB 
   without an explicit yes.
 - **Real data only.** Check any new metric's definition on real rows _before_ building it. Every new number shown as a
   finding goes to GOLDEN-NUMBERS after a raw-EDGAR check: `node scripts/verify-edgar.js <cik> <pattern> <accession>…`
-  (fails closed when nothing matches; needs `SEC_USER_AGENT` from `.env`). Last golden: **F58**.
+  (fails closed when nothing matches; needs `SEC_USER_AGENT` from `.env`). Last golden: **F59**.
 - **One definition, held equal by tests.** New answers must equal `exposureAsOf` / `companyActivity` / `firmBook`
   where they overlap (`test/analysis.test.js` pattern). Where shared code could be wrong, add an independent check
   to the oracle (`test/fixtures/oracle/build-oracle.js`, hand-picked rows, plain arithmetic).

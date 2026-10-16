@@ -36,7 +36,7 @@ export function KindBadge({ kind }: { kind: Position['kind'] }) {
     );
   if (kind === 'fund')
     return (
-      <Badge tone="info" title="The filer files this row as a fund interest (asset category OTHER)">
+      <Badge tone="info" title="The fund files this row as an interest in another fund or vehicle">
         fund interest
       </Badge>
     );

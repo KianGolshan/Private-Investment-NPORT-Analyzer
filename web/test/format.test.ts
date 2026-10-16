@@ -10,6 +10,21 @@ describe('format', () => {
     expect(moneyDelta(0)).toBe('$0');
     expect(moneyC(null)).toBe('—');
   });
+  it('compact money picks the unit after rounding (review 2026-10-15 T3)', () => {
+    // seen live as "+$1000.0K" (Krane on Anthropic, Candid Therapeutics on Capital Group)
+    expect(moneyC(999_960)).toBe('$1.0M');
+    expect(moneyDelta(-999_960)).toBe('−$1.0M');
+    expect(moneyC(999_960_000)).toBe('$1.00B');
+    expect(moneyC(999.6)).toBe('$1.0K');
+    // neighbours stay in their own unit
+    expect(moneyC(0)).toBe('$0');
+    expect(moneyC(999)).toBe('$999');
+    expect(moneyC(1_000)).toBe('$1.0K');
+    expect(moneyC(999_940)).toBe('$999.9K');
+    expect(moneyC(1_000_000)).toBe('$1.0M');
+    expect(moneyC(999_940_000)).toBe('$999.9M');
+    expect(moneyC(-999_960_000)).toBe('−$1.00B');
+  });
   it('per-share only for share rows (trap 40)', () => {
     expect(price(63, 'NS')).toBe('$63.00/sh');
     expect(price(4115.38, 'OU')).toBe('$4,115.38/unit');

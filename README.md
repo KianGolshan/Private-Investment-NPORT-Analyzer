@@ -20,6 +20,7 @@ Companies are resolved from filing evidence and reviewed by hand; a fund's firm 
 | ⌘K (anywhere)          | one search over companies, unreviewed names, firms, funds and share classes                           |
 | `/` Market             | top private companies as of any date, movers (mark and position effects), newly reported             |
 | `/company/<id>`        | overview and bridge, holders, positions, changes, marks and share classes, filings as filed           |
+| `/name/<key>`          | the same views for a name not yet reviewed into a company                                             |
 | `/fund/<key>`          | a fund's private book (X-Ray), timeline, marks against other funds, period compare, mark-implied returns |
 | `/firm/<id>`, `/firms` | a manager's private book, timeline, fund × company matrix, marks against others, changes               |
 | `/explore`             | pivot of firm, fund, company or class × month, quarter or year; every cell drills to its filings       |
@@ -44,7 +45,7 @@ category (operating company, fund interest, CLO, insurance vehicle); Market list
 
 ```
 Visitors → Caddy (HTTPS, Let's Encrypt) → two Node instances → SQLite warehouse (read-only, published versions)
-           nightly job: SEC refresh → validated new version → backup (+ off-site copy) → golden-number smoke check
+           nightly job: SEC refresh → validated new version → backup → golden-number smoke check
 ```
 
 The public site runs on one free Oracle Cloud VM under a DuckDNS name. The server deploys each commit on `main` once
@@ -90,7 +91,7 @@ published one). A failed job publishes nothing, and only one job runs at a time.
 
 ```bash
 npm run refresh        # new or re-posted bulk quarters, the EDGAR catch-up, N-CEN, entity upkeep
-npm run nightly        # what the server's timer runs: refresh, backup, off-site copy, watch report, doctor, smoke
+npm run nightly        # what the server's timer runs: refresh, backup, watch report, doctor, smoke (+ an off-site copy if configured)
 npm run monthly        # reconcile with EDGAR and the LIVE regression
 npm run doctor         # read-only health check; exit 1 = act
 npm run backup         # verified copy of the published version (-- --list, -- --restore FILE)

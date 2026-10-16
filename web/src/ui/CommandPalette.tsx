@@ -269,7 +269,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             </li>
           )}
           {!busy && !failed && q.trim().length >= 2 && grouped.length === 0 && (
-            <li class="muted">No private company, fund or firm in the warehouse matches “{q.trim()}”.</li>
+            <li class="muted">Nothing matches “{q.trim()}”. Try a company, fund, firm or share class name.</li>
           )}
           {busy && <li class="muted">Searching…</li>}
         </ul>
