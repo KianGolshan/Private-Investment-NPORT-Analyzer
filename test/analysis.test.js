@@ -471,3 +471,42 @@ test('firm changes: pages reassemble the unpaged list; counts and totals cover e
   const sum = all.filter(e => e.type === 'added').reduce((t, e) => t + e.markEffect, 0);
   assert.equal(cents(added.totals.markEffect), cents(sum));
 });
+
+// Review 2026-10-15 T4: one definition of "from positions" (first reported, added,
+// reduced, no longer reported, at the prior mark); funds that start or stop filing
+// and rows with no share count are "other changes". The bridge tiles add up, and the
+// Overview tables (the pivot) give the same three numbers for the same window.
+test('bridge: start + from positions + from marks + other changes = end, to the cent, at every window', () => {
+  const sub = (b, keys) => b.steps.filter(s => keys.includes(s.key)).reduce((t, s) => t + s.value, 0);
+  const windows = [
+    [QUARTERS[0], QUARTERS[4]], // the first year
+    ['2024-12-31', '2025-06-30'], // the middle
+    ['2025-06-30', '2026-06-30'], // the latest full year
+  ];
+  const refs = [null, { companyId: idOf('Anthropic') }, { companyId: idOf('Stripe') }];
+  for (const ref of refs)
+    for (const [from, to] of windows) {
+      const b = analysis.bridge(db, { ref, from, to });
+      const at = `${ref?.companyId ?? 'all'} ${from}..${to}`;
+      assert.equal(cents(b.start.value + b.positionEffect + b.markEffect + b.otherEffect), cents(b.end.value), at);
+      assert.equal(cents(b.positionEffect), cents(sub(b, ['firstReported', 'added', 'reduced', 'exited'])), at);
+      assert.equal(cents(b.otherEffect), cents(sub(b, ['valueOnly', 'started', 'stopped'])), at);
+      assert.equal(cents(b.markEffect), cents(sub(b, ['mark'])), at);
+      // the pivot behind the Overview tables, over the same window, gives the same three numbers
+      const p = analysis.pivot(db, { ref, rows: 'firm', period: 'year', from, to, limit: 1000 });
+      const tot = k => p.total[k].reduce((t, v) => t + v, 0);
+      assert.equal(cents(tot('positionEffect')), cents(b.positionEffect), `pivot positions ${at}`);
+      assert.equal(cents(tot('markEffect')), cents(b.markEffect), `pivot marks ${at}`);
+      assert.equal(
+        cents(tot('started') + tot('stopped') + tot('valueOnly')),
+        cents(b.otherEffect),
+        `pivot other ${at}`
+      );
+    }
+  // the case that showed the gap: a window where funds stopped filing (Anthropic, the latest year)
+  const a = analysis.bridge(db, { ref: { companyId: idOf('Anthropic') }, from: '2025-06-30', to: '2026-06-30' });
+  assert.ok(analysis.bridge(db, { from: '2025-06-30', to: '2026-06-30' }).otherEffect !== 0 || a.otherEffect !== 0);
+  // a one-day window: nothing moves, every part is zero
+  const one = analysis.bridge(db, { from: '2026-06-29', to: '2026-06-30' });
+  assert.equal(cents(one.start.value + one.positionEffect + one.markEffect + one.otherEffect), cents(one.end.value));
+});

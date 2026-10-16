@@ -156,7 +156,7 @@ export function PositionDrawer({
     { id: 'value', header: 'Value', value: l => l.value, num: true, render: l => moneyC(l.value) },
     {
       id: 'pos',
-      header: 'Position Δ',
+      header: 'From positions',
       value: l => l.positionEffect + l.otherEffect,
       num: true,
       render: l => (
@@ -165,7 +165,7 @@ export function PositionDrawer({
     },
     {
       id: 'markD',
-      header: 'Mark Δ',
+      header: 'From marks',
       value: l => l.markEffect,
       num: true,
       render: l => <span class={tone(l.markEffect)}>{moneyDelta(l.markEffect)}</span>,

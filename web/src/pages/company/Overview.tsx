@@ -132,24 +132,33 @@ export default function Overview({ base, sq, subject, name, newest }: ViewProps)
     { id: 'start', header: 'Value at start', value: startOf, num: true, render: r => moneyC(startOf(r)) },
     { id: 'end', header: 'Value at end', value: r => r.value[i1], num: true, render: r => moneyC(r.value[i1]) },
     { id: 'holders', header: 'Funds at end', value: r => r.holders[i1], num: true },
+    // one definition across views, and the columns add up: start + the three = end (review 2026-10-15 T4)
     {
       id: 'pos',
-      header: 'Position Δ',
-      value: r => sum(r.positionEffect) + sum(r.started) + sum(r.stopped) + sum(r.valueOnly),
+      header: 'From positions',
+      value: r => sum(r.positionEffect),
       num: true,
-      render: r => {
-        const v = sum(r.positionEffect) + sum(r.started) + sum(r.stopped) + sum(r.valueOnly);
-        return <span class={tone(v)}>{moneyDelta(v)}</span>;
-      },
-      title: 'Shares added or removed at the prior mark, funds starting or stopping filing, rows with no share count',
+      render: r => <span class={tone(sum(r.positionEffect))}>{moneyDelta(sum(r.positionEffect))}</span>,
+      title: 'Shares first reported, added, reduced or no longer reported, at the prior mark',
     },
     {
       id: 'mark',
-      header: 'Mark Δ',
+      header: 'From marks',
       value: r => sum(r.markEffect),
       num: true,
       render: r => <span class={tone(sum(r.markEffect))}>{moneyDelta(sum(r.markEffect))}</span>,
       title: 'New marks on the shares held',
+    },
+    {
+      id: 'other',
+      header: 'Other changes',
+      value: r => sum(r.started) + sum(r.stopped) + sum(r.valueOnly),
+      num: true,
+      render: r => {
+        const v = sum(r.started) + sum(r.stopped) + sum(r.valueOnly);
+        return <span class={tone(v)}>{moneyDelta(v)}</span>;
+      },
+      title: 'Funds that started or stopped filing, and rows with no share count',
     },
   ];
   const periodText = p ? `${p.periods[i0]?.label ?? ''} – ${p.periods[i1]?.label ?? ''}` : '';
@@ -225,10 +234,9 @@ export default function Overview({ base, sq, subject, name, newest }: ViewProps)
                 start: moneyC(startOf(p.total)),
                 end: moneyC(p.total.value[i1]),
                 holders: num(p.total.holders[i1]),
-                pos: moneyDelta(
-                  sum(p.total.positionEffect) + sum(p.total.started) + sum(p.total.stopped) + sum(p.total.valueOnly)
-                ),
+                pos: moneyDelta(sum(p.total.positionEffect)),
                 mark: moneyDelta(sum(p.total.markEffect)),
+                other: moneyDelta(sum(p.total.started) + sum(p.total.stopped) + sum(p.total.valueOnly)),
               })}
             />
           </Card>

@@ -195,7 +195,7 @@ export default function Holders({ base, sq, name, newest, openPosition }: ViewPr
     },
     {
       id: 'dPos',
-      header: 'Position Δ',
+      header: 'From positions',
       value: r => r.leg?.positionEffect ?? null,
       num: true,
       render: r => deltaCell(r, l => l.positionEffect + l.otherEffect, moneyDelta),
@@ -203,13 +203,20 @@ export default function Holders({ base, sq, name, newest, openPosition }: ViewPr
     },
     {
       id: 'dMark',
-      header: 'Mark Δ',
+      header: 'From marks',
       value: r => r.leg?.markEffect ?? null,
       num: true,
       render: r => deltaCell(r, l => l.markEffect, moneyDelta),
       title: 'The new mark on the shares held',
     },
-    { id: 'level', header: 'FV level', value: r => r.fvLevel, num: true },
+    {
+      id: 'level',
+      header: 'Fair-value level',
+      title:
+        'Fair-value level 1 to 3, as the fund labels the holding. Private does not mean level 3: funds label real private holdings 1 or 2 too',
+      value: r => r.fvLevel,
+      num: true,
+    },
   ];
 
   const group: Group<PosRow> | undefined =

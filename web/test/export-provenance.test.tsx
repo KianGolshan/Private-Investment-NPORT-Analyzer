@@ -3,8 +3,9 @@
 // generation and curation of the answer the rows came from, never a separately
 // fetched "latest" one.
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, waitFor } from '@testing-library/preact';
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/preact';
 import { DataTable } from '../src/ui/DataTable';
+import { aboutRows } from '../src/lib/export';
 import { clearApiCache } from '../src/api/client';
 
 interface R {
@@ -19,6 +20,7 @@ const rows: R[] = [
 
 let blobs: Blob[] = [];
 afterEach(() => {
+  cleanup();
   vi.unstubAllGlobals();
   clearApiCache();
   blobs = [];
@@ -74,5 +76,60 @@ describe('DataTable export provenance and parity', () => {
     expect(lines.find(l => l.startsWith('Usable lots'))).toMatch(/^Usable lots,0\.12,/);
     expect(csv).toContain(`generation 29, curation sha256 ${digest}`);
     expect(csv).not.toContain('generation 30');
+  });
+
+  it('every export names its data version, with or without a method note, also with no rows (review 2026-10-15 N8)', async () => {
+    captureDownloads();
+    const src = {
+      refreshId: 41,
+      basis: { generation: 41, curationRev: null, curationDigest: 'b'.repeat(64), companies: '', firms: '' },
+    };
+    const cols = [{ id: 'name', header: 'Position', value: (r: R) => r.name }];
+    // a company-page table: no Basis column, but the Source still travels with the rows
+    const one = render(
+      <DataTable<R> columns={cols} rows={rows} rowKey={r => r.name} exportName="Anthropic-holders" source={src} />
+    );
+    fireEvent.click(one.getByText('CSV'));
+    await waitFor(() => expect(blobs.length).toBe(1));
+    const csv = await blobs[0]!.text();
+    expect(csv.split(/\r?\n/)[0]).toBe('Position,Source');
+    expect(csv).toContain('generation 41, curation sha256 ' + 'b'.repeat(64));
+    // the button says which table it downloads
+    expect(one.getByText('CSV').getAttribute('aria-label')).toBe('Download Anthropic holders as CSV');
+    one.unmount();
+    // header only: an empty table still says what it is
+    const empty = render(
+      <DataTable<R> columns={cols} rows={[]} rowKey={r => r.name} exportName="empty" source={src} />
+    );
+    fireEvent.click(empty.getByText('CSV'));
+    await waitFor(() => expect(blobs.length).toBe(2));
+    expect((await blobs[1]!.text()).trim()).toBe('Position,Source');
+    empty.unmount();
+    // no answer behind the rows: no Source column rather than a made-up one
+    const none = render(<DataTable<R> columns={cols} rows={rows} rowKey={r => r.name} exportName="plain" />);
+    fireEvent.click(none.getByText('CSV'));
+    await waitFor(() => expect(blobs.length).toBe(3));
+    expect((await blobs[2]!.text()).split(/\r?\n/)[0]).toBe('Position');
+  });
+
+  it('the XLSX "About this export" sheet: title, page, time, data version, method, disclaimer', () => {
+    const at = new Date('2026-10-15T21:30:00Z');
+    const rows2 = aboutRows({
+      title: 'probe',
+      page: 'https://x.test/company/1',
+      source: 'generation 41',
+      basis: 'B',
+      exportedAt: at,
+    });
+    expect(rows2.map(r => r[0])).toEqual(['Export', 'Page', 'Exported', 'Data version', 'How history is read', 'Note']);
+    expect(rows2[2]![1]).toBe('2026-10-15 21:30 UTC');
+    expect(rows2.at(-1)![1]).toContain('Not investment advice');
+    // without a source or basis those lines are left out, never filled in
+    expect(aboutRows({ title: 't', page: 'p', source: '', exportedAt: at }).map(r => r[0])).toEqual([
+      'Export',
+      'Page',
+      'Exported',
+      'Note',
+    ]);
   });
 });

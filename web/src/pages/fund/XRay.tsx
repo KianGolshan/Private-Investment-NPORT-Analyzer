@@ -164,7 +164,13 @@ export function XRay({ fund, name }: Props) {
                   num: true,
                   render: h => pctOfNav(h.pctOfNetAssets),
                 },
-                { id: 'level', header: 'FV level', value: h => h.fairValLevel },
+                {
+                  id: 'level',
+                  header: 'Fair-value level',
+                  title:
+                    'Fair-value level 1 to 3, as the fund labels the holding. Private does not mean level 3: funds label real private holdings 1 or 2 too',
+                  value: h => h.fairValLevel,
+                },
                 { id: 'restricted', header: 'Restricted', value: h => h.isRestrictedSec },
                 { id: 'country', header: 'Country', value: h => h.country },
                 { id: 'by', header: 'Private by', value: privateBy, wrap: true },
@@ -359,7 +365,7 @@ export function Compare({ fund, name }: Props) {
               sub="positions held in both, at the new mark"
             />
             <Kpi
-              label="From shares"
+              label="From positions"
               value={
                 <span class={tone(cmp.totals.valueChangeFromShares.amount)}>
                   {moneyDelta(cmp.totals.valueChangeFromShares.amount)}
@@ -430,7 +436,7 @@ export function Compare({ fund, name }: Props) {
                 },
                 {
                   id: 'markFx',
-                  header: 'Mark Δ',
+                  header: 'From marks',
                   value: p => p.priceEffectUSD,
                   num: true,
                   render: p =>
@@ -442,7 +448,7 @@ export function Compare({ fund, name }: Props) {
                 },
                 {
                   id: 'shareFx',
-                  header: 'Shares Δ',
+                  header: 'From positions',
                   value: p => p.shareEffectUSD,
                   num: true,
                   render: p =>
@@ -518,12 +524,12 @@ export function Returns({ fund, name }: Props) {
         <>
           <div class="kpis">
             <Kpi
-              label="Mark-implied MOIC (proxy)"
+              label="Multiple on invested (MOIC, proxy)"
               value={x(d.summary.moic)}
               sub={`${num(d.summary.positionCount)} positions, ${num(d.summary.periodCount)} filings`}
             />
             <Kpi
-              label="Mark-implied IRR (proxy)"
+              label="Annual rate (IRR, proxy)"
               value={irr(d.summary.irr)}
               sub={`${d.summary.firstDate} → ${d.summary.lastDate}; from marks, not a fund return`}
             />

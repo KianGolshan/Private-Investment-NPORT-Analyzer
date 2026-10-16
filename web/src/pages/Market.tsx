@@ -6,13 +6,14 @@ import type { Freshness, TopCompanies } from '../api/types';
 import { companyPath, longDate, moneyC, num } from '../lib/format';
 import { ScopeBar } from '../scope/ScopeBar';
 import { useParam, useScope } from '../scope/scope';
-import { Badge, Card, Empty, ErrorBox, Kpi, Loading, Tabs } from '../ui/bits';
+import { Card, Empty, ErrorBox, Kpi, Loading, Tabs } from '../ui/bits';
 import { CategoryBadge, CategorySwitch, useCategoryFilter } from '../ui/Category';
 import { Chart } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
 import type { ChartTheme } from '../ui/theme';
 import { baseOption } from '../ui/theme';
 import { usePageTitle } from '../lib/title';
+import { Term } from '../ui/Term';
 
 type Row = TopCompanies['results'][number];
 
@@ -65,7 +66,7 @@ function Top() {
       render: r => (
         <span>
           <a href={companyPath(r.companyId, r.name) + (scope.asof ? `?asof=${scope.asof}` : '')}>{r.name}</a>{' '}
-          {r.tracked && <Badge tone="accent">Tracked</Badge>} <CategoryBadge category={r.category} />
+          <CategoryBadge category={r.category} />
         </span>
       ),
       exportAs: [
@@ -77,15 +78,16 @@ function Top() {
     { id: 'value', header: 'Value', value: r => r.value, num: true, render: r => moneyC(r.value) },
     {
       id: 'indirect',
-      header: 'Of which indirect',
-      title: 'Held through a named SPV or as a fund interest',
+      header: 'Held indirectly',
+      title: 'The part held through a named SPV (special purpose vehicle) or as an interest in another fund',
       value: r => r.indirectValue,
       num: true,
       render: r => (r.indirectValue ? moneyC(r.indirectValue) : <span class="muted">—</span>),
     },
     {
       id: 'marks',
-      header: 'Mark dates',
+      header: 'Fund mark dates',
+      title: 'The oldest and newest mark dates among the funds counted: each fund reports on its own calendar',
       value: r => r.newestMark,
       render: r => (
         <span class="small">{r.oldestMark === r.newestMark ? r.newestMark : `${r.oldestMark} … ${r.newestMark}`}</span>
@@ -98,8 +100,9 @@ function Top() {
     <div class="stack">
       <div class="row wrap">
         <p class="muted" style={{ margin: 0 }}>
-          As of {scope.asof ? longDate(scope.asof) : 'the newest filings'}: each fund's latest N-PORT on or before that
-          date. Funds report on staggered fiscal quarters, so mark dates differ by fund.
+          <Term id="asOf">As of</Term> {scope.asof ? longDate(scope.asof) : 'the newest filings'}: each fund's latest{' '}
+          <Term id="nport">N-PORT</Term> report on or before that date. Funds report on staggered fiscal quarters, so{' '}
+          <Term id="markDate">mark dates</Term> differ by fund.
         </p>
         <span class="spacer" />
         <CategorySwitch />
@@ -116,7 +119,7 @@ function Top() {
               value={num(d.companies)}
               sub={cat.all ? 'companies, fund interests, CLOs, insurance vehicles' : 'operating companies'}
             />
-            <Kpi label="Value held" value={moneyC(d.totalValue)} sub="direct and through SPVs" />
+            <Kpi label="Value held" value={moneyC(d.totalValue)} sub="at each fund’s latest mark, incl. through SPVs" />
             <Kpi label="Largest" value={d.results[0]?.name ?? '—'} sub={moneyC(d.results[0]?.value)} />
             <Kpi
               label="Data as of"
@@ -175,8 +178,8 @@ export default function Market() {
           <div class="eyebrow">Market</div>
           <h1>Private companies held by registered funds</h1>
           <p class="lede">
-            Which mutual funds and ETFs hold stakes in private companies, what each fund says a share is worth, and how
-            that changed, from the holdings reports funds file with the SEC.
+            Which mutual funds and ETFs hold stakes in private companies, what each fund says a share is worth (its{' '}
+            <Term id="mark">mark</Term>), and how that changed, from the holdings reports funds file with the SEC.
           </p>
           <p class="small muted try">
             Try: <a href="/company/1-anthropic?tab=holders">who holds Anthropic</a> ·{' '}

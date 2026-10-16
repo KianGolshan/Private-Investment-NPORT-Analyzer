@@ -5,6 +5,7 @@ import { Card, Kpi } from './bits';
 import { Chart } from './Chart';
 import { DataTable } from './DataTable';
 import { baseOption, type ChartTheme } from './theme';
+import { Term } from './Term';
 
 // The bridge (lib/services/analysis.js) as KPIs, a waterfall and its table
 // twin: start value, each kind of change, end value, reconciled to the cent.
@@ -107,13 +108,28 @@ export function BridgeView({ bridge: b, name }: { bridge: Bridge; name: string }
           value={<span class={tone(b.markEffect)}>{moneyDelta(b.markEffect)}</span>}
           sub="new marks on the shares held"
         />
+        {/* so the tiles add up from start to end (review 2026-10-15 T4) */}
+        {Math.abs(b.otherEffect ?? 0) >= 0.005 && (
+          <Kpi
+            label="Other changes"
+            value={<span class={tone(b.otherEffect)}>{moneyDelta(b.otherEffect)}</span>}
+            sub="funds that started or stopped filing; rows with no share count"
+          />
+        )}
         <Kpi label={`Value as of ${b.to}`} value={moneyC(b.end.value)} sub={count(b.end.funds, 'fund')} />
       </div>
       <Card
-        title="Bridge"
+        title={
+          <h2>
+            <Term id="bridge" />
+          </h2>
+        }
         actions={
           <span class="muted small">
-            {b.label} · {b.reconciled ? 'reconciles to the cent' : `does not reconcile: ${moneyDelta(b.residual)}`}
+            {b.label} ·{' '}
+            {b.reconciled
+              ? 'the steps add up exactly to the closing value'
+              : `does not add up: ${moneyDelta(b.residual)}`}
           </span>
         }
       >
@@ -161,12 +177,13 @@ export function PeriodEffects({ pivot: p, name }: { pivot: Pivot; name: string }
     (t: ChartTheme) => {
       const base0 = baseOption(t);
       const tot = p.total;
-      const position = tot.positionEffect.map(
-        (v, i) => v + (tot.started[i] ?? 0) + (tot.stopped[i] ?? 0) + (tot.valueOnly[i] ?? 0)
+      const other = tot.positionEffect.map(
+        (_, i) => (tot.started[i] ?? 0) + (tot.stopped[i] ?? 0) + (tot.valueOnly[i] ?? 0)
       );
+      const showOther = other.some(v => Math.abs(v) >= 0.005);
       return {
         ...base0,
-        legend: { ...base0.legend, data: ['Position effect', 'Mark effect'] },
+        legend: { ...base0.legend, data: ['From positions', 'From marks', ...(showOther ? ['Other changes'] : [])] },
         tooltip: { ...base0.tooltip, axisPointer: { type: 'shadow' }, valueFormatter: (v: number) => moneyDelta(v) },
         xAxis: {
           type: 'category',
@@ -179,8 +196,17 @@ export function PeriodEffects({ pivot: p, name }: { pivot: Pivot; name: string }
           axisLabel: { ...base0.yAxisDefaults.axisLabel, formatter: moneyC },
         },
         series: [
-          { name: 'Position effect', type: 'bar', stack: 'fx', data: position, itemStyle: { color: t.series[0] } },
-          { name: 'Mark effect', type: 'bar', stack: 'fx', data: tot.markEffect, itemStyle: { color: t.series[1] } },
+          {
+            name: 'From positions',
+            type: 'bar',
+            stack: 'fx',
+            data: tot.positionEffect,
+            itemStyle: { color: t.series[0] },
+          },
+          { name: 'From marks', type: 'bar', stack: 'fx', data: tot.markEffect, itemStyle: { color: t.series[1] } },
+          ...(showOther
+            ? [{ name: 'Other changes', type: 'bar', stack: 'fx', data: other, itemStyle: { color: t.series[2] } }]
+            : []),
         ],
       };
     },
@@ -189,10 +215,12 @@ export function PeriodEffects({ pivot: p, name }: { pivot: Pivot; name: string }
   if (p.periods.length < 2) return null;
   return (
     <Card
-      title={`Position vs mark effect by ${p.period}`}
-      actions={<span class="muted small">by each fund’s mark date · * part of a {p.period}</span>}
+      title={`From positions and from marks, by ${p.period}`}
+      actions={
+        <span class="muted small">by each fund’s mark date · * this {p.period} is only partly in the range</span>
+      }
     >
-      <Chart build={build} height={240} label={`${name}: position and mark effect by ${p.period}`} />
+      <Chart build={build} height={240} label={`${name}: change from positions and from marks by ${p.period}`} />
     </Card>
   );
 }
