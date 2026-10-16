@@ -10,9 +10,9 @@ export const DEFAULT_TITLE = 'Vantage: private holdings and marks from SEC N-POR
 /** The fixed pages' titles, the same as lib/api/pages.js STATIC_PAGES. */
 export const PAGE_TITLES = {
   explore: 'Explore: private holdings by firm, fund, company and class',
-  activity: 'Activity: changes in newly filed N-PORT reports',
+  activity: "What's new: changes in newly filed N-PORT reports",
   firms: 'Firms by private value',
-  tracked: 'Tracked private companies',
+  watchlist: 'Watchlist and tracked companies',
   compare: 'Compare private companies, firms and funds',
   about: 'About the data and methodology',
   status: 'Data status',

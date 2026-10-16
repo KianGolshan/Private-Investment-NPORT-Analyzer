@@ -103,6 +103,48 @@ test('freshness names the newest mark, Market ranks 1..n, and the tab title foll
   expect(errors).toEqual([]);
 });
 
+// Copy and UX review 2026-10-15, W2: navigation and names.
+test('the nav starts at Market, the watchlist never opens empty, and old links still land', async ({ page }) => {
+  const errors = errorsOf(page);
+  await page.goto('/');
+  const nav = page.getByRole('navigation', { name: 'Main' }).first();
+  await expect(nav.getByRole('link')).toHaveText([
+    'Market',
+    'Firms',
+    "What's new",
+    'Explore',
+    'Compare',
+    'Watchlist',
+    'About the data',
+    'Status',
+  ]);
+  // a first visit (empty watchlist) opens on the tracked companies, with what "tracked" means
+  await nav.getByRole('link', { name: 'Watchlist' }).click();
+  await expect(page).toHaveURL(/\/watchlist$/);
+  await expect(page.getByRole('heading', { name: 'Watchlist and tracked companies' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Tracked companies' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByText(/Tracked companies are [\d,]+ private companies picked by hand/)).toBeVisible();
+  await expect(page.getByText('Your watchlist is empty.', { exact: false })).toHaveCount(0);
+  // the old address redirects with its query
+  const res = await page.goto('/tracked?view=watchlist');
+  expect(res?.url()).toMatch(/\/watchlist\?view=watchlist$/);
+  await expect(page.getByText('Your watchlist is empty.', { exact: false })).toBeVisible();
+  // old tab ids open the renamed tabs
+  await page.goto('/fund/S000009228?tab=xray');
+  await expect(page.getByRole('tab', { name: 'Private book' })).toHaveAttribute('aria-selected', 'true');
+  await page.goto(`/company/${ANTHROPIC}?tab=positions`);
+  await expect(page.getByRole('tab', { name: 'Over time' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('link', { name: 'Follow (RSS)' })).toHaveAttribute('rel', /noopener/);
+  // the date control says what it shows by default
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'As of: latest' })).toBeVisible();
+  await expect(page.getByLabel('As of date')).toHaveCount(0);
+  // Activity says its default scope
+  await page.goto('/activity');
+  await expect(page.getByRole('button', { name: 'Tracked companies' })).toHaveAttribute('aria-pressed', 'true');
+  expect(errors).toEqual([]);
+});
+
 test('About and Status read the warehouse; the nav links them', async ({ page }) => {
   const errors = errorsOf(page);
   await page.goto('/');

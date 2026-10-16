@@ -21,7 +21,7 @@ describe('page titles', () => {
       '/explore': PAGE_TITLES.explore,
       '/activity': PAGE_TITLES.activity,
       '/firms': PAGE_TITLES.firms,
-      '/tracked': PAGE_TITLES.tracked,
+      '/watchlist': PAGE_TITLES.watchlist,
       '/compare': PAGE_TITLES.compare,
       '/about': PAGE_TITLES.about,
       '/status': PAGE_TITLES.status,

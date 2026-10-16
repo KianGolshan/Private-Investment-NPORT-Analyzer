@@ -37,9 +37,11 @@ const hrefOf = (kind: WatchKind, key: string | number, label: string) =>
       : fundPath(String(key));
 
 export default function Tracked() {
-  usePageTitle(PAGE_TITLES.tracked);
+  usePageTitle(PAGE_TITLES.watchlist);
   const [view, setView] = useParam('view');
-  const current = view === 'tracked' ? 'tracked' : 'watchlist';
+  // a first visit has an empty watchlist: open on the tracked companies instead of
+  // an empty page (review 2026-10-15 N2); ?view= picks a tab explicitly
+  const current = view === 'tracked' || view === 'watchlist' ? view : watchlist.value.length ? 'watchlist' : 'tracked';
   const [scope] = useScope();
   const fresh = useApi<Freshness>('/api/freshness');
   const newest = fresh.data?.newestReportDate ?? null;
@@ -47,8 +49,8 @@ export default function Tracked() {
     <div class="stack">
       <div class="page-head">
         <div>
-          <div class="eyebrow">Tracked & Watchlist</div>
-          <h1>What you follow</h1>
+          <div class="eyebrow">Watchlist</div>
+          <h1>Watchlist and tracked companies</h1>
           <p class="muted" style={{ margin: '4px 0 0' }}>
             As of {longDate(scope.asof || newest)} and a year earlier, each fund at its own mark date.
           </p>
@@ -62,7 +64,7 @@ export default function Tracked() {
           { id: 'tracked', label: 'Tracked companies' },
         ]}
         current={current}
-        onSelect={id => setView(id === 'watchlist' ? '' : id)}
+        onSelect={id => setView(id)}
       />
       {current === 'watchlist' ? <Watchlist /> : <TrackedCompanies />}
     </div>
@@ -355,6 +357,11 @@ function TrackedCompanies() {
       {t.loading && !d && <Loading rows={6} />}
       {d && (
         <>
+          <p class="muted" style={{ margin: 0 }}>
+            Tracked companies are {num(d.companies.length)} private companies picked by hand in Vantage’s reviewed list
+            for a closer look: marks, spreads and the change over a year on one page. Your watchlist is your own list of
+            companies, firms and funds, kept in this browser.
+          </p>
           <div class="kpis">
             <Kpi label="Tracked companies" value={num(d.companies.length)} />
             <Kpi

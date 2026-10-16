@@ -197,7 +197,7 @@ export default function Marks({ base, sq, name, newest }: ViewProps) {
       )}
       {lead.data && (
         <Card
-          title={`Mark leadership${cls ? `: ${cls}` : ''} (all firms)`}
+          title={`Who filed each new mark first${cls ? `: ${cls}` : ''} (all firms)`}
           actions={
             <span class="muted small">
               who first reported each new per-share level, by mark date, not filing date (moves over{' '}
@@ -216,7 +216,7 @@ export default function Marks({ base, sq, name, newest }: ViewProps) {
                 { id: 'first', header: 'First at mark date', value: (l: LevelRow) => l.firstDate },
                 {
                   id: 'leader',
-                  header: 'First by',
+                  header: 'First filed by',
                   value: (l: LevelRow) =>
                     l.adopters
                       .filter(a => a.lagDays === 0)
