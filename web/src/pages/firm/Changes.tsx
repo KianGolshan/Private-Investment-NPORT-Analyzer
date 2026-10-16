@@ -102,10 +102,10 @@ export function FirmChanges({ id, name, newest }: { id: number; name: string; ne
               pages > 1 ? (
                 <span class="row">
                   <button class="btn sm" type="button" disabled={page === 0} onClick={() => setPage(String(page - 1))}>
-                    Newer
+                    Previous
                   </button>
                   <span class="muted small">
-                    page {page + 1} of {pages}
+                    Page {page + 1} of {pages}
                   </span>
                   <button
                     class="btn sm"
@@ -113,7 +113,7 @@ export function FirmChanges({ id, name, newest }: { id: number; name: string; ne
                     disabled={page + 1 >= pages}
                     onClick={() => setPage(String(page + 1))}
                   >
-                    Older
+                    Next
                   </button>
                 </span>
               ) : undefined

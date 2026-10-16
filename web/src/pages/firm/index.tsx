@@ -50,8 +50,9 @@ export default function Firm() {
               <h1>{b.firm.name}</h1>
               <p class="muted" style={{ margin: '4px 0 0' }}>
                 {num(b.firm.fundsManaged)} funds advised
-                {b.firm.fundsSubadvised ? `, ${num(b.firm.fundsSubadvised)} sub-advised (not in the book)` : ''}; firm =
-                the fund’s current N-CEN adviser. Each fund at its own mark date.
+                {b.firm.fundsSubadvised ? ` (${num(b.firm.fundsSubadvised)} more sub-advised, not counted)` : ''}. A
+                fund belongs to the firm named as its adviser in its latest Form N-CEN. Each fund counts at its own mark
+                date.
               </p>
             </div>
             <span class="spacer" />

@@ -1,0 +1,69 @@
+// The words Vantage uses, defined once (review 2026-10-15 W3). The in-page
+// "what is this?" popovers (ui/Term.tsx) and the About page read the same text,
+// so a definition never says one thing here and another there. Every claim is
+// true of the data today; see docs/DATA-QUALITY.md for the rules behind them.
+
+export type TermId =
+  | 'mark'
+  | 'markDate'
+  | 'asOf'
+  | 'nport'
+  | 'ncen'
+  | 'fairValueLevel'
+  | 'indirect'
+  | 'fromPositions'
+  | 'fromMarks'
+  | 'otherChanges'
+  | 'bridge'
+  | 'tracked';
+
+export const GLOSSARY: Record<TermId, { term: string; text: string }> = {
+  mark: {
+    term: 'Mark',
+    text: 'The value a fund reports for a holding. A per-share mark is that value divided by the shares reported, adjusted for known share splits.',
+  },
+  markDate: {
+    term: 'Mark date',
+    text: 'The date a fund’s report describes (its report date), not the day it was filed. Funds report on different fiscal calendars, so mark dates differ by fund.',
+  },
+  asOf: {
+    term: 'As of',
+    text: 'As of a date, each fund counts with its latest report on or before that date, if that report is no more than 123 days old.',
+  },
+  nport: {
+    term: 'N-PORT',
+    text: 'The holdings report SEC-registered funds (mutual funds, ETFs, closed-end and interval funds) file for each fiscal quarter, within 60 days of its end.',
+  },
+  ncen: {
+    term: 'Form N-CEN',
+    text: 'A yearly SEC report in which each fund names its investment adviser. Vantage groups funds into firms by that adviser.',
+  },
+  fairValueLevel: {
+    term: 'Fair-value level',
+    text: 'How a fund labels a holding’s price: level 1 (quoted), 2 (observable inputs) or 3 (unobservable inputs). Private is decided by the company, not the level.',
+  },
+  indirect: {
+    term: 'Held indirectly',
+    text: 'Held through a named SPV (special purpose vehicle) or as an interest in another fund, rather than as the company’s own shares.',
+  },
+  fromPositions: {
+    term: 'From positions',
+    text: 'The change in value from shares first reported, added, reduced or no longer reported, valued at the prior mark.',
+  },
+  fromMarks: {
+    term: 'From marks',
+    text: 'The change in value from new marks on the shares a fund held at both reports.',
+  },
+  otherChanges: {
+    term: 'Other changes',
+    text: 'Funds that started or stopped filing, and holdings reported with no share count: changes that are neither a position nor a mark.',
+  },
+  bridge: {
+    term: 'Bridge',
+    text: 'The value at the start, each kind of change, and the value at the end. The steps add up exactly to the closing value.',
+  },
+  tracked: {
+    term: 'Tracked companies',
+    text: 'Private companies picked by hand in Vantage’s reviewed list for a closer look.',
+  },
+};

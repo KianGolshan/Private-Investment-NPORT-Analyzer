@@ -51,14 +51,45 @@ export function exportCsv<T>(name: string, columns: ExportColumn<T>[], rows: T[]
   download(toCsv(columns, rows), 'text/csv;charset=utf-8', `${fileSafe(name)}.csv`);
 }
 
+/**
+ * What a file is and where it came from, as label/value pairs (review 2026-10-15
+ * N8). XLSX puts them on a second sheet; a CSV stays one plain table so it opens
+ * in any tool, and carries the data version in its Source column instead.
+ */
+export function aboutRows(p: {
+  title: string;
+  page: string;
+  source: string;
+  basis?: string;
+  exportedAt?: Date;
+}): [string, string][] {
+  return [
+    ['Export', p.title],
+    ['Page', p.page],
+    ['Exported', (p.exportedAt ?? new Date()).toISOString().slice(0, 16).replace('T', ' ') + ' UTC'],
+    ...(p.source ? ([['Data version', p.source]] as [string, string][]) : []),
+    ...(p.basis ? ([['How history is read', p.basis]] as [string, string][]) : []),
+    [
+      'Note',
+      'From public SEC filings (Form N-PORT), as the funds report them; each row has its mark date and filing. Not investment advice: check the linked filing before relying on any number.',
+    ],
+  ];
+}
+
 /** XLSX through SheetJS, loaded only when the analyst asks for it. */
-export async function exportXlsx<T>(name: string, columns: ExportColumn<T>[], rows: T[]): Promise<void> {
+export async function exportXlsx<T>(
+  name: string,
+  columns: ExportColumn<T>[],
+  rows: T[],
+  about?: [string, string][]
+): Promise<void> {
   const XLSX = await import('xlsx');
   const aoa = [columns.map(c => c.header), ...rows.map(r => columns.map(c => c.value(r) ?? null))];
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   const wb = XLSX.utils.book_new();
   // Excel sheet names: 31 chars, none of []:*?/\
   XLSX.utils.book_append_sheet(wb, ws, name.replace(/[[\]:*?/\\]/g, ' ').slice(0, 31) || 'Sheet1');
+  if (about?.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(about), 'About this export');
   const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' }) as ArrayBuffer;
   download(out, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', `${fileSafe(name)}.xlsx`);
 }

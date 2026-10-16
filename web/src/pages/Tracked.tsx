@@ -185,7 +185,7 @@ function Watchlist() {
     },
     {
       id: 'pos',
-      header: 'Position effect',
+      header: 'From positions',
       title: 'First reported + added − reduced − no longer reported over the year, at the prior marks',
       value: r => r.positionEffect,
       num: true,
@@ -193,7 +193,7 @@ function Watchlist() {
     },
     {
       id: 'mark',
-      header: 'Mark effect',
+      header: 'From marks',
       title: 'The new marks on the shares held, over the year',
       value: r => r.markEffect,
       num: true,

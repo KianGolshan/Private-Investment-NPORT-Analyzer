@@ -849,3 +849,56 @@ table.status-details td {
 table.status-details th {
   width: 30%;
 }
+
+/* A word defined in place (ui/Term.tsx, review 2026-10-15 W3) */
+.term-wrap {
+  display: inline;
+}
+.term {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: help;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.term:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.term-pop {
+  /* placed against the screen by ui/Term.tsx: never wider than the page */
+  position: fixed;
+  z-index: 40;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.16);
+  font-size: var(--fs-sm);
+  font-weight: 400;
+  line-height: 1.45;
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: normal;
+}
+
+/* Shown only when focused: the first Tab on any page */
+.skip-link {
+  position: absolute;
+  left: var(--sp-2);
+  top: -48px;
+  z-index: 60;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface);
+  color: var(--link);
+  border: 2px solid var(--focus);
+  border-radius: var(--radius);
+}
+.skip-link:focus {
+  top: var(--sp-2);
+}

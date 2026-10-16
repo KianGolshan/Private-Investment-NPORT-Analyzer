@@ -213,7 +213,7 @@ export function Timeline({ who, name }: { who: Who; name: string }) {
                 },
                 {
                   id: 'pos',
-                  header: 'Position Δ',
+                  header: 'From positions',
                   value: c => c.positionEffect,
                   num: true,
                   render: c => <span class={tone(c.positionEffect)}>{moneyDelta(c.positionEffect)}</span>,
@@ -221,7 +221,7 @@ export function Timeline({ who, name }: { who: Who; name: string }) {
                 },
                 {
                   id: 'mark',
-                  header: 'Mark Δ',
+                  header: 'From marks',
                   value: c => c.markEffect,
                   num: true,
                   render: c => <span class={tone(c.markEffect)}>{moneyDelta(c.markEffect)}</span>,

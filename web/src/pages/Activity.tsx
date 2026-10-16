@@ -128,8 +128,8 @@ export default function Activity() {
           {d.truncated && (
             <div class="row small" role="navigation" aria-label="Pages of changes">
               <span class="muted">
-                Changes {num(first)}–{num(last)} of {num(d.total)} (the table and its export are this page; the counts
-                above are every change)
+                Showing {num(first)}–{num(last)} of {num(d.total)}. The export covers this page; the counts above cover
+                all {num(d.total)}.
               </span>
               <span class="spacer" />
               <button class="btn sm" type="button" disabled={page <= 1} onClick={() => setPage(String(page - 1))}>

@@ -58,7 +58,9 @@ export default function Fund() {
               <h1>{name}</h1>
               <div class="row wrap" style={{ marginTop: '6px' }}>
                 {d.fund.registrant !== d.fund.seriesName && <span class="muted">{d.fund.registrant}</span>}
-                <span class="muted small mono">{d.fund.fundKey}</span>
+                <span class="muted small">
+                  SEC series ID <span class="mono">{d.fund.fundKey}</span>
+                </span>
                 {d.fund.inactive && <Badge tone="warn">Stopped filing</Badge>}
               </div>
             </div>
@@ -75,7 +77,7 @@ export default function Fund() {
             <Kpi label="First report" value={longDate(d.fund.firstReportDate)} />
             <Kpi
               label="Latest report"
-              value={<FilingRef cik={d.fund.cik} accession={d.fund.lastAccession} date={d.fund.lastReportDate} />}
+              value={<FilingRef cik={d.fund.cik} accession={d.fund.lastAccession} date={d.fund.lastReportDate} long />}
             />
           </div>
           <Tabs tabs={TABS} current={current} onSelect={t => setTab(t === 'overview' ? '' : t)} />
