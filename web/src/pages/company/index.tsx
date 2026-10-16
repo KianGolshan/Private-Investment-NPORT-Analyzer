@@ -41,9 +41,10 @@ interface Head extends Envelope {
 const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'holders', label: 'Holders' },
-  { id: 'positions', label: 'Positions' },
+  // ids stay as they were, so old links open the same tab (review 2026-10-15 W2)
+  { id: 'positions', label: 'Over time' },
   { id: 'changes', label: 'Changes' },
-  { id: 'marks', label: 'Marks & classes' },
+  { id: 'marks', label: 'Marks by class' },
   { id: 'filings', label: 'Filings' },
 ];
 
@@ -158,8 +159,14 @@ export default function Company() {
             <span class="spacer" />
             {!isEntity && h.company && <WatchButton kind="company" id={h.company.id} label={name} />}
             {!isEntity && (
-              <a class="btn sm" href={`${base}/feed.xml`} target="_blank" rel="noopener">
-                Atom feed
+              <a
+                class="btn sm"
+                href={`${base}/feed.xml`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={`New filings for ${name} in a feed reader (Atom)`}
+              >
+                Follow (RSS)
               </a>
             )}
           </div>

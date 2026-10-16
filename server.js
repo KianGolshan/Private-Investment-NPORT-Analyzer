@@ -68,7 +68,7 @@ const APP_ROUTES = [
   '/firms',
   '/activity',
   '/explore',
-  '/tracked',
+  '/watchlist',
   '/compare',
   '/about',
   '/status',
@@ -100,6 +100,12 @@ function sendPage(req, res, { status = 200 } = {}) {
     .send(pages.renderIndex(readIndex(), head));
 }
 const NOT_BUILT = 'The workspace is not built yet: run npm run build:web, then reload.';
+// The watchlist page was /tracked until the 2026-10-15 review (W2): old links and
+// bookmarks land on it, with their query.
+app.get('/tracked', (req, res) => {
+  const q = req.originalUrl.indexOf('?');
+  res.redirect(301, `/watchlist${q >= 0 ? req.originalUrl.slice(q) : ''}`);
+});
 app.get(APP_ROUTES, (req, res) =>
   webBuilt() ? sendPage(req, res) : res.status(503).set('Cache-Control', 'no-store').type('text').send(NOT_BUILT)
 );

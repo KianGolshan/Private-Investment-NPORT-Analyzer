@@ -21,9 +21,10 @@ import { PAGE_TITLES, itemTitle, usePageTitle } from '../../lib/title';
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
-  { id: 'xray', label: 'X-Ray' },
-  { id: 'compare', label: 'Compare' },
-  { id: 'returns', label: 'Returns' },
+  // ids stay as they were, so old links open the same tab (review 2026-10-15 W2)
+  { id: 'xray', label: 'Private book' },
+  { id: 'compare', label: 'Period compare' },
+  { id: 'returns', label: 'Mark-implied returns' },
   { id: 'timeline', label: 'Timeline' },
   { id: 'marks', label: 'Marks vs others' },
   { id: 'changes', label: 'Changes' },

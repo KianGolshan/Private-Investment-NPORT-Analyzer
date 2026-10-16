@@ -40,6 +40,17 @@ test('GET /api/does-not-exist: 404', async () => {
   assert.equal((await request(app).get('/api/does-not-exist')).status, 404);
 });
 
+test('/tracked moved to /watchlist (review 2026-10-15 W2): a permanent redirect that keeps the query', async () => {
+  const plain = await request(app).get('/tracked').expect(301);
+  assert.equal(plain.headers.location, '/watchlist');
+  const q = await request(app).get('/tracked?view=tracked&date=2026-06-30').expect(301);
+  assert.equal(q.headers.location, '/watchlist?view=tracked&date=2026-06-30');
+  // the redirect stays on this site whatever the query holds
+  const odd = await request(app).get('/tracked?//evil.example').expect(301);
+  assert.ok(odd.headers.location.startsWith('/watchlist?'));
+  assert.equal((await request(app).get('/tracked/x')).status, 404);
+});
+
 test('SEC client: a 429 is retried with backoff and the request succeeds', async () => {
   const scope = nock(SEC)
     .get('/Archives/edgar/full-index/2026/QTR3/form.idx')
