@@ -41,6 +41,20 @@ export function moneyC(v: number | null | undefined): string {
 export const moneyDelta = (v: number | null | undefined) =>
   bad(v) ? '—' : v === 0 ? '$0' : (v > 0 ? '+' : '') + moneyC(v);
 
+// The clean split ratios lib/analytics/splits.js knows; any other factor it returns
+// is a filer restating the holding in other units at the same value (trap 63).
+const SPLIT_RATIOS = [2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 50, 100];
+const ratio2 = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
+
+/** True when a detected share factor is a clean split ratio, false for units restated. */
+export const isCleanSplit = (f: number) => SPLIT_RATIOS.some(k => Math.abs(f - k) < 1e-9 || Math.abs(f * k - 1) < 1e-9);
+
+/** "split 3:1", or "units restated ×1,000" for a factor that is no split ratio. */
+export function splitText(f: number): string {
+  if (isCleanSplit(f)) return `split ${f}:1`;
+  return f >= 1 ? `units restated ×${ratio2.format(f)}` : `units restated ÷${ratio2.format(1 / f)}`;
+}
+
 export const num = (v: number | null | undefined) => (bad(v) ? '—' : int.format(v));
 
 /** "1 fund", "2 funds": a count with its noun in the right number (review F-19). */

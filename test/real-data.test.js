@@ -123,6 +123,53 @@ test('detectSplit: a real 1-for-3 reverse split (Motive Technologies, Private Sh
   }
 });
 
+test('detectSplit: units restated at the same value (trap 63, F58) restate the prior side by the exact ratio', () => {
+  const at = (shares, value) => ({ shares, pricePerShare: value / shares });
+  // PGIM High Yield, Ferrellgas escrow preferred, id INTERNAL B8A9598C3:
+  // 0001752724-21-157139 (2021-05-28) → 0001752724-21-224848 (2021-08-31), $135,375,000 both.
+  assert.equal(detectSplit(at(135375, 135375000), at(135375000, 135375000)), 1000);
+  // Partners Group Private Equity, AmSurg HoldCo 2L, id 902TTWII7:
+  // 0001410368-25-001817 → 0001410368-25-032775, $27,103,511.25 both.
+  const amsurg = detectSplit(at(896098, 27103511.25), at(21902252.04, 27103511.25));
+  assert.ok(Math.abs(amsurg - 21902252.04 / 896098) < 1e-9, String(amsurg));
+  // EntrepreneurShares, Anduril Holdings SPV LP, id ANDURLSPV:
+  // 0000910472-25-004877 → 0000910472-26-003239, $3,000,000 both.
+  assert.ok(Math.abs(detectSplit(at(70588.23, 3e6), at(3e6, 3e6)) - 3e6 / 70588.23) < 1e-9);
+  // the other way: Endeavor, 323,000 → 323 shares at $323,000 (0001752724-24-270317 → 0001752724-25-042103)
+  assert.ok(Math.abs(detectSplit(at(323000, 323000), at(323, 323000)) - 0.001) < 1e-12);
+  // Below 10× a flat value stays a share exchange (Mesquite ×2.41, F52) ...
+  assert.equal(detectSplit(at(1000, 43895191), at(2411, 43895191 * 1.0066)), null);
+  // ... and 10× more shares with a value that moved over 1% is a purchase, not a restatement.
+  assert.equal(detectSplit(at(1000, 1e6), at(10500, 1.05e6)), null);
+  assert.equal(detectSplit(at(1000, 1e6), at(23000, 1.02e6)), null);
+});
+
+test('activity: a units restatement is neither a position nor a mark change (Ferrellgas, live bug: "added $153B")', () => {
+  const { diffPosition } = require('../lib/analytics/activity');
+  const row = (row_key, balance) => ({
+    row_key,
+    issuer_name: 'FERRELLGAS ESCROW LLC 3/30/31 Equity Preferred',
+    title: 'FERRELLGAS ESCROW LLC 3/30/31 Equity Preferred',
+    other_id: 'B8A9598C3',
+    cusip: null,
+    asset_cat: 'EP',
+    balance,
+    unit: 'NS',
+    value_usd: 135375000,
+    instrument_type: 'equity',
+    via_spv: 0,
+    counts: true,
+  });
+  const ev = diffPosition([row('a', 135375)], [row('b', 135375000)]);
+  assert.equal(ev.type, 'unchanged');
+  const [l] = ev.instruments;
+  assert.equal(l.change, 'unchanged');
+  assert.equal(l.split, 1000);
+  assert.equal(l.positionEffect, 0);
+  assert.equal(l.markEffect, 0);
+  assert.equal(l.priceChangePct, 0);
+});
+
 test('detectSplit: refuses missing or non-positive inputs', () => {
   assert.equal(detectSplit(null, { shares: 1, pricePerShare: 1 }), null);
   assert.equal(detectSplit({ shares: 0, pricePerShare: 10 }, { shares: 5, pricePerShare: 2 }), null);

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'preact/hooks';
 import { qs, useApi } from '../../api/client';
 import type { FactLeg, PositionHistory } from '../../api/types';
-import { fundPath, money, moneyC, moneyDelta, num, price, tone } from '../../lib/format';
+import { fundPath, money, moneyC, moneyDelta, num, price, splitText, tone } from '../../lib/format';
 import { scopeParams, useScope } from '../../scope/scope';
 import { Card, Empty, ErrorBox, FilingRef, Kpi, Loading } from '../../ui/bits';
 import { Chart } from '../../ui/Chart';
@@ -133,7 +133,7 @@ export function PositionDrawer({
         <span class="small">
           {l.prevBalance != null && l.prevBalance !== l.balance ? `${num(l.prevBalance)} → ` : ''}
           {num(l.balance)}
-          {l.split ? ` (split ${l.split}:1)` : ''}
+          {l.split ? ` (${splitText(l.split)})` : ''}
         </span>
       ),
       exportAs: [{ header: 'Prior shares', value: l => l.prevBalance }],
