@@ -31,6 +31,14 @@ describe('Term', () => {
     fireEvent.mouseDown(r.getByRole('note'));
     expect(r.queryByRole('note')).not.toBeNull();
   });
+  it('an Escape pressed on the word right after it opens closes it (CI pressed it before the listener)', () => {
+    const r = render(<Term id="mark" />);
+    const btn = r.getByRole('button');
+    fireEvent.click(btn);
+    fireEvent.keyDown(btn, { key: 'Escape' });
+    expect(r.queryByRole('note')).toBeNull();
+    expect(btn.getAttribute('title')).toBe('What “Mark” means');
+  });
   it('shows the glossary’s own word when no text is given', () => {
     const r = render(<Term id="ncen" />);
     expect(r.getByRole('button').textContent).toBe('Form N-CEN');

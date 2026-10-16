@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact';
-import { useEffect, useId, useRef, useState } from 'preact/hooks';
+import { useId, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { GLOSSARY, type TermId } from '../lib/glossary';
 
 // A word defined where it is used (review 2026-10-15 W3): a dotted underline
@@ -16,7 +16,8 @@ export function Term({ id, children }: { id: TermId; children?: ComponentChildre
   const box = useRef<HTMLSpanElement>(null);
   const word = useRef<HTMLButtonElement>(null);
   const open = at !== null;
-  useEffect(() => {
+  // attached as the card renders, not after paint, so a quick Escape or click is never missed
+  useLayoutEffect(() => {
     if (!open) return;
     const close = () => setAt(null);
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();
@@ -41,14 +42,23 @@ export function Term({ id, children }: { id: TermId; children?: ComponentChildre
   };
   const g = GLOSSARY[id];
   return (
-    <span class="term-wrap" ref={box}>
+    <span
+      class="term-wrap"
+      ref={box}
+      onKeyDown={e => {
+        if (e.key === 'Escape' && open) {
+          e.stopPropagation();
+          setAt(null);
+        }
+      }}
+    >
       <button
         ref={word}
         type="button"
         class="term"
         aria-expanded={open}
         aria-controls={pop}
-        title={open ? undefined : `What is ${g.term.toLowerCase()}?`}
+        title={open ? undefined : `What “${g.term}” means`}
         onClick={toggle}
       >
         {children ?? g.term}
