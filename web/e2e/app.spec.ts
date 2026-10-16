@@ -88,7 +88,10 @@ test('freshness names the newest mark, Market ranks 1..n, and the tab title foll
       .slice(0, 30)
       .map(r => r.querySelector('td')?.textContent?.trim());
   });
-  expect(ranks.length).toBeGreaterThan(5);
+  // the golden warehouse holds a handful of operating companies: every one is listed, ranked 1..n
+  const top = await page.request.get('/api/market/top?category=company&limit=300').then(r => r.json());
+  expect(top.companies).toBeGreaterThan(1);
+  expect(ranks.length).toBe(Math.min(30, top.companies));
   expect(ranks).toEqual(ranks.map((_, i) => String(i + 1)));
   await expect(page).toHaveTitle('Vantage: private holdings and marks from SEC N-PORT');
   await page.getByRole('navigation', { name: 'Main' }).first().getByRole('link', { name: 'Firms' }).click();
