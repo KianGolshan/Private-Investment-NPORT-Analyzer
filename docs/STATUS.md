@@ -6,8 +6,8 @@ W2 `090cbd1` plus the server's setup re-run, W3 `2ae79ee`, all 2026-10-15; ROADM
 SEC refresh, auto-deploy of every green commit on `main`; [DEPLOY.md](DEPLOY.md)). **`main` is protected:** changes go
 through a pull request with the CI checks green (`archive/v1` keeps v1). Waiting on the user: the Oracle security-list
 rule for SSH (DEPLOY.md 1A.6). **Now: the copy and UX review (2026-10-15)**, four waves; W1 (truth and trust) is
-built on `v2-w1-truth-and-trust`, in review as a pull request. Next: the user's sign-off, then W2 (navigation and
-names).
+PR #23 (signed off 2026-10-15, merging); W2 (navigation and names) is built on `v2-w2-navigation-and-names`, stacked on
+W1. Next: the user's sign-off of W2, then W3 (words, definitions and exports).
 
 ## Phase tracker
 
@@ -81,6 +81,20 @@ has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB 
   - Gates: backend 454 (450 pass, 4 skipped, 0 fail); web 14 files, 53 tests; lint, lint:web, format clean;
     browser: Market, Company, Firms, Status, About, 404 in light and dark at 1280 px and 375 px, no overflow, no
     console errors besides the expected 404s. e2e (a new W1 test) runs in CI on the PR.
+- **W2 (branch `v2-w2-navigation-and-names`):**
+  - nav: Market, Firms, What's new, Explore, Compare, Watchlist under "Data"; About and Status on the phone nav too;
+  - `/watchlist` (title "Watchlist and tracked companies"); `/tracked` answers 301 to it with its query (server and
+    in-app); a first visit opens on the tracked companies, with what "tracked" means (hand-picked in the reviewed
+    list, `track = Y` in `data/review/aliases.csv`);
+  - tab labels: Fund Private book, Period compare, Mark-implied returns; Company Over time, Marks by class; ids
+    unchanged, so old `?tab=` links open the same tab. "Who filed each new mark first", "First filed by";
+    "Follow (RSS)"; Firms eyebrow "Firms"; Activity's page title and eyebrow "What's new";
+  - the as-of control reads "As of: latest" until a date is asked for (`AsOfPicker`); header "Compact rows"
+    (`aria-pressed`) and a theme button that says what a click does; Activity's scope is a segmented control
+    (Tracked companies / All private companies) with the default shown;
+  - Gates: backend 455 (451 pass, 4 skipped); web 15 files, 56 tests; lint, lint:web, format clean; browser:
+    Market (as-of picked and cleared), Watchlist, `/tracked` redirect, Activity, Fund tabs in light and dark at 1280
+    and 375 px, no overflow. A new W2 e2e test runs in CI.
   - Note for local previews: `vantage-public` pins `APP_BUILD=local-p9`, so after a code change the browser can
     revalidate an API answer to the old body (same ETag) until the data version changes; live deploys set
     `APP_BUILD` to the commit, so visitors are not affected.

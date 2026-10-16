@@ -5,7 +5,7 @@ import { longDate, num } from '../lib/format';
 import { FirmPicker } from '../scope/FirmPicker';
 import { ScopeBar } from '../scope/ScopeBar';
 import { scopeParams, useParam, useScope } from '../scope/scope';
-import { Card, ErrorBox, Kpi, Loading } from '../ui/bits';
+import { Card, ErrorBox, Kpi, Loading, Segmented } from '../ui/bits';
 import { ChangesTable } from '../ui/ChangesTable';
 import { PAGE_TITLES, usePageTitle } from '../lib/title';
 
@@ -63,7 +63,7 @@ export default function Activity() {
     <div class="stack">
       <div class="page-head">
         <div>
-          <div class="eyebrow">Activity</div>
+          <div class="eyebrow">What's new</div>
           <h1>What's new in filings</h1>
           <p class="muted" style={{ margin: '4px 0 0' }}>
             Changes reported in N-PORT filings made from {longDate(from)} to {longDate(d?.until ?? to)}, in{' '}
@@ -93,14 +93,20 @@ export default function Activity() {
               onChange={e => setUntil((e.target as HTMLInputElement).value)}
             />
           </label>
-          <label class="row small">
-            <input
-              type="checkbox"
-              checked={all === '1'}
-              onChange={e => setAll((e.target as HTMLInputElement).checked ? '1' : '')}
-            />
-            All private companies
-          </label>
+          {/* the default is said, not hidden behind an unticked box (review 2026-10-15 N2) */}
+          <Segmented
+            label="Which companies"
+            value={all === '1' ? '1' : ''}
+            onChange={v => setAll(v)}
+            options={[
+              {
+                id: '',
+                label: 'Tracked companies',
+                title: 'The private companies picked by hand in the reviewed list for a closer look',
+              },
+              { id: '1', label: 'All private companies', title: 'Every reviewed private company' },
+            ]}
+          />
         </div>
       </div>
       <div class="row wrap">

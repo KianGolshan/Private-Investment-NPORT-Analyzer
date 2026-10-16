@@ -1,4 +1,6 @@
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { useApi } from '../api/client';
+import { longDate } from '../lib/format';
 import type { Envelope, Firm } from '../api/types';
 import { Segmented } from '../ui/bits';
 import { isRange, useScope, type Scope } from './scope';
@@ -81,24 +83,7 @@ export function ScopeBar({
         />
       )}
       {(mode === 'asof' || !supports.range) && supports.asof && (
-        <>
-          <input
-            class="input"
-            type="date"
-            aria-label="As of date"
-            min={FIRST_DATE}
-            max={end}
-            value={scope.asof}
-            onChange={e => setScope({ asof: (e.target as HTMLInputElement).value })}
-          />
-          {scope.asof ? (
-            <button class="btn sm ghost" type="button" onClick={() => setScope({ asof: '' })}>
-              Latest
-            </button>
-          ) : (
-            <span class="muted small">latest marks</span>
-          )}
-        </>
+        <AsOfPicker value={scope.asof} newest={newest} max={end} onChange={asof => setScope({ asof })} />
       )}
       {supports.range && (range || !supports.asof) && (
         <>
@@ -143,5 +128,72 @@ export function ScopeBar({
         </span>
       ))}
     </div>
+  );
+}
+
+// As of a date, or the latest marks when none is picked. An empty date field read
+// as a broken control (review 2026-10-15 N3), so the default says what it shows
+// and the field appears when the visitor asks for a date.
+export function AsOfPicker({
+  value,
+  newest,
+  max,
+  onChange,
+}: {
+  value: string;
+  newest: string | null;
+  max: string | undefined;
+  onChange: (asof: string) => void;
+}) {
+  const [picking, setPicking] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!picking || value) return;
+    input.current?.focus();
+    try {
+      input.current?.showPicker?.();
+    } catch {
+      // some browsers allow the picker only from the click itself; the field is focused anyway
+    }
+  }, [picking, value]);
+  if (!value && !picking)
+    return (
+      <button
+        class="btn sm"
+        type="button"
+        onClick={() => setPicking(true)}
+        title={
+          newest ? `Each fund's latest filing on or before ${longDate(newest)}. Pick a date to look back.` : undefined
+        }
+      >
+        As of: latest
+      </button>
+    );
+  return (
+    <>
+      <label class="row small">
+        <span class="muted">As of</span>
+        <input
+          ref={input}
+          class="input"
+          type="date"
+          aria-label="As of date"
+          min={FIRST_DATE}
+          max={max}
+          value={value}
+          onChange={e => onChange((e.target as HTMLInputElement).value)}
+        />
+      </label>
+      <button
+        class="btn sm ghost"
+        type="button"
+        onClick={() => {
+          setPicking(false);
+          onChange('');
+        }}
+      >
+        Latest
+      </button>
+    </>
   );
 }

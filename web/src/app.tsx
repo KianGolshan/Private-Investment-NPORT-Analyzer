@@ -28,13 +28,19 @@ if (typeof window !== 'undefined')
     if (reloadOnce()) e.preventDefault();
   });
 
+// Home first, then the most-used views (review 2026-10-15 W2). The section is
+// "Data" so no item shares its name with the heading above it.
 const NAV: { href: string; label: string; match: (p: string) => boolean }[] = [
-  { href: '/explore', label: 'Explore', match: p => p.startsWith('/explore') },
   { href: '/', label: 'Market', match: p => p === '/' },
-  { href: '/activity', label: 'Activity', match: p => p.startsWith('/activity') },
-  { href: '/tracked', label: 'Tracked', match: p => p.startsWith('/tracked') },
-  { href: '/compare', label: 'Compare', match: p => p.startsWith('/compare') },
   { href: '/firms', label: 'Firms', match: p => p.startsWith('/firm') },
+  { href: '/activity', label: "What's new", match: p => p.startsWith('/activity') },
+  { href: '/explore', label: 'Explore', match: p => p.startsWith('/explore') },
+  { href: '/compare', label: 'Compare', match: p => p.startsWith('/compare') },
+  { href: '/watchlist', label: 'Watchlist', match: p => p.startsWith('/watchlist') || p.startsWith('/tracked') },
+];
+const MORE = [
+  { href: '/about', label: 'About the data' },
+  { href: '/status', label: 'Status' },
 ];
 
 function Sidebar() {
@@ -56,19 +62,18 @@ function Sidebar() {
         <span>Vantage</span>
       </a>
       <nav class="nav" aria-label="Main">
-        <div class="nav-section">Explore</div>
+        <div class="nav-section">Data</div>
         {NAV.map(n => (
           <a key={n.href} href={n.href} aria-current={n.match(path) ? 'page' : undefined}>
             {n.label}
           </a>
         ))}
         <div class="nav-section">More</div>
-        <a href="/about" aria-current={path === '/about' ? 'page' : undefined}>
-          About the data
-        </a>
-        <a href="/status" aria-current={path === '/status' ? 'page' : undefined}>
-          Status
-        </a>
+        {MORE.map(n => (
+          <a key={n.href} href={n.href} aria-current={path === n.href ? 'page' : undefined}>
+            {n.label}
+          </a>
+        ))}
       </nav>
       <div class="sidebar-foot">
         Private holdings and marks from SEC N-PORT filings. Every number links to its filing. Not investment advice.
@@ -84,6 +89,12 @@ function MobileNav() {
       {NAV.map(n => (
         <a key={n.href} href={n.href} aria-current={n.match(path) ? 'page' : undefined}>
           {n.label}
+        </a>
+      ))}
+      {/* phones have no sidebar: About and Status stay one tap away (review N1) */}
+      {MORE.map(n => (
+        <a key={n.href} href={n.href} aria-current={path === n.href ? 'page' : undefined}>
+          {n.href === '/about' ? 'About' : n.label}
         </a>
       ))}
     </nav>
@@ -139,19 +150,22 @@ function Topbar({ onSearch }: { onSearch: () => void }) {
           {f.newestPrivateMark ? ` · newest mark ${longDate(f.newestPrivateMark)}` : ''}
         </span>
       )}
+      {/* a toggle names what it controls and says whether it is on (review N6) */}
       <button
         class="btn sm ghost hide-sm"
         type="button"
+        aria-pressed={density.value === 'compact'}
         onClick={() => (density.value = density.value === 'compact' ? 'comfortable' : 'compact')}
-        title="Row density"
+        title="Tighter table rows"
       >
-        {density.value === 'compact' ? 'Compact' : 'Comfortable'}
+        Compact rows
       </button>
       <button
         class="btn sm ghost hide-sm"
         type="button"
         onClick={() => (themePref.value = cycle[themePref.value])}
-        title="Theme: system, light or dark"
+        aria-label={`Theme: ${themePref.value}. Switch to ${cycle[themePref.value]}`}
+        title={`Theme: ${themePref.value}. Click for ${cycle[themePref.value]} (system follows your device)`}
       >
         Theme: {themePref.value}
       </button>
@@ -207,6 +221,14 @@ function Notices() {
   );
 }
 
+// The watchlist page was /tracked until the 2026-10-15 review: an old in-app link
+// moves to it with its query (the server redirects a fresh visit, server.js).
+function TrackedMoved() {
+  const { route } = useLocation();
+  useEffect(() => route(`/watchlist${window.location.search}`, true), [route]);
+  return null;
+}
+
 function Shell() {
   const { path } = useLocation();
   const [open, setOpen] = useState(false);
@@ -238,7 +260,8 @@ function Shell() {
                 <Route path="/fund/:key" component={Fund} />
                 <Route path="/activity" component={Activity} />
                 <Route path="/explore" component={Explore} />
-                <Route path="/tracked" component={Tracked} />
+                <Route path="/watchlist" component={Tracked} />
+                <Route path="/tracked" component={TrackedMoved} />
                 <Route path="/compare" component={Compare} />
                 <Route path="/about" component={About} />
                 <Route path="/status" component={Status} />

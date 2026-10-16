@@ -18,7 +18,7 @@ export default function Firms() {
     <div class="stack">
       <div class="page-head">
         <div>
-          <div class="eyebrow">Managers</div>
+          <div class="eyebrow">Firms</div>
           <h1>Firms by private value</h1>
           <p class="muted" style={{ margin: '4px 0 0' }}>
             Funds map to firms by their adviser in N-CEN (current adviser). As of{' '}
