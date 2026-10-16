@@ -1,19 +1,26 @@
 name: Test
 
-# Every branch: v2 work lives on feature branches, and CI must run on them
-# before anything reaches main.
+# Pull requests, and pushes to main and staging only. A PR commit gets one run
+# (the pull_request one), so nothing cancels a run whose checks branch
+# protection counts: when every push also ran here, the PR run cancelled the
+# push run on the same commit, its checks stayed "cancelled" next to the green
+# ones, and main's required checks blocked the merge until a re-run (PRs #23, #24).
+# Both deploy gates need the push runs on main and staging: deploy.yml
+# (workflow_run, event == 'push') and deploy/bin/vantage-autodeploy (the API's
+# runs with event=push). A branch without a PR gets CI once its PR is opened.
 on:
   push:
+    branches: [main, staging]
   pull_request:
 
-# A push to a branch with an open PR triggers both events; one run per branch
-# and commit is enough, so the second cancels the first.
 # Least privilege: the jobs only read the repository.
 permissions:
   contents: read
 
+# One run per event and branch: a newer commit cancels the older run of the same
+# kind (a PR's runs, or main's), never a run of the other event.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
