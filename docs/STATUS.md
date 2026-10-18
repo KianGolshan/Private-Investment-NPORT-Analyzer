@@ -1,14 +1,12 @@
 # Vantage v2 Status
 
-**Phase:** **P11 is complete and live** (the 2026-10-14 engineering and security review, graded B+: W1 `34dc409`,
-W2 `090cbd1` plus the server's setup re-run, W3 `2ae79ee`, all 2026-10-15; ROADMAP §11). Vantage is live at
-**https://vantage-kian.duckdns.org** (Oracle Cloud Always Free VM on Pay As You Go, DuckDNS, HTTPS from Caddy, nightly
-SEC refresh, auto-deploy of every green commit on `main`; [DEPLOY.md](DEPLOY.md)). **`main` is protected:** changes go
-through a pull request with the CI checks green (`archive/v1` keeps v1). Waiting on the user: the Oracle security-list
-rule for SSH (DEPLOY.md 1A.6). **Now: the copy and UX review (2026-10-15)**, four waves: W1 #23, W2 #24 and W3 #25
-merged and live (W3 `bbbdc8d`, 2026-10-18); the CI fix #26 (one run per PR commit) merged. W4 (positioning, About,
-author line, mobile polish) is built on `v2-w4-positioning-about`, in review as a pull request. Next: the user's
-sign-off of W4; then the review is closed.
+**Phase:** **P12 is complete** (the 2026-10-15 copy and UX review: W1 #23, W2 #24, W3 #25, W4 #28 merged and live,
+the close-out PR with the tab pattern and CHANGELOG v2.2.0; ROADMAP §12). P11 (the 2026-10-14 engineering and
+security review) is complete and live. Vantage is live at **https://vantage-kian.duckdns.org** (Oracle Cloud Always
+Free VM on Pay As You Go, DuckDNS, HTTPS from Caddy, nightly SEC refresh, auto-deploy of every green commit on
+`main`; [DEPLOY.md](DEPLOY.md)). **`main` is protected:** changes go through a pull request with the CI checks green
+(`archive/v1` keeps v1). Waiting on the user: the Oracle security-list rule for SSH (DEPLOY.md 1A.6). Not started or
+deferred by choice: P7 (MCP server), P8's 30-night checkpoint. Next: the user's instructions.
 
 ## Phase tracker
 
@@ -20,6 +18,7 @@ sign-off of W4; then the review is closed.
   are deferred.
 - [x] P9: public deployment, live 2026-10-14 ([plan](plans/P9-deployment.md), [DEPLOY.md](DEPLOY.md)).
 - [x] P10: launch review remediation (ROADMAP §10). W0 and W1 live; W2 done except off-site backups (not now).
+- [x] P12: copy and UX review (ROADMAP §12). W1–W4 and the close-out merged 2026-10-15..18.
 - [x] P11: engineering and security review remediation (ROADMAP §11). W1, W2, W3 live 2026-10-15; the user's
       Oracle SSH rule pending.
 

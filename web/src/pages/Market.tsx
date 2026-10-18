@@ -6,7 +6,7 @@ import type { Freshness, TopCompanies } from '../api/types';
 import { companyPath, longDate, moneyC, num } from '../lib/format';
 import { ScopeBar } from '../scope/ScopeBar';
 import { useParam, useScope } from '../scope/scope';
-import { Card, Empty, ErrorBox, Kpi, Loading, Tabs } from '../ui/bits';
+import { Card, Empty, ErrorBox, Kpi, Loading, TabPanel, Tabs } from '../ui/bits';
 import { CategoryBadge, CategorySwitch, useCategoryFilter } from '../ui/Category';
 import { Chart } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
@@ -198,6 +198,7 @@ export default function Market() {
         </div>
       </div>
       <Tabs
+        id="market"
         tabs={[
           { id: 'top', label: 'Top companies' },
           { id: 'movers', label: 'Movers' },
@@ -206,9 +207,11 @@ export default function Market() {
         current={current}
         onSelect={id => setView(id === 'top' ? '' : id)}
       />
-      {current === 'top' && <Top />}
-      {current === 'movers' && <Movers />}
-      {current === 'new' && <New />}
+      <TabPanel id="market" current={current}>
+        {current === 'top' && <Top />}
+        {current === 'movers' && <Movers />}
+        {current === 'new' && <New />}
+      </TabPanel>
     </div>
   );
 }

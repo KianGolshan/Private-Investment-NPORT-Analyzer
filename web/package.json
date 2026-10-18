@@ -1,7 +1,7 @@
 {
   "name": "vantage-web",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.2.0",
   "description": "Vantage analyst workspace (Vite + Preact + TypeScript); built into web/dist and served by server.js",
   "type": "module",
   "scripts": {

@@ -108,23 +108,66 @@ export function DateNote({ date }: { date: string | null | undefined }) {
 }
 
 /** Tabs that live in the URL (?tab=), so Back returns to the previous tab. */
+/**
+ * Tabs that follow the WAI-ARIA tab pattern (review 2026-10-15 accessibility): each
+ * tab names the panel it controls (`<TabPanel>` with the same `id`), only the
+ * selected tab is in the Tab order, and the arrow keys, Home and End move along.
+ */
 export function Tabs({
+  id,
   tabs,
   current,
   onSelect,
 }: {
+  /** Shared with this tab set's TabPanel. */
+  id: string;
   tabs: { id: string; label: string }[];
   current: string;
   onSelect: (id: string) => void;
 }) {
+  const move = (e: KeyboardEvent, i: number) => {
+    const to =
+      e.key === 'ArrowRight'
+        ? (i + 1) % tabs.length
+        : e.key === 'ArrowLeft'
+          ? (i - 1 + tabs.length) % tabs.length
+          : e.key === 'Home'
+            ? 0
+            : e.key === 'End'
+              ? tabs.length - 1
+              : -1;
+    if (to < 0) return;
+    e.preventDefault();
+    onSelect(tabs[to]!.id);
+    document.getElementById(`${id}-tab-${tabs[to]!.id}`)?.focus();
+  };
   return (
-    <nav class="tabs" role="tablist">
-      {tabs.map(t => (
-        <button key={t.id} type="button" role="tab" aria-selected={t.id === current} onClick={() => onSelect(t.id)}>
+    <div class="tabs" role="tablist">
+      {tabs.map((t, i) => (
+        <button
+          key={t.id}
+          id={`${id}-tab-${t.id}`}
+          type="button"
+          role="tab"
+          aria-selected={t.id === current}
+          aria-controls={`${id}-panel`}
+          tabIndex={t.id === current ? 0 : -1}
+          onClick={() => onSelect(t.id)}
+          onKeyDown={e => move(e, i)}
+        >
           {t.label}
         </button>
       ))}
-    </nav>
+    </div>
+  );
+}
+
+/** The content of the selected tab, labelled by it. */
+export function TabPanel({ id, current, children }: { id: string; current: string; children: ComponentChildren }) {
+  return (
+    <div class="stack" role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-tab-${current}`}>
+      {children}
+    </div>
   );
 }
 

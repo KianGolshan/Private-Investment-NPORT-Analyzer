@@ -3,7 +3,7 @@ import { qs, useApi } from '../../api/client';
 import type { FirmBook, Freshness } from '../../api/types';
 import { longDate, moneyC, num } from '../../lib/format';
 import { useParam, useScope } from '../../scope/scope';
-import { ErrorBox, isNotFound, Kpi, Loading, Tabs, WatchButton } from '../../ui/bits';
+import { ErrorBox, isNotFound, Kpi, Loading, TabPanel, Tabs, WatchButton } from '../../ui/bits';
 import NotFound from '../NotFound';
 import { BookOverview } from '../book/BookOverview';
 import { MarksVsOthers } from '../book/MarksVsOthers';
@@ -64,12 +64,14 @@ export default function Firm() {
             <Kpi label="Funds holding" value={num(b.byFund.length)} />
             <Kpi label="Largest" value={b.byCompany[0]?.name ?? '—'} sub={moneyC(b.byCompany[0]?.value)} />
           </div>
-          <Tabs tabs={TABS} current={current} onSelect={t => setTab(t === 'overview' ? '' : t)} />
-          {current === 'overview' && <BookOverview who={{ firm: id }} name={b.firm.name} newest={newest} />}
-          {current === 'timeline' && <Timeline who={{ firm: id }} name={b.firm.name} />}
-          {current === 'book' && <Book id={id} book={b} newest={newest} />}
-          {current === 'marks' && <MarksVsOthers who={{ firm: id }} name={b.firm.name} newest={newest} />}
-          {current === 'changes' && <FirmChanges id={id} name={b.firm.name} newest={newest} />}
+          <Tabs id="firm" tabs={TABS} current={current} onSelect={t => setTab(t === 'overview' ? '' : t)} />
+          <TabPanel id="firm" current={current}>
+            {current === 'overview' && <BookOverview who={{ firm: id }} name={b.firm.name} newest={newest} />}
+            {current === 'timeline' && <Timeline who={{ firm: id }} name={b.firm.name} />}
+            {current === 'book' && <Book id={id} book={b} newest={newest} />}
+            {current === 'marks' && <MarksVsOthers who={{ firm: id }} name={b.firm.name} newest={newest} />}
+            {current === 'changes' && <FirmChanges id={id} name={b.firm.name} newest={newest} />}
+          </TabPanel>
         </>
       )}
     </div>

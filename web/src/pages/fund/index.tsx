@@ -3,7 +3,7 @@ import { useApi } from '../../api/client';
 import type { ChangeEvent, Envelope, Freshness, FundFilings, FundInfo } from '../../api/types';
 import { longDate, moneyC, num } from '../../lib/format';
 import { useParam } from '../../scope/scope';
-import { Badge, Card, ErrorBox, FilingRef, isNotFound, Kpi, Loading, Tabs, WatchButton } from '../../ui/bits';
+import { Badge, Card, ErrorBox, FilingRef, isNotFound, Kpi, Loading, TabPanel, Tabs, WatchButton } from '../../ui/bits';
 import NotFound from '../NotFound';
 import { ChangesTable } from '../../ui/ChangesTable';
 import { DataTable } from '../../ui/DataTable';
@@ -80,67 +80,69 @@ export default function Fund() {
               value={<FilingRef cik={d.fund.cik} accession={d.fund.lastAccession} date={d.fund.lastReportDate} long />}
             />
           </div>
-          <Tabs tabs={TABS} current={current} onSelect={t => setTab(t === 'overview' ? '' : t)} />
-          {current === 'overview' && <BookOverview who={{ fund: d.fund.fundKey }} name={name} newest={newest} />}
-          {current === 'xray' && <XRay fund={d} name={name} />}
-          {current === 'compare' && <Compare fund={d} name={name} />}
-          {current === 'returns' && <Returns fund={d} name={name} />}
-          {current === 'timeline' && <Timeline who={{ fund: d.fund.fundKey }} name={name} />}
-          {current === 'marks' && <MarksVsOthers who={{ fund: d.fund.fundKey }} name={name} newest={newest} />}
-          {current === 'changes' && (
-            <>
-              <ErrorBox error={ch.error} />
-              {ch.loading && !ch.data && <Loading rows={6} />}
-              {ch.data && (
-                <Card flush>
-                  <ChangesTable
-                    events={ch.data.events}
-                    source={ch.data}
-                    withCompany
-                    withFund={false}
-                    exportName={`${key}-changes`}
-                  />
-                </Card>
-              )}
-            </>
-          )}
-          {current === 'filings' && (
-            <Card flush>
-              <DataTable
-                source={d}
-                columns={[
-                  {
-                    id: 'reportDate',
-                    header: 'Report (mark) date',
-                    value: r => r.reportDate,
-                    render: r => <FilingRef cik={d.fund.cik} accession={r.accession} date={r.reportDate} />,
-                    exportAs: [{ header: 'Accession', value: r => r.accession }],
-                  },
-                  { id: 'filingDate', header: 'Filed', value: r => r.filingDate },
-                  { id: 'form', header: 'Form', value: r => r.form },
-                  {
-                    id: 'versions',
-                    header: 'Versions',
-                    value: r => r.versions,
-                    num: true,
-                    title: 'Filings for this report date; the latest is used',
-                  },
-                  {
-                    id: 'netAssets',
-                    header: 'Net assets',
-                    value: r => r.netAssets,
-                    num: true,
-                    render: r => moneyC(r.netAssets),
-                  },
-                  { id: 'source', header: 'Source', value: r => r.source },
-                ]}
-                rows={d.filings}
-                rowKey={r => r.accession}
-                sort={{ id: 'reportDate', desc: true }}
-                exportName={`${key}-filings`}
-              />
-            </Card>
-          )}
+          <Tabs id="fund" tabs={TABS} current={current} onSelect={t => setTab(t === 'overview' ? '' : t)} />
+          <TabPanel id="fund" current={current}>
+            {current === 'overview' && <BookOverview who={{ fund: d.fund.fundKey }} name={name} newest={newest} />}
+            {current === 'xray' && <XRay fund={d} name={name} />}
+            {current === 'compare' && <Compare fund={d} name={name} />}
+            {current === 'returns' && <Returns fund={d} name={name} />}
+            {current === 'timeline' && <Timeline who={{ fund: d.fund.fundKey }} name={name} />}
+            {current === 'marks' && <MarksVsOthers who={{ fund: d.fund.fundKey }} name={name} newest={newest} />}
+            {current === 'changes' && (
+              <>
+                <ErrorBox error={ch.error} />
+                {ch.loading && !ch.data && <Loading rows={6} />}
+                {ch.data && (
+                  <Card flush>
+                    <ChangesTable
+                      events={ch.data.events}
+                      source={ch.data}
+                      withCompany
+                      withFund={false}
+                      exportName={`${key}-changes`}
+                    />
+                  </Card>
+                )}
+              </>
+            )}
+            {current === 'filings' && (
+              <Card flush>
+                <DataTable
+                  source={d}
+                  columns={[
+                    {
+                      id: 'reportDate',
+                      header: 'Report (mark) date',
+                      value: r => r.reportDate,
+                      render: r => <FilingRef cik={d.fund.cik} accession={r.accession} date={r.reportDate} />,
+                      exportAs: [{ header: 'Accession', value: r => r.accession }],
+                    },
+                    { id: 'filingDate', header: 'Filed', value: r => r.filingDate },
+                    { id: 'form', header: 'Form', value: r => r.form },
+                    {
+                      id: 'versions',
+                      header: 'Versions',
+                      value: r => r.versions,
+                      num: true,
+                      title: 'Filings for this report date; the latest is used',
+                    },
+                    {
+                      id: 'netAssets',
+                      header: 'Net assets',
+                      value: r => r.netAssets,
+                      num: true,
+                      render: r => moneyC(r.netAssets),
+                    },
+                    { id: 'source', header: 'Source', value: r => r.source },
+                  ]}
+                  rows={d.filings}
+                  rowKey={r => r.accession}
+                  sort={{ id: 'reportDate', desc: true }}
+                  exportName={`${key}-filings`}
+                />
+              </Card>
+            )}
+          </TabPanel>
         </>
       )}
     </div>
