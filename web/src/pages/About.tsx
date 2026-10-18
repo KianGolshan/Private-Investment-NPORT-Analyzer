@@ -2,6 +2,8 @@ import { useApi } from '../api/client';
 import type { Envelope } from '../api/types';
 import { longDate, num } from '../lib/format';
 import { PAGE_TITLES, usePageTitle } from '../lib/title';
+import { GLOSSARY, type TermId } from '../lib/glossary';
+import { AUTHOR } from '../lib/author';
 
 export interface WarehouseStats {
   filings: number;
@@ -14,12 +16,24 @@ export interface WarehouseStats {
   trackedCompanies: number;
   firms: number;
   newestReportDate: string | null;
+  /** The newest mark date of any private holding in force (W1). */
+  newestPrivateMark?: string | null;
 }
 
 const REPO = 'https://github.com/KianGolshan/Private-Investment-NPORT-Analyzer';
 const doc = (path: string) => `${REPO}/blob/main/${path}`;
 
-/** About the data: sources, rules and limits (P9). Counts come from the warehouse (/api/stats). */
+// Questions the data answers, each a live page.
+const QUESTIONS: [string, string][] = [
+  ['Who holds Anthropic, and at what mark?', '/company/1-anthropic?tab=holders'],
+  ['How do funds mark Stripe, and who filed each new mark first?', '/company/5-stripe?tab=marks'],
+  ['What moved this year: positions or marks?', '/?view=movers'],
+  ['What is in Capital Group’s private book?', '/firm/9'],
+  ['What changed in the newest filings?', '/activity'],
+  ['How do Anthropic, OpenAI and Databricks compare?', '/compare?rows=company&key=1&key=7&key=2'],
+];
+
+/** About Vantage: what it is, the questions it answers, method, words, limits and author (review 2026-10-15 W4). */
 export default function About() {
   usePageTitle(PAGE_TITLES.about);
   const s = useApi<Envelope & { stats: WarehouseStats }>('/api/stats').data?.stats;
@@ -28,17 +42,53 @@ export default function About() {
       <div class="page-head">
         <div>
           <div class="eyebrow">About</div>
-          <h1>About the data and methodology</h1>
-          <p class="muted" style={{ margin: '4px 0 0' }}>
-            Vantage shows the private companies that SEC-registered funds report holding, what each fund marks them at,
-            and how those positions change, filing by filing. Every number links to the filing it comes from.
-          </p>
+          <h1>About Vantage</h1>
+          <p class="lede">Private-company holdings and marks, straight from SEC fund filings.</p>
         </div>
       </div>
 
       <section class="card">
         <div class="card-body">
-          <h2>Sources</h2>
+          <h2>What it is</h2>
+          <p>
+            Vantage reads every N-PORT holdings report that U.S. registered funds (mutual funds, ETFs, closed-end and
+            interval funds) have filed since late 2019. It shows which funds hold private companies such as Anthropic,
+            Stripe and Databricks, what each fund says a share is worth on its own mark date, and how positions and
+            marks change from one filing to the next. View it by share class, company, fund or firm, at any date since
+            2019. Every number links to the filing it came from, and the data refreshes from EDGAR every night.
+          </p>
+          {s && (
+            <p class="muted">
+              Today: {num(s.filings)} N-PORT filings from {num(s.funds)} funds, filed {longDate(s.firstFilingDate)} to{' '}
+              {longDate(s.newestFilingDate)}; {num(s.privateCompanies)} private companies, plus{' '}
+              {num(s.privateByCategory?.fund ?? 0)} fund interests, {num(s.privateByCategory?.clo ?? 0)} CLOs and{' '}
+              {num(s.privateByCategory?.insurance ?? 0)} insurance vehicles that funds report beside them;{' '}
+              {num(s.firms)} firms.
+            </p>
+          )}
+          <p>
+            <strong>Who it is for:</strong> analysts, allocators, journalists and researchers who follow how public
+            funds value private companies.
+          </p>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-body">
+          <h2>Questions it answers</h2>
+          <ul>
+            {QUESTIONS.map(([q, href]) => (
+              <li key={href}>
+                <a href={href}>{q}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-body">
+          <h2>Sources and method</h2>
           <ul>
             <li>
               <strong>Form N-PORT</strong> (NPORT-P), the portfolio report registered funds file with the SEC. Vantage
@@ -49,23 +99,6 @@ export default function About() {
               <strong>Form N-CEN</strong>, for each fund’s investment adviser. A fund belongs to the firm that advises
               it in its latest N-CEN, and that mapping is applied to every period.
             </li>
-            {s && (
-              <li>
-                Today: {num(s.filings)} N-PORT filings from {num(s.funds)} funds, filed {longDate(s.firstFilingDate)} to{' '}
-                {longDate(s.newestFilingDate)}; {num(s.privateCompanies)} private companies, plus{' '}
-                {num(s.privateByCategory?.fund ?? 0)} fund interests, {num(s.privateByCategory?.clo ?? 0)} CLOs and{' '}
-                {num(s.privateByCategory?.insurance ?? 0)} insurance vehicles that funds report beside them;{' '}
-                {num(s.firms)} firms.
-              </li>
-            )}
-          </ul>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="card-body">
-          <h2>How the numbers are read</h2>
-          <ul>
             <li>
               <strong>Fund calendars are staggered.</strong> Each fund files one N-PORT per fiscal quarter, within 60
               days of the quarter’s end, and only the quarter’s last month is made public. Some funds’ quarters end in
@@ -96,36 +129,23 @@ export default function About() {
         </div>
       </section>
 
-      <section class="card">
+      <section class="card" id="glossary">
         <div class="card-body">
-          <h2>How it is checked</h2>
-          <ul>
-            <li>
-              <strong>Golden numbers</strong>: figures verified by hand against the raw filings on EDGAR, with their
-              accession numbers, are re-checked by the test suite and against this site after every deploy and every
-              night (<a href={doc('docs/GOLDEN-NUMBERS.md')}>GOLDEN-NUMBERS</a>).
-            </li>
-            <li>
-              <strong>Reconciliation with EDGAR</strong>, monthly: the filings stored are compared with EDGAR’s own
-              indexes, and a sample is fetched again and compared value by value. The <a href="/status">status page</a>{' '}
-              shows when it last ran and what it found.
-            </li>
-            <li>
-              <strong>Refresh</strong>: new filings load every night as a new, validated version of the data; the{' '}
-              <a href="/status">status page</a> shows how current it is.
-            </li>
-            <li>
-              Rules, data traps and decisions are documented in the open:{' '}
-              <a href={doc('docs/DATA-QUALITY.md')}>data quality</a>,{' '}
-              <a href={doc('docs/ARCHITECTURE.md')}>architecture</a> and <a href={REPO}>source code</a>.
-            </li>
-          </ul>
+          <h2>Words used on this site</h2>
+          <dl class="glossary">
+            {(Object.keys(GLOSSARY) as TermId[]).map(id => (
+              <div key={id} id={`term-${id}`}>
+                <dt>{GLOSSARY[id].term}</dt>
+                <dd>{GLOSSARY[id].text}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
 
       <section class="card">
         <div class="card-body">
-          <h2>Known limits</h2>
+          <h2>Limits, and what Vantage does not claim</h2>
           <ul>
             <li>
               Only what funds report: mutual funds, ETFs, closed-end and interval funds that file N-PORT. Hedge funds,
@@ -151,6 +171,60 @@ export default function About() {
             </li>
             <li>Private credit (loans and debt) is not covered on this site.</li>
           </ul>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-body">
+          <h2>Freshness and checks</h2>
+          {s && (
+            <p>
+              Filings loaded through {longDate(s.newestFilingDate)}; the newest mark of any private holding is{' '}
+              {longDate(s.newestPrivateMark ?? null)}. Funds file up to 60 days after their quarter ends, so the newest
+              marks always describe a date a month or two back.
+            </p>
+          )}
+          <ul>
+            <li>
+              <strong>Golden numbers</strong>: figures verified by hand against the raw filings on EDGAR, with their
+              accession numbers, are re-checked by the test suite and against this site after every deploy and every
+              night (<a href={doc('docs/GOLDEN-NUMBERS.md')}>GOLDEN-NUMBERS</a>).
+            </li>
+            <li>
+              <strong>Reconciliation with EDGAR</strong>, monthly: the filings stored are compared with EDGAR’s own
+              indexes, and a sample is fetched again and compared value by value. The <a href="/status">status page</a>{' '}
+              shows when it last ran and what it found.
+            </li>
+            <li>
+              <strong>Refresh</strong>: new filings load every night as a new, validated version of the data; the{' '}
+              <a href="/status">status page</a> shows how current it is.
+            </li>
+            <li>
+              Rules, data traps and decisions are documented in the open:{' '}
+              <a href={doc('docs/DATA-QUALITY.md')}>data quality</a>,{' '}
+              <a href={doc('docs/ARCHITECTURE.md')}>architecture</a> and <a href={REPO}>source code</a>.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="card" id="author">
+        <div class="card-body">
+          <h2>Author</h2>
+          <p>
+            Built by {AUTHOR.name}.{' '}
+            <a href={AUTHOR.site} target="_blank" rel="noopener noreferrer">
+              {AUTHOR.siteLabel}
+            </a>{' '}
+            ·{' '}
+            <a href={AUTHOR.linkedin} target="_blank" rel="noopener noreferrer">
+              {AUTHOR.name} on LinkedIn
+            </a>{' '}
+            ·{' '}
+            <a href={AUTHOR.source} target="_blank" rel="noopener noreferrer">
+              Source code on GitHub
+            </a>
+          </p>
         </div>
       </section>
 

@@ -5,6 +5,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const express = require('express');
 const request = require('supertest');
+const fs = require('fs');
+const path = require('path');
 const pages = require('../lib/api/pages');
 const { pageMetaOf, warehouseRouter } = require('../lib/api/warehouse');
 const { goldenWarehouse } = require('./helpers/warehouseApp');
@@ -180,4 +182,29 @@ test('renderIndex: filer text with $ patterns goes in as written (LESSONS 28, re
     assert.equal((out.match(/<body>/g) || []).length, 1, name);
     assert.ok(out.includes(`<title>${pages.escapeHtml(name)} · Vantage</title>`), name);
   }
+});
+
+// Review 2026-10-15 W4: the positioning line is the site's title, the description
+// fits a search result, and the share image's alt text says what the image says.
+test('the home page head carries the positioning line, a description of at most 160 characters, and matching alt text', () => {
+  assert.equal(pages.DEFAULT_TITLE, 'Vantage: private-company holdings and marks from SEC fund filings');
+  assert.ok(pages.DEFAULT_DESCRIPTION.length <= 160, String(pages.DEFAULT_DESCRIPTION.length));
+  assert.match(pages.DEFAULT_DESCRIPTION, /N-PORT filings since 2019\.$/);
+  // claims a filing allows: no valuations, no reasons, no trading words
+  assert.doesNotMatch(pages.DEFAULT_DESCRIPTION, /\b(valuation|bought|sold|buys|sells|led)\b/i);
+  const head = pages.headTags({
+    title: pages.DEFAULT_TITLE,
+    description: pages.DEFAULT_DESCRIPTION,
+    origin: 'https://x.test',
+    path: '/',
+  });
+  assert.match(
+    head,
+    /og:image:alt" content="Vantage: private-company holdings and marks reported by SEC-registered funds"/
+  );
+  assert.equal(pages.STATIC_PAGES['/about'].title, 'About');
+  // the dev index.html says the same as the server (what a crawler of the dev build would read)
+  const dev = fs.readFileSync(path.join(__dirname, '..', 'web', 'index.html'), 'utf8');
+  assert.ok(dev.includes(`<title>${pages.DEFAULT_TITLE}</title>`));
+  assert.ok(dev.includes(`content="${pages.DEFAULT_DESCRIPTION}"`));
 });

@@ -395,7 +395,8 @@ select.input {
   margin: var(--sp-2) 0 0;
   color: var(--text-2);
 }
-.page-head .try {
+.page-head .try,
+.page-head .proof {
   margin: var(--sp-2) 0 0;
 }
 .basis-note summary {
@@ -901,4 +902,45 @@ table.status-details th {
 }
 .skip-link:focus {
   top: var(--sp-2);
+}
+
+/* About: the glossary (lib/glossary.ts) as a definition list */
+.glossary {
+  display: grid;
+  gap: var(--sp-3);
+  margin: 0;
+}
+.glossary dt {
+  font-weight: 600;
+}
+.glossary dd {
+  margin: 2px 0 0;
+  color: var(--text-2);
+}
+
+/* Phones (review 2026-10-15 N9): the freshness line, no keyboard hint on touch
+   screens, and a company's tiles in one row that scrolls sideways */
+.fresh-sm {
+  display: none;
+  margin: 0 0 var(--sp-3);
+}
+@media (max-width: 860px) {
+  .fresh-sm {
+    display: block;
+  }
+  .kpis.strip-sm {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    padding-bottom: var(--sp-1);
+  }
+  .kpis.strip-sm > .kpi {
+    flex: 0 0 min(64vw, 220px);
+    scroll-snap-align: start;
+  }
+}
+@media (hover: none) {
+  .search-trigger kbd {
+    display: none;
+  }
 }

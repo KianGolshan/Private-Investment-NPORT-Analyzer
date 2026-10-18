@@ -93,7 +93,7 @@ test('freshness names the newest mark, Market ranks 1..n, and the tab title foll
   expect(top.companies).toBeGreaterThan(1);
   expect(ranks.length).toBe(Math.min(30, top.companies));
   expect(ranks).toEqual(ranks.map((_, i) => String(i + 1)));
-  await expect(page).toHaveTitle('Vantage: private holdings and marks from SEC N-PORT');
+  await expect(page).toHaveTitle('Vantage: private-company holdings and marks from SEC fund filings');
   await page.getByRole('navigation', { name: 'Main' }).first().getByRole('link', { name: 'Firms' }).click();
   await expect(page).toHaveTitle('Firms by private value · Vantage');
   await page.goto(`/firm/9`);
@@ -115,7 +115,7 @@ test('the nav starts at Market, the watchlist never opens empty, and old links s
     'Explore',
     'Compare',
     'Watchlist',
-    'About the data',
+    'About',
     'Status',
   ]);
   // a first visit (empty watchlist) opens on the tracked companies, with what "tracked" means
@@ -174,11 +174,66 @@ test('terms open their definition, the change tables use one wording, and Status
   expect(errors).toEqual([]);
 });
 
+// Copy and UX review 2026-10-15, W4: positioning, About, the author line, phones.
+test('Market says what Vantage is with live numbers, About and the footer credit the author, phones fit', async ({
+  page,
+}) => {
+  const errors = errorsOf(page);
+  await page.goto('/');
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Private-company holdings and marks, straight from SEC fund filings' })
+  ).toBeVisible();
+  // the summary line is the API's answer, never a number written into the copy
+  const top = await page.request.get('/api/market/top?limit=300&category=company').then(r => r.json());
+  const proof = page.locator('.proof');
+  await expect(proof).toContainText(
+    `${top.companies.toLocaleString('en-US')} private companies held by registered funds`
+  );
+  await expect(proof).toContainText('Refreshed every night from SEC EDGAR');
+  // the footer credit: his site and LinkedIn, opening safely in a new tab
+  const foot = page.locator('footer.site-foot');
+  for (const [name, href] of <[string, string][]>[
+    ["Kian Golshan's website", 'https://kiangolshan.com'],
+    ['Kian Golshan on LinkedIn', 'https://www.linkedin.com/in/kian-golshan-058b32144/'],
+    ['Source code on GitHub', 'https://github.com/KianGolshan/Private-Investment-NPORT-Analyzer'],
+  ]) {
+    const a = foot.getByRole('link', { name });
+    await expect(a).toHaveAttribute('href', href);
+    await expect(a).toHaveAttribute('rel', /noopener/);
+    await expect(a).toHaveAttribute('target', '_blank');
+  }
+  await page.goto('/about');
+  await expect(page.getByRole('heading', { name: 'About Vantage' })).toBeVisible();
+  for (const h of ['What it is', 'Questions it answers', 'Sources and method', 'Words used on this site', 'Author'])
+    await expect(page.getByRole('heading', { level: 2, name: h })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Kian Golshan on LinkedIn' })).toHaveAttribute('rel', /noopener/);
+  await expect(page.getByRole('link', { name: 'Who holds Anthropic, and at what mark?' })).toHaveAttribute(
+    'href',
+    '/company/1-anthropic?tab=holders'
+  );
+  await expect(page.locator('#term-fromPositions dt')).toHaveText('From positions');
+  // phones: the freshness line shows, nothing scrolls sideways
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto('/');
+  await expect(page.locator('.fresh-sm')).toBeVisible();
+  await expect(page.locator('.fresh-sm')).toContainText('newest mark');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+  await page.goto(`/company/${ANTHROPIC}`);
+  await expect(page.getByRole('tab', { name: 'Overview' })).toBeInViewport();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  expect(errors).toEqual([]);
+});
+
 test('About and Status read the warehouse; the nav links them', async ({ page }) => {
   const errors = errorsOf(page);
   await page.goto('/');
-  await page.getByRole('navigation', { name: 'Main' }).first().getByRole('link', { name: 'About the data' }).click();
-  await expect(page.getByRole('heading', { name: 'About the data and methodology' })).toBeVisible();
+  await page
+    .getByRole('navigation', { name: 'Main' })
+    .first()
+    .getByRole('link', { name: 'About', exact: true })
+    .click();
+  await expect(page.getByRole('heading', { name: 'About Vantage' })).toBeVisible();
   await expect(page.getByText(/N-PORT filings from [\d,]+ funds/)).toBeVisible();
   await expect(page.locator('main strong', { hasText: 'not investment advice' })).toBeVisible();
   await page.goto('/status');

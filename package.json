@@ -1,7 +1,13 @@
 {
   "name": "vantage",
   "version": "1.0.0",
-  "description": "Vantage - private investment exposure and valuation marks extracted from SEC filings",
+  "description": "Private-company holdings and marks, straight from SEC fund filings (N-PORT, since 2019Q4)",
+  "homepage": "https://vantage-kian.duckdns.org",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KianGolshan/Private-Investment-NPORT-Analyzer.git"
+  },
+  "author": "Kian Golshan (https://kiangolshan.com)",
   "main": "server.js",
   "engines": {
     "node": ">=22"

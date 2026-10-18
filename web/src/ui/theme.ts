@@ -40,7 +40,8 @@ export function baseOption(t: ChartTheme) {
   const axis = {
     axisLine: { lineStyle: { color: t.border } },
     axisTick: { lineStyle: { color: t.border } },
-    axisLabel: { color: t.text3, fontSize: 11 },
+    // labels that would collide are dropped, not drawn on top of each other (review 2026-10-15 N9)
+    axisLabel: { color: t.text3, fontSize: 11, hideOverlap: true },
     splitLine: { lineStyle: { color: t.border, type: 'dashed' as const } },
     nameTextStyle: { color: t.text3 },
   };

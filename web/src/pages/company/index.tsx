@@ -181,7 +181,7 @@ export default function Company() {
             </div>
           )}
           {h.stats && (
-            <div class="kpis">
+            <div class="kpis strip-sm">
               <Kpi
                 label="Funds holding now"
                 value={num(h.stats.current_funds)}

@@ -39,7 +39,7 @@ describe('page titles', () => {
       return null;
     };
     const { rerender } = render(<Page t={PAGE_TITLES.about} />);
-    expect(document.title).toBe('About the data and methodology · Vantage');
+    expect(document.title).toBe('About · Vantage');
     rerender(<Page t={itemTitle.firm('Capital Group (American Funds)')} />);
     expect(document.title).toBe('Capital Group (American Funds): private-company book · Vantage');
     rerender(<Page t={null} />);

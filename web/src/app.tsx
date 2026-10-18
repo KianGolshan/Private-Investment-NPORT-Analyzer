@@ -4,6 +4,7 @@ import { useApi } from './api/client';
 import type { Freshness } from './api/types';
 import { CommandPalette } from './ui/CommandPalette';
 import { PageBoundary } from './ui/PageBoundary';
+import { AUTHOR } from './lib/author';
 import { density, themePref, type ThemePref } from './lib/prefs';
 import { longDate } from './lib/format';
 import { reloadOnce, watchBuild, withReload } from './lib/notices';
@@ -39,7 +40,7 @@ const NAV: { href: string; label: string; match: (p: string) => boolean }[] = [
   { href: '/watchlist', label: 'Watchlist', match: p => p.startsWith('/watchlist') || p.startsWith('/tracked') },
 ];
 const MORE = [
-  { href: '/about', label: 'About the data' },
+  { href: '/about', label: 'About' },
   { href: '/status', label: 'Status' },
 ];
 
@@ -94,7 +95,7 @@ function MobileNav() {
       {/* phones have no sidebar: About and Status stay one tap away (review N1) */}
       {MORE.map(n => (
         <a key={n.href} href={n.href} aria-current={path === n.href ? 'page' : undefined}>
-          {n.href === '/about' ? 'About' : n.label}
+          {n.label}
         </a>
       ))}
     </nav>
@@ -221,6 +222,19 @@ function Notices() {
   );
 }
 
+// Phones have no room for the header's freshness chip: one line at the top of
+// the page says the same (review 2026-10-15 N9). Hidden above 860 px.
+function MobileFreshness() {
+  const f = useApi<Freshness>('/api/freshness').data;
+  if (!f?.newestFilingDate) return null;
+  return (
+    <p class="fresh-sm muted small">
+      Filings to {longDate(f.newestFilingDate)}
+      {f.newestPrivateMark ? ` · newest mark ${longDate(f.newestPrivateMark)}` : ''}
+    </p>
+  );
+}
+
 // The watchlist page was /tracked until the 2026-10-15 review: an old in-app link
 // moves to it with its query (the server redirects a fresh visit, server.js).
 function TrackedMoved() {
@@ -253,6 +267,7 @@ function Shell() {
       <Topbar onSearch={() => setOpen(true)} />
       <main class="main" id="main" tabIndex={-1}>
         <div class="page">
+          <MobileFreshness />
           <PageBoundary path={path}>
             <ErrorBoundary>
               <Router>
@@ -275,10 +290,26 @@ function Shell() {
           </PageBoundary>
         </div>
         <footer class="site-foot">
-          <a href="/about">About the data</a>
-          <a href="/status">Status</a>
-          <a href="https://github.com/KianGolshan/Private-Investment-NPORT-Analyzer" rel="noopener noreferrer">
-            Source code
+          <a href="/about">About</a>
+          <a href="/status">Data status</a>
+          {/* the author line, the same on About and in the README (review 2026-10-15 W4) */}
+          <span>
+            Built by{' '}
+            <a href={AUTHOR.site} target="_blank" rel="noopener noreferrer" aria-label={`${AUTHOR.name}'s website`}>
+              {AUTHOR.name}
+            </a>{' '}
+            ·{' '}
+            <a
+              href={AUTHOR.linkedin}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${AUTHOR.name} on LinkedIn`}
+            >
+              LinkedIn
+            </a>
+          </span>
+          <a href={AUTHOR.source} target="_blank" rel="noopener noreferrer">
+            Source code on GitHub
           </a>
           <span>From public SEC filings. Not investment advice.</span>
         </footer>
