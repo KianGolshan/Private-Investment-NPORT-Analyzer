@@ -69,7 +69,7 @@ export default function Status() {
           <h1>Data status</h1>
           <p class="muted" style={{ margin: '4px 0 0' }}>
             New SEC filings load every night as a new, validated version of the data. See{' '}
-            <a href="/about">about the data</a> for how it is checked.
+            <a href="/about">About Vantage</a> for how it is checked.
           </p>
         </div>
         <span class="spacer" />

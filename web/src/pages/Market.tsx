@@ -32,8 +32,14 @@ function Top() {
       return {
         ...b,
         tooltip: { ...b.tooltip, trigger: 'item', valueFormatter: (v: number) => moneyC(v) },
-        grid: { ...b.grid, left: 8, right: 24, top: 8 },
-        xAxis: { type: 'value', ...b.xAxisDefaults, axisLabel: { ...b.xAxisDefaults.axisLabel, formatter: moneyC } },
+        // room under the axis for the legend, which sat on the axis labels at phone width
+        grid: { ...b.grid, left: 8, right: 24, top: 8, bottom: 36 },
+        xAxis: {
+          type: 'value',
+          ...b.xAxisDefaults,
+          splitNumber: window.innerWidth < 600 ? 3 : 5,
+          axisLabel: { ...b.xAxisDefaults.axisLabel, formatter: moneyC },
+        },
         yAxis: { type: 'category', data: rows.map(r => r.name), ...b.yAxisDefaults, axisLabel: { color: t.text2 } },
         series: [
           {
@@ -176,11 +182,13 @@ export default function Market() {
       <div class="page-head">
         <div>
           <div class="eyebrow">Market</div>
-          <h1>Private companies held by registered funds</h1>
+          <h1>Private-company holdings and marks, straight from SEC fund filings</h1>
           <p class="lede">
-            Which mutual funds and ETFs hold stakes in private companies, what each fund says a share is worth (its{' '}
-            <Term id="mark">mark</Term>), and how that changed, from the holdings reports funds file with the SEC.
+            Which mutual funds, ETFs, closed-end and interval funds hold private companies such as Anthropic, Stripe and
+            Databricks, what each fund says a share is worth (its <Term id="mark">mark</Term>), and how positions and
+            marks change from one filing to the next. Every number links to the filing it came from.
           </p>
+          <ProofLine />
           <p class="small muted try">
             Try: <a href="/company/1-anthropic?tab=holders">who holds Anthropic</a> ·{' '}
             <a href="/company/5-stripe?tab=marks">how funds mark Stripe</a> ·{' '}
@@ -202,5 +210,20 @@ export default function Market() {
       {current === 'movers' && <Movers />}
       {current === 'new' && <New />}
     </div>
+  );
+}
+
+// What the data holds today, from the same answer the Top companies tab reads
+// (the same URL, so one request): never a number written into the copy
+// (review 2026-10-15 W4).
+function ProofLine() {
+  const d = useApi<TopCompanies>(`/api/market/top${qs({ limit: 300, category: 'company' })}`).data;
+  if (!d) return null;
+  return (
+    <p class="small muted proof">
+      As of {longDate(d.date)}: {num(d.companies)} private companies held by registered funds, {moneyC(d.totalValue)} at
+      each fund’s latest mark
+      {d.newestMark ? ` (newest mark ${longDate(d.newestMark)})` : ''}. Refreshed every night from SEC EDGAR.
+    </p>
   );
 }

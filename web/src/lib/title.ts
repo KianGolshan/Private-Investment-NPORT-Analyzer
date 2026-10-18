@@ -5,7 +5,7 @@
 import { useEffect } from 'preact/hooks';
 
 export const SITE = 'Vantage';
-export const DEFAULT_TITLE = 'Vantage: private holdings and marks from SEC N-PORT';
+export const DEFAULT_TITLE = 'Vantage: private-company holdings and marks from SEC fund filings';
 
 /** The fixed pages' titles, the same as lib/api/pages.js STATIC_PAGES. */
 export const PAGE_TITLES = {
@@ -14,7 +14,7 @@ export const PAGE_TITLES = {
   firms: 'Firms by private value',
   watchlist: 'Watchlist and tracked companies',
   compare: 'Compare private companies, firms and funds',
-  about: 'About the data and methodology',
+  about: 'About',
   status: 'Data status',
   notFound: 'Not found',
 } as const;
