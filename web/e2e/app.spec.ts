@@ -206,7 +206,11 @@ test('Market says what Vantage is with live numbers, About and the footer credit
   await expect(page.getByRole('heading', { name: 'About Vantage' })).toBeVisible();
   for (const h of ['What it is', 'Questions it answers', 'Sources and method', 'Words used on this site', 'Author'])
     await expect(page.getByRole('heading', { level: 2, name: h })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Kian Golshan on LinkedIn' })).toHaveAttribute('rel', /noopener/);
+  // the Author section's own link (the footer carries one too)
+  await expect(page.locator('#author').getByRole('link', { name: 'Kian Golshan on LinkedIn' })).toHaveAttribute(
+    'rel',
+    /noopener/
+  );
   await expect(page.getByRole('link', { name: 'Who holds Anthropic, and at what mark?' })).toHaveAttribute(
     'href',
     '/company/1-anthropic?tab=holders'
