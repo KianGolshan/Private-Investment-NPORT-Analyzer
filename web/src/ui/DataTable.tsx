@@ -7,7 +7,7 @@ import {
   observeElementRect,
   type VirtualizerOptions,
 } from '@tanstack/virtual-core';
-import { exportCsv, exportXlsx, type ExportColumn } from '../lib/export';
+import { aboutRows, exportCsv, exportXlsx, type ExportColumn } from '../lib/export';
 import type { Envelope } from '../api/types';
 
 // The one table: sortable, groupable, filterable, virtualized when long, and
@@ -126,13 +126,10 @@ export function DataTable<T>(p: Props<T>) {
               ...(c.exportAs ?? []),
             ]
       ),
-      ...(p.basis
-        ? [
-            { header: 'Basis', value: () => p.basis } as ExportColumn<T>,
-            // the generation and the exact reviewed files behind the rows (review R18)
-            ...(source ? [{ header: 'Source', value: () => source } as ExportColumn<T>] : []),
-          ]
-        : []),
+      ...(p.basis ? [{ header: 'Basis', value: () => p.basis } as ExportColumn<T>] : []),
+      // the generation and the exact reviewed files behind the rows (review R18), on every
+      // export whose answer names them, not only the cross-company ones (review 2026-10-15 N8)
+      ...(source ? [{ header: 'Source', value: () => source } as ExportColumn<T>] : []),
     ],
     [p.columns, p.basis, source]
   );
@@ -252,10 +249,28 @@ export function DataTable<T>(p: Props<T>) {
           </span>
           {p.exportName && (
             <>
-              <button class="btn sm" type="button" onClick={() => exportCsv(p.exportName!, exportCols, rows)}>
+              {/* several tables on a page: each button names its table (review 2026-10-15 accessibility) */}
+              <button
+                class="btn sm"
+                type="button"
+                aria-label={`Download ${p.exportName.replace(/-/g, ' ')} as CSV`}
+                onClick={() => exportCsv(p.exportName!, exportCols, rows)}
+              >
                 CSV
               </button>
-              <button class="btn sm" type="button" onClick={() => void exportXlsx(p.exportName!, exportCols, rows)}>
+              <button
+                class="btn sm"
+                type="button"
+                aria-label={`Download ${p.exportName.replace(/-/g, ' ')} as XLSX`}
+                onClick={() =>
+                  void exportXlsx(
+                    p.exportName!,
+                    exportCols,
+                    rows,
+                    aboutRows({ title: p.exportName!, page: window.location.href, source, basis: p.basis })
+                  )
+                }
+              >
                 XLSX
               </button>
             </>

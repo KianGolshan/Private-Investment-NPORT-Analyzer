@@ -9,7 +9,7 @@ export default function NotFound() {
       <p>
         There is no page at this address, or the company, fund or firm it named is no longer in the data. Search with{' '}
         <kbd>⌘K</kbd>, or start from the <a href="/">market overview</a>, <a href="/firms">firms</a> or{' '}
-        <a href="/about">about the data</a>.
+        <a href="/about">About Vantage</a>.
       </p>
     </div>
   );

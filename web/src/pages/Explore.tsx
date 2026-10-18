@@ -1,5 +1,5 @@
 import { BASIS, BasisNote } from '../ui/Basis';
-import { useCallback, useMemo } from 'preact/hooks';
+import { useCallback, useMemo, useState } from 'preact/hooks';
 import { qs, useApi } from '../api/client';
 import type { Drill, DrillEvent, Freshness, Pivot, PivotMetric } from '../api/types';
 import {
@@ -23,6 +23,7 @@ import { Chart } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
 import type { ChartTheme } from '../ui/theme';
 import { PAGE_TITLES, usePageTitle } from '../lib/title';
+import { Term } from '../ui/Term';
 
 // Explore (P6b W4): one pivot across the warehouse. Rows are firms, funds,
 // companies or share classes; columns are months, quarters or years. Levels
@@ -46,8 +47,8 @@ export const METRIC_LABEL: Record<PivotMetric, string> = {
   valueOnly: 'Value only (no share count)',
   started: 'Started filing',
   stopped: 'Stopped filing',
-  positionEffect: 'Position effect (net)',
-  markEffect: 'Mark effect',
+  positionEffect: 'From positions (net)',
+  markEffect: 'From marks',
 };
 const METRICS = Object.keys(METRIC_LABEL) as PivotMetric[];
 const isLevel = (m: PivotMetric) => m === 'value' || m === 'holders';
@@ -69,6 +70,7 @@ function rowHref(rows: Rows, r: { key: string | number; label: string | null }):
 }
 
 export default function Explore() {
+  const [copied, setCopied] = useState<'' | 'ok' | 'failed'>('');
   usePageTitle(PAGE_TITLES.explore);
   const [scope] = useScope();
   const fresh = useApi<Freshness>('/api/freshness');
@@ -262,11 +264,12 @@ export default function Explore() {
       <div class="page-head">
         <div>
           <div class="eyebrow">Explore</div>
-          <h1>Pivot across firms, funds, companies and classes</h1>
+          <h1>Explore holdings over time by firm, fund, company or class</h1>
           <p class="muted" style={{ margin: '4px 0 0' }}>
-            Levels are as of each period end (each fund's latest filing within 123 days). Changes are summed over the
-            filings whose mark dates fall in the period; a mark date is never moved to a quarter end. Click any cell for
-            the filings behind it.
+            Levels are <Term id="asOf">as of</Term> each period end (each fund's latest filing within 123 days). Changes
+            are summed over the filings whose mark dates fall in the period; a mark date is never moved to a quarter
+            end. Click any cell for the filings behind it. Counts cover everything active in the range, so they can be
+            higher than a page that reads one date.
           </p>
           <BasisNote />
         </div>
@@ -321,11 +324,25 @@ export default function Explore() {
           ))}
         </select>
         <span class="spacer" />
+        {/* the click says whether it worked (review 2026-10-15 N6) */}
+        <span class="muted small" role="status">
+          {copied === 'ok' ? 'Link copied' : copied === 'failed' ? 'Copy failed: use the address bar' : ''}
+        </span>
         <button
           class="btn sm"
           type="button"
           title="This view is its URL: copy it to save or share"
-          onClick={() => void navigator.clipboard?.writeText(link)}
+          onClick={() => {
+            const done = (r: 'ok' | 'failed') => {
+              setCopied(r);
+              setTimeout(() => setCopied(''), 2500);
+            };
+            if (!navigator.clipboard) return done('failed');
+            navigator.clipboard.writeText(link).then(
+              () => done('ok'),
+              () => done('failed')
+            );
+          }}
         >
           Copy link to this view
         </button>
@@ -346,22 +363,22 @@ export default function Explore() {
               sub={`as of ${longDate(p.to)}`}
             />
             <Kpi
-              label="Position effect"
+              label="From positions"
               value={
                 <span class={tone(p.total.positionEffect.reduce((t, v) => t + v, 0))}>
                   {moneyDelta(p.total.positionEffect.reduce((t, v) => t + v, 0))}
                 </span>
               }
-              sub="first reported + added − reduced − no longer reported"
+              sub="shares first reported, added, reduced, no longer reported, at the prior mark"
             />
             <Kpi
-              label="Mark effect"
+              label="From marks"
               value={
                 <span class={tone(p.total.markEffect.reduce((t, v) => t + v, 0))}>
                   {moneyDelta(p.total.markEffect.reduce((t, v) => t + v, 0))}
                 </span>
               }
-              sub={`${longDate(p.from)} → ${longDate(p.to)}`}
+              sub={`new marks on the shares held, ${longDate(p.from)} → ${longDate(p.to)}`}
             />
           </div>
           <Card

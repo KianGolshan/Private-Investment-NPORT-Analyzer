@@ -134,7 +134,9 @@ export function BookOverview({ who, name, newest }: { who: Who; name: string; ne
 
   const sum = (xs: number[]) => xs.slice(i0, i1 + 1).reduce((s, v) => s + v, 0);
   const startOf = (r: { startValue: number; value: number[] }) => (i0 > 0 ? (r.value[i0 - 1] ?? 0) : r.startValue);
-  const posOf = (r: Row | Pivot['total']) => sum(r.positionEffect) + sum(r.started) + sum(r.stopped) + sum(r.valueOnly);
+  // one definition across views, and the columns add up: start + the three = end (review 2026-10-15 T4)
+  const posOf = (r: Row | Pivot['total']) => sum(r.positionEffect);
+  const otherOf = (r: Row | Pivot['total']) => sum(r.started) + sum(r.stopped) + sum(r.valueOnly);
   const firmQ = 'firm' in who ? `?firm=${who.firm}` : `?fund=${encodeURIComponent(who.fund)}`;
   const columns: Column<Row>[] = [
     {
@@ -149,22 +151,31 @@ export function BookOverview({ who, name, newest }: { who: Who; name: string; ne
     { id: 'holders', header: 'Funds at end', value: r => r.holders[i1], num: true },
     {
       id: 'pos',
-      header: 'Position Δ',
+      header: 'From positions',
       value: posOf,
       num: true,
       render: r => <span class={tone(posOf(r))}>{moneyDelta(posOf(r))}</span>,
-      title: 'First reported, added, reduced, no longer reported, funds starting or stopping filing',
+      title: 'Shares first reported, added, reduced or no longer reported, at the prior mark',
     },
     {
       id: 'mark',
-      header: 'Mark Δ',
+      header: 'From marks',
       value: r => sum(r.markEffect),
       num: true,
       render: r => <span class={tone(sum(r.markEffect))}>{moneyDelta(sum(r.markEffect))}</span>,
+      title: 'New marks on the shares held',
+    },
+    {
+      id: 'other',
+      header: 'Other changes',
+      value: otherOf,
+      num: true,
+      render: r => <span class={tone(otherOf(r))}>{moneyDelta(otherOf(r))}</span>,
+      title: 'Funds that started or stopped filing, and rows with no share count',
     },
   ];
   const rows = useMemo(
-    () => (p?.results ?? []).filter(r => startOf(r) || r.value[i1] || posOf(r) || sum(r.markEffect)),
+    () => (p?.results ?? []).filter(r => startOf(r) || r.value[i1] || posOf(r) || sum(r.markEffect) || otherOf(r)),
     [p, i0, i1]
   );
 
@@ -226,6 +237,7 @@ export function BookOverview({ who, name, newest }: { who: Who; name: string; ne
               holders: num(p.total.holders[i1]),
               pos: moneyDelta(posOf(p.total)),
               mark: moneyDelta(sum(p.total.markEffect)),
+              other: moneyDelta(otherOf(p.total)),
             })}
           />
         </Card>

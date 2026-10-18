@@ -13,6 +13,7 @@ import type { ChartTheme } from '../../ui/theme';
 import { PositionDrawer } from './PositionDrawer';
 import type { ViewProps } from './shared';
 import { PAGE_TITLES, itemTitle, usePageTitle } from '../../lib/title';
+import { Term } from '../../ui/Term';
 
 // The company workbench (P6b W2): one private company across every fund that
 // reports it. Overview (value by firm, fund or class over time), Holders (as of
@@ -180,7 +181,7 @@ export default function Company() {
             </div>
           )}
           {h.stats && (
-            <div class="kpis">
+            <div class="kpis strip-sm">
               <Kpi
                 label="Funds holding now"
                 value={num(h.stats.current_funds)}
@@ -191,7 +192,15 @@ export default function Company() {
                 value={moneyC(h.stats.current_value_usd)}
                 sub={trend.data?.points.length ? <Sparkline points={trend.data.points} /> : undefined}
               />
-              <Kpi label="Firms holding" value={firmCount ? num(firmCount) : '—'} sub="advisers on the latest N-CEN" />
+              <Kpi
+                label="Firms holding"
+                value={firmCount ? num(firmCount) : '—'}
+                sub={
+                  <>
+                    by each fund’s adviser (<Term id="ncen" />)
+                  </>
+                }
+              />
               <Kpi
                 label="Funds ever"
                 value={num(h.stats.funds_ever)}

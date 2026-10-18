@@ -5,9 +5,10 @@ W2 `090cbd1` plus the server's setup re-run, W3 `2ae79ee`, all 2026-10-15; ROADM
 **https://vantage-kian.duckdns.org** (Oracle Cloud Always Free VM on Pay As You Go, DuckDNS, HTTPS from Caddy, nightly
 SEC refresh, auto-deploy of every green commit on `main`; [DEPLOY.md](DEPLOY.md)). **`main` is protected:** changes go
 through a pull request with the CI checks green (`archive/v1` keeps v1). Waiting on the user: the Oracle security-list
-rule for SSH (DEPLOY.md 1A.6). **Now: the copy and UX review (2026-10-15)**, four waves; W1 (truth and trust) is
-PR #23 (signed off 2026-10-15, merging); W2 (navigation and names) is built on `v2-w2-navigation-and-names`, stacked on
-W1. Next: the user's sign-off of W2, then W3 (words, definitions and exports).
+rule for SSH (DEPLOY.md 1A.6). **Now: the copy and UX review (2026-10-15)**, four waves: W1 #23, W2 #24 and W3 #25
+merged and live (W3 `bbbdc8d`, 2026-10-18); the CI fix #26 (one run per PR commit) merged. W4 (positioning, About,
+author line, mobile polish) is built on `v2-w4-positioning-about`, in review as a pull request. Next: the user's
+sign-off of W4; then the review is closed.
 
 ## Phase tracker
 
@@ -95,6 +96,49 @@ has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB 
   - Gates: backend 455 (451 pass, 4 skipped); web 15 files, 56 tests; lint, lint:web, format clean; browser:
     Market (as-of picked and cleared), Watchlist, `/tracked` redirect, Activity, Fund tabs in light and dark at 1280
     and 375 px, no overflow. A new W2 e2e test runs in CI.
+- **W3 (branch `v2-w3-words-and-exports`):**
+  - one definition of "from positions" (shares first reported, added, reduced, no longer reported, at the prior mark;
+    `POSITION_KEYS`); funds that start or stop filing and rows with no share count are "other changes"
+    (`OTHER_KEYS`, new `otherEffect` on the bridge). Overview tables, the bridge tiles and the period chart show the
+    three parts, so start + parts = end (Anthropic's latest year: $505.4M + $8.40B + $9.31B − $48.8M = $18.16B).
+    Every table says "From positions" / "From marks" (was eight names: Position Δ, flow, net flow, effect …);
+  - glossary (`web/src/lib/glossary.ts`, for W4's About too) and `ui/Term.tsx` popovers on Market (mark, as of,
+    N-PORT, mark dates), Company and Firms (Form N-CEN), Explore (as of), the bridge;
+  - copy: Fair-value level (with its meaning), Held indirectly, Fund mark dates, value "at each fund's latest mark",
+    SEC series ID, the firm lede, Explore's heading, Activity's pager, MOIC/IRR spelled out, Filings-tab code
+    meanings; no Tracked badge in Market's table;
+  - exports: the Source column on every export whose answer names a data version (was only with a Basis); XLSX adds
+    an "About this export" sheet (title, page, time, data version, method, disclaimer). CSV stays one plain table so
+    it opens in any tool (a call made: no preamble rows);
+  - Status: a plain badge ("Data is older than expected: last refresh …"), job, digest and build under "Technical
+    details";
+  - accessibility and small surprises: skip link, filing links say where they go, named export buttons, pressed
+    1Y/3Y/All, `role="status"` loading, "Copy link" says whether it worked, Compare offers back picks it cleared,
+    Previous/Next paging on Firm. Deferred: tab panels with `aria-controls` (needs each page's tab content wrapped).
+  - Gates: backend 456 (452 pass, 4 skipped; new: the bridge's parts add up at three windows and equal the pivot);
+    web 16 files, 61 tests; lint, lint:web, format clean; browser in light and dark at 1280 and 375 px (the term
+    card fixed to the screen after it first widened the page at 375 px). A new W3 e2e test runs in CI.
+- **W4 (branch `v2-w4-positioning-about`):**
+  - positioning: "Private-company holdings and marks, straight from SEC fund filings" as Market's heading, the site
+    title (`lib/api/pages.js`, `web/src/lib/title.ts`, `web/index.html`) and the README opening; a description of
+    158 characters; `og:image:alt` matches the share image (kept: its text already says the same);
+  - Market's intro names the fund types and three companies, and a live line from the same `/api/market/top` answer
+    as the Top tab: "As of …: N private companies held by registered funds, $X at each fund's latest mark (newest mark
+    …)";
+  - About ("About Vantage", tab "About"): what it is, who it is for, six questions with live links, sources and
+    method, the glossary (`lib/glossary.ts`, anchors `#term-…`), limits, freshness and checks (live dates), the
+    author, disclaimer; nav "About";
+  - the author line (`web/src/lib/author.ts`: kiangolshan.com, LinkedIn `kian-golshan-058b32144`, GitHub) in the
+    footer, About and the README, links `target="_blank" rel="noopener noreferrer"` with names that read alone;
+  - README: positioning, a dated live line (2026-10-18: 355,177 filings, 18,959 funds, 192 companies held as of
+    2026-09-30, $63.24B, newest mark 2026-08-31), the six questions, `/watchlist`, an Author section;
+    `package.json` description, homepage, repository, author; ARCHITECTURE lists `/api/stats`, `/api/config`,
+    `/readyz?report=1`;
+  - phones: chart axis labels never overlap (`hideOverlap`, fewer ticks, room for the legend), a freshness line at
+    the top, no ⌘K hint on touch screens, a company's tiles in one sideways row (tabs at 348 px, were below the fold).
+  - Gates: backend 457 (453 pass, 4 skipped; new: the home page head); web 16 files, 62 tests; lint, lint:web,
+    format clean; browser: Market, About, footer, Company in light and dark at 1280 and 375 px, no overflow, no
+    console errors. A new W4 e2e test runs in CI.
   - Note for local previews: `vantage-public` pins `APP_BUILD=local-p9`, so after a code change the browser can
     revalidate an API answer to the old body (same ETag) until the data version changes; live deploys set
     `APP_BUILD` to the commit, so visitors are not affected.

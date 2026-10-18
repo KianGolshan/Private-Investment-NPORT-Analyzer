@@ -51,6 +51,7 @@ function hrefOf(rows: Rows, r: Row): string {
 }
 
 export default function Compare() {
+  const [cleared, setCleared] = useState<{ keys: string[]; rows: Rows } | null>(null);
   usePageTitle(PAGE_TITLES.compare);
   const [scope] = useScope();
   const loc = useLocation();
@@ -164,14 +165,14 @@ export default function Compare() {
       },
       {
         id: 'pos',
-        header: 'Position effect',
+        header: 'From positions',
         value: r => sum(r.positionEffect),
         num: true,
         render: r => <span class={tone(sum(r.positionEffect))}>{moneyDelta(sum(r.positionEffect))}</span>,
       },
       {
         id: 'mark',
-        header: 'Mark effect',
+        header: 'From marks',
         value: r => sum(r.markEffect),
         num: true,
         render: r => <span class={tone(sum(r.markEffect))}>{moneyDelta(sum(r.markEffect))}</span>,
@@ -239,9 +240,9 @@ export default function Compare() {
           <div class="eyebrow">Compare</div>
           <h1>Two to five side by side</h1>
           <p class="muted" style={{ margin: '4px 0 0' }}>
-            Value at each period end (each fund's latest filing within 123 days), position and mark effects over the
-            range, and per-share marks as filed: at each mark date, the median of the funds that filed the class that
-            day. Marks are not split-adjusted across funds.
+            Value at each period end (each fund's latest filing within 123 days), the change from positions and from
+            marks over the range, and per-share marks as filed: at each mark date, the median of the funds that filed
+            the class that day. Marks are not split-adjusted across funds.
           </p>
           <BasisNote />
         </div>
@@ -250,7 +251,11 @@ export default function Compare() {
         <Segmented
           label="Compare"
           value={rows}
-          onChange={v => setKeys([], v)}
+          onChange={v => {
+            // one kind at a time: switching clears the picks, so say so and offer them back (review N6)
+            if (v !== rows && keys.length) setCleared({ keys, rows });
+            setKeys([], v);
+          }}
           options={KINDS.map(k => ({ id: k.id, label: k.label }))}
         />
         <Segmented
@@ -266,6 +271,22 @@ export default function Compare() {
         <span class="spacer" />
         <ScopeBar supports={{ range: true }} newest={newest} />
       </div>
+      {cleared && !keys.length && cleared.rows !== rows && (
+        <p class="muted small" role="status" style={{ margin: 0 }}>
+          Compare holds one kind at a time: the {cleared.keys.length}{' '}
+          {KINDS.find(k => k.id === cleared.rows)!.label.toLowerCase()} you picked were cleared.{' '}
+          <button
+            class="btn sm ghost"
+            type="button"
+            onClick={() => {
+              setKeys(cleared.keys, cleared.rows);
+              setCleared(null);
+            }}
+          >
+            Bring them back
+          </button>
+        </p>
+      )}
       <Card title={`Items (${keys.length} of 5)`}>
         <Picker
           kind={rows}

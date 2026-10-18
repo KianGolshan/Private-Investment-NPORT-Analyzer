@@ -6,13 +6,14 @@ import type { Freshness, TopCompanies } from '../api/types';
 import { companyPath, longDate, moneyC, num } from '../lib/format';
 import { ScopeBar } from '../scope/ScopeBar';
 import { useParam, useScope } from '../scope/scope';
-import { Badge, Card, Empty, ErrorBox, Kpi, Loading, Tabs } from '../ui/bits';
+import { Card, Empty, ErrorBox, Kpi, Loading, Tabs } from '../ui/bits';
 import { CategoryBadge, CategorySwitch, useCategoryFilter } from '../ui/Category';
 import { Chart } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
 import type { ChartTheme } from '../ui/theme';
 import { baseOption } from '../ui/theme';
 import { usePageTitle } from '../lib/title';
+import { Term } from '../ui/Term';
 
 type Row = TopCompanies['results'][number];
 
@@ -31,8 +32,14 @@ function Top() {
       return {
         ...b,
         tooltip: { ...b.tooltip, trigger: 'item', valueFormatter: (v: number) => moneyC(v) },
-        grid: { ...b.grid, left: 8, right: 24, top: 8 },
-        xAxis: { type: 'value', ...b.xAxisDefaults, axisLabel: { ...b.xAxisDefaults.axisLabel, formatter: moneyC } },
+        // room under the axis for the legend, which sat on the axis labels at phone width
+        grid: { ...b.grid, left: 8, right: 24, top: 8, bottom: 36 },
+        xAxis: {
+          type: 'value',
+          ...b.xAxisDefaults,
+          splitNumber: window.innerWidth < 600 ? 3 : 5,
+          axisLabel: { ...b.xAxisDefaults.axisLabel, formatter: moneyC },
+        },
         yAxis: { type: 'category', data: rows.map(r => r.name), ...b.yAxisDefaults, axisLabel: { color: t.text2 } },
         series: [
           {
@@ -65,7 +72,7 @@ function Top() {
       render: r => (
         <span>
           <a href={companyPath(r.companyId, r.name) + (scope.asof ? `?asof=${scope.asof}` : '')}>{r.name}</a>{' '}
-          {r.tracked && <Badge tone="accent">Tracked</Badge>} <CategoryBadge category={r.category} />
+          <CategoryBadge category={r.category} />
         </span>
       ),
       exportAs: [
@@ -77,15 +84,16 @@ function Top() {
     { id: 'value', header: 'Value', value: r => r.value, num: true, render: r => moneyC(r.value) },
     {
       id: 'indirect',
-      header: 'Of which indirect',
-      title: 'Held through a named SPV or as a fund interest',
+      header: 'Held indirectly',
+      title: 'The part held through a named SPV (special purpose vehicle) or as an interest in another fund',
       value: r => r.indirectValue,
       num: true,
       render: r => (r.indirectValue ? moneyC(r.indirectValue) : <span class="muted">—</span>),
     },
     {
       id: 'marks',
-      header: 'Mark dates',
+      header: 'Fund mark dates',
+      title: 'The oldest and newest mark dates among the funds counted: each fund reports on its own calendar',
       value: r => r.newestMark,
       render: r => (
         <span class="small">{r.oldestMark === r.newestMark ? r.newestMark : `${r.oldestMark} … ${r.newestMark}`}</span>
@@ -98,8 +106,9 @@ function Top() {
     <div class="stack">
       <div class="row wrap">
         <p class="muted" style={{ margin: 0 }}>
-          As of {scope.asof ? longDate(scope.asof) : 'the newest filings'}: each fund's latest N-PORT on or before that
-          date. Funds report on staggered fiscal quarters, so mark dates differ by fund.
+          <Term id="asOf">As of</Term> {scope.asof ? longDate(scope.asof) : 'the newest filings'}: each fund's latest{' '}
+          <Term id="nport">N-PORT</Term> report on or before that date. Funds report on staggered fiscal quarters, so{' '}
+          <Term id="markDate">mark dates</Term> differ by fund.
         </p>
         <span class="spacer" />
         <CategorySwitch />
@@ -116,7 +125,7 @@ function Top() {
               value={num(d.companies)}
               sub={cat.all ? 'companies, fund interests, CLOs, insurance vehicles' : 'operating companies'}
             />
-            <Kpi label="Value held" value={moneyC(d.totalValue)} sub="direct and through SPVs" />
+            <Kpi label="Value held" value={moneyC(d.totalValue)} sub="at each fund’s latest mark, incl. through SPVs" />
             <Kpi label="Largest" value={d.results[0]?.name ?? '—'} sub={moneyC(d.results[0]?.value)} />
             <Kpi
               label="Data as of"
@@ -173,11 +182,13 @@ export default function Market() {
       <div class="page-head">
         <div>
           <div class="eyebrow">Market</div>
-          <h1>Private companies held by registered funds</h1>
+          <h1>Private-company holdings and marks, straight from SEC fund filings</h1>
           <p class="lede">
-            Which mutual funds and ETFs hold stakes in private companies, what each fund says a share is worth, and how
-            that changed, from the holdings reports funds file with the SEC.
+            Which mutual funds, ETFs, closed-end and interval funds hold private companies such as Anthropic, Stripe and
+            Databricks, what each fund says a share is worth (its <Term id="mark">mark</Term>), and how positions and
+            marks change from one filing to the next. Every number links to the filing it came from.
           </p>
+          <ProofLine />
           <p class="small muted try">
             Try: <a href="/company/1-anthropic?tab=holders">who holds Anthropic</a> ·{' '}
             <a href="/company/5-stripe?tab=marks">how funds mark Stripe</a> ·{' '}
@@ -199,5 +210,20 @@ export default function Market() {
       {current === 'movers' && <Movers />}
       {current === 'new' && <New />}
     </div>
+  );
+}
+
+// What the data holds today, from the same answer the Top companies tab reads
+// (the same URL, so one request): never a number written into the copy
+// (review 2026-10-15 W4).
+function ProofLine() {
+  const d = useApi<TopCompanies>(`/api/market/top${qs({ limit: 300, category: 'company' })}`).data;
+  if (!d) return null;
+  return (
+    <p class="small muted proof">
+      As of {longDate(d.date)}: {num(d.companies)} private companies held by registered funds, {moneyC(d.totalValue)} at
+      each fund’s latest mark
+      {d.newestMark ? ` (newest mark ${longDate(d.newestMark)})` : ''}. Refreshed every night from SEC EDGAR.
+    </p>
   );
 }

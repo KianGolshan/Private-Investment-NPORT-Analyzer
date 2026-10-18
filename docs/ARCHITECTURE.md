@@ -514,7 +514,11 @@ curation and code revisions) and `job` (the last job's state). A retired firm id
 (`manager_ids.csv`). A listed company answers its views only with `?stored=1`, labeled (trap 49).
 
 ```
-/api/freshness                                   bulk quarter, newest filing and report dates, refresh time
+/api/freshness                                   bulk quarter, newest filing and report dates, newestPrivateMark, refresh time
+/api/stats                                       counts for About and Status: filings, funds, companies by category,
+                                                 tracked, firms, newestReportDate, newestPrivateMark
+/api/config                                      build, public mode, status-page link (server.js)
+/readyz?report=1                                 readiness with refresh age and the last nightly/monthly checks
 /api/search?q=[&kinds=company,entity,firm,fund,class]   ranked matches with match reason; `strong` on the one that
                                                  may open; with kinds, one list over all of them (P6b W1)
 /api/companies/:id[/exposure|/history|/activity|/trend|/classes|/marks|/stale|/feed.xml]

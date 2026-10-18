@@ -69,14 +69,12 @@ export default function Status() {
           <h1>Data status</h1>
           <p class="muted" style={{ margin: '4px 0 0' }}>
             New SEC filings load every night as a new, validated version of the data. See{' '}
-            <a href="/about">about the data</a> for how it is checked.
+            <a href="/about">About Vantage</a> for how it is checked.
           </p>
         </div>
         <span class="spacer" />
         {ready && (
-          <Badge tone={ready.fresh ? 'pos' : 'warn'} title={ready.reason ?? undefined}>
-            {ready.fresh ? 'Up to date' : `Attention: ${ready.reason ?? 'not current'}`}
-          </Badge>
+          <Badge tone={ready.fresh ? 'pos' : 'warn'}>{ready.fresh ? 'Up to date' : attentionText(ready, f)}</Badge>
         )}
       </div>
       <ErrorBox error={fresh.error} />
@@ -107,7 +105,7 @@ export default function Status() {
             <tbody>
               <tr>
                 <th scope="row">Bulk data sets</th>
-                <td>2019Q4 through {f.latestBulkQuarter ?? '—'}, then daily EDGAR catch-up</td>
+                <td>2019Q4 through {f.latestBulkQuarter ?? '—'}, then a nightly EDGAR catch-up</td>
               </tr>
               {stats && (
                 <>
@@ -136,7 +134,14 @@ export default function Status() {
                 <>
                   <tr>
                     <th scope="row">Nightly run</th>
-                    <td>{runText(ready.checks.nightly, 'smoke', 'golden numbers on this site', 'not run yet')}</td>
+                    <td>
+                      {runText(
+                        ready.checks.nightly,
+                        'smoke',
+                        'hand-verified numbers checked on this site',
+                        'not run yet'
+                      )}
+                    </td>
                   </tr>
                   <tr>
                     <th scope="row">Monthly EDGAR check</th>
@@ -151,33 +156,47 @@ export default function Status() {
                   </tr>
                 </>
               )}
-              <tr>
-                <th scope="row">Last job</th>
-                <td>
-                  {f.job
-                    ? `${f.job.kind}: ${f.job.status}${f.job.finishedAt ? `, ${new Date(f.job.finishedAt).toUTCString()}` : ''}`
-                    : '—'}
-                </td>
-              </tr>
-              {f.generation?.curationDigest && (
-                <tr>
-                  <th scope="row">Reviewed lists</th>
-                  <td>
-                    <code>{f.generation.curationDigest.slice(0, 12)}</code> (sha256 of the reviewed company and firm
-                    files)
-                  </td>
-                </tr>
-              )}
-              {config && (
-                <tr>
-                  <th scope="row">App version</th>
-                  <td>
-                    <code>{config.build}</code>
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
+          {/* for whoever runs the site; a visitor does not need these (review 2026-10-15 T9) */}
+          <details class="small" style={{ marginTop: 'var(--sp-3)' }}>
+            <summary>Technical details</summary>
+            <table class="data status-details">
+              <tbody>
+                {ready?.reason && (
+                  <tr>
+                    <th scope="row">Health check</th>
+                    <td>{ready.reason}</td>
+                  </tr>
+                )}
+                <tr>
+                  <th scope="row">Last job</th>
+                  <td>
+                    {f.job
+                      ? `${f.job.kind}: ${f.job.status}${f.job.finishedAt ? `, ${new Date(f.job.finishedAt).toUTCString()}` : ''}`
+                      : '—'}
+                  </td>
+                </tr>
+                {f.generation?.curationDigest && (
+                  <tr>
+                    <th scope="row">Reviewed lists</th>
+                    <td>
+                      <code>{f.generation.curationDigest.slice(0, 12)}</code> (sha256 of the reviewed company and firm
+                      files)
+                    </td>
+                  </tr>
+                )}
+                {config && (
+                  <tr>
+                    <th scope="row">App version</th>
+                    <td>
+                      <code>{config.build}</code>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </details>
         </Card>
       )}
       {config?.statusUrl && (
@@ -187,4 +206,13 @@ export default function Status() {
       )}
     </div>
   );
+}
+
+// The badge in plain words; the raw health reason stays under Technical details.
+function attentionText(r: { refreshAgeHours?: number | null }, f: Freshness | null | undefined): string {
+  if (f?.job && ['failed', 'interrupted'].includes(f.job.status))
+    return 'The last update did not finish; showing the last good version';
+  if (r.refreshAgeHours != null && r.refreshAgeHours > 48)
+    return `Data is older than expected: last refresh ${ageText(r.refreshAgeHours)}`;
+  return 'Not fully current';
 }

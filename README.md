@@ -2,11 +2,32 @@
 
 [![Test](https://github.com/KianGolshan/Private-Investment-NPORT-Analyzer/actions/workflows/test.yml/badge.svg)](https://github.com/KianGolshan/Private-Investment-NPORT-Analyzer/actions/workflows/test.yml)
 
-Which mutual funds and ETFs hold stakes in private companies like Anthropic, Stripe and Databricks, what each fund
-says a share is worth, and how that changed, from the N-PORT holdings reports funds file with the SEC. By share
-class, company, fund and firm, at any date since 2019. Every number links to its filing.
+**Private-company holdings and marks, straight from SEC fund filings.**
 
-**Live:** [vantage-kian.duckdns.org](https://vantage-kian.duckdns.org)
+Vantage reads every N-PORT holdings report that U.S. registered funds (mutual funds, ETFs, closed-end and interval
+funds) have filed since late 2019. It shows which funds hold private companies such as Anthropic, Stripe and
+Databricks, what each fund says a share is worth on its own mark date, and how positions and marks change from one
+filing to the next. View it by share class, company, fund or firm, at any date since 2019. Every number links to the
+filing it came from, and the data refreshes from EDGAR every night.
+
+**Live:** [vantage-kian.duckdns.org](https://vantage-kian.duckdns.org) · Built by Kian Golshan
+([kiangolshan.com](https://kiangolshan.com) · [LinkedIn](https://www.linkedin.com/in/kian-golshan-058b32144/)) ·
+Not investment advice.
+
+On the live site on 2026-10-18 (`/api/stats`, `/api/market/top`): 355,177 N-PORT filings from 18,959 funds; 192
+private companies held as of 2026-09-30, $63.24B at each fund's latest mark; newest mark 2026-08-31.
+
+## What you can answer
+
+- [Who holds Anthropic, and at what mark?](https://vantage-kian.duckdns.org/company/1-anthropic?tab=holders)
+- [How do funds mark Stripe, and who filed each new mark first?](https://vantage-kian.duckdns.org/company/5-stripe?tab=marks)
+- [What moved this year: positions or marks?](https://vantage-kian.duckdns.org/?view=movers)
+- [What is in Capital Group's private book?](https://vantage-kian.duckdns.org/firm/9)
+- [What changed in the newest filings?](https://vantage-kian.duckdns.org/activity)
+- [How do Anthropic, OpenAI and Databricks compare?](https://vantage-kian.duckdns.org/compare?rows=company&key=1&key=7&key=2)
+
+The words the site uses (mark, mark date, as of, from positions, from marks …) are defined on its
+[About page](https://vantage-kian.duckdns.org/about#glossary).
 
 ## What it shows
 
@@ -24,10 +45,10 @@ Companies are resolved from filing evidence and reviewed by hand; a fund's firm 
 | `/fund/<key>`          | a fund's private book (X-Ray), timeline, marks against other funds, period compare, mark-implied returns |
 | `/firm/<id>`, `/firms` | a manager's private book, timeline, fund × company matrix, marks against others, changes               |
 | `/explore`             | pivot of firm, fund, company or class × month, quarter or year; every cell drills to its filings       |
-| `/activity`            | changes in newly filed reports, by firm and fund                                                       |
+| `/activity`            | What's new: changes in newly filed reports, by firm and fund                                           |
 | `/compare`             | two to five companies, firms, funds or classes side by side                                            |
-| `/tracked`             | the tracked list and your watchlist (kept in your browser)                                             |
-| `/about`, `/status`    | method, sources, known limits; how current the data is and when the checks last passed               |
+| `/watchlist`           | your watchlist (kept in your browser) and the hand-picked tracked companies (`/tracked` redirects)     |
+| `/about`, `/status`    | what it is, method, glossary, limits, author; how current the data is and when the checks last passed |
 
 Every view reads its scope from the URL, every chart has a table twin, and every export carries mark dates,
 accession numbers and how it reads history. Changes are worded only as the filings allow: first reported, added,
@@ -148,5 +169,11 @@ is kept, runnable, at the git tag [`v1-archive`](https://github.com/KianGolshan/
 - Only registered funds file N-PORT: mutual funds, ETFs, closed-end and interval funds. Hedge funds, venture funds
   and private funds do not, and the filings carry no company share counts, so Vantage shows no company valuations.
 - Values are as of each report date, not the filing date.
+
+## Author
+
+Built by Kian Golshan · [kiangolshan.com](https://kiangolshan.com) ·
+[LinkedIn](https://www.linkedin.com/in/kian-golshan-058b32144/) ·
+[source code](https://github.com/KianGolshan/Private-Investment-NPORT-Analyzer).
 
 Not investment advice. Figures are as the funds report them; check the linked filing before relying on any number.

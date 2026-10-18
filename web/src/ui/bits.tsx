@@ -55,26 +55,31 @@ export function FilingRef({
   accession,
   date,
   showAccession,
+  long,
 }: {
   cik: string | number | null | undefined;
   accession: string | null | undefined;
   date?: string | null;
   showAccession?: boolean;
+  /** "May 31, 2026" instead of the ISO date tables use. */
+  long?: boolean;
 }) {
   const url = edgarUrl(cik, accession);
-  const label = showAccession ? accession : date || accession || '—';
+  const label = showAccession ? accession : (date && long ? longDate(date) : date) || accession || '—';
   if (!url) return <span>{label}</span>;
   return (
     <a href={url} target="_blank" rel="noopener noreferrer" title={`EDGAR filing ${accession}`}>
       {label}
       <span aria-hidden="true"> ↗</span>
+      {/* read out of context, the link says where it goes (review 2026-10-15 accessibility) */}
+      <span class="sr-only"> (N-PORT filing on EDGAR, opens in a new tab)</span>
     </a>
   );
 }
 
 export function Loading({ rows = 4 }: { rows?: number }) {
   return (
-    <div class="stack" aria-busy="true" aria-label="Loading">
+    <div class="stack" role="status" aria-busy="true" aria-label="Loading">
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} class="skeleton" style={{ height: i === 0 ? '28px' : '18px', width: `${90 - i * 8}%` }} />
       ))}

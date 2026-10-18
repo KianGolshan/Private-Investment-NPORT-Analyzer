@@ -55,14 +55,14 @@ export default function Movers() {
     },
     {
       id: main,
-      header: main === 'markEffect' ? 'Mark effect' : 'Net position flow',
+      header: main === 'markEffect' ? 'From marks' : 'From positions (net)',
       value: r => r[main],
       num: true,
       render: r => <strong class={tone(r[main])}>{moneyDelta(r[main])}</strong>,
     },
     {
       id: main === 'markEffect' ? 'positionEffect' : 'markEffect',
-      header: main === 'markEffect' ? 'Position flow' : 'Mark effect',
+      header: main === 'markEffect' ? 'From positions' : 'From marks',
       value: r => (main === 'markEffect' ? r.positionEffect : r.markEffect),
       num: true,
       render: r => {
@@ -95,10 +95,10 @@ export default function Movers() {
         xAxis: { type: 'value', ...b.xAxisDefaults, axisLabel: { ...b.xAxisDefaults.axisLabel, formatter: moneyC } },
         yAxis: { type: 'category', data: rows.map(r => r.name), ...b.yAxisDefaults, axisLabel: { color: t.text2 } },
         series: [
-          { type: 'bar', name: 'Mark effect', data: rows.map(r => r.markEffect), itemStyle: { color: t.series[0] } },
+          { type: 'bar', name: 'From marks', data: rows.map(r => r.markEffect), itemStyle: { color: t.series[0] } },
           {
             type: 'bar',
-            name: 'Position flow',
+            name: 'From positions',
             data: rows.map(r => r.positionEffect),
             itemStyle: { color: t.series[1] },
           },
@@ -113,7 +113,7 @@ export default function Movers() {
       <div class="row wrap">
         <p class="muted" style={{ margin: 0 }}>
           {d ? `${d.label[0]!.toUpperCase()}${d.label.slice(1)}.` : 'Changes over a range of mark dates.'} Worded as
-          filed: a mark effect is the new marks on the shares held; a position flow is shares first reported, added,
+          filed: “from marks” is the new marks on the shares held; “from positions” is shares first reported, added,
           reduced or no longer reported, at the prior marks.
         </p>
         <span class="spacer" />
@@ -137,21 +137,21 @@ export default function Movers() {
             <Kpi label="Window" value={`${longDate(d.from)} → ${longDate(d.to)}`} sub="by each fund's mark date" />
             <Kpi label="Largest mark move" value={d.markUp[0]?.name ?? '—'} sub={moneyDelta(d.markUp[0]?.markEffect)} />
             <Kpi
-              label="Largest net flow in"
+              label="Most added (from positions)"
               value={d.flowIn[0]?.name ?? '—'}
               sub={moneyDelta(d.flowIn[0]?.positionEffect)}
             />
           </div>
           <Card title="Largest mark moves, up and down (top 8 each)">
-            <Chart build={build} height={460} label="Largest mark moves with their position flows" />
+            <Chart build={build} height={460} label="Largest mark moves, with the change from positions beside them" />
           </Card>
           <div class="grid-2">
             {(
               [
                 ['Mark moved up', d.markUp, 'markEffect'],
                 ['Mark moved down', d.markDown, 'markEffect'],
-                ['Net position flow in', d.flowIn, 'positionEffect'],
-                ['Net position flow out', d.flowOut, 'positionEffect'],
+                ['Most added (from positions)', d.flowIn, 'positionEffect'],
+                ['Most reduced (from positions)', d.flowOut, 'positionEffect'],
               ] as const
             ).map(([title, rows, main]) => (
               <Card key={title} title={title} flush>
