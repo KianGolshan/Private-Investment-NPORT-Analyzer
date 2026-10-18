@@ -473,6 +473,8 @@ export interface Bridge extends Envelope, ScopeEcho {
   steps: BridgeStep[];
   positionEffect: number;
   markEffect: number;
+  /** Funds that started or stopped filing, and rows with no share count: start + positions + marks + other = end. */
+  otherEffect: number;
   residual: number;
   reconciled: boolean;
 }

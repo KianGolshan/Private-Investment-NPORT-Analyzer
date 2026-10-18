@@ -145,6 +145,35 @@ test('the nav starts at Market, the watchlist never opens empty, and old links s
   expect(errors).toEqual([]);
 });
 
+// Copy and UX review 2026-10-15, W3: words defined in place, one position definition, plain Status.
+test('terms open their definition, the change tables use one wording, and Status keeps internals folded', async ({
+  page,
+}) => {
+  const errors = errorsOf(page);
+  await page.goto('/');
+  // the first Tab reaches the skip link
+  await page.keyboard.press('Tab');
+  await expect(page.locator(':focus')).toHaveText('Skip to content');
+  const term = page.getByRole('button', { name: 'N-PORT' });
+  await term.click();
+  await expect(page.getByRole('note')).toContainText('holdings report SEC-registered funds');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('note')).toHaveCount(0);
+  await page.goto(`/company/${ANTHROPIC}`);
+  for (const h of ['From positions', 'From marks', 'Other changes'])
+    await expect(page.getByRole('columnheader', { name: h })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: /Position Δ|Mark Δ/ })).toHaveCount(0);
+  await page.goto(`/company/${ANTHROPIC}?tab=changes`);
+  await expect(page.getByText('From positions', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText(/the steps add up exactly to the closing value/)).toBeVisible();
+  await page.goto('/status');
+  const tech = page.locator('details', { hasText: 'Technical details' });
+  await expect(tech).toBeVisible();
+  await expect(tech).not.toHaveAttribute('open', '');
+  await expect(page.getByText(/sha256/)).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
 test('About and Status read the warehouse; the nav links them', async ({ page }) => {
   const errors = errorsOf(page);
   await page.goto('/');

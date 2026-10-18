@@ -49,6 +49,8 @@ export function ScopeBar({
   };
   const preset = (years: number | 'all') =>
     setScope({ from: years === 'all' ? FIRST_DATE : addYears(end, -years), to: end, asof: '' });
+  const isPreset = (years: number | 'all') =>
+    scope.from === (years === 'all' ? FIRST_DATE : addYears(end, -years)) && (scope.to === end || !scope.to);
 
   const on = new Set(supports.filters ?? []);
   const chips: { label: string; clear: Partial<Scope> }[] = [
@@ -107,15 +109,18 @@ export function ScopeBar({
             onChange={e => setScope({ to: (e.target as HTMLInputElement).value })}
           />
           <div class="seg" role="group" aria-label="Range presets">
-            <button type="button" onClick={() => preset(1)}>
-              1Y
-            </button>
-            <button type="button" onClick={() => preset(3)}>
-              3Y
-            </button>
-            <button type="button" onClick={() => preset('all')}>
-              All
-            </button>
+            {/* the preset in force shows as pressed (review 2026-10-15 accessibility) */}
+            {([1, 3, 'all'] as const).map(y => (
+              <button
+                key={y}
+                type="button"
+                aria-pressed={isPreset(y)}
+                aria-label={y === 'all' ? 'All dates' : `Last ${y} year${y === 1 ? '' : 's'}`}
+                onClick={() => preset(y)}
+              >
+                {y === 'all' ? 'All' : `${y}Y`}
+              </button>
+            ))}
           </div>
         </>
       )}

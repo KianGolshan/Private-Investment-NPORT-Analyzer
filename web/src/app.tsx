@@ -245,9 +245,13 @@ function Shell() {
   }, []);
   return (
     <div class="shell">
+      {/* keyboard users jump past the nav (review 2026-10-15 accessibility) */}
+      <a class="skip-link" href="#main">
+        Skip to content
+      </a>
       <Sidebar />
       <Topbar onSearch={() => setOpen(true)} />
-      <main class="main" id="main">
+      <main class="main" id="main" tabIndex={-1}>
         <div class="page">
           <PageBoundary path={path}>
             <ErrorBoundary>

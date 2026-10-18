@@ -154,7 +154,7 @@ export function ChangesTable({
     },
     {
       id: 'position',
-      header: 'Position Δ',
+      header: 'From positions',
       num: true,
       value: e => e.positionEffect + e.otherEffect,
       render: e => (
@@ -171,7 +171,7 @@ export function ChangesTable({
     },
     {
       id: 'mark',
-      header: 'Mark Δ',
+      header: 'From marks',
       num: true,
       value: e => e.markEffect,
       render: e => <span class={tone(e.markEffect)}>{moneyDelta(e.markEffect)}</span>,

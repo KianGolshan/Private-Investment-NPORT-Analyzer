@@ -7,6 +7,7 @@ import { useScope } from '../scope/scope';
 import { Card, ErrorBox, Loading } from '../ui/bits';
 import { DataTable } from '../ui/DataTable';
 import { PAGE_TITLES, usePageTitle } from '../lib/title';
+import { Term } from '../ui/Term';
 
 export default function Firms() {
   usePageTitle(PAGE_TITLES.firms);
@@ -21,7 +22,7 @@ export default function Firms() {
           <div class="eyebrow">Firms</div>
           <h1>Firms by private value</h1>
           <p class="muted" style={{ margin: '4px 0 0' }}>
-            Funds map to firms by their adviser in N-CEN (current adviser). As of{' '}
+            A fund belongs to the firm named as its adviser in its latest <Term id="ncen" />. As of{' '}
             {firms.data ? longDate(firms.data.date) : '…'}.
           </p>
           <BasisNote />

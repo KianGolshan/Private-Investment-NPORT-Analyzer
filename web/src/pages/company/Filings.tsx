@@ -78,7 +78,9 @@ export default function Filings({ base, sq, name, newest, openPosition }: ViewPr
     },
     {
       id: 'cat',
-      header: 'Category',
+      header: 'Asset type',
+      title:
+        'As filed: EC equity, common; EP equity, preferred; DBT debt; OTHER other (often an interest in a fund or vehicle)',
       value: r => r.assetCat,
       render: r => (
         <span class="small">
@@ -96,6 +98,7 @@ export default function Filings({ base, sq, name, newest, openPosition }: ViewPr
     {
       id: 'balance',
       header: 'Balance',
+      title: 'As filed: NS number of shares; OU other units (fund interests); PA principal amount',
       value: r => r.balance,
       num: true,
       render: r => (
@@ -129,7 +132,13 @@ export default function Filings({ base, sq, name, newest, openPosition }: ViewPr
         r.balance && r.balance > 0 ? `${money(r.valueUsd / r.balance)}${r.unit === 'NS' ? '/sh' : '/unit'}` : '—',
     },
     { id: 'pctNav', header: '% of fund', value: r => r.pctNav, num: true, render: r => pctOfNav(r.pctNav) },
-    { id: 'level', header: 'FV level', value: r => r.fvLevel },
+    {
+      id: 'level',
+      header: 'Fair-value level',
+      title:
+        'Fair-value level 1 to 3, as the fund labels the holding. Private does not mean level 3: funds label real private holdings 1 or 2 too',
+      value: r => r.fvLevel,
+    },
     { id: 'country', header: 'Country', value: r => r.country },
   ];
 
