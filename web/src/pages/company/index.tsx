@@ -5,7 +5,7 @@ import { qs, useApi } from '../../api/client';
 import type { ClassesAsOf, Company as CompanyT, CompanyStats, Envelope, Freshness, TrendPoint } from '../../api/types';
 import { longDate, money, moneyC, num } from '../../lib/format';
 import { useParam } from '../../scope/scope';
-import { Badge, Empty, ErrorBox, isNotFound, Kpi, Loading, Tabs, WatchButton } from '../../ui/bits';
+import { Badge, Empty, ErrorBox, isNotFound, Kpi, Loading, TabPanel, Tabs, WatchButton } from '../../ui/bits';
 import NotFound from '../NotFound';
 import { CATEGORY_LABEL } from '../../ui/Category';
 import { Chart } from '../../ui/Chart';
@@ -227,13 +227,15 @@ export default function Company() {
           )}
           {showViews && (
             <>
-              <Tabs tabs={TABS} current={current} onSelect={t => setTab(t === 'overview' ? '' : t)} />
-              {current === 'overview' && <Overview {...view} />}
-              {current === 'holders' && <Holders {...view} />}
-              {current === 'positions' && <Positions {...view} />}
-              {current === 'changes' && <Changes {...view} />}
-              {current === 'marks' && <Marks {...view} />}
-              {current === 'filings' && <Filings {...view} />}
+              <Tabs id="company" tabs={TABS} current={current} onSelect={t => setTab(t === 'overview' ? '' : t)} />
+              <TabPanel id="company" current={current}>
+                {current === 'overview' && <Overview {...view} />}
+                {current === 'holders' && <Holders {...view} />}
+                {current === 'positions' && <Positions {...view} />}
+                {current === 'changes' && <Changes {...view} />}
+                {current === 'marks' && <Marks {...view} />}
+                {current === 'filings' && <Filings {...view} />}
+              </TabPanel>
             </>
           )}
           {pos && showViews && <PositionDrawer {...view} fundKey={pos} onClose={() => setPos('')} />}

@@ -102,3 +102,7 @@ Data traps are in [DATA-QUALITY.md](DATA-QUALITY.md). Numbers are stable: code a
     different entities, then diff every row's company across the job (P8 pre-flight, trap 58).
 17. Tests clean up what they make: a temp directory per test, never removed, filled 26 GB of disk in a week
     and threatened the nightly job. Make temp files through `test/helpers/tmp.js`; `npm run doctor` reports leftovers.
+18. A browser test is only as true as what it assumes about the fixture and the page. Two W1–W4 tests failed in CI
+    for that reason alone: one expected more rows than the golden warehouse has, one matched a link the footer also
+    carries. Read the fixture before writing a count, scope a locator to its section, and attach key listeners as an
+    element renders (a test presses Escape faster than a person does).

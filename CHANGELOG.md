@@ -2,15 +2,25 @@
 
 Releases of the public site. Detail lives in [docs/STATUS.md](docs/STATUS.md) and its archive.
 
-## Unreleased: copy and UX review, wave 1 (truth and trust)
+## v2.2.0: copy and UX review (P12), 2026-10-18
 
-- **Freshness says what it means:** the header, Market and Status show the newest mark (the latest mark date of any
-  private holding) instead of the newest report date, which ran two months ahead of any private mark.
-- **Market's # column** ranks within the list shown (operating companies by default), with no gaps.
-- **Money** picks its unit after rounding: $1.0M, never $1000.0K.
-- **Pages:** the browser tab title follows the page; a page that fails shows a way out instead of a blank page;
-  internal notes and storage words left the tooltips; About drops a dated one-off result and adds hedge funds and
-  the report-date rule.
+- **Says what it is:** "Private-company holdings and marks, straight from SEC fund filings" as the site title, Market's
+  heading and the README; Market's intro has a live line (companies held, value, newest mark) from the API.
+- **Dates and numbers that are true:** "newest mark" (the latest mark date of any private holding) replaces the
+  newest report date, which ran two months ahead; Market's # ranks within the list shown; money reads $1.0M, never
+  $1000.0K.
+- **One definition:** "from positions" is shares first reported, added, reduced or no longer reported, at the prior
+  mark, everywhere; funds that start or stop filing are "other changes", so every bridge adds up from start to end.
+- **Navigation:** Market first; `/watchlist` (old `/tracked` links redirect) opens on the tracked companies; plain tab
+  names (Private book, Period compare, Mark-implied returns, Over time, Marks by class); old tab links still work.
+- **Words defined in place:** a glossary on About and "what is this?" definitions where terms first appear; plain
+  column names; Status in plain words with the internals folded.
+- **Exports:** every export carries its data version; XLSX adds an "About this export" sheet.
+- **About and author:** About rewritten (what it is, questions with live links, method, glossary, limits, checks);
+  "Built by Kian Golshan" with his site, LinkedIn and the source code in the footer, About and the README.
+- **Phones and accessibility:** readable chart axes, a freshness line, compact company tiles; a skip link, tabs linked
+  to their panels with arrow-key movement, filing links that say where they go, named export buttons.
+- **CI:** one run per pull-request commit, so a cancelled run no longer blocks a merge.
 
 ## v2.1.1: engineering and security review (P11), 2026-10-15
 

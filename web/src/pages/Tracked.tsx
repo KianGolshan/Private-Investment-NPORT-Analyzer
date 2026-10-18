@@ -19,7 +19,7 @@ import {
 import { followRedirects, importV1, removeWatch, v1Entries, watchlist } from '../lib/watchlist';
 import { ScopeBar } from '../scope/ScopeBar';
 import { useParam, useScope } from '../scope/scope';
-import { Badge, Card, Empty, ErrorBox, Kpi, Loading, Tabs } from '../ui/bits';
+import { Badge, Card, Empty, ErrorBox, Kpi, Loading, TabPanel, Tabs } from '../ui/bits';
 import { DataTable, type Column } from '../ui/DataTable';
 import { PAGE_TITLES, usePageTitle } from '../lib/title';
 
@@ -59,6 +59,7 @@ export default function Tracked() {
         <ScopeBar supports={{ asof: true }} newest={newest} />
       </div>
       <Tabs
+        id="watchlist"
         tabs={[
           { id: 'watchlist', label: `Your watchlist (${watchlist.value.length})` },
           { id: 'tracked', label: 'Tracked companies' },
@@ -66,7 +67,9 @@ export default function Tracked() {
         current={current}
         onSelect={id => setView(id)}
       />
-      {current === 'watchlist' ? <Watchlist /> : <TrackedCompanies />}
+      <TabPanel id="watchlist" current={current}>
+        {current === 'watchlist' ? <Watchlist /> : <TrackedCompanies />}
+      </TabPanel>
     </div>
   );
 }
