@@ -346,6 +346,15 @@ export interface Firm {
   value: number;
 }
 
+/** /api/firms: firm values count a co-advised fund for each firm; uniqueValue counts each fund once, over all firms. */
+export interface FirmList extends Envelope {
+  date: string;
+  count: number;
+  uniqueValue: number;
+  uniqueFunds: number;
+  results: Firm[];
+}
+
 export interface FirmBook extends Envelope {
   firm: { id: number; name: string; fundsManaged: number; fundsSubadvised: number };
   date: string;

@@ -38,8 +38,8 @@ const xml2js = require('xml2js');
 const {
   extractIdString,
   classifyInstrument,
-  isPrivateHolding,
-  isPrivateEquityHolding,
+  isLevel3Holding,
+  isLevel3EquityHolding,
   extractFundMeta,
   extractAllHoldings,
   buildFundXRay,
@@ -189,27 +189,27 @@ test('parseEquityLabel edge cases found in the Databricks survey: truncated titl
 
 // ── Fund X-Ray (extractAllHoldings / extractFundMeta / buildFundXRay) ──────
 
-test('isPrivateHolding: fairValLevel 3 flags private; Level 2/1 does not, even when isRestrictedSec is Y', () => {
-  assert.equal(isPrivateHolding({ fairvallevel: '3', isrestrictedsec: 'N' }), true);
+test('isLevel3Holding: fairValLevel 3 flags Level 3; Level 2/1 does not, even when isRestrictedSec is Y', () => {
+  assert.equal(isLevel3Holding({ fairvallevel: '3', isrestrictedsec: 'N' }), true);
   // Regression case found live: "PREMIER ENERGIES LTD", a real publicly-
   // listed Indian company, came back isRestrictedSec:Y at fairValLevel 2
   // (restricted under Indian foreign-ownership rules, not because it's
   // privately held) — isRestrictedSec alone must never qualify a holding.
-  assert.equal(isPrivateHolding({ fairvallevel: '2', isrestrictedsec: 'Y' }), false);
-  assert.equal(isPrivateHolding({ fairvallevel: '1', isrestrictedsec: 'Y' }), false);
-  assert.equal(isPrivateHolding({ fairvallevel: '1', isrestrictedsec: 'N' }), false);
-  assert.equal(isPrivateHolding({}), false);
+  assert.equal(isLevel3Holding({ fairvallevel: '2', isrestrictedsec: 'Y' }), false);
+  assert.equal(isLevel3Holding({ fairvallevel: '1', isrestrictedsec: 'Y' }), false);
+  assert.equal(isLevel3Holding({ fairvallevel: '1', isrestrictedsec: 'N' }), false);
+  assert.equal(isLevel3Holding({}), false);
 });
 
-test('isPrivateHolding: edge cases — numeric fairValLevel, "N/A", and whitespace all resolve safely', () => {
+test('isLevel3Holding: edge cases — numeric fairValLevel, "N/A", and whitespace all resolve safely', () => {
   // xml2js always yields strings for element text, but the function accepts
   // raw input defensively — a numeric 3 must still be recognized.
-  assert.equal(isPrivateHolding({ fairvallevel: 3 }), true);
+  assert.equal(isLevel3Holding({ fairvallevel: 3 }), true);
   // NPORT schema allows "N/A" for fairValLevel on rows where it doesn't apply.
-  assert.equal(isPrivateHolding({ fairvallevel: 'N/A' }), false);
+  assert.equal(isLevel3Holding({ fairvallevel: 'N/A' }), false);
   // Stray whitespace around values (seen in real filings elsewhere in this
   // codebase, e.g. cleanFilerName) must not defeat the '3' comparison.
-  assert.equal(isPrivateHolding({ fairvallevel: ' 3 ' }), true);
+  assert.equal(isLevel3Holding({ fairvallevel: ' 3 ' }), true);
 });
 
 test('extractAllHoldings: real Kandou filing — all 3 rows are unfiltered by search term, but the debt tranche is NOT flagged private-equity despite being fairValLevel 3 and restricted', async () => {
@@ -231,7 +231,7 @@ test('extractAllHoldings: real Kandou filing — all 3 rows are unfiltered by se
   // The term loan is fairValLevel 3 AND isRestrictedSec:Y in the real
   // filing — just as illiquid/restricted as its siblings — but it is DEBT,
   // a creditor claim, not an equity interest, so it must not be counted as
-  // private equity even though isPrivateHolding(inv) alone would say yes.
+  // private equity even though isLevel3Holding(inv) alone would say yes.
   assert.equal(debt.fairValLevel, '3');
   assert.equal(debt.isRestrictedSec, 'Y');
   assert.equal(
@@ -300,14 +300,14 @@ test('extractAllHoldings: a Level-2 restricted equity (a real publicly-traded co
   assert.ok(!xray.privateHoldings.some(h => h.name === 'PREMIER ENERGIES LTD'));
 });
 
-test('isPrivateEquityHolding: excludes debt outright, regardless of the illiquidity signal', () => {
+test('isLevel3EquityHolding: excludes debt outright, regardless of the illiquidity signal', () => {
   const illiquidSignal = { fairvallevel: '3', isrestrictedsec: 'Y' };
-  assert.equal(isPrivateEquityHolding(illiquidSignal, 'equity'), true);
-  assert.equal(isPrivateEquityHolding(illiquidSignal, 'derivative'), true);
-  assert.equal(isPrivateEquityHolding(illiquidSignal, 'indirect'), true);
-  assert.equal(isPrivateEquityHolding(illiquidSignal, 'debt'), false);
+  assert.equal(isLevel3EquityHolding(illiquidSignal, 'equity'), true);
+  assert.equal(isLevel3EquityHolding(illiquidSignal, 'derivative'), true);
+  assert.equal(isLevel3EquityHolding(illiquidSignal, 'indirect'), true);
+  assert.equal(isLevel3EquityHolding(illiquidSignal, 'debt'), false);
   // Not illiquid at all — equity type alone isn't enough either.
-  assert.equal(isPrivateEquityHolding({ fairvallevel: '1', isrestrictedsec: 'N' }, 'equity'), false);
+  assert.equal(isLevel3EquityHolding({ fairvallevel: '1', isrestrictedsec: 'N' }, 'equity'), false);
 });
 
 test('extractAllHoldings: real SpaceX/REX ETF filing — a fully public book comes back with zero private holdings', async () => {

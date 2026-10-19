@@ -1,6 +1,6 @@
 import { BASIS, BasisNote } from '../ui/Basis';
 import { qs, useApi } from '../api/client';
-import type { Envelope, Firm, Freshness } from '../api/types';
+import type { FirmList, Freshness } from '../api/types';
 import { firmPath, longDate, moneyC, num } from '../lib/format';
 import { ScopeBar } from '../scope/ScopeBar';
 import { useScope } from '../scope/scope';
@@ -13,7 +13,7 @@ export default function Firms() {
   usePageTitle(PAGE_TITLES.firms);
   const [scope] = useScope();
   const fresh = useApi<Freshness>('/api/freshness');
-  const firms = useApi<Envelope & { date: string; results: Firm[] }>(`/api/firms${qs({ date: scope.asof })}`);
+  const firms = useApi<FirmList>(`/api/firms${qs({ date: scope.asof })}`);
   const rows = (firms.data?.results ?? []).filter(f => f.value > 0);
   return (
     <div class="stack">
@@ -32,6 +32,12 @@ export default function Firms() {
       </div>
       <ErrorBox error={firms.error} />
       {firms.loading && !firms.data && <Loading rows={6} />}
+      {firms.data && (
+        <p class="muted small" style={{ margin: 0 }}>
+          {moneyC(firms.data.uniqueValue)} held by {num(firms.data.uniqueFunds)} funds across all firms. A fund with two
+          advisers counts in full for each firm, so the firm values below do not add up to this.
+        </p>
+      )}
       {firms.data && (
         <Card flush>
           <DataTable
@@ -56,7 +62,7 @@ export default function Firms() {
             exportName={`firms-${firms.data.date}`}
             filterPlaceholder="Filter firms…"
             maxHeight={680}
-            totals={rs => ({ name: `${num(rs.length)} firms`, value: moneyC(rs.reduce((s, f) => s + f.value, 0)) })}
+            totals={rs => ({ name: `${num(rs.length)} firms` })}
           />
         </Card>
       )}

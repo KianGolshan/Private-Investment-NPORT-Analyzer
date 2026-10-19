@@ -1,6 +1,7 @@
 # Vantage v2 Status
 
-**Phase:** **P12 is complete** (the 2026-10-15 copy and UX review: W1 #23, W2 #24, W3 #25, W4 #28 merged and live,
+**Phase:** **P13 W1 built** (the 2026-10-18 outside review triage, ROADMAP §13; branch `v2-review3-w1`, a PR for
+the user to merge). **P12 is complete** (the 2026-10-15 copy and UX review: W1 #23, W2 #24, W3 #25, W4 #28 merged and live,
 the close-out PR with the tab pattern and CHANGELOG v2.2.0; ROADMAP §12). P11 (the 2026-10-14 engineering and
 security review) is complete and live. Vantage is live at **https://vantage-kian.duckdns.org** (Oracle Cloud Always
 Free VM on Pay As You Go, DuckDNS, HTTPS from Caddy, nightly SEC refresh, auto-deploy of every green commit on
@@ -19,6 +20,8 @@ deferred by choice: P7 (MCP server), P8's 30-night checkpoint. Next: the user's 
 - [x] P9: public deployment, live 2026-10-14 ([plan](plans/P9-deployment.md), [DEPLOY.md](DEPLOY.md)).
 - [x] P10: launch review remediation (ROADMAP §10). W0 and W1 live; W2 done except off-site backups (not now).
 - [x] P12: copy and UX review (ROADMAP §12). W1–W4 and the close-out merged 2026-10-15..18.
+- [~] P13: outside review triage (ROADMAP §13, [plan](plans/P13-outside-review.md)). W1 built; W2 planned; W3 and W4
+  wait on the user's answers.
 - [x] P11: engineering and security review remediation (ROADMAP §11). W1, W2, W3 live 2026-10-15; the user's
       Oracle SSH rule pending.
 
@@ -37,7 +40,7 @@ The analyst workspace is served at `/`; the route map is in the [README](../READ
 | Explore             | `/explore`                        | firm/fund/company/class × month/quarter/year, every metric; any cell drills to the legs behind it                                  |
 | Activity            | `/activity`                       | changes in newly filed reports, firm and fund filters, paged; KPIs over every match                                                |
 | Compare             | `/compare`                        | 2–5 companies, firms, funds or classes side by side (with example links when empty)                                                |
-| Tracked & Watchlist | `/tracked`                        | the tracked list and the viewer's watchlist                                                                                        |
+| Tracked & Watchlist | `/watchlist` (`/tracked` → 301)   | the tracked list and the viewer's watchlist                                                                                        |
 | About, Status       | `/about`, `/status`               | method, sources, limits; freshness and the last nightly (golden smoke check) and monthly (EDGAR reconciliation) results            |
 | Exports             | every table                       | CSV/XLSX with mark date, accession, source, category and how history is read                                                       |
 
@@ -60,6 +63,29 @@ tag **`v1-archive`** (and branch `archive/v1`).
 On the server: `sudo vantage-run npm run doctor`; timers `vantage-nightly` (06:15 New York), `vantage-monthly` (3rd),
 `vantage-autodeploy` (5 min), `vantage-duckdns`. Units come from `setup.sh`, not from deploys; the live server also
 has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB cap, 3 GB heap; 2026-10-14).
+
+## Where things stand (2026-10-19)
+
+- **Outside review triage (2026-10-18, P13):** the reviewer read the public repository only. Checked on real data:
+  21/21 random live positions (generation 40) equal raw EDGAR to the cent, and Wasabi's value ($54,955,503.33) and
+  ARK Invest's book ($678,529,720.46) rebuilt from raw rows equal the live answers. Real: X-Ray fail-open, mixed
+  share-class marks (Skyhawk "Common" median $31.21 vs $53.14 filed), "as of" counts later-filed reports
+  ($53.8B of $62.2B at 2026-06-30) without saying so, the Firms footer ($8.4M double count), wording. Missed by the
+  review: Firms and Explore count fund interests, CLOs and insurance ($10.58B live) where Market does not.
+- **W1 (branch `v2-review3-w1`):**
+  - Fund X-Ray: a row with no issuer name (trap 64, F60) is "not classified", never private. The 100 canonical
+    filings with one drop by exactly that row ($35,161,231.72 in all); Market top, Firms and the top 5 firm books are
+    identical at 2024-06-30, 2025-12-31 and 2026-08-31 (old code vs new on generation 34);
+  - every job fails if a row with a name has neither a company nor an entity, and warns when unnamed rows grow;
+  - Firms: one line from the same answer, "$X held by N funds across all firms" (each fund once, `uniqueValue`);
+    the footer counts firms only;
+  - "Who first reported each new mark (by mark date)", "First reported by", "Reported first"; About's as-of rule
+    says "report" and that later-filed reports count; `isLevel3Holding` / `isLevel3EquityHolding` (renamed);
+  - Gates: backend 465 (461 pass, 4 skipped); web 18 files, 65 tests; lint, lint:web, format clean; build;
+    browser: Firms, Fund X-Ray (L&G 2024-10-31), Stripe Marks in light and dark at desktop and 375 px, no overflow,
+    no console errors. e2e runs in CI on the PR.
+  - Questions for the user (plan): the as-of promise (hindsight vs known by), co-advised attribution, strictness on
+    generic classes, and whether Firms and Explore default to operating companies.
 
 ## Where things stand (2026-10-15)
 
@@ -113,7 +139,7 @@ has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB 
     details";
   - accessibility and small surprises: skip link, filing links say where they go, named export buttons, pressed
     1Y/3Y/All, `role="status"` loading, "Copy link" says whether it worked, Compare offers back picks it cleared,
-    Previous/Next paging on Firm. Deferred: tab panels with `aria-controls` (needs each page's tab content wrapped).
+    Previous/Next paging on Firm. Tab panels with `aria-controls` were deferred here and done in the close-out.
   - Gates: backend 456 (452 pass, 4 skipped; new: the bridge's parts add up at three windows and equal the pivot);
     web 16 files, 61 tests; lint, lint:web, format clean; browser in light and dark at 1280 and 375 px (the term
     card fixed to the screen after it first widened the page at 375 px). A new W3 e2e test runs in CI.
@@ -185,7 +211,7 @@ has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB 
   without an explicit yes.
 - **Real data only.** Check any new metric's definition on real rows _before_ building it. Every new number shown as a
   finding goes to GOLDEN-NUMBERS after a raw-EDGAR check: `node scripts/verify-edgar.js <cik> <pattern> <accession>…`
-  (fails closed when nothing matches; needs `SEC_USER_AGENT` from `.env`). Last golden: **F59**.
+  (fails closed when nothing matches; needs `SEC_USER_AGENT` from `.env`). Last golden: **F60**.
 - **One definition, held equal by tests.** New answers must equal `exposureAsOf` / `companyActivity` / `firmBook`
   where they overlap (`test/analysis.test.js` pattern). Where shared code could be wrong, add an independent check
   to the oracle (`test/fixtures/oracle/build-oracle.js`, hand-picked rows, plain arithmetic).
@@ -222,7 +248,7 @@ has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB 
 | Lighthouse (live)             | ≥90                  | after W1 (2026-10-15): Market mobile **98** (was 68; layout shift 0), company mobile 98, company desktop 87 (layout shift 0.268 from the chart card); accessibility **100**, best practices 100, SEO 100                                                                                                                                                                    |
 | Accessibility (axe, WCAG 2.1) | 0 serious            | **0** on 32 pages × light/dark (W1 build: local crawl and CI e2e)                                                                                                                                                                                                                                                                                                           |
 | Data accuracy (review)        | exact                | 2026-10-14: 27/27 (18 random live positions incl. 8 with 2026Q3 mark dates, 8 catch-up rows, 1 exit); 2026-10-13: 12/12 rows and 6/6 special cases (amendment, $0, exit, 3:1 split, as-of)                                                                                                                                                                                  |
-| Suite                         | green                | 2026-10-15 on `main`: backend 431 (427 pass, 4 skipped); web 47/47; e2e green in CI (PR #21)                                                                                                                                                                                                                                                                                |
+| Suite                         | green                | 2026-10-19 on `v2-review3-w1`: backend 465 (461 pass, 4 skipped); web 65/65; e2e in CI on the PR                                                                                                                                                                                                                                                                            |
 
 ## Decisions waiting on the user
 
@@ -315,8 +341,9 @@ Everything known and not built (2026-10-14). Each item says why it waits.
 
 ## Next session
 
-> Vantage v2 is live at https://vantage-kian.duckdns.org. P11 (the 2026-10-14 engineering and security review) is
-> closed out and live. `main` is protected: work on a branch, open a pull request, merge when CI is green (the user
+> Vantage v2 is live at https://vantage-kian.duckdns.org. P13 (the 2026-10-18 outside review) W1 is built on
+> `v2-review3-w1` and waits for the user's sign-off and merge; W2 (mark comparability) is next; W3 and W4 wait on
+> the user's answers in docs/plans/P13-outside-review.md. `main` is protected: work on a branch, open a pull request, merge when CI is green (the user
 > merges, or says to). Start with CLAUDE.md, this file and docs/ROADMAP.md. Waiting on the user: the Oracle
 > security-list rule for SSH (DEPLOY.md 1A.6); then their next instructions. Do not ask about off-site backups.
 > Server: `ssh ubuntu@129.146.24.191`; `sudo vantage-run npm run doctor`; a server-side change ships with
@@ -328,6 +355,10 @@ Everything known and not built (2026-10-14). Each item says why it waits.
 > `node scripts/smoke.js https://vantage-kian.duckdns.org`.
 
 ## Log
+
+- **2026-10-19 (P13 W1, built):** the user approved the triage plan and asked for W1 on `v2-review3-w1`. Built,
+  tested and checked in the browser (see "Where things stand"); a PR for the user to merge. Not run: e2e locally
+  (CI runs it), LIVE, bench.
 
 - **2026-10-15 (units-restated fix, branch `v2-fix-unit-restatement`):** a product review found filers restating a
   holding in other units at the same value read as giant trades (live: Ferrellgas 2021 "added $153.27B", mark

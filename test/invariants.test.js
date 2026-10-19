@@ -91,3 +91,34 @@ test('the counting rule is defined only in lib/analytics/asof.js', () => {
   );
   assert.deepEqual(found, [], 'use countsRule from lib/analytics/asof.js');
 });
+
+// Review 2026-10-18 #9: "private" is a company's reviewed status, never
+// fair-value Level 3 (DATA-QUALITY trap 7). The Level 3 helpers live in
+// parsers.js for v1's X-Ray shape and the stored "v1 Level 3" figure only;
+// no warehouse answer (services, analytics, entities, API) may call them.
+test('no warehouse answer classifies with the Level 3 helpers', () => {
+  const found = hits(
+    tracked(['lib/services', 'lib/analytics', 'lib/entities', 'lib/api']),
+    /\bisLevel3(Equity)?Holding\b|\bisPrivate(Equity)?Holding\b/
+  );
+  assert.deepEqual(found, [], 'private status comes from the companies table');
+});
+
+// Review 2026-10-18 #1: Fund X-Ray fails closed. A row with neither a company
+// nor an entity has no evidence of being private; statusOf must not return a
+// private status for it (it returned one, as "not tagged yet").
+test("Fund X-Ray's status of an untagged row is never private", () => {
+  const src = read('lib/services/fund.js');
+  const body = src.slice(src.indexOf('function statusOf('), src.indexOf('const UNNAMED_REASON'));
+  const tail = body.slice(body.lastIndexOf('if (r.entity_key)'));
+  const fallback = tail.slice(tail.indexOf('\n  }\n') + 1);
+  assert.match(fallback, /isPrivate: false/);
+  assert.doesNotMatch(fallback, /isPrivate: true/);
+});
+
+// Review 2026-10-18 #8: mark leadership is by mark date, not by when a report
+// reached the SEC, so no visitor text says who "filed" a mark first.
+test('no page words mark leadership as filing order', () => {
+  const found = hits(tracked(['web/src', 'README.md']), /filed (each new mark )?first|first filed by/i);
+  assert.deepEqual(found, [], 'say "first reported" (by mark date)');
+});
