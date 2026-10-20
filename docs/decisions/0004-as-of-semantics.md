@@ -53,6 +53,16 @@ Funds report on staggered fiscal calendars, so no single date lines everyone up.
 - `pricePerShare` is set only for share rows (`unit = 'NS'`); every row carries `pricePerUnit`. Splits are
   detected on per-unit values (trap 40).
 
+**Amended 2026-10-19 (P13, outside review #2):**
+
+- The default stays "hindsight": as of D counts each fund's latest report on or before D, whenever it was filed.
+  At 2026-06-30 (generation 34) $53.8B of $62.2B in operating companies came from filings made after that day;
+  known by that day it is $47.27B. Every as-of screen now says so (Market, Firms, Explore, the glossary, the
+  Basis note, About).
+- Market top, Firms and the firm book take the same `knownAsOf` rule (`market.activeFilings(…, known)`, the SQL
+  of `KNOWN_CANONICAL`); a test holds Market top equal to `exposureAsOf({ knownAsOf })` for every company at three
+  dates. Explore, the bridge and the pivot stay hindsight: position facts are built on the full filing chain.
+
 ## Consequences
 
 - Numbers are reproducible and auditable. The UI must show mark dates, since "as of D" mixes them.

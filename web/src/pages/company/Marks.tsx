@@ -197,7 +197,7 @@ export default function Marks({ base, sq, name, newest }: ViewProps) {
       )}
       {lead.data && (
         <Card
-          title={`Who filed each new mark first${cls ? `: ${cls}` : ''} (all firms)`}
+          title={`Who first reported each new mark (by mark date)${cls ? `: ${cls}` : ''} (all firms)`}
           actions={
             <span class="muted small">
               who first reported each new per-share level, by mark date, not filing date (moves over{' '}
@@ -216,7 +216,7 @@ export default function Marks({ base, sq, name, newest }: ViewProps) {
                 { id: 'first', header: 'First at mark date', value: (l: LevelRow) => l.firstDate },
                 {
                   id: 'leader',
-                  header: 'First filed by',
+                  header: 'First reported by',
                   value: (l: LevelRow) =>
                     l.adopters
                       .filter(a => a.lagDays === 0)
@@ -289,7 +289,7 @@ export default function Marks({ base, sq, name, newest }: ViewProps) {
                     render: f => <a href={firmPath(f.firmId)}>{f.firm}</a>,
                   },
                   { id: 'levels', header: 'Levels', value: f => f.levels, num: true },
-                  { id: 'first', header: 'Filed first', value: f => f.first, num: true },
+                  { id: 'first', header: 'Reported first', value: f => f.first, num: true },
                   {
                     id: 'lag',
                     header: 'Median lag otherwise',
@@ -309,13 +309,32 @@ export default function Marks({ base, sq, name, newest }: ViewProps) {
         </Card>
       )}
       {classes.data && (
-        <Card title={`Marks by class as of ${longDate(classes.data.date)}`} flush>
+        <Card
+          title={`Marks by class as of ${longDate(classes.data.date)}`}
+          actions={
+            classRows.some(r => r.mixedFunds > 0) ? (
+              <span class="muted small">
+                “Left out”: funds that file several marks under one class label (two securities under one name, such as
+                a share and a CVR). They are not in the median, low, high or spread; their rows are listed below.
+              </span>
+            ) : undefined
+          }
+          flush
+        >
           <DataTable
             source={classes.data}
             columns={[
               { id: 'instrument', header: 'Class', value: (r: ClassRow) => r.instrument },
               { id: 'markDate', header: 'Mark date', value: r => r.markDate },
               { id: 'funds', header: 'Funds', value: r => r.funds, num: true },
+              {
+                id: 'mixed',
+                header: 'Left out',
+                value: r => r.mixedFunds,
+                num: true,
+                render: r => (r.mixedFunds ? num(r.mixedFunds) : '—'),
+                title: 'Funds whose own rows under this label carry several marks; not in the median or spread',
+              },
               { id: 'median', header: 'Median', value: r => r.median, num: true, render: r => money(r.median) },
               { id: 'low', header: 'Low', value: r => r.low, num: true, render: r => money(r.low) },
               { id: 'high', header: 'High', value: r => r.high, num: true, render: r => money(r.high) },

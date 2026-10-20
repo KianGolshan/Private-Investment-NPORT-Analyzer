@@ -15,7 +15,14 @@ import type { Who } from './BookOverview';
 // class no other fund marked that date has no comparison, and says so.
 
 type Row = MarksT['rows'][number];
-const TONE = { above: 'pos', same: '', below: 'warn', 'no other fund that date': '' } as const;
+const TONE = {
+  above: 'pos',
+  same: '',
+  below: 'warn',
+  'no other fund that date': '',
+  'no comparable fund that date': '',
+  'several marks under this label': '',
+} as const;
 
 export function MarksVsOthers({ who, name, newest }: { who: Who; name: string; newest: string | null }) {
   const [scope] = useScope();

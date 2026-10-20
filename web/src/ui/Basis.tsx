@@ -35,7 +35,7 @@ export function BasisNote() {
       <summary>How these numbers are read</summary>
       <p class="muted">
         {BASIS}. A company that has since listed is not counted in earlier periods, and one that was listed then but is
-        private now is counted in them.
+        private now is counted in them. A past date also counts reports filed after it, for dates on or before it.
         {id ? (
           <>
             {' '}

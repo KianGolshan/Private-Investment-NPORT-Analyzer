@@ -295,6 +295,8 @@ export interface ClassesAsOf extends Envelope {
       low: number | null;
       high: number | null;
       spreadPct: number | null;
+      /** Funds left out of median, low, high and spread: their own lots under the label carry several marks. */
+      mixedFunds: number;
       firms: { id: number; name: string }[];
     }[];
     marks: ClassMark[];
@@ -344,6 +346,17 @@ export interface Firm {
   fundsHolding: number;
   companies: number;
   value: number;
+}
+
+/** /api/firms: firm values count a co-advised fund for each firm; uniqueValue counts each fund once, over all firms. */
+export interface FirmList extends Envelope {
+  date: string;
+  knownAsOf?: string;
+  categories?: string[];
+  count: number;
+  uniqueValue: number;
+  uniqueFunds: number;
+  results: Firm[];
 }
 
 export interface FirmBook extends Envelope {
@@ -413,6 +426,8 @@ export interface FundFilings extends Envelope {
 
 export interface TopCompanies extends Envelope {
   date: string;
+  /** Set when only filings made by this day count (?known=1). */
+  knownAsOf?: string;
   companies: number;
   totalValue: number;
   /** The newest mark date in force among every row of the list (null when empty). */
@@ -455,6 +470,8 @@ export interface Feed extends Envelope {
 
 export interface ScopeEcho {
   scope?: { firm?: number[]; fund?: string[]; class?: string[]; kind?: string[] } | null;
+  /** Set when the answer covers only these company categories (?category=; review 2026-10-18 W4). */
+  categories?: string[];
 }
 
 export interface BridgeStep {
@@ -692,7 +709,8 @@ export interface MarksVsOthers extends Envelope {
     company: string;
     classLabel: string;
     markDate: string;
-    mark: number;
+    /** null when this side's funds file several marks under the label (left out). */
+    mark: number | null;
     funds: number;
     value: number;
     othersMedian: number | null;
@@ -701,7 +719,16 @@ export interface MarksVsOthers extends Envelope {
     otherFunds: number;
     otherFirms: number;
     diffPct: number | null;
-    position: 'above' | 'same' | 'below' | 'no other fund that date';
+    position:
+      | 'above'
+      | 'same'
+      | 'below'
+      | 'no other fund that date'
+      | 'no comparable fund that date'
+      | 'several marks under this label';
+    /** Funds left out on this side / the others' side: several marks under one label (review 2026-10-18 #5). */
+    mixedFunds: number;
+    otherMixedFunds: number;
   }[];
 }
 

@@ -953,3 +953,87 @@ test('the server warms its caches again when it opens a new generation; one warm
   const quiet = warehouseRouter(() => openWarehouseReadOnly(dbPath));
   assert.equal(typeof quiet.warm, 'function');
 });
+
+// Review 2026-10-18 #1: no holding may sit with neither a company nor an
+// entity unless the filing names no issuer (then it can only show as "not
+// classified", services/fund.js). One key rule with the entity rebuild (keyOf).
+test('validate: a named holding with neither company nor entity fails; unnamed ones only warn when they grow', () => {
+  const Database = require('better-sqlite3');
+  const { validate } = require('../lib/warehouse/job');
+  const { openWarehouse } = require('../lib/warehouse/db');
+  golden ??= goldenWarehouse().db.serialize();
+  const db = new Database(golden);
+  const clean = validate(db, null);
+  assert.deepEqual(clean.problems, []);
+  const unnamed0 = clean.counts.unnamedRows;
+  assert.equal(typeof unnamed0, 'number');
+  // a named, unresolved row whose tag was lost: a problem, the job fails
+  const named = db
+    .prepare("SELECT accession, row_key FROM holdings WHERE entity_id IS NOT NULL AND trim(issuer_name) <> '' LIMIT 1")
+    .get();
+  db.prepare('UPDATE holdings SET entity_id = NULL WHERE accession = ? AND row_key = ?').run(
+    named.accession,
+    named.row_key
+  );
+  const bad = validate(db, null);
+  assert.equal(bad.problems.length, 1);
+  assert.match(
+    bad.problems[0],
+    new RegExp(`1 holding\\(s\\) with an issuer name.*${named.accession} ${named.row_key}`)
+  );
+  db.prepare('UPDATE holdings SET entity_id = 1 WHERE accession = ? AND row_key = ?').run(
+    named.accession,
+    named.row_key
+  );
+  // placeholder names ("N/A", "-", blank) have no key: not a problem, a warning once they grow
+  const add = db.prepare(
+    `INSERT INTO holdings (accession, row_key, issuer_name, title, value_usd, instrument_type)
+     VALUES (?, ?, ?, ?, 5, 'equity')`
+  );
+  add.run(named.accession, 'na-1', 'N/A', 'N/A');
+  add.run(named.accession, 'na-2', null, '-');
+  add.run(named.accession, 'na-3', '', '');
+  const grown = validate(db, { unnamedRows: unnamed0 });
+  assert.deepEqual(grown.problems, []);
+  assert.equal(grown.counts.unnamedRows, unnamed0 + 3);
+  assert.ok(
+    grown.warnings.some(w => /^3 new holding\(s\) with no issuer name/.test(w)),
+    grown.warnings.join('; ')
+  );
+  // the same count as published, or no published count: no warning
+  assert.ok(!validate(db, { unnamedRows: unnamed0 + 3 }).warnings.some(w => /no issuer name/.test(w)));
+  assert.ok(!validate(db, null).warnings.some(w => /no issuer name/.test(w)));
+  db.close();
+  // an empty warehouse passes
+  const dir = tmpDir('job');
+  const empty = openWarehouse(path.join(dir, 'empty.db'));
+  const e = validate(empty, null);
+  assert.deepEqual(e.problems, []);
+  assert.equal(e.counts.unnamedRows, 0);
+  empty.close();
+});
+
+test('a job that adds a holding with no issuer name publishes, warns once, and the row stays untagged', async () => {
+  const { dbPath } = tmpWarehouse();
+  const r = await runJob(
+    'ingest-delta',
+    db => {
+      const a = db.prepare('SELECT accession FROM canonical_filings ORDER BY report_date DESC LIMIT 1').get().accession;
+      db.prepare(
+        `INSERT INTO holdings (accession, row_key, issuer_name, title, balance, unit, value_usd, asset_cat, fv_level,
+           instrument_type) VALUES (?, 'na-job', 'N/A', 'N/A', 402825.789, 'NS', 7601322.64, 'EC', '1', 'equity')`
+      ).run(a);
+      return {};
+    },
+    { dbPath }
+  );
+  assert.equal(r.status, 'ok');
+  assert.match(r.warning || '', /1 new holding\(s\) with no issuer name/);
+  assert.equal(
+    read(dbPath, "SELECT company_id, entity_id FROM holdings WHERE row_key = 'na-job'").entity_id,
+    null,
+    'the entity rebuild cannot tag a row with no issuer name'
+  );
+  const again = await runJob('curation', () => ({}), { dbPath });
+  assert.equal(again.warning, undefined);
+});

@@ -20,7 +20,7 @@ private companies held as of 2026-09-30, $63.24B at each fund's latest mark; new
 ## What you can answer
 
 - [Who holds Anthropic, and at what mark?](https://vantage-kian.duckdns.org/company/1-anthropic?tab=holders)
-- [How do funds mark Stripe, and who filed each new mark first?](https://vantage-kian.duckdns.org/company/5-stripe?tab=marks)
+- [How do funds mark Stripe, and who first reported each new mark?](https://vantage-kian.duckdns.org/company/5-stripe?tab=marks)
 - [What moved this year: positions or marks?](https://vantage-kian.duckdns.org/?view=movers)
 - [What is in Capital Group's private book?](https://vantage-kian.duckdns.org/firm/9)
 - [What changed in the newest filings?](https://vantage-kian.duckdns.org/activity)
@@ -168,7 +168,8 @@ is kept, runnable, at the git tag [`v1-archive`](https://github.com/KianGolshan/
   its own mark date.
 - Only registered funds file N-PORT: mutual funds, ETFs, closed-end and interval funds. Hedge funds, venture funds
   and private funds do not, and the filings carry no company share counts, so Vantage shows no company valuations.
-- Values are as of each report date, not the filing date.
+- Values are as of each report date, not the filing date: as of a past date, a report filed later still counts.
+  Market and Firms can count only the reports filed by that date ("Filed by").
 
 ## Author
 

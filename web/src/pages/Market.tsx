@@ -8,6 +8,7 @@ import { ScopeBar } from '../scope/ScopeBar';
 import { useParam, useScope } from '../scope/scope';
 import { Card, Empty, ErrorBox, Kpi, Loading, TabPanel, Tabs } from '../ui/bits';
 import { CategoryBadge, CategorySwitch, useCategoryFilter } from '../ui/Category';
+import { KnownSwitch, knownNote, useKnown } from '../ui/Known';
 import { Chart } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
 import type { ChartTheme } from '../ui/theme';
@@ -21,7 +22,10 @@ function Top() {
   const [scope] = useScope();
   const fresh = useApi<Freshness>('/api/freshness');
   const cat = useCategoryFilter();
-  const top = useApi<TopCompanies>(`/api/market/top${qs({ date: scope.asof, limit: 300, category: cat.category })}`);
+  const known = useKnown(scope.asof);
+  const top = useApi<TopCompanies>(
+    `/api/market/top${qs({ date: scope.asof, limit: 300, category: cat.category, known: known.on })}`
+  );
   const noun = cat.all ? 'private holdings' : 'private companies';
   const d = top.data;
 
@@ -107,10 +111,11 @@ function Top() {
       <div class="row wrap">
         <p class="muted" style={{ margin: 0 }}>
           <Term id="asOf">As of</Term> {scope.asof ? longDate(scope.asof) : 'the newest filings'}: each fund's latest{' '}
-          <Term id="nport">N-PORT</Term> report on or before that date. Funds report on staggered fiscal quarters, so{' '}
-          <Term id="markDate">mark dates</Term> differ by fund.
+          <Term id="nport">N-PORT</Term> report on or before that date. {knownNote(scope.asof, known.on)} Funds report
+          on staggered fiscal quarters, so <Term id="markDate">mark dates</Term> differ by fund.
         </p>
         <span class="spacer" />
+        <KnownSwitch asof={scope.asof} />
         <CategorySwitch />
         <ScopeBar supports={{ asof: true }} newest={fresh.data?.newestReportDate ?? null} />
       </div>
@@ -147,13 +152,13 @@ function Top() {
             </Card>
             <Card title={cat.all ? 'All private holdings' : 'Operating companies'} flush>
               <DataTable
-                basis={BASIS}
+                basis={`${BASIS}. ${knownNote(scope.asof, !!d.knownAsOf)}`}
                 source={d}
                 columns={columns}
                 rows={d.results}
                 rowKey={r => String(r.companyId)}
                 sort={{ id: 'value', desc: true }}
-                exportName={`private-${cat.all ? 'holdings' : 'companies'}-${scope.asof || 'latest'}`}
+                exportName={`private-${cat.all ? 'holdings' : 'companies'}-${scope.asof || 'latest'}${d.knownAsOf ? '-known' : ''}`}
                 filterPlaceholder="Filter by name…"
                 maxHeight={420}
               />

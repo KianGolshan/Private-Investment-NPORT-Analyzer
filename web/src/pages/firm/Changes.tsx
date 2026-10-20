@@ -22,7 +22,17 @@ const TYPES: { id: string; label: string }[] = [
   { id: 'unchanged', label: 'Mark moved only' },
 ];
 
-export function FirmChanges({ id, name, newest }: { id: number; name: string; newest: string | null }) {
+export function FirmChanges({
+  id,
+  name,
+  newest,
+  category,
+}: {
+  id: number;
+  name: string;
+  newest: string | null;
+  category?: string;
+}) {
   const [scope] = useScope();
   const [type] = useParam('type');
   const loc = useLocation();
@@ -45,6 +55,7 @@ export function FirmChanges({ id, name, newest }: { id: number; name: string; ne
       types: type,
       limit: PAGE,
       offset: page * PAGE,
+      category,
     })}`
   );
   const d = ch.data;

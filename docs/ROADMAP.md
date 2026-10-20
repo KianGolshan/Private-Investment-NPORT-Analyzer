@@ -394,3 +394,23 @@ rewrite table, ranked fixes and a four-wave plan; the user confirmed the author'
 
 Also from this phase: CI runs once per pull-request commit and on pushes to `main`/`staging` (PR #26), so a cancelled
 push run no longer blocks a merge.
+
+## Phase 13: outside review triage (2026-10-18; plan: [plans/P13-outside-review.md](plans/P13-outside-review.md))
+
+**Entry gate:** an outside reviewer read the public repository only (grade B+, no data checks). Triage on real data:
+21/21 random live positions and two rebuilt totals (Wasabi, ARK Invest) equal raw EDGAR to the cent; five findings
+real (X-Ray fail-open, hindsight dates said nowhere on screen, mixed share-class marks, the Firms footer, wording),
+one gap the review missed (Firms and Explore count fund interests, CLOs and insurance vehicles; Market does not).
+The user approved the plan and asked for W1.
+
+| Wave   | Scope                                                                                                                                                                                                                          | State          |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- |
+| **W1** | X-Ray fails closed on rows with no issuer name (trap 64, F60); the job fails on a named untagged row; Firms states one all-firms total (each fund once); "first reported" wording; About's as-of rule; Level 3 helpers renamed | Built (PR #30) |
+| **W2** | Mark comparability: a fund whose lots under one class label carry different marks is left out of median, spread, leadership and marks-vs-others, shown as "left out" (trap 65, F61)                                            | Built (PR #30) |
+| **W3** | Every as-of screen says later-filed reports count; "Filed by" (`?known=1`) on Market and Firms, equal to exposureAsOf's knownAsOf (ADR 0004 amended)                                                                           | Built (PR #30) |
+| **W4** | Firms, firm pages (book, overview, timeline, changes) and Explore show operating companies by default, like Market (`?show=all`)                                                                                               | Built (PR #30) |
+
+**Calls made (the user said "finish everything", 2026-10-19), open to overrule:** hindsight stays the default and
+"Filed by" is offered on Market and Firms only (Explore and the bridge stay hindsight); a co-advised fund counts in
+full for each firm, once in the all-firms total; a fund with several marks under one label is left out of the
+statistics, its rows still shown; Firms, firm pages and Explore default to operating companies.

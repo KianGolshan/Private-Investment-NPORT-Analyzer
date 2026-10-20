@@ -533,6 +533,7 @@ curation and code revisions) and `job` (the last job's state). A retired firm id
 /api/market/top?date=&tracked=1                  private companies as of D
 /api/market/countries?date=   /api/market/tracked?date=   /api/feed?since=&until=&all=1
 /api/firms?date=&q=   /api/firms/:id?date=   /api/firms/:id/marks/:companyId
+  /api/firms also answers uniqueValue, uniqueFunds: each fund once (a co-advised fund counts for each firm)
 /api/firms/:id/changes?since=&until=&types=&company=&limit=&offset=   paged (default 500, at most 2,000)
 /api/funds?q=   /api/funds/:key[/xray|/compare|/returns|/changes]
 /api/analysis/bridge?from=&to=[&company=|&entity=][&firm=&fund=&class=&kind=]   (class, kind need a subject)
@@ -544,7 +545,11 @@ curation and code revisions) and `job` (the last job's state). A retired firm id
 /api/analysis/compare?rows=company|firm|fund|class&key=…&key=…&period=&from=&to=   2 to 5 keys (class: id:label)
 /api/market/movers?from=&to=&tracked=1&limit=    mark effect and net position flow per company, top each way
 /api/market/new?from=&to=                        companies first reported (first stored holding) in the window
-  the three Market routes take ?category=company,fund,clo,insurance (default: every category; migration 0022)
+  the three Market routes take ?category=company,fund,clo,insurance (default: every category; migration 0022);
+  so do /api/firms, /api/firms/:id, /api/firms/:id/changes and /api/analysis/{bridge,pivot,drill,timeline}
+  (the pages ask for company unless ?show=all; P13 W4)
+  /api/market/top, /api/firms and /api/firms/:id take ?known=1 (only filings made on or before the date count,
+  amendments included: exposureAsOf's knownAsOf rule) or ?knownAsOf=YYYY-MM-DD; the answer says `knownAsOf` (P13 W3)
 /api/watchlist?company=&firm=&fund=&date=        each item now and a year earlier, the year's effects (≤100 each)
   /api/feed takes ?firm=&fund= (echoed as `filters`); /api/analysis/pivot takes ?tracked=1
 ```

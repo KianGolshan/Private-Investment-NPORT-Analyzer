@@ -180,36 +180,28 @@ function parseDebtLabel(title) {
 // exposure can be measured. (v1's one-search-term extractHoldings and the BDC
 // 10-Q parser were removed with v1; git tag v1-archive.)
 
-// A holding is illiquid/hard-to-value using the one field NPORT-P itself
-// carries for exactly this purpose: fairValLevel 3 (valued with unobservable
-// inputs — the SEC's own fair-value hierarchy for hard-to-value assets).
-// Verified against two real fixtures: the Kandou filing (all three rows
-// fairValLevel 3) and the SpaceX/REX ETF filing (every one of its ~30 rows
-// fairValLevel 1 — a normal, fully public book), so a public-only fund
-// correctly comes back with zero private exposure rather than false
-// positives.
+// Fair-value Level 3: the one field NPORT-P carries for hard-to-value assets
+// (unobservable inputs). This is NOT what "private" means in Vantage: private
+// is a company's reviewed status (the companies table, DATA-QUALITY trap 7),
+// and real filers label private holdings Level 1 or 2 too (F10: KraneShares
+// files Anthropic Series E-1 at Level 1). Level 3 only feeds v1's Fund X-Ray
+// shape below (buildFundXRay, the parser's `isPrivate` field) and the stored
+// "v1 Level 3" figure in filing_totals; no warehouse answer classifies a
+// company with it (test/invariants.test.js).
 //
-// isRestrictedSec Y is deliberately NOT used here, even though it sounds
-// like it should qualify — it flags resale restrictions on a SECURITY, not
-// that the ISSUER is privately held. A real case caught live: "PREMIER
-// ENERGIES LTD" (a publicly-listed Indian solar company) came back
-// isRestrictedSec:Y at fairValLevel 2 — restricted under Indian
-// foreign-ownership rules, not because it's a private startup; fairValLevel
-// 2 means it's still valued from OBSERVABLE market inputs (i.e. it trades).
-// Level 3 alone is the correct, principled signal for "genuinely illiquid,
-// no observable market" — which is what "private" actually means here.
+// isRestrictedSec Y is not used: it flags resale restrictions on a security
+// (e.g. the listed PREMIER ENERGIES LTD, restricted under Indian
+// foreign-ownership rules at Level 2), not a private issuer.
 //
-// This alone is still NOT "private equity" — Rule 144A institutional bonds
-// are also routinely Level 3 despite being ordinary fixed-income paper, not
-// startup/VC-style equity. isPrivateEquityHolding below (which also
-// excludes debt) is what Fund X-Ray actually uses.
-function isPrivateHolding(inv) {
+// Rule 144A bonds are routinely Level 3 too; isLevel3EquityHolding below also
+// excludes debt.
+function isLevel3Holding(inv) {
   const fairValLevel = String(inv.fairvallevel ?? inv.fairValLevel ?? '').trim();
   return fairValLevel === '3';
 }
 
-// Private EQUITY specifically — an illiquid/restricted holding (per
-// isPrivateHolding above) that is also an equity-type interest, not debt.
+// Level 3 EQUITY (v1's "private equity" test) — a Level 3 holding (per
+// isLevel3Holding above) that is also an equity-type interest, not debt.
 // "Equity-type" includes derivative (a warrant/option is a claim on private
 // equity shares — real case: the Kandou warrant) and indirect (an SPV/
 // fund-of-fund vehicle wrapping equity — real case: Destiny Tech100's
@@ -219,8 +211,8 @@ function isPrivateHolding(inv) {
 // how illiquid or restricted it is (the Kandou term loan is fairValLevel 3
 // AND isRestrictedSec:Y, exactly like its sibling preferred-stock row, but
 // it is a loan, not a private equity stake).
-function isPrivateEquityHolding(inv, instrumentType) {
-  return instrumentType !== 'debt' && isPrivateHolding(inv);
+function isLevel3EquityHolding(inv, instrumentType) {
+  return instrumentType !== 'debt' && isLevel3Holding(inv);
 }
 
 // Fund/filing-level context (registrant + series name, report date, total
@@ -329,7 +321,7 @@ function extractAllHoldings(xml) {
         filerId: otherIdValue,
         chartValue,
         chartUnit,
-        isPrivate: isPrivateEquityHolding(inv, instrumentType),
+        isPrivate: isLevel3EquityHolding(inv, instrumentType),
         fairValLevel: String(inv.fairvallevel ?? inv.fairValLevel ?? '').trim(),
         isRestrictedSec: String(inv.isrestrictedsec ?? inv.isRestrictedSec ?? '')
           .trim()
@@ -350,7 +342,7 @@ function extractAllHoldings(xml) {
 // Aggregates a fund's full holdings list into the Fund X-Ray dashboard
 // shape: total private-EQUITY $ exposure, % of NAV, instrument-type mix
 // (equity/derivative/indirect only — debt is excluded by isPrivate itself,
-// see isPrivateEquityHolding), geography mix, and the private book itself
+// see isLevel3EquityHolding), geography mix, and the private book itself
 // (sorted, largest first).
 function buildFundXRay(holdings, fundMeta) {
   const meta = fundMeta || {};
@@ -1106,8 +1098,8 @@ module.exports = {
   classifyInstrument,
   parseEquityLabel,
   parseDebtLabel,
-  isPrivateHolding,
-  isPrivateEquityHolding,
+  isLevel3Holding,
+  isLevel3EquityHolding,
   extractFundMeta,
   extractAllHoldings,
   nportInvestments,

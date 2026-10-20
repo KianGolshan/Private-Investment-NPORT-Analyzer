@@ -229,3 +229,61 @@ test('R13: an unfiled percent of net assets stays null, and no net assets means 
   assert.ok(x0.privatePctOfNetAssets > 0);
   copy.close();
 });
+
+// Review 2026-10-18 #1 (GOLDEN F60): a row whose filing names no issuer (name
+// and title "N/A", stored blank) gets neither a company nor an entity, since
+// the entity rebuild has no key for it. It was counted as a private operating
+// company; it now fails closed into "not private", in every filing and in
+// every answer built on X-Ray (compare, returns).
+test('X-Ray: a row with no issuer name is never private (first, middle and newest filing; compare and returns)', () => {
+  const Database = require('better-sqlite3');
+  const copy = new Database(db.serialize());
+  const filings = fund.fundFilings(copy, GFA);
+  const picks = [filings[0], filings[Math.floor(filings.length / 2)], filings[filings.length - 1]]; // newest first
+  const before = new Map(picks.map(f => [f.accession, fund.xray(copy, GFA, f.accession)]));
+  const add = copy.prepare(
+    `INSERT INTO holdings (accession, row_key, issuer_name, title, other_id, balance, unit, value_usd, asset_cat,
+       fv_level, restricted, instrument_type, company_id, entity_id)
+     VALUES (?, ?, ?, ?, '8343X', ?, ?, ?, ?, '1', 'N', ?, NULL, NULL)`
+  );
+  for (const f of picks) {
+    add.run(f.accession, 'blank-eq', '', '', 402825.789, 'NS', 7601322.64, 'EC', 'equity');
+    add.run(f.accession, 'blank-zero', null, null, 100, 'NS', 0, 'EC', 'equity');
+    add.run(f.accession, 'blank-deriv', '', '', 10, 'NC', 500, 'DE', 'derivative');
+    add.run(f.accession, 'blank-debt', '', '', 700, 'PA', 700, 'DBT', 'debt');
+  }
+  for (const f of picks) {
+    const was = before.get(f.accession);
+    const x = fund.xray(copy, GFA, f.accession);
+    assert.equal(x.privateValueUSD, was.privateValueUSD, f.reportDate);
+    assert.equal(x.privateHoldingsCount, was.privateHoldingsCount, f.reportDate);
+    assert.deepEqual(x.privateByKind, was.privateByKind, f.reportDate);
+    assert.ok(!x.privateHoldings.some(h => String(h.rowKey).startsWith('blank')), f.reportDate);
+    const unnamed = x.notPrivate.filter(h => String(h.rowKey).startsWith('blank'));
+    assert.deepEqual(
+      unnamed.map(h => [h.rowKey, h.marketValue, h.reason, h.isPrivate]).sort(),
+      [
+        ['blank-deriv', 500, fund.UNNAMED_REASON, false],
+        ['blank-eq', 7601322.64, fund.UNNAMED_REASON, false],
+        ['blank-zero', 0, fund.UNNAMED_REASON, false],
+      ],
+      f.reportDate
+    );
+    // a debt row is never in either list (capital structure only), as before
+    assert.ok(!x.notPrivate.some(h => h.rowKey === 'blank-debt'));
+  }
+  // compare and returns read the same X-Ray: their private totals do not move
+  const [newest, middle] = picks;
+  const c = fund.compare(copy, GFA, newest.accession);
+  assert.equal(c.current.privateValueUSD, before.get(newest.accession).privateValueUSD);
+  assert.ok(!c.comparison.positions.some(p => /^$/.test(p.name || '') && (p.marketValue.current || 0) > 1e6));
+  const r = fund.returns(copy, GFA, { accessions: [newest.accession, middle.accession] });
+  assert.ok(r.returns);
+  copy.close();
+});
+
+test('X-Ray: a named unreviewed row stays private or not by its category (the fail-closed rule only covers unnamed rows)', () => {
+  const ne = fund.xray(db, 'S000011440', '0001398344-26-009765');
+  for (const h of ne.privateHoldings) assert.ok(h.company || h.unreviewed?.key, h.name);
+  for (const h of ne.notPrivate) assert.notEqual(h.reason, fund.UNNAMED_REASON);
+});

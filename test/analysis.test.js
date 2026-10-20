@@ -510,3 +510,49 @@ test('bridge: start + from positions + from marks + other changes = end, to the 
   const one = analysis.bridge(db, { from: '2026-06-29', to: '2026-06-30' });
   assert.equal(cents(one.start.value + one.positionEffect + one.markEffect + one.otherEffect), cents(one.end.value));
 });
+
+// Review 2026-10-18 #4: a fund with two advisers counts in full for each firm,
+// so firm values do not add up; uniqueValue / uniqueFunds count it once.
+test('firms: a co-advised fund counts in full for each firm and once in uniqueValue', () => {
+  const Database = require('better-sqlite3');
+  const copy = new Database(db.serialize());
+  const date = '2026-06-30';
+  const base = firm.firms(copy, { date, limit: 1000 });
+  const sum = rs => rs.reduce((s, f) => s + f.value, 0);
+  // no co-advised fund holding private companies in the golden data: the sum is the unique total
+  assert.equal(cents(sum(base.results)), cents(base.uniqueValue));
+  assert.equal(typeof base.uniqueFunds, 'number');
+  assert.ok(base.uniqueFunds > 0);
+  // give a fund that holds private companies a second adviser, another firm
+  const [a, b] = base.results.filter(f => f.value > 0);
+  const { byFirm } = firm.fundFirms(copy);
+  const book = firm.firmBook(copy, a.id, { date });
+  const shared = book.byFund[0];
+  const otherFile = copy
+    .prepare('SELECT file_num FROM manager_advisers WHERE manager_id = ? LIMIT 1')
+    .get(b.id).file_num;
+  assert.ok(!byFirm.get(b.id).managed.includes(shared.fundKey));
+  copy
+    .prepare(
+      `INSERT INTO fund_advisers (fund_key, file_num, role, source_accession, ncen_filing_date)
+       VALUES (?, ?, 'adviser', 'test', '2026-01-01')`
+    )
+    .run(shared.fundKey, otherFile);
+  copy
+    .prepare("INSERT INTO refresh_runs (started_at, finished_at, status) VALUES ('2026-10-19', '2026-10-19', 'ok')")
+    .run();
+  const after = firm.firms(copy, { date, limit: 1000 });
+  const by = new Map(after.results.map(f => [f.id, f]));
+  assert.equal(cents(by.get(a.id).value), cents(a.value), 'the first firm keeps the fund in full');
+  assert.equal(cents(by.get(b.id).value), cents(b.value + shared.value), 'the second firm adds it in full');
+  assert.equal(cents(after.uniqueValue), cents(base.uniqueValue), 'the unique total counts the fund once');
+  assert.equal(after.uniqueFunds, base.uniqueFunds);
+  assert.equal(cents(sum(after.results) - after.uniqueValue), cents(shared.value), 'the sum double counts exactly it');
+  // a name filter narrows the list, never the all-firms unique total
+  const filtered = firm.firms(copy, { date, q: a.name.slice(0, 4) });
+  assert.equal(cents(filtered.uniqueValue), cents(after.uniqueValue));
+  // a date with nothing in force: zeros, not NaN
+  const none = firm.firms(copy, { date: '2010-01-01' });
+  assert.deepEqual([none.uniqueValue, none.uniqueFunds], [0, 0]);
+  copy.close();
+});

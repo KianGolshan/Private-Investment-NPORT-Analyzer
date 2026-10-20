@@ -26,7 +26,7 @@ const doc = (path: string) => `${REPO}/blob/main/${path}`;
 // Questions the data answers, each a live page.
 const QUESTIONS: [string, string][] = [
   ['Who holds Anthropic, and at what mark?', '/company/1-anthropic?tab=holders'],
-  ['How do funds mark Stripe, and who filed each new mark first?', '/company/5-stripe?tab=marks'],
+  ['How do funds mark Stripe, and who first reported each new mark?', '/company/5-stripe?tab=marks'],
   ['What moved this year: positions or marks?', '/?view=movers'],
   ['What is in Capital Group’s private book?', '/firm/9'],
   ['What changed in the newest filings?', '/activity'],
@@ -105,9 +105,10 @@ export default function About() {
               Jan/Apr/Jul/Oct, others in Feb/May/Aug/Nov or Mar/Jun/Sep/Dec, so every holding shows its own mark date.
             </li>
             <li>
-              <strong>As of a date</strong>, each fund counts with its latest filing on or before that date, and only if
-              that filing is no more than 123 days old. A fund that stopped filing drops out instead of being counted
-              forever. An amended filing replaces the original for its report date.
+              <strong>As of a date</strong>, each fund counts with its latest report on or before that date (a report
+              filed later still counts), and only if that filing is no more than 123 days old. A fund that stopped
+              filing drops out instead of being counted forever. An amended filing replaces the original for its report
+              date.
             </li>
             <li>
               <strong>Private</strong> means the company is private, from a reviewed company list. It does not mean
