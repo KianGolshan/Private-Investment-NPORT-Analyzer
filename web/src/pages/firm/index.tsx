@@ -11,6 +11,7 @@ import { Timeline } from '../book/Timeline';
 import { Book } from './Book';
 import { FirmChanges } from './Changes';
 import { PAGE_TITLES, itemTitle, usePageTitle } from '../../lib/title';
+import { CategorySwitch, useCategoryFilter } from '../../ui/Category';
 
 // A manager (P6b W3): every fund it advises (current N-CEN adviser). Overview
 // (its private book over time and the bridge for a range), the investment
@@ -33,7 +34,12 @@ export default function Firm() {
   // The old book tabs (?tab=companies|funds) open the book.
   const current = tab === 'companies' || tab === 'funds' ? 'book' : TABS.some(t => t.id === tab) ? tab : 'overview';
   const fresh = useApi<Freshness>('/api/freshness');
-  const book = useApi<FirmBook>(Number.isInteger(id) ? `/api/firms/${id}${qs({ date: scope.asof })}` : null);
+  // Operating companies by default, like Market and Firms; ?show=all for every private holding (review 2026-10-18 W4).
+  const cat = useCategoryFilter();
+  const who = { firm: id, category: cat.category };
+  const book = useApi<FirmBook>(
+    Number.isInteger(id) ? `/api/firms/${id}${qs({ date: scope.asof, category: cat.category })}` : null
+  );
   const b = book.data;
   usePageTitle(isNotFound(book.error) ? PAGE_TITLES.notFound : b ? itemTitle.firm(b.firm.name) : 'Firm');
   const newest = fresh.data?.newestReportDate ?? null;
@@ -52,10 +58,12 @@ export default function Firm() {
                 {num(b.firm.fundsManaged)} funds advised
                 {b.firm.fundsSubadvised ? ` (${num(b.firm.fundsSubadvised)} more sub-advised, not counted)` : ''}. A
                 fund belongs to the firm named as its adviser in its latest Form N-CEN. Each fund counts at its own mark
-                date.
+                date. {cat.all ? 'Every private holding' : 'Operating companies'} (fund interests, CLOs and insurance
+                vehicles {cat.all ? 'included' : 'apart'}).
               </p>
             </div>
             <span class="spacer" />
+            <CategorySwitch />
             <WatchButton kind="firm" id={id} label={b.firm.name} />
           </div>
           <div class="kpis">
@@ -66,11 +74,13 @@ export default function Firm() {
           </div>
           <Tabs id="firm" tabs={TABS} current={current} onSelect={t => setTab(t === 'overview' ? '' : t)} />
           <TabPanel id="firm" current={current}>
-            {current === 'overview' && <BookOverview who={{ firm: id }} name={b.firm.name} newest={newest} />}
-            {current === 'timeline' && <Timeline who={{ firm: id }} name={b.firm.name} />}
+            {current === 'overview' && <BookOverview who={who} name={b.firm.name} newest={newest} />}
+            {current === 'timeline' && <Timeline who={who} name={b.firm.name} />}
             {current === 'book' && <Book id={id} book={b} newest={newest} />}
             {current === 'marks' && <MarksVsOthers who={{ firm: id }} name={b.firm.name} newest={newest} />}
-            {current === 'changes' && <FirmChanges id={id} name={b.firm.name} newest={newest} />}
+            {current === 'changes' && (
+              <FirmChanges id={id} name={b.firm.name} newest={newest} category={cat.category} />
+            )}
           </TabPanel>
         </>
       )}

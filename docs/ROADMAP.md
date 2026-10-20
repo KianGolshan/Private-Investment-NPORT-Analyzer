@@ -403,9 +403,14 @@ real (X-Ray fail-open, hindsight dates said nowhere on screen, mixed share-class
 one gap the review missed (Firms and Explore count fund interests, CLOs and insurance vehicles; Market does not).
 The user approved the plan and asked for W1.
 
-| Wave   | Scope                                                                                                                                                                                                                          | State                          |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
-| **W1** | X-Ray fails closed on rows with no issuer name (trap 64, F60); the job fails on a named untagged row; Firms states one all-firms total (each fund once); "first reported" wording; About's as-of rule; Level 3 helpers renamed | Built (branch `v2-review3-w1`) |
-| W2     | Mark comparability: a fund whose lots under one class label carry different marks is left out of median, spread and leadership, and shown                                                                                      | Planned                        |
-| W3     | Say on every as-of screen that later-filed reports count; "Known by" on Market and Firms (the user's call, question 1)                                                                                                         | Waits on the user              |
-| W4     | Category on Firms, firm pages and Explore, like Market (the user's call, question 4)                                                                                                                                           | Waits on the user              |
+| Wave   | Scope                                                                                                                                                                                                                          | State          |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- |
+| **W1** | X-Ray fails closed on rows with no issuer name (trap 64, F60); the job fails on a named untagged row; Firms states one all-firms total (each fund once); "first reported" wording; About's as-of rule; Level 3 helpers renamed | Built (PR #30) |
+| **W2** | Mark comparability: a fund whose lots under one class label carry different marks is left out of median, spread, leadership and marks-vs-others, shown as "left out" (trap 65, F61)                                            | Built (PR #30) |
+| **W3** | Every as-of screen says later-filed reports count; "Filed by" (`?known=1`) on Market and Firms, equal to exposureAsOf's knownAsOf (ADR 0004 amended)                                                                           | Built (PR #30) |
+| **W4** | Firms, firm pages (book, overview, timeline, changes) and Explore show operating companies by default, like Market (`?show=all`)                                                                                               | Built (PR #30) |
+
+**Calls made (the user said "finish everything", 2026-10-19), open to overrule:** hindsight stays the default and
+"Filed by" is offered on Market and Firms only (Explore and the bridge stay hindsight); a co-advised fund counts in
+full for each firm, once in the all-firms total; a fund with several marks under one label is left out of the
+statistics, its rows still shown; Firms, firm pages and Explore default to operating companies.

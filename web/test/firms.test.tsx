@@ -22,15 +22,22 @@ const list: FirmList = {
   ],
 } as unknown as FirmList;
 
+let asked: string[] = [];
 function serve() {
+  asked = [];
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url: string) => ({
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      json: async () => (String(url).startsWith('/api/firms') ? list : { newestReportDate: '2026-09-30' }),
-    }))
+    vi.fn(
+      async (url: string) => (
+        asked.push(String(url)),
+        {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => (String(url).startsWith('/api/firms') ? list : { newestReportDate: '2026-09-30' }),
+        }
+      )
+    )
   );
 }
 afterEach(() => {
@@ -48,12 +55,53 @@ describe('Firms', () => {
     );
     await waitFor(() => expect(container.textContent).toContain('held by 2 funds across all firms'));
     const text = container.textContent!.replace(/\s+/g, ' ');
-    expect(text).toContain('$15.0M held by 2 funds across all firms');
+    expect(text).toContain('$15.0M in private companies held by 2 funds across all firms');
     expect(text).toContain('do not add up');
     // the sum of firm values ($20.0M) appears nowhere
     expect(text).not.toContain('$20.0M');
     const foot = container.querySelector('tfoot')?.textContent ?? '';
     expect(foot).toContain('2 firms');
     expect(foot).not.toMatch(/\$/);
+  });
+});
+
+// Review 2026-10-18 W3/W4: operating companies by default (like Market), every
+// private holding on ?show=all; "known by" only with a past as-of date.
+describe('Firms: category and known by', () => {
+  const at = (url: string) => {
+    window.history.replaceState(null, '', url);
+    return render(
+      <LocationProvider>
+        <Firms />
+      </LocationProvider>
+    );
+  };
+  afterEach(() => window.history.replaceState(null, '', '/'));
+
+  it('asks for operating companies by default and every holding on ?show=all', async () => {
+    serve();
+    at('/firms');
+    await waitFor(() => expect(asked.some(u => u.startsWith('/api/firms'))).toBe(true));
+    expect(asked.find(u => u.startsWith('/api/firms'))).toContain('category=company');
+    expect(asked.find(u => u.startsWith('/api/firms'))).not.toContain('known=');
+    clearApiCache();
+    serve();
+    at('/firms?show=all');
+    await waitFor(() => expect(asked.some(u => u.startsWith('/api/firms'))).toBe(true));
+    expect(asked.find(u => u.startsWith('/api/firms'))).not.toContain('category=');
+  });
+
+  it('offers "filed by" only with a past as-of date, and sends known=1 when picked', async () => {
+    serve();
+    const latest = at('/firms');
+    await waitFor(() => expect(latest.container.textContent).toContain('across all firms'));
+    expect(latest.container.textContent).not.toContain('Filed by');
+    latest.unmount();
+    clearApiCache();
+    serve();
+    const past = at('/firms?asof=2026-06-30&known=1');
+    await waitFor(() => expect(past.container.textContent).toContain('Filed by'));
+    expect(asked.find(u => u.startsWith('/api/firms'))).toContain('known=1');
+    expect(past.container.textContent).toContain('Only reports filed with the SEC by');
   });
 });

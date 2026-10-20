@@ -28,7 +28,7 @@ export const GLOSSARY: Record<TermId, { term: string; text: string }> = {
   },
   asOf: {
     term: 'As of',
-    text: 'As of a date, each fund counts with its latest report on or before that date, if that report is no more than 123 days old.',
+    text: 'As of a date, each fund counts with its latest report on or before that date, if that report is no more than 123 days old. A report filed after the date still counts, since it reports on or before it; Market and Firms can count only the reports filed by then.',
   },
   nport: {
     term: 'N-PORT',

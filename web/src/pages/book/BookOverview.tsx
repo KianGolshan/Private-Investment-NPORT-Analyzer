@@ -16,7 +16,8 @@ import { baseOption, type ChartTheme } from '../../ui/theme';
 // funds, then the bridge for the range (default: the year to the newest mark
 // date) and position vs mark effect by period. Brushing the chart sets the range.
 
-export type Who = { firm: number } | { fund: string };
+// A firm's views also carry the company category of its ?show= switch (ui/Category).
+export type Who = { firm: number; category?: string } | { fund: string };
 
 type Row = Pivot['results'][number];
 const TOP = 7;

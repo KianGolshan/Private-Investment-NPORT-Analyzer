@@ -2,6 +2,18 @@
 
 Releases of the public site. Detail lives in [docs/STATUS.md](docs/STATUS.md) and its archive.
 
+## v2.3.0: outside review fixes (P13), 2026-10-19
+
+- **Fund pages count only what they can name:** a holding whose filing gives no issuer name ("N/A") is listed as
+  "not classified", never as a private company. Updates stop if a named holding is ever left unsorted.
+- **Per-share marks compare like with like:** a fund that files two securities under one class label (a share and a
+  CVR, two warrant series) is left out of the median, spread and "who reported first", and shown as "left out".
+- **"As of" says what it counts:** a past date includes reports filed later, and every as-of screen says so; Market
+  and Firms can count only the reports filed by that date ("Filed by").
+- **Firms match Market:** Firms, firm pages and Explore show operating companies by default ("All private holdings"
+  for fund stakes, CLOs and insurance vehicles too); the Firms total counts a fund with two advisers once.
+- **Words:** "first reported" (by mark date) instead of "filed first".
+
 ## v2.2.0: copy and UX review (P12), 2026-10-18
 
 - **Says what it is:** "Private-company holdings and marks, straight from SEC fund filings" as the site title, Market's

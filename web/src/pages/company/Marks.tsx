@@ -309,13 +309,32 @@ export default function Marks({ base, sq, name, newest }: ViewProps) {
         </Card>
       )}
       {classes.data && (
-        <Card title={`Marks by class as of ${longDate(classes.data.date)}`} flush>
+        <Card
+          title={`Marks by class as of ${longDate(classes.data.date)}`}
+          actions={
+            classRows.some(r => r.mixedFunds > 0) ? (
+              <span class="muted small">
+                “Left out”: funds that file several marks under one class label (two securities under one name, such as
+                a share and a CVR). They are not in the median, low, high or spread; their rows are listed below.
+              </span>
+            ) : undefined
+          }
+          flush
+        >
           <DataTable
             source={classes.data}
             columns={[
               { id: 'instrument', header: 'Class', value: (r: ClassRow) => r.instrument },
               { id: 'markDate', header: 'Mark date', value: r => r.markDate },
               { id: 'funds', header: 'Funds', value: r => r.funds, num: true },
+              {
+                id: 'mixed',
+                header: 'Left out',
+                value: r => r.mixedFunds,
+                num: true,
+                render: r => (r.mixedFunds ? num(r.mixedFunds) : '—'),
+                title: 'Funds whose own rows under this label carry several marks; not in the median or spread',
+              },
               { id: 'median', header: 'Median', value: r => r.median, num: true, render: r => money(r.median) },
               { id: 'low', header: 'Low', value: r => r.low, num: true, render: r => money(r.low) },
               { id: 'high', header: 'High', value: r => r.high, num: true, render: r => money(r.high) },

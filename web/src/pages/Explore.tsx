@@ -1,4 +1,5 @@
 import { BASIS, BasisNote } from '../ui/Basis';
+import { CategorySwitch, useCategoryFilter } from '../ui/Category';
 import { useCallback, useMemo, useState } from 'preact/hooks';
 import { qs, useApi } from '../api/client';
 import type { Drill, DrillEvent, Freshness, Pivot, PivotMetric } from '../api/types';
@@ -91,9 +92,13 @@ export default function Explore() {
   const to = range ? scope.to : (newest ?? '');
   const from = range ? scope.from : newest ? addYears(newest, period === 'month' ? -1 : -2) : '';
   const filters = scopeParams(scope, ['firm', 'fund']);
+  // Operating companies by default, like Market (?show=all: every private holding; review 2026-10-18 W4).
+  const cat = useCategoryFilter();
 
   const pivot = useApi<Pivot>(
-    to ? `/api/analysis/pivot${qs({ rows, period, from, to, limit, tracked: trackedP === '1', ...filters })}` : null
+    to
+      ? `/api/analysis/pivot${qs({ rows, period, from, to, limit, tracked: trackedP === '1', category: cat.category, ...filters })}`
+      : null
   );
   const p = pivot.data;
 
@@ -109,6 +114,7 @@ export default function Explore() {
           from: drillPeriod.from,
           to: drillPeriod.to,
           tracked: trackedP === '1',
+          category: cat.category,
           ...filters,
         })}`
       : null
@@ -266,16 +272,17 @@ export default function Explore() {
           <div class="eyebrow">Explore</div>
           <h1>Explore holdings over time by firm, fund, company or class</h1>
           <p class="muted" style={{ margin: '4px 0 0' }}>
-            Levels are <Term id="asOf">as of</Term> each period end (each fund's latest filing within 123 days). Changes
-            are summed over the filings whose mark dates fall in the period; a mark date is never moved to a quarter
-            end. Click any cell for the filings behind it. Counts cover everything active in the range, so they can be
-            higher than a page that reads one date.
+            Levels are <Term id="asOf">as of</Term> each period end (each fund's latest report within 123 days,
+            including reports filed after the period end). Changes are summed over the filings whose mark dates fall in
+            the period; a mark date is never moved to a quarter end. Click any cell for the filings behind it. Counts
+            cover everything active in the range, so they can be higher than a page that reads one date.
           </p>
           <BasisNote />
         </div>
       </div>
       <div class="row wrap">
         <ScopeBar supports={{ range: true, filters: ['firm', 'fund'] }} newest={newest} />
+        <CategorySwitch />
         <FirmPicker />
         <label class="row small">
           <input
@@ -416,7 +423,7 @@ export default function Explore() {
           )}
           <Card title="Table" flush>
             <DataTable
-              basis={BASIS}
+              basis={`${BASIS}. ${p.categories ? 'Operating companies only' : 'Every private holding'}`}
               source={p}
               columns={columns}
               rows={shown}
@@ -548,7 +555,7 @@ function DrillView({
             </span>
           </div>
           <DataTable
-            basis={BASIS}
+            basis={`${BASIS}. ${d.categories ? 'Operating companies only' : 'Every private holding'}`}
             source={d}
             columns={columns}
             rows={d.events}

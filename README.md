@@ -168,7 +168,8 @@ is kept, runnable, at the git tag [`v1-archive`](https://github.com/KianGolshan/
   its own mark date.
 - Only registered funds file N-PORT: mutual funds, ETFs, closed-end and interval funds. Hedge funds, venture funds
   and private funds do not, and the filings carry no company share counts, so Vantage shows no company valuations.
-- Values are as of each report date, not the filing date.
+- Values are as of each report date, not the filing date: as of a past date, a report filed later still counts.
+  Market and Firms can count only the reports filed by that date ("Filed by").
 
 ## Author
 

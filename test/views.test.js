@@ -361,16 +361,49 @@ test('classes: Anthropic 2026-06-30 Common counts 13 funds, the PBC line 1 (F06)
   assert.equal(at('Indirect via ANTHROPIC PBC').funds, 1);
 });
 
-test('markStats: a fund with several lots is one observation at value / shares (F06)', () => {
+test('markStats: a fund with several lots at one mark is one observation at value / shares (F06)', () => {
   const { markStats } = require('../lib/services/classes');
-  // A: 100 sh $1,000 + 300 sh $3,600 -> $11.50; B $12.00; C $20.00. Median $12.00 (not 11 of 4 rows)
+  // A: 100 sh $1,150 + 300 sh $3,450 -> both $11.50; B $12.00; C $20.00. Median $12.00 (not of 4 rows)
   const s = markStats([
-    { fundKey: 'A', value: 1000, shares: 100 },
-    { fundKey: 'A', value: 3600, shares: 300 },
+    { fundKey: 'A', value: 1150, shares: 100 },
+    { fundKey: 'A', value: 3450, shares: 300 },
     { fundKey: 'B', value: 1200, shares: 100 },
     { fundKey: 'C', value: 2000, shares: 100 },
   ]);
-  assert.deepEqual(s, { funds: 3, median: 12, low: 11.5, high: 20, severalMarks: 1 });
+  assert.deepEqual(s, { funds: 3, median: 12, low: 11.5, high: 20, mixedFunds: 0, severalMarks: 0 });
+  // lots within 0.1% of each other are one mark, not several
+  const near = markStats([
+    { fundKey: 'A', value: 1000, shares: 100 },
+    { fundKey: 'A', value: 1000.9, shares: 100 },
+  ]);
+  assert.deepEqual([near.funds, near.mixedFunds], [1, 0]);
+});
+
+// Review 2026-10-18 #5 (GOLDEN F61): a generic label can hold two securities.
+// A fund whose own lots under it carry different marks is left out of the
+// median, low, high and spread, never averaged into them.
+test('markStats: a fund with several marks under one label is left out, never averaged (Skyhawk, F61)', () => {
+  const { markStats } = require('../lib/services/classes');
+  // Skyhawk "Common", 2026-05-31, three Fidelity funds each with common PP $53.14 and a CVR at $0.00001.
+  const skyhawk = fund => [
+    { fundKey: fund, value: 36420933.78, shares: 685377 },
+    { fundKey: fund, value: 4.82, shares: 481725 },
+  ];
+  const clean = { fundKey: 'T', value: 34470, shares: 1000 }; // another fund at $34.47
+  const s = markStats([...skyhawk('A'), ...skyhawk('B'), ...skyhawk('C'), clean]);
+  assert.deepEqual(s, { funds: 1, median: 34.47, low: 34.47, high: 34.47, mixedFunds: 3, severalMarks: 3 });
+  // every fund mixed: no comparable mark at all, said as null, never 0 or NaN
+  const none = markStats([...skyhawk('A'), ...skyhawk('B')]);
+  assert.deepEqual(none, { funds: 0, median: null, low: null, high: null, mixedFunds: 2, severalMarks: 2 });
+  // Commercial Barge Line "Warrant": preferred warrants $100.81 beside common warrants $0.625
+  const barge = markStats([
+    { fundKey: 'A', value: 10092593.15, shares: 100115 },
+    { fundKey: 'A', value: 625718.75, shares: 1001150 },
+    { fundKey: 'B', value: 10092593.15, shares: 100115 },
+  ]);
+  assert.deepEqual([barge.funds, barge.mixedFunds, Math.round(barge.median * 100) / 100], [1, 1, 100.81]);
+  // empty input
+  assert.deepEqual(markStats([]), { funds: 0, median: null, low: null, high: null, mixedFunds: 0, severalMarks: 0 });
 });
 
 test('cross-company answers say how they read history; company answers do not need to (F14)', async () => {
@@ -400,4 +433,80 @@ test('L6: one threshold for "mark moved" and the monthly mark-up/down counts', (
   const ev = (pct, type = 'unchanged') => ({ markDate: '2026-03-31', type, markChangePct: pct });
   const [m] = activityByMonth([ev(0.01), ev(-0.01), ev(MARK_MOVE_PCT), ev(0.004), ev(null)]);
   assert.deepEqual([m.markUps, m.markDowns], [1, 1], 'a 0.01% move counts; at or under the threshold does not');
+});
+
+// Review 2026-10-18 #5 end to end: one fund's second Anthropic "Common" lot at
+// a near-zero mark (a CVR-like row) takes that fund out of the class's median
+// and spread in every class view, and the fund's rows still list it.
+test('classes: a fund with a second lot at another mark is left out of the stats, still listed (F61 shape)', () => {
+  const Database = require('better-sqlite3');
+  const marks = require('../lib/services/marks');
+  const copy = new Database(db.serialize());
+  const id = idOf('Anthropic');
+  const date = '2026-06-30';
+  const at = x => x.classes.find(c => c.instrument === 'Common').byMarkDate.find(d => d.markDate === date);
+  const before = at(marks.classesAsOf(copy, { companyId: id }, date));
+  assert.equal(before.mixedFunds, 0);
+  const lot =
+    before &&
+    marks
+      .classesAsOf(copy, { companyId: id }, date)
+      .classes.find(c => c.instrument === 'Common')
+      .marks.find(m => m.markDate === date && m.balance > 0);
+  const row = copy
+    .prepare('SELECT * FROM holdings WHERE accession = ? AND company_id = ? AND balance = ? LIMIT 1')
+    .get(lot.accession, id, lot.balance);
+  const cols = Object.keys(row);
+  copy
+    .prepare(`INSERT INTO holdings (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`)
+    .run(
+      ...cols.map(c => (c === 'row_key' ? 'cvr-like' : c === 'other_id' ? 'CVR1' : c === 'value_usd' ? 4.82 : row[c]))
+    );
+  copy
+    .prepare("INSERT INTO refresh_runs (started_at, finished_at, status) VALUES ('2026-10-19', '2026-10-19', 'ok')")
+    .run();
+  const x = marks.classesAsOf(copy, { companyId: id }, date);
+  const after = at(x);
+  assert.equal(after.mixedFunds, 1);
+  assert.equal(after.funds, before.funds - 1);
+  assert.ok(after.low > 1, 'the near-zero lot never lowers the low');
+  // the fund's rows are still listed, both lots
+  const rows = x.classes
+    .find(c => c.instrument === 'Common')
+    .marks.filter(m => m.fundKey === lot.fundKey && m.markDate === date);
+  assert.equal(rows.length, 2);
+  // within the filing, the label marked two ways is never the low and gets no percent
+  for (const w of x.withinFiling.filter(w => w.accession === lot.accession))
+    assert.ok(!w.classes.some(c => c.instrument === 'Common'), 'a mixed label is not compared within its filing');
+  assert.ok(rows.every(m => m.vsFilingLowPct == null || m.vsFilingLowPct < 1e6));
+  for (const w of x.withinFiling)
+    for (const c of w.classes) assert.ok(c.vsLowPct < 1e4, `${w.accession} ${c.instrument}`);
+  // the market line and per-firm lines use the same rule: that date's Common median equals the class table's
+  const cm = marks.classMarks(copy, { companyId: id });
+  const s = cm.series.find(p => p.instrument === 'Common' && p.markDate === date);
+  assert.equal(s.median, after.median);
+  assert.equal(s.mixedFunds, 1);
+  for (const p of cm.firmSeries) assert.ok(p.funds > 0 && p.median != null);
+  // leadership still answers and never sees a null level
+  for (const l of marks.markLeadership(copy, { companyId: id }).levels) assert.ok(Number.isFinite(l.mark));
+  // marks vs others, from the fund's side: no mark of its own, said so, no percent
+  const { buildPositionFacts } = require('../lib/warehouse/position-facts');
+  const analysis = require('../lib/services/analysis');
+  buildPositionFacts(copy);
+  copy
+    .prepare("INSERT INTO refresh_runs (started_at, finished_at, status) VALUES ('2026-10-19', '2026-10-19', 'ok')")
+    .run();
+  const mine = analysis.marksVsOthers(copy, { fund: lot.fundKey, date });
+  const r = mine.rows.find(x => x.companyId === id && x.classLabel === 'Common' && x.markDate === date);
+  assert.deepEqual([r.mark, r.diffPct, r.position, r.mixedFunds], [null, null, 'several marks under this label', 1]);
+  assert.ok(!mine.rows.some(x => Number.isNaN(x.diffPct)));
+  // from another fund's side at that date: the mixed fund is not among the others
+  const other = x.classes
+    .find(c => c.instrument === 'Common')
+    .marks.find(m => m.markDate === date && m.fundKey !== lot.fundKey && m.pricePerShare > 0);
+  const theirs = analysis.marksVsOthers(copy, { fund: other.fundKey, date });
+  const t = theirs.rows.find(x => x.companyId === id && x.classLabel === 'Common' && x.markDate === date);
+  assert.equal(t.otherMixedFunds, 1);
+  assert.equal(t.otherFunds, after.funds - 1);
+  copy.close();
 });
