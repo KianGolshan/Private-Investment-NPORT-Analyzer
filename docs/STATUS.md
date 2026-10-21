@@ -30,20 +30,21 @@ deferred by choice: P7 (MCP server), P8's 30-night checkpoint. Next: the user's 
 
 The analyst workspace is served at `/`; the route map is in the [README](../README.md).
 
-| View                | Where                             | What                                                                                                                               |
-| ------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Search              | ⌘K anywhere                       | one ranked search over companies, unreviewed names, firms, funds and classes                                                       |
-| Market              | `/` (Top, Movers, Newly reported) | operating companies by default (`?show=all`: fund interests, CLOs, insurance vehicles too); as of any date; movers; first reported |
-| Company             | `/company/<id>`                   | overview + bridge, holders, positions grid, changes, marks & classes (spreads, leadership), filings; header says its category      |
-| Position history    | `/company/<id>?pos=<fund>`        | one fund's legs at every filing, one mark line per class                                                                           |
-| Fund                | `/fund/<key>`                     | private book (X-Ray), timeline, marks vs others, compare, mark-implied returns (labeled proxies)                                   |
-| Firm                | `/firm/<id>`, `/firms`            | a manager's book, timeline, fund × company matrix, marks vs others, paged changes                                                  |
-| Explore             | `/explore`                        | firm/fund/company/class × month/quarter/year, every metric; any cell drills to the legs behind it                                  |
-| Activity            | `/activity`                       | changes in newly filed reports, firm and fund filters, paged; KPIs over every match                                                |
-| Compare             | `/compare`                        | 2–5 companies, firms, funds or classes side by side (with example links when empty)                                                |
-| Tracked & Watchlist | `/watchlist` (`/tracked` → 301)   | the tracked list and the viewer's watchlist                                                                                        |
-| About, Status       | `/about`, `/status`               | method, sources, limits; freshness and the last nightly (golden smoke check) and monthly (EDGAR reconciliation) results            |
-| Exports             | every table                       | CSV/XLSX with mark date, accession, source, category and how history is read                                                       |
+| View                | Where                                 | What                                                                                                                                              |
+| ------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Search              | ⌘K anywhere                           | one ranked search over companies, unreviewed names, firms, funds and classes                                                                      |
+| Market              | `/` (Top, Movers, Newly reported)     | operating companies by default (`?show=all`: fund interests, CLOs, insurance vehicles too); as of any date; movers; first reported                |
+| Company             | `/company/<id>`                       | overview + bridge, holders, positions grid, changes, marks & classes (spreads, leadership), filings; header says its category                     |
+| Position history    | `/company/<id>?pos=<fund>`            | one fund's legs at every filing, one mark line per class                                                                                          |
+| Fund                | `/fund/<key>`                         | private book (X-Ray), timeline, marks vs others, compare, mark-implied returns (labeled proxies)                                                  |
+| Firm                | `/firm/<id>`, `/firms`                | a manager's book, timeline, fund × company matrix, marks vs others, paged changes                                                                 |
+| Sectors             | `/sectors`, `/sectors/<level>/<code>` | holdings by sector, industry or theme as of any date; by quarter (from positions vs from marks); per-share mark index; each company's mark change |
+| Explore             | `/explore`                            | firm/fund/company/class × month/quarter/year, every metric; any cell drills to the legs behind it                                                 |
+| Activity            | `/activity`                           | changes in newly filed reports, firm and fund filters, paged; KPIs over every match                                                               |
+| Compare             | `/compare`                            | 2–5 companies, firms, funds or classes side by side (with example links when empty)                                                               |
+| Tracked & Watchlist | `/watchlist` (`/tracked` → 301)       | the tracked list and the viewer's watchlist                                                                                                       |
+| About, Status       | `/about`, `/status`                   | method, sources, limits; freshness and the last nightly (golden smoke check) and monthly (EDGAR reconciliation) results                           |
+| Exports             | every table                           | CSV/XLSX with mark date, accession, source, category and how history is read                                                                      |
 
 v1 (the per-filing live routes, Batch, Private Credit) is out of the live project since W1, kept runnable at the git
 tag **`v1-archive`** (and branch `archive/v1`).
@@ -65,20 +66,48 @@ On the server: `sudo vantage-run npm run doctor`; timers `vantage-nightly` (06:1
 `vantage-autodeploy` (5 min), `vantage-duckdns`. Units come from `setup.sh`, not from deploys; the live server also
 has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB cap, 3 GB heap; 2026-10-14).
 
-## Where things stand (2026-10-20)
+## Where things stand (2026-10-21)
 
-- **P14 sectors and themes, W0 (branch `v2-p14-w0`, stacked on `v2-review3-w1`/PR #30):** the user approved the plan
-  ([plans/P14-sectors.md](plans/P14-sectors.md)): one Claude classifier pass for names, entity type and
-  sector/industry/themes; the whole unreviewed queue brought to a final state; a sector bridge and a matched-pair mark
-  index. Results:
-  - draft taxonomy (9 sectors, 39 industries, 8 themes);
-  - draft labels for all 197 reviewed operating companies (high 95.5% of value, medium 2.6%, unclear 1.9%);
-  - six category errors found in the reviewed list;
-  - Form D rejected as an industry source (34% of value, coarse groups, name collisions);
-  - biotech has too few repeat marks for Q3 2026 (4 companies), so the index gets a minimum sample.
-- **Open:** the classifier pilot (needs `ANTHROPIC_API_KEY`); a person's check of the medium labels plus 20 random high
-  labels before W1.
-- **Next prompt:** "P14: run the W0 classifier pilot (key is set), then build W1."
+- **P14 sectors and themes, built (branch `v2-p14-w0`, stacked on `v2-review3-w1`/PR #30; v2.4.0):**
+  - **Missing companies:** the review bar ($50M in 2+ funds) had left 572 operating private companies out of the
+    app. They were labeled in session from the warehouse names (web search to confirm) and admitted with evidence
+    (`scripts/p14-admit-companies.js`); 16 duplicates were merged by listed decisions.
+    - Market's operating companies at 2026-08-31: 192 → 759, $64.10B → $73.34B; every other company unchanged to
+      the cent.
+    - 20/20 sampled new positions equal raw EDGAR to the cent.
+    - The rest of the queue (10,144 names) is sorted by rule or in session (`docs/plans/p14/`). A planned
+      "$11B of unnamed holdings" was my query error (titles, not issuer names); 103 rows truly have no name.
+  - **Labels (ADR 0010):**
+    - `data/review/taxonomy.json` (9 sectors, 41 industries, 8 themes) and `industries.csv`: 764 private companies,
+      756 classified, 8 "not yet classified" (code names);
+    - migration 0023, validated import; every job refuses a private company with no decision;
+    - "make this a company" records "not yet classified".
+  - **Analytics:**
+    - `services/sectors.js` (totals equal to Market, group companies, a chain-based per-share mark index);
+    - Explore sector/industry/theme rows (drill sums to cells);
+    - `/api/sectors*`; the company answer carries its classification.
+  - **Fixes:**
+    - trap 63 extended: Impilo 0.04 → 88,174.80 sh had read ±$270B (F63); 36 legs, 22 left are real write-downs;
+    - the index first double-counted staggered step-ups (Anthropic +638%), now chains: +317.86% (F62, raw EDGAR).
+  - **Web:**
+    - `/sectors` (Holdings, Over time, Per-share marks) and `/sectors/<level>/<code>`;
+    - the company header chip, glossary entries.
+  - **Nightly watch:** new company-like names over $1M in any number of funds (once each), and companies not yet
+    classified.
+  - **Gates:**
+    - backend 488 (484 pass, 4 skipped);
+    - web 18 files, 67 tests;
+    - lint, lint:web, format clean; build;
+    - browser: Sectors (all tabs), AI theme page, Anthropic, light and dark, 1280 and 375 px, no overflow, no console
+      errors.
+    - e2e runs in CI on the PR.
+  - **Local warehouse:** generation 40 (from the local generation 34 base); the server re-imports `data/review` on
+    deploy.
+- **Open:**
+  - the user merges PR #30, then this branch's PR;
+  - 8 companies not yet classified;
+  - an opt-in cheap-model suggestion for new names (not built; the user ruled out paid bulk labeling).
+- **Next prompt:** "P14: open the PR" or "label the 8 unclassified companies".
 
 ## Where things stand (2026-10-19)
 

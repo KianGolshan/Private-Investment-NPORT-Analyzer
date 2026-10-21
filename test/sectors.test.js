@@ -175,3 +175,12 @@ test('API: sectors, companies, index, marks, Explore rows and the company classi
     ['ai']
   );
 });
+
+test('page titles: a sector page names its group; an unknown code or level is not found', () => {
+  const { pageMetaOf } = require('../lib/api/warehouse');
+  assert.match(pageMetaOf(db, '/sectors/theme/ai').title, /^AI: private companies/);
+  assert.match(pageMetaOf(db, '/sectors/industry/hc.biotech').title, /^Biotech & pharmaceuticals:/);
+  assert.deepEqual(pageMetaOf(db, '/sectors/industry/tech.nope'), { notFound: true });
+  assert.deepEqual(pageMetaOf(db, '/sectors/galaxy/ai'), { notFound: true });
+  assert.deepEqual(pageMetaOf(db, '/sectors/theme/%E0%A4%A'), { notFound: true });
+});

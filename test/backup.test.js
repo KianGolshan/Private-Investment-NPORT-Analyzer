@@ -557,7 +557,29 @@ test('watch report: new listing evidence, review-queue names, identity links and
       current
         .prepare("UPDATE holdings SET other_id = 'TESTID42' WHERE accession = ? AND row_key = ?")
         .run(r.accession, r.row_key);
+    // P14: a small company-like name newly over $1M in one fund, and a company not yet classified
+    const small = current
+      .prepare('SELECT key FROM unreviewed_entities WHERE active = 1 AND current_value_usd < 1e6 ORDER BY key LIMIT 1')
+      .get().key;
+    current
+      .prepare(
+        "UPDATE unreviewed_entities SET category = 'company', current_value_usd = 2e6, current_funds = 1 WHERE key = ?"
+      )
+      .run(small);
+    const unl = current.prepare('SELECT company_id FROM company_industry WHERE industry IS NOT NULL LIMIT 1').get();
+    current.prepare('DELETE FROM company_themes WHERE company_id = ?').run(unl.company_id);
+    current
+      .prepare(
+        "UPDATE company_industry SET industry = NULL, confidence = 'unclear', note = 'test' WHERE company_id = ?"
+      )
+      .run(unl.company_id);
     const r = watchReport(current, previous);
+    assert.ok(
+      r.newNames.some(q => q.key === small),
+      'a newcomer over $1M in one fund is listed'
+    );
+    assert.ok(r.newNames.every(q => q.value >= 1e6));
+    assert.ok(r.unlabeled.some(c => c.id === unl.company_id));
     assert.deepEqual(
       r.listing.filter(l => l.isNew).map(l => [l.company.id, l.quarter]),
       [[id, '2026q3']]
@@ -578,8 +600,11 @@ test('watch report: new listing evidence, review-queue names, identity links and
     assert.match(md, /## Review queue: \d+ name\(s\) over \$50M in 2\+ funds \(1 new\)/);
     assert.match(md, /\*\*new\*\* .* 2026q3: 2 filing\(s\), \$12\.0M/);
     assert.match(md, /## Split identities: .*\(1 new\)/);
+    assert.match(md, /## New names: \d+ company-like name\(s\) newly over \$1M/);
+    assert.match(md, /## Not yet classified: \d+ private compan/);
     // the next night, against this one: nothing new
     const again = watchReport(current, current);
+    assert.equal(again.counts.newNames, 0, 'a newcomer is listed once');
     assert.deepEqual(
       [again.counts.queueNew, again.counts.listingNew, again.counts.identityNew, again.counts.splitNew],
       [0, 0, 0, 0]

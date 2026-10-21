@@ -415,20 +415,19 @@ The user approved the plan and asked for W1.
 full for each firm, once in the all-firms total; a fund with several marks under one label is left out of the
 statistics, its rows still shown; Firms, firm pages and Explore default to operating companies.
 
-## Phase 14: sectors, industries and themes (2026-10-20; plan: [plans/P14-sectors.md](plans/P14-sectors.md))
+## Phase 14: sectors, industries and themes (2026-10-20; plan: [plans/P14-sectors.md](plans/P14-sectors.md), ADR 0010)
 
-**Goal:** every name in the dataset in a final, labeled state (sector → industry, themes; fund, CLO, insurance, real
-estate, claim, listed or "needs a person"), and trend views by sector and theme as of any date: holdings, the bridge
-(from positions vs from marks) and a matched-pair per-share mark index. The user approved the plan on 2026-10-20 and
-added the whole unreviewed queue to the scope.
+**Goal:** every private company in the filings in the app, each with a reviewed sector, industry and themes, and
+trend views by sector and theme as of any date: holdings, the bridge (from positions vs from marks) and a
+matched-pair per-share mark index. The user approved the plan on 2026-10-20, added the whole unreviewed queue, and
+asked to "fix and implement everything" without a paid model for the backfill.
 
-| Wave    | Scope                                                                                                          | State                                              |
-| ------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| **W0**  | taxonomy draft, Form D check, draft labels for the 197 reviewed companies, index feasibility, classifier pilot | Done except the pilot (needs an Anthropic API key) |
-| **W1**  | ADR 0010, migration 0023, `industries.csv` ledger, import and validation, category fixes                       | Not started                                        |
-| **W2**  | classifier (`lib/classify`), cache, offline eval, watch queue                                                  | Not started                                        |
-| **W2b** | whole unreviewed queue to a final state; unresolved value ≥ $1M = $0                                           | Not started                                        |
-| **W3**  | sector totals, pivot rows, sector bridge, mark index                                                           | Not started                                        |
-| **W4**  | `/sectors`, `/sector`, `/theme`, filters, exports                                                              | Not started                                        |
-| **W5**  | nightly labeling of new names, coverage metric, monthly audit                                                  | Not started                                        |
-| **W6**  | adversarial pass, docs, close-out                                                                              | Not started                                        |
+| Wave    | Scope                                                                                                                                                             | State |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| **W0**  | taxonomy, Form D check (rejected), draft labels, index feasibility, a 56-name model pilot (stopped by the user; scored offline)                                   | Done  |
+| **W2b** | the unreviewed queue sorted: 10,144 names by rule or in session; 572 operating private companies admitted ($9.2B), 16 duplicates merged, 5 vehicles recategorized | Done  |
+| **W1**  | `taxonomy.json`, `industries.csv`, migration 0023, import and validation; every job refuses a private company with no decision                                    | Done  |
+| **W3**  | sector totals, Explore sector/industry/theme rows, the chain-based mark index, API; trap 63 extended (unit restatements read as marks)                            | Done  |
+| **W4**  | `/sectors`, `/sectors/:level/:code`, the company classification chip, glossary                                                                                    | Done  |
+| **W5**  | nightly watch: new names over $1M in any number of funds, and companies not yet classified                                                                        | Done  |
+| Later   | an opt-in cheap-model suggestion for new names (capped in cents); the 8 companies not yet classified; deploy (the user merges)                                    | Open  |
