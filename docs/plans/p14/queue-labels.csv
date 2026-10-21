@@ -299,3 +299,203 @@ entity_id,clean_name,entity_type,industry,themes,basis,confidence,note
 49955,Enstructure,operating_company,ind.transport,,direct,medium,ports and terminals
 64158,Real Alloy Holding,operating_company,mat.materials,,direct,medium,merge candidate with entity 64159 Real Alloy Equity
 65670,Sentinel Midstream Highline JV,operating_company,enr.oil_gas,,direct,medium,
+48619,Delfi Diagnostics,operating_company,hc.healthtech,ai,direct,high,AI blood-based cancer detection
+41000,ABCL Equity Investors,investment_vehicle,,,direct,low,
+47223,CoinShares (XRP ETP),listed_security,fin.crypto,crypto,direct,high,exchange-traded crypto product held by an ETF
+65246,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+52169,GHO Capital Vanquish,fund_interest,,,direct,high,
+60265,Neurona Therapeutics,operating_company,hc.biotech,,direct,high,
+41677,AI Altius & Cy SCSp,fund_interest,,,direct,medium,
+67569,Superior Energy Services,operating_company,enr.oil_gas,,direct,high,oilfield services (post-reorganization private equity)
+65425,SCI PH Parent,investment_vehicle,,,direct,low,
+44329,Bloom Energy behind-the-meter assets,fund_interest,enr.clean,climate,look_through,high,Brookfield label
+49455,EdgeCore Digital Infrastructure,operating_company,tech.ai_infra,,direct,medium,merge candidate with entity 49454 EdgeCore Holdings
+64274,Regatta XXII Funding,clo,,,direct,high,
+62872,(unnamed; ISIN present),unclear,,,direct,low,row has no issuer name; Kopernik fund
+63419,Project Link Vero Fiber,investment_vehicle,comm.telecom,,direct,low,code name; fiber project (auto-admit note: unclear)
+58130,Lyra Health,operating_company,hc.services,,direct,high,
+64276,Regatta XXIX Funding,clo,,,direct,high,
+44854,BOAC Inv III Member,investment_vehicle,,,direct,medium,
+43850,Bain Capital XIII,fund_interest,,,direct,high,
+44888,Bolt Data & Energy,operating_company,tech.ai_infra,ai,direct,medium,
+48941,DMed Biopharmaceutical,operating_company,hc.biotech,,direct,medium,China
+69218,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+50696,Federato,operating_company,tech.software,ai|fintech,direct,high,AI insurance underwriting software
+60418,Newsela,operating_company,tech.software,,direct,high,education software
+44158,Battery Ventures XIV,fund_interest,,,direct,high,
+57646,Libbey Glass,operating_company,cons.brands,,direct,high,glass tableware maker
+68665,Tipalti,operating_company,fin.payments,fintech,direct,high,
+60042,NavGen Holdings,investment_vehicle,,,direct,low,
+57721,Lilac Solutions,operating_company,mat.mining,climate,direct,high,lithium extraction technology
+53049,Gupshup,operating_company,tech.software,ai,direct,high,conversational messaging platform
+46268,Cevian Capital II,fund_interest,,,direct,high,hedge fund interest
+51202,Flexsys,operating_company,mat.materials,,direct,medium,rubber chemicals
+59071,Mercury Technologies,operating_company,fin.banking,fintech,direct,high,
+24011,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+70609,Waabi,operating_company,ind.autonomy,ai|robotics,direct,high,
+44569,BioPharma Credit Investments V,fund_interest,,,direct,high,
+49091,Dragoneer opportunities feeder,fund_interest,,,direct,high,
+66717,SK Airplus (Korean industrial gas),fund_interest,mat.materials,,look_through,high,Brookfield label
+46818,Cinven Pegasus,fund_interest,,,direct,medium,
+44059,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+42489,Andpad,operating_company,tech.software,,direct,high,construction software (Japan)
+49942,Ennoble Care,operating_company,hc.services,,direct,medium,
+55817,Ironwood Midstream,operating_company,enr.oil_gas,,direct,medium,
+62139,PCI Pharma Services,operating_company,hc.tools,,direct,high,
+54012,Mammoth Brands,operating_company,cons.brands,,direct,high,Harry's parent
+53608,Harley-Davidson Financial Services,operating_company,fin.banking,,direct,medium,preferred interest in a subsidiary of a listed company
+46032,CCF Holdings,operating_company,fin.banking,fintech,direct,low,consumer lender (post-restructuring); ISIN present
+69694,Uplift investors fund,fund_interest,,,direct,low,
+57444,LDS Group Holdings,investment_vehicle,,,direct,low,
+41791,Akur8,operating_company,tech.software,ai|fintech,direct,high,insurance pricing software
+41878,Algolia,operating_company,tech.software,ai,direct,high,AI search
+59509,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+50416,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+48439,Danger Devices,operating_company,tech.semis,,direct,low,
+60126,NCS Investment,investment_vehicle,,,direct,low,
+68898,TPG IX Cardiff CI II,fund_interest,,,direct,high,co-invest LP
+46417,Cheetah Investment Holdings,investment_vehicle,,,direct,low,
+59321,Milestone Investment Holdings,investment_vehicle,,,direct,low,
+61504,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+46438,Chennai Super Kings,operating_company,comm.media,,direct,high,IPL cricket franchise
+48852,DigitalBridge Credit II,fund_interest,,,direct,high,
+62013,Park West preferred equity,real_estate,re.real_estate,,direct,medium,
+60144,Neara,operating_company,tech.software,ai,direct,medium,utility network digital twins
+66944,Sprints Watson,investment_vehicle,,,direct,low,
+42720,Apollo Asset Backed Credit Co,fund_interest,,,direct,high,
+42667,Apex Technology,operating_company,ind.space,space|defense,direct,high,satellite buses
+65731,Serif Biomedicines,operating_company,hc.biotech,,direct,medium,
+52468,Golden NA Power,operating_company,enr.power,,direct,low,
+69927,Vanquish Topco,investment_vehicle,,,direct,low,
+50447,Evozyne,operating_company,hc.biotech,ai,direct,medium,AI protein design
+46729,Churchill secondary fund,fund_interest,,,direct,high,
+56362,JP Morgan (unspecified),unclear,,,direct,low,raw name only "JP MORGAN"; likely a fund or note, not a private company
+68042,TCV X,fund_interest,,,direct,high,
+54940,i80 Group ABF,fund_interest,,,direct,high,
+49916,Enfinity Global,operating_company,enr.clean,climate,direct,high,
+67023,St. Croix Hospice,operating_company,hc.services,,direct,high,
+58078,LUV Car Wash,operating_company,cons.travel,,direct,low,car wash chain via blocker LLC (no consumer-services industry yet)
+45696,Cardurion Pharmaceuticals,operating_company,hc.biotech,,direct,high,
+48587,Deepsight,operating_company,hc.devices,ai,direct,medium,AI ultrasound
+63604,PSC Accelerator II,fund_interest,,,direct,high,
+63905,Quell Therapeutics,operating_company,hc.biotech,,direct,high,
+46061,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+65360,SC JAL SPV (SpaceX and xAI),investment_vehicle,,,direct,high,SPV holding SpaceX (public in this project) and xAI; split exposure; no sector label
+48331,Cyera,operating_company,tech.security,ai,direct,high,data security
+65228,Santander Bank N.A.,operating_company,fin.banking,,direct,medium,subsidiary of a listed bank; likely preferred or a loan participation
+45663,Capri Acquisitions Topco,investment_vehicle,,,direct,low,
+68337,The Alary preferred,real_estate,re.real_estate,,direct,medium,
+62812,Point Dume,insurance_vehicle,,,direct,medium,Stone Ridge reinsurance vehicle
+48089,CROPK subordinated,clo,,,direct,medium,
+57720,Lila Sciences,operating_company,hc.biotech,ai,direct,high,AI science platform
+59067,Mercury (preferred and common),operating_company,fin.banking,fintech,direct,medium,possible merge with entity 59071 Mercury Technologies
+48825,DIG Holdings,investment_vehicle,,,direct,low,
+42696,Apia Dino FPCI,fund_interest,,,direct,high,
+43513,Audiotonix,operating_company,tech.semis,,direct,medium,pro audio mixing consoles (hardware)
+63420,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+54868,Hydra Host,operating_company,tech.ai_infra,ai,direct,high,GPU cloud marketplace
+56045,J-STAR funds,fund_interest,,,direct,high,
+43037,Ark EquityCo,investment_vehicle,,,direct,low,
+52354,Gloves Holdings,investment_vehicle,,,direct,low,
+62134,PCF Holdco,investment_vehicle,,,direct,low,
+51428,FPCI Apia Trilogy,fund_interest,,,direct,high,
+42618,Aparca8 parking,real_estate,re.real_estate,,direct,medium,Spanish parking assets
+70076,Verdane Freya XI,fund_interest,,,direct,high,
+64373,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+61451,Onepoint,operating_company,tech.software,,direct,medium,French IT consulting
+49139,Druva,operating_company,tech.security,,direct,high,data protection
+47123,Coalition,operating_company,fin.insurance,fintech,direct,high,cyber insurance
+61710,Overbay Capital 2024 Offshore,fund_interest,,,direct,medium,
+57949,Lookout,operating_company,tech.security,,direct,high,
+65557,SecurityScorecard,operating_company,tech.security,,direct,high,
+49597,ElevateBio,operating_company,hc.tools,,direct,high,cell and gene therapy manufacturing
+63603,PSC V,fund_interest,,,direct,high,
+57574,LEP Opportunities I,fund_interest,,,direct,medium,
+57149,Kry International,operating_company,hc.services,,direct,high,digital health (Sweden)
+44895,Bona Fide Investment Holdings II,investment_vehicle,,,direct,low,
+42477,Anchor TopCo,investment_vehicle,,,direct,low,
+43142,ASAC II (Altimeter SPV),investment_vehicle,,,direct,medium,
+48763,DGS Group Holdings,investment_vehicle,,,direct,low,
+48216,CuraSen Therapeutics,operating_company,hc.biotech,,direct,high,
+61723,Overhaul,operating_company,tech.software,,direct,high,supply-chain risk visibility
+44850,BOAC Pagani depositor,investment_vehicle,,,direct,medium,
+59014,Menlo Micro,operating_company,tech.semis,,direct,high,
+71368,Wugen,operating_company,hc.biotech,,direct,high,
+61182,OCP 2024-37 subordinated,clo,,,direct,high,
+44709,Blackstone Diversified Trading Strategies,fund_interest,,,direct,high,
+60986,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+58126,Lynk Global,operating_company,ind.space,space,direct,high,
+51686,Fundbox,operating_company,fin.banking,fintech,direct,high,
+48330,Cyclic Materials,operating_company,mat.mining,climate,direct,high,rare-earth recycling
+47966,Craft Ventures Growth II,fund_interest,,,direct,high,
+44641,Blackbird preferred,investment_vehicle,,,direct,low,possible merge with entity 44642 Blackbird Purchaser
+46884,CityBrewing,operating_company,cons.food,,direct,high,
+49828,Endeavor BioMedicines (T. Rowe rows),operating_company,hc.biotech,,direct,high,merge candidate with entity 49829
+68541,Thunder R&A Investco,investment_vehicle,,,direct,low,
+71211,Workrise,operating_company,tech.software,,direct,high,energy workforce marketplace
+47198,Cognichip,operating_company,tech.semis,ai,direct,medium,AI for chip design
+45019,Brain Corp,operating_company,ind.autonomy,ai|robotics,direct,high,
+70214,VideoAmp,operating_company,tech.software,,direct,high,ad measurement
+45113,Bright Peak Therapeutics,operating_company,hc.biotech,,direct,high,
+69932,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+52018,General Catalyst Group VI,fund_interest,,,direct,high,
+48733,Devoted Health,operating_company,fin.insurance,,direct,high,Medicare Advantage insurer
+53864,Hedosophia,fund_interest,,,direct,high,
+49981,Envision Healthcare,operating_company,hc.services,,direct,high,
+67540,Sunshine Software Holdings,investment_vehicle,tech.software,,direct,low,
+70743,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+49896,Energy Reservoir 2019,investment_vehicle,,,direct,low,
+62330,Permira VI,fund_interest,,,direct,high,
+60912,NP/BF Holdings,investment_vehicle,,,direct,low,
+47142,Cobalt Intermediate I,investment_vehicle,,,direct,low,
+46757,Ciddan,investment_vehicle,,,direct,low,
+46817,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+44307,Beast Industries,operating_company,comm.media,,direct,high,MrBeast
+49409,ECI 10 and 11,fund_interest,,,direct,high,
+64314,Relativity Space,operating_company,ind.space,space,direct,high,
+70143,Vestar C.P. Rainforest,investment_vehicle,,,direct,high,sponsor vehicle (auto-admit note)
+61867,Palladium Equity Partners IV blocker,fund_interest,,,direct,high,
+71716,Zephyr Syndication,investment_vehicle,,,direct,high,syndication vehicle (auto-admit note)
+63100,Poolside,operating_company,tech.ai_models,ai,direct,high,
+47411,Dock,operating_company,fin.payments,fintech,direct,medium,Brazil
+56389,JSW One Platforms,operating_company,cons.retail,,direct,medium,B2B building-materials marketplace (India)
+64763,Romulus Intermediate Holdings 1,investment_vehicle,,,direct,low,
+43089,Mesa Natural Gas Solutions,operating_company,enr.oil_gas,,direct,medium,
+58386,Manna Drone Delivery,operating_company,ind.transport,robotics,direct,high,
+59556,ModMed,operating_company,hc.healthtech,,direct,high,
+65487,SCW Holdings I,investment_vehicle,,,direct,low,
+48537,dbt Labs / Fivetran,operating_company,tech.software,ai,direct,medium,the two raw names merged in 2025; data platform
+64954,RWL AI SPV,investment_vehicle,,ai,direct,medium,Fundrise SPV
+66765,Southwest Critical Materials,operating_company,mat.mining,,direct,medium,
+53988,Hermeus,operating_company,ind.aerospace_defense,defense,direct,high,hypersonic aircraft
+62157,PDWHOLDGPP4,unclear,,,direct,low,ticker-like code; unidentified
+56258,Jinchuan Group International,listed_security,mat.mining,,direct,high,HKEX-listed; ISIN present
+64358,TEAF Solar Holdco,operating_company,enr.clean,climate,direct,medium,
+66572,Sofinnova BioEquities,fund_interest,,,direct,high,
+47266,Colony Labs,operating_company,,,direct,low,business not confirmed
+69714,Ursa Major,operating_company,ind.aerospace_defense,defense,direct,high,rocket engines
+41674,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+42919,Ardan Investment Co VIII,investment_vehicle,,,direct,low,
+54774,Hurtigruten,operating_company,cons.travel,,direct,high,cruise line
+61180,Nexus Apex Holdings (Ocorian),investment_vehicle,,,direct,low,merge candidate with reviewed company 798 Nexus Apex
+46841,Ciro Holding,operating_company,,,direct,low,Argentina; business not confirmed
+57676,Life Cycle Power,operating_company,enr.power,,direct,medium,mobile power generation
+52531,Goop,operating_company,cons.brands,,direct,high,
+50103,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+61898,Pamlico Capital IV,fund_interest,,,direct,high,
+64275,Regatta XXIII Funding,clo,,,direct,high,
+64182,Recknitz,investment_vehicle,,,direct,low,
+50764,FH KH Parent,investment_vehicle,,,direct,low,
+44489,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+68874,TPG AG Credit Solutions,fund_interest,,,direct,high,
+49868,Energia Group,operating_company,enr.power,,direct,high,Irish utility
+41330,ADARx Pharmaceuticals (T. Rowe rows),operating_company,hc.biotech,,direct,high,merge candidate with entity 41331
+43092,Arsenal Biosciences,operating_company,hc.biotech,,direct,high,
+64164,Real Hero Topco,investment_vehicle,,,direct,low,
+66672,Sortera Technologies,operating_company,mat.materials,climate,direct,high,aluminum scrap sorting
+61040,NXT Capital structured note,fund_interest,,,direct,medium,
+56969,Kleiner Perkins XIX,fund_interest,,,direct,high,
+46980,Clear Labs,operating_company,hc.tools,,direct,high,
+43331,Astorg VIII,fund_interest,,,direct,high,
+68050,TCW CLO,clo,,,direct,high,
+64277,Regatta XXVI Funding,clo,,,direct,high,
