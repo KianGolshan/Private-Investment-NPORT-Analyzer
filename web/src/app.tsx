@@ -18,6 +18,8 @@ const Firm = lazy(withReload(() => import('./pages/firm')));
 const Fund = lazy(withReload(() => import('./pages/fund')));
 const Activity = lazy(withReload(() => import('./pages/Activity')));
 const Explore = lazy(withReload(() => import('./pages/Explore')));
+const Sectors = lazy(withReload(() => import('./pages/Sectors')));
+const SectorDetail = lazy(withReload(() => import('./pages/sectors/Detail')));
 const Tracked = lazy(withReload(() => import('./pages/Tracked')));
 const Compare = lazy(withReload(() => import('./pages/Compare')));
 const About = lazy(withReload(() => import('./pages/About')));
@@ -34,6 +36,7 @@ if (typeof window !== 'undefined')
 const NAV: { href: string; label: string; match: (p: string) => boolean }[] = [
   { href: '/', label: 'Market', match: p => p === '/' },
   { href: '/firms', label: 'Firms', match: p => p.startsWith('/firm') },
+  { href: '/sectors', label: 'Sectors', match: p => p.startsWith('/sectors') },
   { href: '/activity', label: "What's new", match: p => p.startsWith('/activity') },
   { href: '/explore', label: 'Explore', match: p => p.startsWith('/explore') },
   { href: '/compare', label: 'Compare', match: p => p.startsWith('/compare') },
@@ -279,6 +282,8 @@ function Shell() {
                 <Route path="/fund/:key" component={Fund} />
                 <Route path="/activity" component={Activity} />
                 <Route path="/explore" component={Explore} />
+                <Route path="/sectors" component={Sectors} />
+                <Route path="/sectors/:level/:code" component={SectorDetail} />
                 <Route path="/watchlist" component={Tracked} />
                 <Route path="/tracked" component={TrackedMoved} />
                 <Route path="/compare" component={Compare} />

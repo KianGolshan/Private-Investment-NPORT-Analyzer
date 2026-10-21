@@ -8,6 +8,7 @@ import {
   escapeHtml,
   companyPath,
   firmPath,
+  sectorPath,
   fundPath,
   longDate,
   money,
@@ -53,8 +54,24 @@ export const METRIC_LABEL: Record<PivotMetric, string> = {
 };
 const METRICS = Object.keys(METRIC_LABEL) as PivotMetric[];
 const isLevel = (m: PivotMetric) => m === 'value' || m === 'holders';
-const ROW_LABEL: Record<Rows, string> = { firm: 'Firm', fund: 'Fund', company: 'Company', class: 'Share class' };
-const ROW_PLURAL: Record<Rows, string> = { firm: 'Firms', fund: 'Funds', company: 'Companies', class: 'Share classes' };
+const ROW_LABEL: Record<Rows, string> = {
+  firm: 'Firm',
+  fund: 'Fund',
+  company: 'Company',
+  class: 'Share class',
+  sector: 'Sector',
+  industry: 'Industry',
+  theme: 'Theme',
+};
+const ROW_PLURAL: Record<Rows, string> = {
+  firm: 'Firms',
+  fund: 'Funds',
+  company: 'Companies',
+  class: 'Share classes',
+  sector: 'Sectors',
+  industry: 'Industries',
+  theme: 'Themes',
+};
 
 const addYears = (iso: string, n: number) => {
   const d = new Date(`${iso}T00:00:00Z`);
@@ -65,6 +82,7 @@ const addYears = (iso: string, n: number) => {
 function rowHref(rows: Rows, r: { key: string | number; label: string | null }): string | null {
   if (rows === 'firm') return r.key === 0 ? null : firmPath(Number(r.key));
   if (rows === 'fund') return fundPath(String(r.key));
+  if (rows === 'sector' || rows === 'industry' || rows === 'theme') return sectorPath(rows, String(r.key));
   const [id, ...cls] = String(r.key).split(':');
   const path = companyPath(Number(id), String(r.label ?? '').split(' · ')[0] ?? '');
   return rows === 'class' ? `${path}?tab=marks&class=${encodeURIComponent(cls.join(':'))}` : path;
@@ -84,7 +102,8 @@ export default function Explore() {
   const [dk] = useParam('dk');
   const [dp] = useParam('dp');
   const setParams = useSetParams();
-  const rows: Rows = (['fund', 'company', 'class'] as const).find(x => x === rowsP) ?? 'firm';
+  const rows: Rows =
+    (['fund', 'company', 'class', 'sector', 'industry', 'theme'] as const).find(x => x === rowsP) ?? 'firm';
   const period: Period = (['month', 'year'] as const).find(x => x === perP) ?? 'quarter';
   const metric: PivotMetric = METRICS.find(m => m === metricP) ?? 'value';
   const limit = nP === '200' ? 200 : 50;
@@ -303,6 +322,13 @@ export default function Explore() {
             { id: 'fund', label: 'Funds' },
             { id: 'company', label: 'Companies' },
             { id: 'class', label: 'Classes' },
+            { id: 'sector', label: 'Sectors' },
+            { id: 'industry', label: 'Industries' },
+            {
+              id: 'theme',
+              label: 'Themes',
+              title: 'Themes overlap: a company can be in several, so they do not add up',
+            },
           ]}
         />
         <Segmented

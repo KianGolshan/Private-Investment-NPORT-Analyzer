@@ -53,6 +53,15 @@ export interface Freshness extends Envelope {
 /** What a reviewed company is (migration 0022): an operating company, or a fund interest, CLO or insurance vehicle. */
 export type CompanyCategory = 'company' | 'fund' | 'clo' | 'insurance';
 
+/** A company's sector, industry and themes (ADR 0010): reviewed decisions, not filed facts. */
+export interface Classification {
+  sector: { code: string; name: string } | null;
+  industry: { code: string; name: string } | null;
+  themes: { code: string; name: string }[];
+  confidence: 'high' | 'medium' | 'low' | 'unclear';
+  taxonomyVersion: string;
+}
+
 export interface Company {
   id: number;
   name: string;
@@ -60,6 +69,7 @@ export interface Company {
   category: CompanyCategory;
   public_since: string | null;
   tracked: boolean;
+  classification?: Classification | null;
 }
 
 export interface CompanyStats {
@@ -513,7 +523,10 @@ export type PivotMetric =
 export type PivotCells = Record<PivotMetric, number[]> & { startValue: number };
 
 export interface Pivot extends Envelope, ScopeEcho {
-  rows: 'firm' | 'fund' | 'company' | 'class';
+  rows: 'firm' | 'fund' | 'company' | 'class' | 'sector' | 'industry' | 'theme';
+  /** Sector, industry and theme rows: false for themes, which overlap and do not add up. */
+  additive?: boolean;
+  taxonomyVersion?: string;
   period: 'month' | 'quarter' | 'year';
   from: string;
   to: string;
@@ -1061,4 +1074,109 @@ export interface Compare extends Envelope {
     marks?: CompareMark[];
     spread?: { markDate: string; pct: number; funds: number } | null;
   })[];
+}
+
+// ---- Sectors, industries and themes (P14, ADR 0010) ----
+
+export type SectorLevel = 'sector' | 'industry' | 'theme';
+
+export interface Taxonomy {
+  version: string | null;
+  sectors: { code: string; name: string; industries: { code: string; name: string; definition: string }[] }[];
+  themes: { code: string; name: string; definition: string }[];
+}
+
+/** Holdings by sector, industry or theme as of a date (adds up to Market's operating-company total). */
+export interface SectorTotals extends Envelope {
+  taxonomy: Taxonomy;
+  date: string;
+  knownAsOf?: string;
+  level: SectorLevel;
+  additive: boolean;
+  taxonomyVersion: string | null;
+  companies: number;
+  totalValue: number;
+  newestMark: string | null;
+  groups: {
+    key: string;
+    label: string;
+    sector?: string;
+    value: number;
+    share: number | null;
+    companies: number;
+    top: { companyId: number; name: string; value: number }[];
+  }[];
+}
+
+export interface SectorCompanies extends Envelope {
+  date: string;
+  knownAsOf?: string;
+  level: SectorLevel;
+  key: string;
+  label: string;
+  companies: number;
+  totalValue: number;
+  marketTotal: number;
+  results: {
+    rank: number;
+    companyId: number;
+    name: string;
+    funds: number;
+    value: number;
+    oldestMark: string;
+    newestMark: string;
+    tracked: boolean;
+    industry: string | null;
+    industryLabel: string | null;
+    themes: string[];
+    labelConfidence: string | null;
+  }[];
+}
+
+export interface MarkIndexPoint {
+  date: string;
+  label: string;
+  partial: boolean;
+  companies: number;
+  chains: number;
+  sufficient: boolean;
+  index: number | null;
+  p25: number | null;
+  p75: number | null;
+  valueIndex: number | null;
+  change: number | null;
+  valueChange: number | null;
+  unchanged: number | null;
+  up: number | null;
+  down: number | null;
+}
+
+/** The per-share mark index (repeat sales over each fund's own security). */
+export interface MarkIndex extends Envelope {
+  level: SectorLevel;
+  period: 'month' | 'quarter' | 'year';
+  from: string;
+  to: string;
+  newestMark: string | null;
+  method: { chains: string; company: string; group: string; minimum: string };
+  additive: boolean;
+  taxonomyVersion: string | null;
+  groups: { key: string; label: string; cohort: number; points: MarkIndexPoint[] }[];
+}
+
+export interface MarkChanges extends Envelope {
+  level: SectorLevel;
+  key: string;
+  label: string;
+  from: string;
+  to: string;
+  companies: {
+    companyId: number;
+    name: string;
+    change: number | null;
+    funds: number;
+    chains: number;
+    stillMarked: number;
+    path: { date: string; level: number | null }[];
+  }[];
 }

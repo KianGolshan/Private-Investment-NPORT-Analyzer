@@ -472,6 +472,15 @@ select.input {
   background: var(--info-bg);
   color: var(--link);
 }
+/* a badge that is a link (a company's sector, industry or theme) */
+.badge-link {
+  text-decoration: none;
+  border-radius: 999px;
+}
+.badge-link:hover .badge,
+.badge-link:focus-visible .badge {
+  box-shadow: inset 0 0 0 1px currentColor;
+}
 .badge.accent {
   background: transparent;
   border: 1px solid var(--accent);

@@ -68,6 +68,8 @@ const APP_ROUTES = [
   '/firms',
   '/activity',
   '/explore',
+  '/sectors',
+  '/sectors/:level/:code',
   '/watchlist',
   '/compare',
   '/about',

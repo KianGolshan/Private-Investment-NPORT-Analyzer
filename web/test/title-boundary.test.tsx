@@ -19,6 +19,7 @@ describe('page titles', () => {
     const client: Record<string, string> = {
       '/': DEFAULT_TITLE,
       '/explore': PAGE_TITLES.explore,
+      '/sectors': PAGE_TITLES.sectors,
       '/activity': PAGE_TITLES.activity,
       '/firms': PAGE_TITLES.firms,
       '/watchlist': PAGE_TITLES.watchlist,

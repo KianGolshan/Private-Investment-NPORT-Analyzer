@@ -8,6 +8,7 @@ import { useParam } from '../../scope/scope';
 import { Badge, Empty, ErrorBox, isNotFound, Kpi, Loading, TabPanel, Tabs, WatchButton } from '../../ui/bits';
 import NotFound from '../NotFound';
 import { CATEGORY_LABEL } from '../../ui/Category';
+import { ClassificationBadges } from '../../ui/Classification';
 import { Chart } from '../../ui/Chart';
 import type { ChartTheme } from '../../ui/theme';
 import { PositionDrawer } from './PositionDrawer';
@@ -152,6 +153,7 @@ export default function Company() {
                 {h.brands?.map(b => (
                   <Badge key={b.brand}>Brand: {b.brand}</Badge>
                 ))}
+                <ClassificationBadges c={h.company?.classification} />
                 {h.entity && h.entity.names.length > 1 && (
                   <span class="muted small">Also filed as {h.entity.names.slice(1, 4).join(', ')}</span>
                 )}
