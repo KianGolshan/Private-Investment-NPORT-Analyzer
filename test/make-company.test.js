@@ -15,7 +15,7 @@ const request = require('supertest');
 const { openFixtureWarehouse } = require('./helpers/warehouseFixture');
 const { readReview } = require('./helpers/warehouseApp');
 const { openWarehouse } = require('../lib/warehouse/db');
-const { importAliases, COMPANY_ID_COLUMNS } = require('../lib/entities/review');
+const { importAliases, COMPANY_ID_COLUMNS, INDUSTRY_COLUMNS } = require('../lib/entities/review');
 const { parseCsv, toCsv } = require('../lib/entities/csv');
 const { ALIAS_COLUMNS } = require('../lib/entities/seed');
 const { resolveCompanies } = require('../lib/entities/resolve');
@@ -56,6 +56,7 @@ function reviewCopy() {
   for (const [f, columns] of [
     ['aliases.csv', ALIAS_COLUMNS],
     ['company_ids.csv', COMPANY_ID_COLUMNS],
+    ['industries.csv', INDUSTRY_COLUMNS],
   ])
     fs.writeFileSync(
       path.join(dir, f),
@@ -107,6 +108,18 @@ test('make this a company: Verily Life Sciences becomes a company with the next 
     fs.readFileSync(path.join(dir, 'company_ids.csv'), 'utf8'),
     new RegExp(`\\n${next},Verily Life Sciences,,`)
   );
+  // A new private company starts with an industry decision: "not yet classified" (ADR 0010).
+  const label = parseCsv(fs.readFileSync(path.join(dir, 'industries.csv'), 'utf8')).find(
+    l => Number(l.company_id) === next
+  );
+  assert.deepEqual(
+    [label.company, label.industry, label.confidence, label.source],
+    ['Verily Life Sciences', '', 'unclear', 'admin']
+  );
+  assert.deepEqual(db.prepare('SELECT industry, confidence FROM company_industry WHERE company_id = ?').get(next), {
+    industry: null,
+    confidence: 'unclear',
+  });
   // The name is a company now: search finds it as one, and it is no longer unreviewed.
   assert.equal(search(db, 'Verily Life Sciences')[0].type, 'company');
   // Its old unreviewed key now leads to the company (links and watchlists keep working).

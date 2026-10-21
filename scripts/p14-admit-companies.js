@@ -105,9 +105,22 @@ function main() {
     used.add(Number(eid));
   }
   for (const r of labels) {
+    const into = /merge into company (.+)$/.exec(r.note || '');
+    if (!into || !admit(r) || EXCLUDE.has(Number(r.entity_id))) continue;
+    const name = into[1].trim();
+    const p = plan.get(name) || { ids: [], label: r, into: 'name' };
+    p.ids.push(Number(r.entity_id));
+    plan.set(name, p);
+    used.add(Number(r.entity_id));
+  }
+  for (const r of labels) {
     const id = Number(r.entity_id);
     if (used.has(id) || EXCLUDE.has(id) || !admit(r) || /merge candidate/.test(r.note)) continue;
-    plan.set(r.clean_name, { ids: [id], label: r });
+    const p = plan.get(r.clean_name);
+    if (p) {
+      p.ids.push(id);
+      if (p.into === 'name') delete p.into; // the merge target is new in this run
+    } else plan.set(r.clean_name, { ids: [id], label: r });
   }
 
   const rows = parseCsv(fs.readFileSync(ALIASES, 'utf8'));
@@ -119,6 +132,8 @@ function main() {
   const problems = [];
   let keys = 0;
   for (const [name, p] of plan) {
+    // a company admitted by an earlier run of this script is extended, not re-created
+    if (!p.into && clash.get(name) && existing.has(name)) p.into = 'earlier';
     if (!p.into && clash.get(name)) problems.push(`"${name}" is already a company name`);
     for (const id of p.ids) {
       const e = entity.get(id);
@@ -126,13 +141,17 @@ function main() {
         problems.push(`entity ${id} (${name}) not found`);
         continue;
       }
-      const evidence = evidenceOf.get(id)?.accession;
-      if (!evidence) problems.push(`entity ${id} (${name}) has no rows to cite`);
       const examples = JSON.parse(e.names).slice(0, 3).join(' | ');
       const l = byId.get(id) || p.label;
       for (const k of JSON.parse(e.keys)) {
+        if (owner.get(k) === name && !p.fresh) continue; // already in aliases.csv
         if (owner.has(k) && owner.get(k) !== name) {
           problems.push(`issuer key "${k}" already belongs to "${owner.get(k)}" (wanted by "${name}")`);
+          continue;
+        }
+        const evidence = evidenceOf.get(id)?.accession;
+        if (!evidence) {
+          problems.push(`entity ${id} (${name}) has no rows to cite`);
           continue;
         }
         owner.set(k, name);
@@ -154,8 +173,9 @@ function main() {
       }
     }
   }
-  const newCos = [...plan.values()].filter(p => !p.into).length;
-  console.log(`companies: ${newCos} new, ${plan.size - newCos} existing with added names; issuer keys: ${keys}`);
+  const touched = new Set(out.map(r => r.company));
+  const newCos = [...plan].filter(([name, p]) => !p.into && touched.has(name)).length;
+  console.log(`companies: ${newCos} new, ${touched.size - newCos} existing with added names; issuer keys: ${keys}`);
   if (problems.length) {
     console.error(problems.join('\n'));
     process.exitCode = 1;

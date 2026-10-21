@@ -1641,3 +1641,53 @@ entity_id,clean_name,entity_type,industry,themes,basis,confidence,note
 47738,Copia Wealth,operating_company,fin.wealth,fintech,direct,low,merge candidate with entity 47739
 48920,DittoLive,operating_company,tech.software,,direct,high,
 68045,TCV IX,fund_interest,,,direct,high,
+41746,AITC bank deposit,cash_commodity,,,direct,high,bank deposit
+60136,NEA 18 Venture Growth Equity,fund_interest,,,direct,high,
+56224,Jiangsu Azure,listed_security,,,direct,medium,Chinese listed
+55408,Insight Venture Partners X,fund_interest,,,direct,high,
+67898,Take-back and exit facility,claim,,,direct,medium,loan facility; not equity
+49985,Envision Healthcare (SIIT account),operating_company,hc.services,,direct,high,merge into company Envision Healthcare
+49990,Enviva,operating_company,enr.clean,,direct,high,wood pellets (post-bankruptcy private)
+64983,S3 AHL,fund_interest,,,direct,medium,
+45968,Cayenne Copper,operating_company,mat.mining,,direct,medium,
+51815,GAF REIT Sub III,real_estate,re.real_estate,,direct,medium,
+47797,Cornerstone Chemical (equity account),operating_company,mat.materials,,direct,high,merge into company Cornerstone Chemical
+54131,Highmount DP SPV,investment_vehicle,,,direct,low,
+43768,Ayar Labs (private company account),operating_company,tech.semis,ai,direct,high,merge into company Ayar Labs
+69163,TRMEF Basis II,investment_vehicle,,,direct,low,
+61209,Octane Lending (III),operating_company,fin.banking,fintech,direct,high,merge into company Octane Lending
+59276,Middle West Spirits,operating_company,cons.food,,direct,high,
+60924,NRESF REIT Sub / Zayo Group,unclear,,,direct,high,grouping error: a REIT subsidiary and Zayo Group in one entity
+51814,GAF REIT Sub II,real_estate,re.real_estate,,direct,medium,
+53022,Guitar Center,operating_company,cons.retail,,direct,high,post-restructuring equity
+71837,DF Residential,real_estate,re.real_estate,,direct,medium,
+48055,Crestone Aircraft Leasing,operating_company,ind.transport,,direct,medium,
+63193,PPL Home Healthcare,operating_company,hc.services,,direct,low,
+48830,Digicel class A shares,operating_company,comm.telecom,,direct,high,merge into company Digicel
+57856,LLV Holdco,investment_vehicle,,,direct,low,
+41832,Alchemy Insights,operating_company,tech.software,ai|crypto,direct,medium,
+44752,Blockchain.com,operating_company,fin.crypto,crypto,direct,high,private (listed group only by name evidence)
+44756,Polymarket (Blockratize),operating_company,fin.markets,crypto|fintech,direct,high,
+69688,Uphold,operating_company,fin.crypto,crypto,direct,high,
+50876,Fireblocks,operating_company,fin.crypto,crypto,direct,high,
+46315,Chainalysis,operating_company,fin.crypto,crypto,direct,high,
+50814,Figment,operating_company,fin.crypto,crypto,direct,high,
+55988,Iterate Studio,operating_company,tech.software,ai,direct,low,
+62862,Polymarket Series B,operating_company,fin.markets,crypto|fintech,direct,high,merge into company Polymarket (Blockratize)
+64178,Rebound LP,fund_interest,,,direct,medium,
+60923,NRES REIT Sub II,real_estate,re.real_estate,,direct,medium,
+50660,FBF 2023-1 economic interest,claim,,,direct,medium,
+57943,Longview Power,operating_company,enr.power,,direct,high,
+44626,BL Train Holdings West warrants,operating_company,ind.transport,,direct,medium,Brightline; merge into company Brightline West
+51692,Fundomo ME-002,real_estate,re.real_estate,,direct,low,
+41726,Air Methods,operating_company,hc.services,,direct,high,air medical transport (post-restructuring)
+71473,Xplore (Stonepeak Falcon equity),operating_company,comm.telecom,,direct,high,merge into company Xplore
+52831,Ground Lease REIT,real_estate,re.real_estate,,direct,medium,
+54587,HR Parent Holdings,investment_vehicle,,,direct,low,
+59930,Nagoya Railroad,listed_security,ind.transport,,direct,high,TSE-listed
+60453,NexPoint Merger Arbitrage,registered_fund,,,direct,high,
+57681,LifeScan common stock,operating_company,hc.devices,,direct,high,merge into company LifeScan
+42645,Aperture Dodge 18,investment_vehicle,,,direct,low,
+70990,White Oak Equipment Finance 1,investment_vehicle,,,direct,low,
+44480,BGPT Maverick,investment_vehicle,,,direct,low,
+61728,Overmatch II-B1,investment_vehicle,,,direct,low,

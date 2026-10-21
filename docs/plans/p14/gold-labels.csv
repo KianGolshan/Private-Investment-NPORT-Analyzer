@@ -63,7 +63,7 @@ id,company,industry,themes,confidence,note
 64,PHI Group Inc/DE,ind.transport,,high,helicopter services
 41,Altice France,comm.telecom,,high,
 160,Hadrian Automation,ind.manufacturing,defense|robotics,high,
-118,Flock,tech.security,,medium,Flock Safety (public-safety cameras), assumed from the name
+118,Flock,tech.security,,medium,"Flock Safety (public-safety cameras), assumed from the name"
 165,Fluidstack,tech.ai_infra,ai,high,
 174,Vinted,cons.retail,,high,
 50,Blink Health,hc.healthtech,,high,
