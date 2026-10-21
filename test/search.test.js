@@ -23,10 +23,14 @@ const FIXTURE = path.join(__dirname, 'fixtures', 'search', 'warehouse.json.gz');
 const REVIEW = path.join(__dirname, '..', 'data', 'review');
 const read = f => parseCsv(fs.readFileSync(path.join(REVIEW, f), 'utf8'));
 
+// Vercel became a reviewed company in P14 (2026-10-20). The unreviewed-name tests
+// need a real name nobody has reviewed yet, so the fixture is built without it.
+const UNREVIEWED = 'Vercel';
 function build({ dropAlias } = {}) {
   const { db } = openFixtureWarehouse(FIXTURE);
-  const aliases = read('aliases.csv').filter(r => !(dropAlias && r.alias === dropAlias));
-  importAliases(db, aliases, { ids: read('company_ids.csv'), now: '2026-09-30T00:00:00Z' });
+  const aliases = read('aliases.csv').filter(r => !(dropAlias && r.alias === dropAlias) && r.company !== UNREVIEWED);
+  const ids = read('company_ids.csv').filter(r => r.company !== UNREVIEWED);
+  importAliases(db, aliases, { ids, now: '2026-09-30T00:00:00Z' });
   resolveCompanies(db);
   const up = identityUpkeep(db, { curation: loadCuration() });
   const stats = rebuildEntities(db, up);
@@ -195,10 +199,10 @@ test('rebuild: idempotent, keeps entity ids, and follows curation (a reviewed na
   importAliases(
     d,
     [
-      ...read('aliases.csv'),
+      ...read('aliases.csv').filter(r => r.company !== UNREVIEWED),
       { company: 'Vercel', status: 'private', track: 'N', kind: 'issuer_key', alias: key, via_spv: '0' },
     ],
-    { ids: read('company_ids.csv') }
+    { ids: read('company_ids.csv').filter(r => r.company !== UNREVIEWED) }
   );
   resolveCompanies(d);
   const s = rebuildEntities(d, identityUpkeep(d, { curation: loadCuration() }));

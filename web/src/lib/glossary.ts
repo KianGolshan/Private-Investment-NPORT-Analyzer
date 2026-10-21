@@ -15,9 +15,19 @@ export type TermId =
   | 'fromMarks'
   | 'otherChanges'
   | 'bridge'
-  | 'tracked';
+  | 'tracked'
+  | 'sector'
+  | 'markIndex';
 
 export const GLOSSARY: Record<TermId, { term: string; text: string }> = {
+  sector: {
+    term: 'Sector, industry and theme',
+    text: 'Vantage’s labels for each private operating company: one sector and industry (so they add up to the total) and any number of themes such as AI or Fintech (these overlap, so they do not add up). N-PORT has no industry field: the labels are reviewed decisions, with a confidence, not filed facts. “AI” means the core product is an AI model or system, or the compute, chips or data platforms used to build and run models.',
+  },
+  markIndex: {
+    term: 'Per-share mark index',
+    text: 'How marks moved, following each fund’s own security from report to report (split-adjusted). A company moves with the median of its funds, so a step-up funds report in different quarters counts once. Each period counts only the companies marked at both ends of it, so a company first reported later joins without moving the level (it cannot add its entry price). The index is shown for the typical company (the median) and weighted by value. A period needs at least 5 companies; the index starts at the first such period.',
+  },
   mark: {
     term: 'Mark',
     text: 'The value a fund reports for a holding. A per-share mark is that value divided by the shares reported, adjusted for known share splits.',

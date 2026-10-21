@@ -45,13 +45,16 @@ test('explore exit check: pivot value cells equal exposureAsOf for every private
   }
 });
 
-test('drill: every cell’s legs sum to the cell (firm, fund, company, class rows; every metric; the total row)', () => {
+test('drill: every cell’s legs sum to the cell (firm, fund, company, class, sector, industry, theme rows; every metric; the total row)', () => {
   const cg = firmIdOf('Capital Group (American Funds)');
   for (const [rows, opts] of [
     ['firm', {}],
     ['fund', { scope: scope({ firm: [cg] }) }],
     ['company', {}],
     ['class', { ref: { companyId: idOf('Anthropic') } }],
+    ['sector', { categories: ['company'] }],
+    ['industry', { categories: ['company'] }],
+    ['theme', { categories: ['company'] }],
   ]) {
     const p = analysis.pivot(db, { rows, period: 'quarter', from: '2025-06-30', to: '2026-06-30', limit: 4, ...opts });
     for (const r of [...p.results, { key: null, ...p.total }])

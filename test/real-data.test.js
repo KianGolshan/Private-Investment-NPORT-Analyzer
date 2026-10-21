@@ -77,6 +77,40 @@ test('detectSplit: every real split found in live data is recognized', () => {
   }
 });
 
+test('detectSplit: units restated with a re-mark (trap 63, P14): the prior side is restated, the change is mark', () => {
+  // Partners Group Growth, Impilo Orphan Drugs: 0.04 sh $122,320.31 -> 88,174.80 sh $224,435.86 (raw EDGAR,
+  // 0001410368-26-021560 -> 0001410368-26-056536)
+  const opts = { remark: true };
+  const r = detectSplit(
+    { shares: 0.04, pricePerShare: 122320.31 / 0.04 },
+    { shares: 88174.8, pricePerShare: 224435.86 / 88174.8 },
+    opts
+  );
+  assert.equal(r, 88174.8 / 0.04);
+  // Partners Group, EnfraGen: units in thousands one quarter, units the next
+  assert.equal(
+    detectSplit(
+      { shares: 37786, pricePerShare: 2397.4733385380828 },
+      { shares: 35172405.56, pricePerShare: 2.47551599993549 },
+      opts
+    ),
+    35172405.56 / 37786
+  );
+  // 50x the units at 50x the value is a purchase, not a restatement
+  assert.equal(detectSplit({ shares: 1000, pricePerShare: 10 }, { shares: 60000, pricePerShare: 10.5 }, opts), null);
+  // under 50x with the price collapsing is a re-mark plus a trade, left alone
+  assert.equal(
+    detectSplit({ shares: 25913.08, pricePerShare: 315.63 }, { shares: 129565.4, pricePerShare: 7.7e-8 }, opts),
+    null
+  );
+  // without the option (a class moving between keys) the stricter rules hold: Nscale's 60:1 exchange
+  assert.equal(detectSplit({ shares: 17700, pricePerShare: 1290.35 }, { shares: 1062000, pricePerShare: 20.39 }), null);
+  assert.equal(
+    detectSplit({ shares: 0.04, pricePerShare: 3058007.75 }, { shares: 88174.8, pricePerShare: 2.5453515 }),
+    null
+  );
+});
+
 test('detectSplit: real purchases and re-marks that are not splits', () => {
   // Fidelity Advisor Series I, Anthropic Series F: position built up at an unchanged mark (units ×2.468, price ×1.000)
   assert.equal(detectSplit({ shares: 38900, pricePerShare: 140.97 }, { shares: 96000, pricePerShare: 140.96 }), null);

@@ -414,3 +414,20 @@ The user approved the plan and asked for W1.
 "Filed by" is offered on Market and Firms only (Explore and the bridge stay hindsight); a co-advised fund counts in
 full for each firm, once in the all-firms total; a fund with several marks under one label is left out of the
 statistics, its rows still shown; Firms, firm pages and Explore default to operating companies.
+
+## Phase 14: sectors, industries and themes (2026-10-20; plan: [plans/P14-sectors.md](plans/P14-sectors.md), ADR 0010)
+
+**Goal:** every private company in the filings in the app, each with a reviewed sector, industry and themes, and
+trend views by sector and theme as of any date: holdings, the bridge (from positions vs from marks) and a
+matched-pair per-share mark index. The user approved the plan on 2026-10-20, added the whole unreviewed queue, and
+asked to "fix and implement everything" without a paid model for the backfill.
+
+| Wave    | Scope                                                                                                                                                             | State |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| **W0**  | taxonomy, Form D check (rejected), draft labels, index feasibility, a 56-name model pilot (stopped by the user; scored offline)                                   | Done  |
+| **W2b** | the unreviewed queue sorted: 10,144 names by rule or in session; 572 operating private companies admitted ($9.2B), 16 duplicates merged, 5 vehicles recategorized | Done  |
+| **W1**  | `taxonomy.json`, `industries.csv`, migration 0023, import and validation; every job refuses a private company with no decision                                    | Done  |
+| **W3**  | sector totals, Explore sector/industry/theme rows, the chain-based mark index, API; trap 63 extended (unit restatements read as marks)                            | Done  |
+| **W4**  | `/sectors`, `/sectors/:level/:code`, the company classification chip, glossary                                                                                    | Done  |
+| **W5**  | nightly watch: new names over $1M in any number of funds, and companies not yet classified                                                                        | Done  |
+| Later   | an opt-in cheap-model suggestion for new names (capped in cents); the 8 companies not yet classified; deploy (the user merges)                                    | Open  |

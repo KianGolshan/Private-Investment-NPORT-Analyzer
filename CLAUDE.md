@@ -35,6 +35,9 @@ marks, new positions, adds, reductions, exits and trends. Keep that goal in view
 - Exits are reported as "no longer reported"; never guess why a fund exited. Changes are worded as the filings
   allow: first reported, added, reduced, reported at $0, mark moved.
 - **Group by identity, display by name:** fund_key, company id, instrument key; names are labels (trap 48).
+- **Industry labels are reviewed decisions, not facts** (ADR 0010): one industry per private operating company in
+  `data/review/industries.csv` (keyed by id, with confidence and note), themes may overlap. A new company gets a
+  decision ("not yet classified" counts); every job refuses one without. Never bulk-label with a paid model.
 
 ## Engineering rules
 

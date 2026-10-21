@@ -15,6 +15,7 @@ import type { ChartTheme } from '../ui/theme';
 import { baseOption } from '../ui/theme';
 import { usePageTitle } from '../lib/title';
 import { Term } from '../ui/Term';
+import { industryColumn, SectorFilter, useSectorFilter } from '../ui/SectorFilter';
 
 type Row = TopCompanies['results'][number];
 
@@ -23,8 +24,9 @@ function Top() {
   const fresh = useApi<Freshness>('/api/freshness');
   const cat = useCategoryFilter();
   const known = useKnown(scope.asof);
+  const group = useSectorFilter();
   const top = useApi<TopCompanies>(
-    `/api/market/top${qs({ date: scope.asof, limit: 300, category: cat.category, known: known.on })}`
+    `/api/market/top${qs({ date: scope.asof, limit: 300, category: cat.category, known: known.on, ...group.params })}`
   );
   const noun = cat.all ? 'private holdings' : 'private companies';
   const d = top.data;
@@ -84,6 +86,7 @@ function Top() {
         { header: 'Category', value: r => r.category },
       ],
     },
+    industryColumn<Row>(),
     { id: 'funds', header: 'Funds', value: r => r.funds, num: true },
     { id: 'value', header: 'Value', value: r => r.value, num: true, render: r => moneyC(r.value) },
     {
@@ -117,6 +120,7 @@ function Top() {
         <span class="spacer" />
         <KnownSwitch asof={scope.asof} />
         <CategorySwitch />
+        <SectorFilter />
         <ScopeBar supports={{ asof: true }} newest={fresh.data?.newestReportDate ?? null} />
       </div>
       <BasisNote />

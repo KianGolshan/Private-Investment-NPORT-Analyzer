@@ -1,6 +1,6 @@
 {
   "name": "vantage",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Private-company holdings and marks, straight from SEC fund filings (N-PORT, since 2019Q4)",
   "homepage": "https://vantage-kian.duckdns.org",
   "repository": {

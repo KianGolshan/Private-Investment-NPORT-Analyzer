@@ -1,0 +1,1251 @@
+company_id,company,industry,themes,confidence,source,note
+1,Anthropic,tech.ai_models,ai,high,p14-review,
+2,Databricks,tech.software,ai,high,p14-review,data and ML platform counts under the AI rule (platforms used to build and run models)
+3,Waymo,ind.autonomy,ai|robotics,high,p14-review,
+4,ByteDance,tech.consumer_internet,,high,p14-review,TikTok/Douyin; uses AI but not AI-native under the rule
+5,Stripe,fin.payments,fintech,high,p14-review,
+6,Canva,tech.software,,high,p14-review,
+7,OpenAI,tech.ai_models,ai,high,p14-review,
+8,xAI,tech.ai_models,ai,high,p14-review,
+9,Epic Games,comm.media,,high,p14-review,
+10,Anduril Industries,ind.aerospace_defense,defense|robotics|ai,high,p14-review,
+11,Fanatics,cons.retail,,high,p14-review,
+12,Revolut,fin.banking,fintech,high,p14-review,
+13,Zipline International,ind.transport,robotics,high,p14-review,drone delivery
+14,Acrisure,fin.insurance,fintech,high,p14-review,
+15,PsiQuantum,tech.quantum,quantum,high,p14-review,
+16,Amsurg,hc.services,,high,p14-review,
+17,Nuro,ind.autonomy,ai|robotics,high,p14-review,Form D name match says Biotechnology: a different 2015 Nuro (name collision)
+18,Redwood Materials,enr.clean,climate,high,p14-review,
+19,Kobold Metals,mat.mining,climate,high,p14-review,uses AI for exploration; not AI-native under the rule
+20,Starling Bank,fin.banking,fintech,high,p14-review,
+21,Lightmatter,tech.semis,ai,high,p14-review,photonic AI compute
+22,SandboxAQ (SB Technology),tech.software,ai|quantum,high,p14-review,
+23,Oura,cons.electronics,,high,p14-review,
+24,Tenstorrent,tech.semis,ai,high,p14-review,
+25,Gusto,tech.software,,high,p14-review,payroll and HR software
+26,Checkr,tech.software,,high,p14-review,
+27,SambaNova Systems,tech.semis,ai,high,p14-review,
+28,Kardium,hc.devices,,high,p14-review,
+29,Vast Data,tech.ai_infra,ai,high,p14-review,
+30,Diamond Foundry,mat.materials,,high,p14-review,lab-grown diamonds
+31,Incora,ind.aerospace_defense,,high,p14-review,aerospace parts supply chain (formerly Wesco Aircraft)
+32,Xsight Labs,tech.semis,ai,medium,p14-review,networking chips for AI data centers
+33,Skyryse,ind.aerospace_defense,robotics,medium,p14-review,flight automation
+34,Sila Nano,mat.materials,climate,high,p14-review,battery materials
+35,Bolt Technology,cons.mobility,,high,p14-review,Bolt Technology OU (Estonia)
+36,Tanium,tech.security,,high,p14-review,
+37,iCapital,fin.wealth,fintech,high,p14-review,
+38,Alliant (AH Parent),fin.insurance,,high,p14-review,Alliant Insurance Services
+39,Figure AI,ind.autonomy,ai|robotics,high,p14-review,
+40,Astranis Space Technologies,ind.space,space,high,p14-review,
+41,Altice France,comm.telecom,,high,p14-review,
+42,Treeline Bio,hc.biotech,,high,p14-review,
+43,IQHQ,re.real_estate,,high,p14-review,life-science real estate
+44,Element Labs,tech.semis,ai,medium,p14-review,one directory source: AI inference processors (founders from Habana); unconfirmed by a primary source
+45,Rappi,tech.consumer_internet,,high,p14-review,
+46,Mesquite Energy,enr.oil_gas,,high,p14-review,
+47,Rotech Healthcare,hc.services,,high,p14-review,home medical equipment
+48,ACNR,mat.mining,,medium,p14-review,American Consolidated Natural Resources (coal)
+49,Syniverse,comm.telecom,,high,p14-review,
+50,Blink Health,hc.healthtech,,high,p14-review,
+51,Element Biosciences,hc.tools,,high,p14-review,
+52,Cleerly,hc.healthtech,ai,high,p14-review,AI cardiac imaging is the core product
+53,Foresea,enr.oil_gas,,high,p14-review,offshore drilling
+55,Versa Networks,tech.security,,high,p14-review,
+56,SiFive,tech.semis,,high,p14-review,
+57,Crusoe,tech.ai_infra,ai|climate,high,p14-review,
+58,Gobrands,cons.retail,,high,p14-review,goPuff
+59,Form Energy,enr.clean,climate,high,p14-review,
+60,Discord,tech.consumer_internet,,high,p14-review,
+61,Moloco,tech.software,ai,high,p14-review,machine-learning ad platform
+62,Endeavor,comm.media,,high,p14-review,
+63,Illuminated,,,unclear,p14-review,ILLUMINATED HOLDINGS INC; web search found no match
+64,PHI Group Inc/DE,ind.transport,,high,p14-review,helicopter services
+65,Davidson Homes,re.real_estate,,high,p14-review,
+66,Aimbridge Topco,cons.travel,,high,p14-review,hotel management
+67,Cellink,ind.manufacturing,climate,medium,p14-review,assumed CelLink Corp (flexible harnesses for EVs); Form D says Other Technology
+68,Insitro,hc.biotech,ai,high,p14-review,machine-learning drug discovery is the core product
+69,GTT Communications,comm.telecom,,high,p14-review,
+70,Monitronics International,ind.business_services,,high,p14-review,Brinks Home alarm monitoring
+71,Aledade,hc.services,,high,p14-review,
+72,Windstream Parent,comm.telecom,,high,p14-review,
+73,New Windstream,comm.telecom,,high,p14-review,
+74,Loadsmart,ind.transport,,high,p14-review,
+75,Applied Intuition,ind.autonomy,ai|robotics|defense,high,p14-review,
+76,Ascent Resources,enr.oil_gas,,high,p14-review,
+77,Dataminr,tech.software,ai,high,p14-review,
+78,Alif Semiconductor,tech.semis,,high,p14-review,
+79,Sail Biomedicines,hc.biotech,,high,p14-review,
+80,Runway AI,tech.ai_models,ai,high,p14-review,
+81,Celonis,tech.software,,high,p14-review,
+82,Galvanize Therapeutics,hc.devices,,high,p14-review,pulsed-field ablation devices
+83,Frore Systems,tech.semis,ai,medium,p14-review,solid-state cooling chips; AI data-center cooling
+84,GrubMarket,cons.food,,high,p14-review,Form D says Restaurants; it is food supply chain
+85,Retym,tech.semis,,high,p14-review,
+86,My Alarm Center,ind.business_services,,high,p14-review,
+87,Physical Intelligence,tech.ai_models,ai|robotics,high,p14-review,
+88,Snorkel AI,tech.software,ai,high,p14-review,
+89,Payward (Kraken),fin.crypto,crypto|fintech,high,p14-review,
+90,Snyk,tech.security,,high,p14-review,
+91,Lyte AI,ind.autonomy,ai|robotics,medium,p14-review,robot perception
+92,Sima Technologies,tech.semis,ai,high,p14-review,SiMa.ai edge AI chips
+93,Quintoandar,re.proptech,,high,p14-review,
+94,Commercial Barge Line,ind.transport,,high,p14-review,
+95,Drillco Hldg Lux,enr.oil_gas,,medium,p14-review,offshore drilling holding company
+96,World Labs,tech.ai_models,ai,high,p14-review,
+97,National Resilience,hc.tools,,high,p14-review,biomanufacturing
+98,Cineworld,comm.media,,high,p14-review,
+99,YiChang HEC ChangJiang Pharmaceutical,hc.biotech,,high,p14-review,
+100,Mustang Express,,,unclear,p14-review,ARM MUSTANG EXPRESS HOLDCO LLC; web search found no operating business
+101,Energy Technologies,,,unclear,p14-review,two raw names (INC. and LTD.); web search finds several unrelated companies
+102,Fabletics,cons.brands,,high,p14-review,
+103,Skyhawk Therapeutics,hc.biotech,,high,p14-review,
+104,Candid Therapeutics,hc.biotech,,high,p14-review,
+105,Celestial AI,tech.semis,ai,high,p14-review,
+106,Taalas,tech.semis,ai,high,p14-review,
+107,Apartment List,re.proptech,,high,p14-review,
+108,Castle Creek Biosciences,hc.biotech,,high,p14-review,
+109,Impulse Dynamics Ireland,hc.devices,,high,p14-review,
+110,Ascent CNR,,,unclear,p14-review,no confirmed operating business
+111,Socure,tech.security,fintech,high,p14-review,identity verification
+112,Jumpcloud,tech.security,,high,p14-review,
+113,Paragon Biosciences Emalex Capital,hc.biotech,,high,p14-review,
+114,Empower Semiconductor,tech.semis,,high,p14-review,
+115,Superhuman (formerly Grammarly),tech.software,ai,high,p14-review,
+116,Wasabi,tech.software,,high,p14-review,cloud storage
+117,Tory Burch,cons.brands,,high,p14-review,
+118,Flock,tech.security,,medium,p14-review,"Flock Safety (public-safety cameras), assumed from the name"
+119,Ant International,fin.payments,fintech,high,p14-review,
+120,Genesis Molecular AI,hc.biotech,ai,high,p14-review,
+121,Apptronik,ind.autonomy,ai|robotics,high,p14-review,
+122,New Cineworld,comm.media,,high,p14-review,cinemas
+123,Cruise (GM Cruise Holdings),ind.autonomy,ai|robotics,high,p14-review,
+124,Rapyd Financial Network 2016,fin.payments,fintech,high,p14-review,
+125,Alliant Cali,fin.insurance,,medium,p14-review,Alliant Insurance entity
+126,Mirador Therapeutics,hc.biotech,,high,p14-review,
+127,Somatus,hc.services,,high,p14-review,
+128,Apnimed,hc.biotech,,high,p14-review,
+129,Checkout Payments,fin.payments,fintech,high,p14-review,
+130,OneTrust,tech.security,,high,p14-review,
+131,Selecta Group,cons.food,,high,p14-review,vending
+132,Manus Bio,mat.materials,,high,p14-review,
+133,Patreon,tech.consumer_internet,,high,p14-review,
+134,Kartos Therapeutics,hc.biotech,,high,p14-review,
+135,Creditas Financial Solutions,fin.banking,fintech,high,p14-review,
+136,Axiom Space,ind.space,space,high,p14-review,
+137,Formagrid,tech.software,,high,p14-review,Airtable
+138,Kalshi,fin.markets,fintech,high,p14-review,
+139,Cellanome,hc.tools,,high,p14-review,
+140,Medical Microinstruments,hc.devices,robotics,high,p14-review,surgical robotics
+141,Perplexity AI,tech.ai_models,ai,high,p14-review,
+142,Nscale,tech.ai_infra,ai,high,p14-review,
+143,Valuedrive Technologies Pvt,cons.retail,,high,p14-review,Cars24 (used cars)
+144,Neon Payments,fin.banking,fintech,high,p14-review,
+145,Lambda,tech.ai_infra,ai,high,p14-review,
+146,Arctic Wolf Networks,tech.security,,high,p14-review,
+147,Jetti,mat.mining,,high,p14-review,Jetti Resources
+148,Bombas,cons.brands,,high,p14-review,
+149,Robertshaw (Range Red Acquisition),ind.manufacturing,,high,p14-review,
+150,A24 Films,comm.media,,high,p14-review,
+151,Upgrade,fin.banking,fintech,high,p14-review,
+152,Mitel (MLN US Holdco),comm.telecom,,high,p14-review,
+153,Ramp,fin.payments,fintech,high,p14-review,
+154,RapidSOS,tech.software,,high,p14-review,
+155,Valsoft,tech.software,,high,p14-review,
+156,Johnnie-O,cons.brands,,high,p14-review,
+157,Talwandi Sabo Power,enr.power,,high,p14-review,
+159,Airwallex,fin.payments,fintech,high,p14-review,
+160,Hadrian Automation,ind.manufacturing,defense|robotics,high,p14-review,
+162,City Therapeutics,hc.biotech,,high,p14-review,
+163,True Anomaly,ind.space,space|defense,high,p14-review,
+164,Boom Technology,ind.aerospace_defense,,high,p14-review,
+165,Fluidstack,tech.ai_infra,ai,high,p14-review,
+166,Cellares,hc.tools,,high,p14-review,
+168,Recovery Solutions,,,unclear,p14-review,no confirmed operating business
+169,Nearfield Instruments,tech.semis,,high,p14-review,semiconductor metrology equipment
+170,Wayve Technologies,ind.autonomy,ai|robotics,high,p14-review,
+171,Groq,tech.semis,ai,high,p14-review,
+172,Bluejay Therapeutics,hc.biotech,,high,p14-review,Form D says Other Technology
+173,Navacord,fin.insurance,,high,p14-review,
+174,Vinted,cons.retail,,high,p14-review,
+175,Hometown Food,cons.food,,high,p14-review,
+177,Saks Global Hldgs,cons.retail,,high,p14-review,
+178,Cesiumastro,ind.space,space|defense,high,p14-review,
+179,Ferrellgas (escrow equity),enr.oil_gas,,high,p14-review,propane distribution
+187,MYT,cons.retail,,medium,p14-review,MYT Holding; tied to Neiman Marcus through the MYT guarantor entities in its filings
+198,CRB,fin.banking,fintech,medium,p14-review,CRB Group (Cross River Bank) assumed from the raw names
+203,At&T Mobility II,comm.telecom,,high,p14-review,preferred interests in an AT&T subsidiary
+216,Keystone Power Conemaugh,enr.power,,high,p14-review,power plant ownership interests
+224,Legacy Gateway Jv,re.real_estate,,high,p14-review,ledger: real estate joint venture
+230,Gallop Holdings LP - Ascot,fin.insurance,,medium,p14-review,holds Ascot Group (insurer); ledger flags fund interest?
+740,Trumid,fin.markets,fintech,high,p14-review,
+741,FHU US Holdings,cons.food,,high,p14-review,brand Chobani per aliases.csv note
+742,Color Health,hc.services,,high,p14-review,
+756,Hockey Parent Holdings,fin.insurance,,high,p14-review,brand Hub International per aliases.csv note
+767,High Power Exploration,mat.mining,,high,p14-review,
+781,Midwave Wireless,comm.telecom,,medium,p14-review,
+782,FEH,,,unclear,p14-review,FEH GROUP LLC; web search finds only a possible match (Family Entertainment Holdings)
+786,PG Polaris TopCo S.a.r.l,,,unclear,p14-review,Partners Group holding company; operating business not named
+792,Sidewalk Infrastructure Partners,enr.power,climate,medium,p14-review,Alphabet spin-out building and investing in infrastructure; close to an investment vehicle
+795,Techem,ind.business_services,climate,high,p14-review,energy submetering
+798,Nexus Apex,,,unclear,p14-review,NEXUS APEX HOLDINGS LLC; no confirmed operating business
+872,Insight M,ind.business_services,climate,medium,p14-review,aerial methane detection (formerly Kairos Aerospace)
+904,Real Alloy,mat.materials,,medium,p14-queue,aluminum recycling
+905,EdgeCore Digital Infrastructure,tech.ai_infra,,medium,p14-queue,EdgeCore Holdings LP (data centers); Partners Group
+906,Endeavor BioMedicines,hc.biotech,,high,p14-queue,
+907,ADARx Pharmaceuticals,hc.biotech,,high,p14-queue,
+908,Genesys,tech.software,ai,medium,p14-queue,contact-center software (AI-led platform is borderline under the AI rule)
+909,Evolve Vacation Rental,cons.travel,,high,p14-queue,
+910,Shield AI,ind.aerospace_defense,defense|ai|robotics,high,p14-queue,merge candidate with entity 65972
+911,Homer City Redevelopment,enr.power,,medium,p14-queue,KH Homer City LP (power/data-center site)
+912,Brain Corp,ind.autonomy,ai|robotics,high,p14-queue,
+913,Workrise,tech.software,,high,p14-queue,energy workforce marketplace
+914,Crescent Midstream,enr.oil_gas,,high,p14-queue,
+915,Obsidian Therapeutics,hc.biotech,,high,p14-queue,
+916,Akur8,tech.software,ai|fintech,high,p14-queue,insurance pricing software
+917,Envision Healthcare,hc.services,,high,p14-queue,
+918,GenOn,enr.power,,high,p14-queue,
+919,Cohesity,tech.security,ai,high,p14-queue,
+920,GOAT Group,cons.retail,,high,p14-queue,
+921,Arbor Biotechnologies,hc.biotech,,high,p14-queue,
+922,LABL (Multi-Color),mat.materials,,medium,p14-queue,labels (Multi-Color Corp)
+923,Qonto,fin.banking,fintech,high,p14-queue,
+924,Included Health,hc.services,,high,p14-queue,
+925,Georgia Banking Company,fin.banking,,medium,p14-queue,
+926,ProSomnus,hc.devices,,medium,p14-queue,post-restructuring
+927,48forty Solutions,ind.business_services,,medium,p14-queue,pallet services
+928,Clarify Health,hc.healthtech,ai,high,p14-queue,
+929,Digicel,comm.telecom,,high,p14-queue,post-restructuring equity
+930,United Site Services,ind.business_services,,high,p14-queue,
+931,Brightline West,ind.transport,,medium,p14-queue,high-speed rail project; equity warrants held by muni funds
+932,Aergo Capital,ind.transport,,medium,p14-queue,aircraft leasing
+933,Hearthside Food Solutions,cons.food,,high,p14-queue,
+934,Travelport,tech.software,,high,p14-queue,
+935,Plymouth Rock,fin.insurance,,high,p14-queue,The Plymouth Rock Company (auto insurer); Central Securities holding
+936,Unit4,tech.software,,high,p14-queue,ERP software (Netherlands)
+937,Dermatology Holdings,hc.services,,medium,p14-queue,dermatology practice platform (holdco LP)
+938,Idera,tech.software,,medium,p14-queue,Idera Parent LP (database and developer tools software)
+939,CyrusOne,tech.ai_infra,,high,p14-queue,data centers; filed as CyrusOne Finance Corp equity
+940,atNorth,tech.ai_infra,ai,high,p14-queue,Nordic data centers for AI/HPC
+941,ThreatLocker,tech.security,,high,p14-queue,
+942,EnfraGen,enr.power,climate,high,p14-queue,Latin American power generation
+943,Climeworks,enr.clean,climate,high,p14-queue,direct air capture
+944,Chaos Industries,ind.aerospace_defense,defense,high,p14-queue,
+945,Monzo,fin.banking,fintech,high,p14-queue,
+946,Cosette Pharmaceuticals,hc.biotech,,high,p14-queue,held via Hamilton Lane (filed PF)
+947,Heartland Dental,hc.services,,high,p14-queue,held via AMG Pantheon (filed PF)
+948,Bernhard,ind.business_services,climate,medium,p14-queue,Bernhard (energy-as-a-service for buildings); Partners Group
+949,SureWerx,ind.manufacturing,,high,p14-queue,safety products (SureWerx Topco LP)
+950,Confluent Health,hc.services,,high,p14-queue,physical therapy
+951,Bad Boy Mowers,ind.manufacturing,,medium,p14-queue,JV investment LP; mower maker
+952,Reflection AI,tech.ai_models,ai,high,p14-queue,
+953,Spring Education Group,cons.education,,high,p14-queue,private schools
+954,Banyan Software,tech.software,,high,p14-queue,
+955,Enercoast Energy Infrastructure,enr.oil_gas,,medium,p14-queue,
+956,San Cristobal Mining,mat.mining,,high,p14-queue,
+957,Mercor,tech.ai_models,ai,high,p14-queue,AI talent/data platform
+958,Frozen Bakery Holdco,cons.food,,medium,p14-queue,
+959,Ryan LLC,ind.business_services,,high,p14-queue,tax services firm
+960,Quintain,re.real_estate,,high,p14-queue,UK property developer (Wembley Park)
+961,Vercel,tech.software,,high,p14-queue,
+962,Veonet,hc.services,,high,p14-queue,ophthalmology clinics (Germany)
+963,Ayar Labs,tech.semis,ai,high,p14-queue,optical I/O for AI chips
+964,Sanoptis,hc.services,,medium,p14-queue,ophthalmology group; Project Roller SARL
+965,Tekion,tech.software,,high,p14-queue,auto-retail software
+966,Medicus Healthcare Solutions,hc.services,,medium,p14-queue,
+967,Lumin Digital,tech.software,fintech,high,p14-queue,digital banking software
+968,Saronic Technologies,ind.aerospace_defense,defense|robotics,high,p14-queue,autonomous ships
+969,Nanotronics Imaging,tech.semis,ai,medium,p14-queue,also merges CUBEFABS (grouping error in the note)
+970,Motive Technologies,tech.software,ai,high,p14-queue,fleet management with AI dashcams
+971,Tradeshift,fin.payments,fintech,high,p14-queue,
+972,Deepgram,tech.ai_models,ai,high,p14-queue,speech AI
+973,PPRO,fin.payments,fintech,high,p14-queue,
+974,Cendyn,tech.software,,high,p14-queue,hospitality software
+975,Anysphere (Cursor),tech.ai_models,ai,high,p14-queue,filed as PF by Coatue fund; possible SPV
+976,ProPharma,hc.services,,medium,p14-queue,
+977,Dyna Robotics,ind.autonomy,ai|robotics,high,p14-queue,
+978,Zippy Shell,ind.business_services,,medium,p14-queue,portable storage
+979,K2 Space,ind.space,space|defense,high,p14-queue,
+980,Allied Benefit Systems,fin.insurance,,medium,p14-queue,benefits administration
+981,Zepto,cons.retail,,high,p14-queue,quick commerce (India)
+982,Sunsure Energy,enr.clean,climate,high,p14-queue,Indian renewable developer; country filed as US
+983,Tarana Wireless,comm.telecom,,high,p14-queue,fixed wireless equipment
+984,Eliyan,tech.semis,ai,high,p14-queue,chiplet interconnect for AI chips
+985,Colossal Biosciences,hc.biotech,,high,p14-queue,
+986,DCert (DigiCert),tech.security,,medium,p14-queue,DCert Preferred Holdings
+987,Trinity Gas Holdings,enr.oil_gas,,medium,p14-queue,gas storage
+988,Wonder,cons.food,,high,p14-queue,Wonder Group (food delivery/halls)
+989,Peninsula Gaming,cons.travel,,medium,p14-queue,casino operator
+990,Replit,tech.software,ai,high,p14-queue,AI coding agent
+991,Infinity Fincorp,fin.banking,fintech,medium,p14-queue,Indian NBFC
+992,AlphaSense,tech.software,ai,high,p14-queue,
+993,FairJourney Biologics,hc.tools,,high,p14-queue,antibody discovery services
+994,Betterment,fin.wealth,fintech,high,p14-queue,
+995,Kandou,tech.semis,,high,p14-queue,
+996,Vulcan Elements,mat.materials,defense,high,p14-queue,rare-earth magnets
+997,Avetta,tech.software,,high,p14-queue,supply-chain risk software
+998,Acumatica,tech.software,,high,p14-queue,
+999,Apex Clean Energy,enr.clean,climate,high,p14-queue,
+1000,Deel,tech.software,fintech,high,p14-queue,global payroll
+1001,Triveni Bio,hc.biotech,,high,p14-queue,
+1002,cellcentric,enr.clean,climate,medium,p14-queue,fuel cells (Daimler/Volvo JV)
+1003,South Florida Motorsports,comm.media,,medium,p14-queue,Miami Grand Prix
+1005,Keycon Power Holdings,enr.power,,medium,p14-queue,
+1006,ASAPP,tech.software,ai,high,p14-queue,
+1007,Epirus,ind.aerospace_defense,defense,high,p14-queue,
+1008,Third Arc Bio,hc.biotech,,high,p14-queue,
+1009,Ripple,fin.crypto,crypto|fintech,high,p14-queue,
+1010,Neuralink,hc.devices,,high,p14-queue,
+1011,ClearNote Health,hc.healthtech,,medium,p14-queue,cancer detection diagnostics
+1012,LifeMine Therapeutics,hc.biotech,,high,p14-queue,
+1013,Altos Labs,hc.biotech,,high,p14-queue,
+1014,Tubulis,hc.biotech,,high,p14-queue,
+1015,Insightec,hc.devices,,high,p14-queue,
+1016,ElevenLabs,tech.ai_models,ai,high,p14-queue,
+1017,Akeana,tech.semis,,high,p14-queue,RISC-V processors
+1018,Different Technologies,tech.software,,medium,p14-queue,Mexico
+1019,Sonoma Biotherapeutics,hc.biotech,,high,p14-queue,
+1020,Density AI,tech.software,ai,medium,p14-queue,occupancy sensing
+1021,CeQur,hc.devices,,high,p14-queue,insulin patch
+1022,Torchy's Tacos,cons.food,,high,p14-queue,restaurants
+1023,Avid Bioservices,hc.tools,,high,p14-queue,CDMO taken private 2025
+1024,Enstructure,ind.transport,,medium,p14-queue,ports and terminals
+1025,Sentinel Midstream Highline JV,enr.oil_gas,,medium,p14-queue,
+1026,Delfi Diagnostics,hc.healthtech,ai,high,p14-queue,AI blood-based cancer detection
+1027,Neurona Therapeutics,hc.biotech,,high,p14-queue,
+1028,Superior Energy Services,enr.oil_gas,,high,p14-queue,oilfield services (post-reorganization private equity)
+1029,Lyra Health,hc.services,,high,p14-queue,
+1030,Bolt Data & Energy,tech.ai_infra,ai,medium,p14-queue,
+1031,DMed Biopharmaceutical,hc.biotech,,medium,p14-queue,China
+1032,Federato,tech.software,ai|fintech,high,p14-queue,AI insurance underwriting software
+1033,Newsela,tech.software,,high,p14-queue,education software
+1034,Libbey Glass,cons.brands,,high,p14-queue,glass tableware maker
+1035,Tipalti,fin.payments,fintech,high,p14-queue,
+1036,Lilac Solutions,mat.mining,climate,high,p14-queue,lithium extraction technology
+1037,Gupshup,tech.software,ai,high,p14-queue,conversational messaging platform
+1038,Flexsys,mat.materials,,medium,p14-queue,rubber chemicals
+1039,Mercury Technologies,fin.banking,fintech,high,p14-queue,
+1040,Waabi,ind.autonomy,ai|robotics,high,p14-queue,
+1041,Andpad,tech.software,,high,p14-queue,construction software (Japan)
+1042,Ennoble Care,hc.services,,medium,p14-queue,
+1043,Ironwood Midstream,enr.oil_gas,,medium,p14-queue,
+1044,PCI Pharma Services,hc.tools,,high,p14-queue,
+1045,Mammoth Brands,cons.brands,,high,p14-queue,Harry's parent
+1046,Harley-Davidson Financial Services,fin.banking,,medium,p14-queue,preferred interest in a subsidiary of a listed company
+1047,Algolia,tech.software,ai,high,p14-queue,AI search
+1048,Chennai Super Kings,comm.media,,high,p14-queue,IPL cricket franchise
+1049,Neara,tech.software,ai,medium,p14-queue,utility network digital twins
+1050,Apex Technology,ind.space,space|defense,high,p14-queue,satellite buses
+1051,Serif Biomedicines,hc.biotech,,medium,p14-queue,
+1052,Evozyne,hc.biotech,ai,medium,p14-queue,AI protein design
+1053,Enfinity Global,enr.clean,climate,high,p14-queue,
+1054,St. Croix Hospice,hc.services,,high,p14-queue,
+1055,LUV Car Wash,cons.services,,medium,p14-queue,car wash chain via blocker LLC
+1056,Cardurion Pharmaceuticals,hc.biotech,,high,p14-queue,
+1057,Deepsight,hc.devices,ai,medium,p14-queue,AI ultrasound
+1058,Quell Therapeutics,hc.biotech,,high,p14-queue,
+1059,Cyera,tech.security,ai,high,p14-queue,data security
+1060,Santander Bank N.A.,fin.banking,,medium,p14-queue,subsidiary of a listed bank; likely preferred or a loan participation
+1061,Lila Sciences,hc.biotech,ai,high,p14-queue,AI science platform
+1063,Audiotonix,tech.semis,,medium,p14-queue,pro audio mixing consoles (hardware)
+1064,Hydra Host,tech.ai_infra,ai,high,p14-queue,GPU cloud marketplace
+1065,Onepoint,tech.software,,medium,p14-queue,French IT consulting
+1066,Druva,tech.security,,high,p14-queue,data protection
+1067,Coalition,fin.insurance,fintech,high,p14-queue,cyber insurance
+1068,Lookout,tech.security,,high,p14-queue,
+1069,SecurityScorecard,tech.security,,high,p14-queue,
+1070,ElevateBio,hc.tools,,high,p14-queue,cell and gene therapy manufacturing
+1071,Kry International,hc.services,,high,p14-queue,digital health (Sweden)
+1072,CuraSen Therapeutics,hc.biotech,,high,p14-queue,
+1073,Overhaul,tech.software,,high,p14-queue,supply-chain risk visibility
+1074,Menlo Micro,tech.semis,,high,p14-queue,
+1075,Wugen,hc.biotech,,high,p14-queue,
+1076,Lynk Global,ind.space,space,high,p14-queue,
+1077,Fundbox,fin.banking,fintech,high,p14-queue,
+1078,Cyclic Materials,mat.mining,climate,high,p14-queue,rare-earth recycling
+1079,CityBrewing,cons.food,,high,p14-queue,
+1080,Cognichip,tech.semis,ai,medium,p14-queue,AI for chip design
+1081,VideoAmp,tech.software,,high,p14-queue,ad measurement
+1082,Bright Peak Therapeutics,hc.biotech,,high,p14-queue,
+1083,Devoted Health,fin.insurance,,high,p14-queue,Medicare Advantage insurer
+1084,Beast Industries,comm.media,,high,p14-queue,MrBeast
+1085,Relativity Space,ind.space,space,high,p14-queue,
+1086,Poolside,tech.ai_models,ai,high,p14-queue,
+1087,Dock,fin.payments,fintech,medium,p14-queue,Brazil
+1088,JSW One Platforms,cons.retail,,medium,p14-queue,B2B building-materials marketplace (India)
+1089,Mesa Natural Gas Solutions,enr.oil_gas,,medium,p14-queue,
+1090,Manna Drone Delivery,ind.transport,robotics,high,p14-queue,
+1091,ModMed,hc.healthtech,,high,p14-queue,
+1092,dbt Labs / Fivetran,tech.software,ai,medium,p14-queue,the two raw names merged in 2025; data platform
+1093,Southwest Critical Materials,mat.mining,,medium,p14-queue,
+1094,Hermeus,ind.aerospace_defense,defense,high,p14-queue,hypersonic aircraft
+1095,TEAF Solar Holdco,enr.clean,climate,medium,p14-queue,
+1096,Ursa Major,ind.aerospace_defense,defense,high,p14-queue,rocket engines
+1097,Hurtigruten,cons.travel,,high,p14-queue,cruise line
+1098,Life Cycle Power,enr.power,,medium,p14-queue,mobile power generation
+1099,Goop,cons.brands,,high,p14-queue,
+1100,Energia Group,enr.power,,high,p14-queue,Irish utility
+1101,Arsenal Biosciences,hc.biotech,,high,p14-queue,
+1102,Sortera Technologies,mat.materials,climate,high,p14-queue,aluminum scrap sorting
+1103,Clear Labs,hc.tools,,high,p14-queue,
+1104,KabaFusion,hc.services,,high,p14-queue,home infusion
+1105,Flexe,ind.transport,,high,p14-queue,on-demand warehousing
+1106,Brandtech Group,comm.media,ai,medium,p14-queue,marketing group (gen-AI content)
+1107,Fusion Parent (Fusion Connect),comm.telecom,,medium,p14-queue,
+1108,Middle River Power,enr.power,,high,p14-queue,
+1109,Legris Industries,ind.manufacturing,,medium,p14-queue,Belgian industrial holding (unlisted)
+1110,Nord Anglia Education,cons.education,,high,p14-queue,
+1111,AdvanCell,hc.biotech,,high,p14-queue,radiopharmaceuticals
+1112,Majestic Labs,tech.semis,ai,medium,p14-queue,AI server hardware
+1113,HotSpot Therapeutics,hc.biotech,,high,p14-queue,
+1114,Ascent Capital Group,ind.business_services,,medium,p14-queue,Monitronics parent; ISIN present
+1115,restor3d,hc.devices,,high,p14-queue,
+1116,SWG Brands (Hello Cake),cons.brands,,medium,p14-queue,
+1117,Varda Space Industries,ind.space,space,high,p14-queue,
+1118,Iracore International,ind.manufacturing,,medium,p14-queue,
+1119,Iambic Therapeutics,hc.biotech,ai,high,p14-queue,AI drug discovery
+1120,Tessera Therapeutics,hc.biotech,,high,p14-queue,
+1121,Kong,tech.software,,high,p14-queue,API platform
+1122,Consensys,fin.crypto,crypto,high,p14-queue,
+1123,Authentic Brands Group,cons.brands,,high,p14-queue,
+1124,NextRoll,tech.software,,high,p14-queue,
+1125,StockX,cons.retail,,high,p14-queue,
+1126,Crystalys Therapeutics,hc.biotech,,high,p14-queue,
+1127,Integrity Marketing Group,fin.insurance,,high,p14-queue,
+1128,Lucra,tech.software,fintech,medium,p14-queue,
+1129,Cyberhaven,tech.security,ai,high,p14-queue,
+1130,Orca Bio,hc.biotech,,high,p14-queue,
+1131,COP Exterminators,cons.services,,medium,p14-queue,pest control
+1132,Mentari Therapeutics,hc.biotech,,medium,p14-queue,
+1133,Contrast Security,tech.security,,high,p14-queue,
+1134,Abogen Therapeutics,hc.biotech,,high,p14-queue,mRNA (China)
+1135,Alkeme Insurance,fin.insurance,,high,p14-queue,
+1136,Deep Genomics,hc.biotech,ai,high,p14-queue,
+1137,Carry Technologies (Hightouch),tech.software,ai,medium,p14-queue,
+1138,Skild AI,tech.ai_models,ai|robotics,high,p14-queue,
+1139,Teya (SaltPay),fin.payments,fintech,high,p14-queue,
+1140,DNA Script,hc.tools,,high,p14-queue,
+1141,Eteck,enr.power,climate,medium,p14-queue,Dutch heat networks
+1142,Radiant Industries,enr.power,climate,high,p14-queue,portable nuclear microreactors
+1143,IvyRehab,hc.services,,high,p14-queue,
+1144,Homeward,re.proptech,,high,p14-queue,
+1145,RealPage,re.proptech,,high,p14-queue,
+1146,Asimov,hc.tools,,high,p14-queue,synthetic biology
+1147,Follett,cons.education,,high,p14-queue,
+1148,Avaya,tech.software,,high,p14-queue,post-bankruptcy private
+1149,Ankyra Therapeutics,hc.biotech,,high,p14-queue,
+1150,Harvest Commercial Capital,fin.banking,fintech,medium,p14-queue,
+1151,Mandolin Technology,hc.healthtech,ai,medium,p14-queue,
+1152,Atalanta Therapeutics,hc.biotech,,high,p14-queue,
+1153,Glycomine,hc.biotech,,high,p14-queue,
+1154,Outgo,fin.payments,fintech,medium,p14-queue,
+1155,Property Finder,re.proptech,,high,p14-queue,
+1156,Architect Financial Technologies,fin.markets,fintech|crypto,medium,p14-queue,
+1157,MNSN Holdings,ind.business_services,,medium,p14-queue,post-restructuring holdco; ISIN present
+1158,Exaforce,tech.security,ai,medium,p14-queue,
+1159,Vanta,tech.security,,high,p14-queue,
+1160,Altruist,fin.wealth,fintech,high,p14-queue,
+1161,Riddell Sports,cons.brands,,high,p14-queue,
+1162,Farmers Business Network,cons.retail,,medium,p14-queue,ag inputs marketplace
+1163,Temporal Technologies,tech.software,,high,p14-queue,
+1164,Synthesia,tech.ai_models,ai,high,p14-queue,
+1165,Claroty,tech.security,,high,p14-queue,
+1166,Dexmate,ind.autonomy,ai|robotics,high,p14-queue,
+1167,Loyal (Loyal Animal Health),hc.biotech,,high,p14-queue,
+1168,Symplr,hc.healthtech,,high,p14-queue,
+1169,alwaysAI,tech.software,ai,medium,p14-queue,
+1170,Boats Group,tech.consumer_internet,,high,p14-queue,
+1171,Bigtincan,tech.software,,high,p14-queue,
+1172,Genesis Digital Assets,fin.crypto,crypto,high,p14-queue,bitcoin mining
+1173,TimberHP,mat.materials,climate,medium,p14-queue,wood-fiber insulation; ISIN (muni bond issuer)
+1174,Hiive,fin.markets,fintech,high,p14-queue,
+1175,CEC Entertainment,cons.services,,high,p14-queue,Chuck E. Cheese
+1176,Orifarm,hc.biotech,,medium,p14-queue,pharma parallel import (Denmark)
+1177,Vannevar Labs,tech.software,defense|ai,high,p14-queue,
+1178,Savage X Fenty,cons.brands,,high,p14-queue,
+1179,Roofstock,re.proptech,,high,p14-queue,
+1180,Hammerspace,tech.software,ai,high,p14-queue,data orchestration for AI
+1181,Leader Bancorp,fin.banking,,high,p14-queue,
+1182,Westmoreland Mining,mat.mining,,high,p14-queue,coal
+1183,Baseten,tech.ai_infra,ai,high,p14-queue,
+1184,Quanta Dialysis,hc.devices,,high,p14-queue,
+1185,Verai Discoveries,mat.mining,ai,medium,p14-queue,AI mineral exploration
+1186,Truehold,re.proptech,,medium,p14-queue,
+1187,Hawkers,cons.food,,medium,p14-queue,restaurants
+1188,Unqork,tech.software,,high,p14-queue,
+1189,PushPress,tech.software,,high,p14-queue,
+1190,EoS Fitness,cons.services,,high,p14-queue,
+1191,nChroma Bio,hc.biotech,,high,p14-queue,
+1192,Numab Therapeutics,hc.biotech,,high,p14-queue,
+1193,Pasadena Private Lending,fin.banking,,medium,p14-queue,
+1194,Eolo,comm.telecom,,high,p14-queue,Italian fixed-wireless broadband
+1195,Sword Health,hc.healthtech,ai,high,p14-queue,AI physical therapy
+1196,Contentsquare,tech.software,,high,p14-queue,
+1197,Kloeckner Pentaplast,mat.materials,,high,p14-queue,packaging films
+1198,Lyka,cons.brands,,high,p14-queue,pet food (Australia)
+1199,9fin,tech.software,ai|fintech,high,p14-queue,
+1200,Seismic Therapeutic,hc.biotech,ai,high,p14-queue,
+1201,Scorpion Therapeutics,hc.biotech,,high,p14-queue,
+1202,Zeitview,tech.software,ai,high,p14-queue,drone inspection analytics
+1203,Phononic,tech.semis,,high,p14-queue,solid-state cooling
+1204,Yorkshire Water,enr.power,,high,p14-queue,water utility (no water industry; grouped with utilities)
+1205,Global Jet Capital,ind.transport,,high,p14-queue,aircraft financing
+1206,Lumeris,hc.healthtech,,high,p14-queue,
+1207,Gold Bullion International,fin.markets,,medium,p14-queue,precious-metals trading platform
+1208,Automattic,tech.software,,high,p14-queue,
+1209,Standard Bots,ind.autonomy,ai|robotics,high,p14-queue,
+1210,Click Therapeutics,hc.healthtech,,high,p14-queue,
+1211,Raisin,fin.banking,fintech,high,p14-queue,
+1212,Veregy,ind.business_services,climate,medium,p14-queue,energy services
+1213,Breeze Airways,ind.transport,,high,p14-queue,
+1214,Zapier,tech.software,ai,high,p14-queue,
+1215,Vetro,tech.software,,high,p14-queue,fiber network software
+1216,MasterClass (Yanka Industries),cons.education,,high,p14-queue,
+1217,ClearMotion,ind.manufacturing,,high,p14-queue,active suspension
+1218,Turo,cons.mobility,,high,p14-queue,
+1219,Decisions LLC,tech.software,,medium,p14-queue,
+1220,Gridiron Energy,enr.oil_gas,,medium,p14-queue,
+1221,Clear Street,fin.markets,fintech,high,p14-queue,
+1222,DataRobot,tech.software,ai,high,p14-queue,
+1223,Cornerstone Chemical,mat.materials,,high,p14-queue,
+1224,Angitia Biopharmaceuticals,hc.biotech,,high,p14-queue,
+1225,Gatik,ind.autonomy,ai|robotics,high,p14-queue,autonomous trucks
+1226,Scribe Therapeutics,hc.biotech,,high,p14-queue,
+1227,Carestream Dental,hc.devices,,high,p14-queue,
+1228,Ollin Biosciences,hc.biotech,,high,p14-queue,
+1229,South Florida Tennis (Miami Open),comm.media,,medium,p14-queue,
+1230,Vacation Inc,cons.brands,,medium,p14-queue,sunscreen brand
+1231,Solugenix,tech.software,,medium,p14-queue,IT services
+1232,UltraViolet Cyber,tech.security,,high,p14-queue,
+1233,New Blackboard,tech.software,,high,p14-queue,education software
+1234,Varo Bank,fin.banking,fintech,high,p14-queue,
+1235,Specialty Steel Holdings,mat.materials,,medium,p14-queue,
+1236,WelbeHealth,hc.services,,high,p14-queue,
+1237,Huntress,tech.security,,high,p14-queue,
+1238,Path Robotics,ind.autonomy,ai|robotics,high,p14-queue,
+1239,Inspectify,re.proptech,,medium,p14-queue,
+1240,Hometap,fin.banking,fintech,medium,p14-queue,home equity investments
+1241,Yotpo,tech.software,,high,p14-queue,
+1242,Behavox,tech.software,ai,high,p14-queue,
+1243,Outreach,tech.software,ai,high,p14-queue,
+1244,Pretium Packaging,mat.materials,,high,p14-queue,
+1245,Zencity,tech.software,,high,p14-queue,
+1246,Octane Lending,fin.banking,fintech,high,p14-queue,
+1247,Hark Labs,tech.software,ai,medium,p14-queue,
+1248,Locus Robotics,ind.autonomy,ai|robotics,high,p14-queue,
+1249,Sift Stack,tech.software,,high,p14-queue,
+1250,Creatio,tech.software,ai,high,p14-queue,
+1251,NewDay,fin.banking,fintech,high,p14-queue,UK consumer credit
+1252,Flexport,ind.transport,,high,p14-queue,
+1253,Honor Technology,hc.services,,high,p14-queue,
+1254,Harvey AI,tech.ai_models,ai,high,p14-queue,legal AI
+1255,Empower Finance,fin.banking,fintech,high,p14-queue,
+1256,Atticus Labs,tech.software,ai,medium,p14-queue,
+1257,Domino Data Lab,tech.software,ai,high,p14-queue,
+1258,Everlywell,hc.healthtech,,high,p14-queue,
+1259,Exide Technologies,enr.clean,,medium,p14-queue,batteries (post-restructuring)
+1260,Caturus,enr.oil_gas,,medium,p14-queue,LNG developer
+1261,NiKang Therapeutics,hc.biotech,,high,p14-queue,
+1262,Red Range Operating,enr.oil_gas,,medium,p14-queue,
+1263,Ergotron,ind.manufacturing,,high,p14-queue,
+1264,Frazier & Deeter Advisory,ind.business_services,,high,p14-queue,accounting firm
+1265,EcoVadis,tech.software,climate,high,p14-queue,
+1266,New York Digital Investment Group,fin.crypto,crypto,medium,p14-queue,
+1267,Alpha-9 Oncology,hc.biotech,,high,p14-queue,
+1268,Qlaris Bio,hc.biotech,,high,p14-queue,
+1269,Radiant Biotherapeutics,hc.biotech,,high,p14-queue,
+1270,Vast Space,ind.space,space,high,p14-queue,
+1271,Calyxo,hc.devices,,high,p14-queue,
+1272,Erebor Bank,fin.banking,fintech|crypto,high,p14-queue,
+1273,AcuityMD,hc.healthtech,,high,p14-queue,
+1274,ID.me,tech.security,,high,p14-queue,
+1275,Abcuro,hc.biotech,,high,p14-queue,
+1276,XTEND,ind.aerospace_defense,defense|robotics,medium,p14-queue,drones (Israel)
+1277,YAP Therapeutics,hc.biotech,,high,p14-queue,
+1278,Anchor Labs (Anchorage Digital),fin.crypto,crypto,high,p14-queue,
+1279,Under Canvas,cons.travel,,high,p14-queue,
+1280,Cohere Technologies,comm.telecom,,medium,p14-queue,wireless software (not Cohere AI)
+1281,Turquoise Health,hc.healthtech,,high,p14-queue,
+1282,RIMES Technologies,tech.software,fintech,high,p14-queue,
+1283,Trailer Bridge,ind.transport,,high,p14-queue,
+1284,Validere,tech.software,climate,high,p14-queue,
+1285,Postman,tech.software,ai,high,p14-queue,
+1286,Sound Inpatient Physicians,hc.services,,high,p14-queue,
+1287,Hofseth International,cons.food,,high,p14-queue,salmon (Norway)
+1288,Verbit,tech.software,ai,high,p14-queue,
+1289,Wellington-Altus,fin.wealth,,high,p14-queue,
+1290,Hypernative,tech.security,crypto,high,p14-queue,
+1291,Xplore,comm.telecom,,high,p14-queue,merge into company Xplore
+1292,Portal Space Systems,ind.space,space,high,p14-queue,
+1293,AmeriQual,cons.food,defense,high,p14-queue,military rations
+1294,Engrail Therapeutics,hc.biotech,,high,p14-queue,
+1295,Maven Clinic,hc.services,,high,p14-queue,
+1296,Overland AI,ind.autonomy,defense|ai|robotics,high,p14-queue,
+1297,Benchling,tech.software,,high,p14-queue,
+1298,Black Forest Labs,tech.ai_models,ai,high,p14-queue,
+1299,API Heat Transfer,ind.manufacturing,,high,p14-queue,
+1300,Mirvie,hc.healthtech,,high,p14-queue,
+1301,Minted,cons.retail,,high,p14-queue,
+1302,Compass Precision,ind.manufacturing,,high,p14-queue,
+1303,TAE Technologies,enr.clean,climate,high,p14-queue,fusion energy
+1304,Odyssey Therapeutics,hc.biotech,,high,p14-queue,
+1305,AgomAb Therapeutics,hc.biotech,,high,p14-queue,
+1306,Manipal Health Enterprises,hc.services,,high,p14-queue,Indian hospital chain
+1307,Serta Simmons Bedding,cons.brands,,high,p14-queue,post-restructuring
+1308,Gibson Brands,cons.brands,,high,p14-queue,guitars
+1309,Veritas Technologies,tech.security,,medium,p14-queue,
+1310,LifeScan,hc.devices,,high,p14-queue,glucose meters
+1311,Northeast Grocery,cons.retail,,high,p14-queue,Price Chopper / Tops
+1312,Orna Therapeutics (ReNAgade),hc.biotech,,high,p14-queue,
+1313,Laboratoires SERB,hc.biotech,,high,p14-queue,
+1314,Mythical Games,comm.media,crypto,high,p14-queue,
+1315,StackGen,tech.software,ai,medium,p14-queue,
+1316,Aptean,tech.software,,high,p14-queue,
+1317,Tula eTechnology,ind.manufacturing,climate,medium,p14-queue,
+1318,Supplying Demand (Liquid Death),cons.food,,high,p14-queue,
+1319,Ray Therapeutics,hc.biotech,,high,p14-queue,
+1320,Colisée,hc.services,,high,p14-queue,elder care (France)
+1321,Nuvig Therapeutics,hc.biotech,,high,p14-queue,
+1322,Quantalx Neuroscience,hc.devices,,medium,p14-queue,
+1323,Budderfly,ind.business_services,climate,high,p14-queue,
+1324,TXSE Group,fin.markets,fintech,high,p14-queue,Texas Stock Exchange
+1325,Swissport,ind.transport,,high,p14-queue,
+1326,Harbinger Motors,ind.manufacturing,climate,high,p14-queue,electric truck chassis
+1327,Etched,tech.semis,ai,high,p14-queue,AI chips
+1328,ThoughtSpot,tech.software,ai,high,p14-queue,
+1329,Flexential,tech.ai_infra,,high,p14-queue,data centers
+1330,Handshake (Stryder Corp),tech.software,,high,p14-queue,
+1331,OpenX Software,tech.software,,high,p14-queue,
+1332,10x Future Technologies,fin.banking,fintech,high,p14-queue,10x Banking
+1333,EP Energy,enr.oil_gas,,medium,p14-queue,post-restructuring private
+1334,Route App,tech.software,,high,p14-queue,
+1335,Altera Infrastructure (Teekay Offshore),enr.oil_gas,,medium,p14-queue,
+1336,Kela Technologies,tech.software,defense,medium,p14-queue,
+1337,Capsule (pharmacy),hc.healthtech,,high,p14-queue,
+1338,Stash Financial,fin.wealth,fintech,high,p14-queue,
+1339,YuLife,fin.insurance,fintech,high,p14-queue,
+1340,Remote Technology (Remote.com),tech.software,,high,p14-queue,
+1341,Relation Therapeutics,hc.biotech,ai,high,p14-queue,
+1342,Radian Aerospace,ind.space,space,high,p14-queue,
+1343,Tealium,tech.software,,high,p14-queue,
+1344,Umoja Biopharma,hc.biotech,,high,p14-queue,
+1345,NKGen Biotech Korea,hc.biotech,,medium,p14-queue,
+1346,Phenna Group,ind.business_services,,high,p14-queue,testing and inspection
+1347,Aiven,tech.software,,high,p14-queue,
+1348,Estately,re.proptech,,high,p14-queue,
+1349,Electric Equipment and Engineering,ind.manufacturing,,medium,p14-queue,
+1350,Magnolia Medical Technologies,hc.devices,,high,p14-queue,
+1351,Nucleix,hc.healthtech,,high,p14-queue,
+1352,BlueConic,tech.software,,high,p14-queue,
+1353,Supabase,tech.software,ai,high,p14-queue,
+1354,Intercom,tech.software,ai,high,p14-queue,
+1355,Transcend,tech.security,,medium,p14-queue,
+1356,T-Knife Therapeutics,hc.biotech,,high,p14-queue,
+1357,Anastasia Parent (Anastasia Beverly Hills),cons.brands,,medium,p14-queue,
+1358,American Gilsonite,mat.materials,,high,p14-queue,
+1359,Solutions by Text,tech.software,,high,p14-queue,
+1360,Belk,cons.retail,,high,p14-queue,
+1361,Iridia,tech.semis,,medium,p14-queue,DNA data storage
+1362,Jason Industries,ind.manufacturing,,medium,p14-queue,
+1363,TurbineOne,tech.software,defense|ai,high,p14-queue,
+1364,Learneo (Course Hero),cons.education,,high,p14-queue,
+1365,unitQ,tech.software,ai,high,p14-queue,
+1366,LendingPoint,fin.banking,fintech,medium,p14-queue,
+1367,International Oncology Care,hc.services,,medium,p14-queue,
+1368,ResearchGate,tech.consumer_internet,,high,p14-queue,
+1369,REK,cons.retail,,medium,p14-queue,
+1370,Anyscale,tech.ai_infra,ai,high,p14-queue,
+1371,FinThrive,hc.healthtech,,high,p14-queue,
+1372,OfferUp,tech.consumer_internet,,high,p14-queue,
+1373,Optima Specialty Steel,mat.materials,,high,p14-queue,
+1374,Automation Anywhere,tech.software,ai,high,p14-queue,
+1375,AOM Infusion,hc.services,,medium,p14-queue,
+1376,Real View Imaging,hc.devices,,medium,p14-queue,
+1377,ABL Space Systems,ind.space,space|defense,high,p14-queue,
+1378,Diligent,tech.software,,high,p14-queue,
+1379,DuploCloud,tech.software,,high,p14-queue,
+1380,SIRVA Worldwide,ind.business_services,,high,p14-queue,relocation services
+1381,Exo Imaging,hc.devices,,high,p14-queue,
+1382,LUMICKS,hc.tools,,high,p14-queue,
+1383,Carestream Health,hc.devices,,high,p14-queue,
+1384,Collective Health,hc.healthtech,,high,p14-queue,
+1385,AES Guayama,enr.power,,high,p14-queue,
+1386,Affordable Care,hc.services,,high,p14-queue,dental support organization
+1387,RealSelf,tech.consumer_internet,,high,p14-queue,
+1388,Smule,tech.consumer_internet,,high,p14-queue,
+1389,GPS Hospitality,cons.food,,high,p14-queue,Burger King franchisee
+1390,Boxabl,re.real_estate,,high,p14-queue,factory-built homes
+1391,Impossible Foods,cons.food,climate,high,p14-queue,
+1392,GenesisCare,hc.services,,high,p14-queue,
+1393,BeeHero,cons.food,,medium,p14-queue,agtech pollination
+1394,Graza (Drupely),cons.food,,high,p14-queue,
+1395,Nelson Global Products,ind.manufacturing,,high,p14-queue,
+1396,Zocdoc,hc.healthtech,,high,p14-queue,
+1397,SonoThera,hc.biotech,,high,p14-queue,
+1398,AlpacaDB (Alpaca),fin.markets,fintech,high,p14-queue,brokerage API
+1399,GMI Cloud,tech.ai_infra,ai,high,p14-queue,
+1400,Boots,cons.retail,,medium,p14-queue,
+1401,Cellarity,hc.biotech,,high,p14-queue,
+1402,TPC Group,mat.materials,,high,p14-queue,
+1403,AEYE Health,hc.healthtech,ai,high,p14-queue,
+1404,Bright Machines,ind.autonomy,ai|robotics,high,p14-queue,
+1405,ClassDojo,cons.education,,high,p14-queue,
+1406,HiberCell,hc.biotech,,high,p14-queue,
+1407,Tufin Software,tech.security,,high,p14-queue,
+1408,Heritage Power,enr.power,,high,p14-queue,
+1409,Infinite Uptime,tech.software,ai,medium,p14-queue,
+1410,Fidelity Federal Bancorp,fin.banking,,high,p14-queue,
+1411,OYA Solar CDG,enr.clean,climate,high,p14-queue,
+1412,Castelion,ind.aerospace_defense,defense,high,p14-queue,hypersonic weapons
+1413,Level AI,tech.software,ai,high,p14-queue,
+1414,Phoenix Aviation Capital,ind.transport,,medium,p14-queue,aircraft leasing
+1415,Carbon,ind.manufacturing,,high,p14-queue,
+1416,SeatGeek,tech.consumer_internet,,high,p14-queue,
+1417,Haat Delivery,tech.consumer_internet,,medium,p14-queue,
+1418,SeeQC,tech.quantum,quantum,high,p14-queue,
+1419,WOM New Holdco,comm.telecom,,high,p14-queue,Chilean telecom (post-restructuring)
+1420,Rasa Technologies,tech.software,ai,high,p14-queue,conversational AI
+1421,IntelyCare,hc.services,,high,p14-queue,
+1422,Golden Ceramic Dental Lab,hc.services,,medium,p14-queue,
+1423,Blockdaemon,fin.crypto,crypto,high,p14-queue,
+1424,Verily,hc.healthtech,,high,p14-queue,
+1425,Cube Planning,tech.software,fintech,high,p14-queue,
+1426,ReCode Therapeutics,hc.biotech,,high,p14-queue,
+1427,Sunday Robotics,ind.autonomy,ai|robotics,high,p14-queue,
+1428,Cybereason,tech.security,,high,p14-queue,
+1429,Mosyle,tech.security,,high,p14-queue,
+1430,Dremio,tech.software,ai,high,p14-queue,
+1431,RevSpring,fin.payments,fintech,high,p14-queue,
+1432,MASV,tech.software,,high,p14-queue,
+1433,Fever Labs,comm.media,,high,p14-queue,live entertainment discovery
+1434,Foresight Energy,mat.mining,,high,p14-queue,coal (post-bankruptcy)
+1435,TwinStrand Biosciences,hc.tools,,high,p14-queue,
+1436,Impel Pharmaceuticals (JN Bidco),hc.biotech,,medium,p14-queue,
+1437,Dapper Labs,fin.crypto,crypto,high,p14-queue,
+1438,FinAccel (Kredivo),fin.banking,fintech,high,p14-queue,
+1439,Dental Care Alliance,hc.services,,high,p14-queue,
+1440,GlossGenius,tech.software,,high,p14-queue,
+1441,Foursquare Labs,tech.software,,high,p14-queue,
+1442,World Water Works,ind.manufacturing,climate,medium,p14-queue,
+1443,DispatchHealth,hc.services,,high,p14-queue,
+1444,Omni Analytics,tech.software,ai,high,p14-queue,
+1445,Atento,ind.business_services,,high,p14-queue,customer-experience outsourcing (post-restructuring)
+1446,CBTS TopCo,tech.software,,medium,p14-queue,IT services
+1447,Careismatic (New Trojan),cons.brands,,medium,p14-queue,
+1448,Asher Biotherapeutics,hc.biotech,,high,p14-queue,
+1449,Codere,comm.media,,medium,p14-queue,gaming operator (post-restructuring)
+1450,Sterling Pharma Solutions,hc.tools,,high,p14-queue,
+1451,Truck Hero,ind.manufacturing,,high,p14-queue,
+1452,Impilo Orphan Drugs,hc.biotech,,medium,p14-queue,
+1453,After Services,cons.retail,,medium,p14-queue,product protection plans
+1454,Total Safety,ind.business_services,,high,p14-queue,
+1455,Lightning Labs,fin.crypto,crypto,high,p14-queue,
+1456,Reify Health,hc.healthtech,,high,p14-queue,
+1457,Panos Holdings,cons.food,,medium,p14-queue,
+1458,Orca Security,tech.security,,high,p14-queue,
+1459,SI Group,mat.materials,,high,p14-queue,
+1460,Vestwell,fin.wealth,fintech,high,p14-queue,
+1461,Immuta,tech.security,,high,p14-queue,
+1462,DittoLive,tech.software,,high,p14-queue,
+1463,Polymarket (Blockratize),fin.markets,crypto|fintech,high,p14-queue,
+1464,Enviva,enr.clean,,high,p14-queue,wood pellets (post-bankruptcy private)
+1465,Cayenne Copper,mat.mining,,medium,p14-queue,
+1466,Middle West Spirits,cons.food,,high,p14-queue,
+1467,Guitar Center,cons.retail,,high,p14-queue,rows are its tranche warrants named CORPORATE ACTION; 2026-10-21 review; merge into company Guitar Center
+1468,Crestone Aircraft Leasing,ind.transport,,medium,p14-queue,
+1469,Alchemy Insights,tech.software,ai|crypto,medium,p14-queue,
+1470,Blockchain.com,fin.crypto,crypto,high,p14-queue,private (listed group only by name evidence)
+1471,Uphold,fin.crypto,crypto,high,p14-queue,
+1472,Fireblocks,fin.crypto,crypto,high,p14-queue,
+1473,Chainalysis,fin.crypto,crypto,high,p14-queue,
+1474,Figment,fin.crypto,crypto,high,p14-queue,
+1475,Longview Power,enr.power,,high,p14-queue,
+1476,CCF Holdings,fin.banking,fintech,medium,p14-queue,consumer lender (post-restructuring); ISIN present; 2026-10-21: confirmed operating company
+1477,Copia Wealth Studios,fin.wealth,fintech,medium,p14-queue,2026-10-21: confirmed operating company
+1478,Exus US Holdings,enr.clean,climate,medium,p14-queue,2026-10-21: confirmed operating company
+1479,Arctic Canadian Diamond,mat.mining,,medium,p14-queue,"long tail, 2026-10-21"
+1480,Diamond Sports Group,comm.media,,medium,p14-queue,"long tail, 2026-10-21"
+1481,At Home Group,cons.retail,,medium,p14-queue,"long tail, 2026-10-21"
+1482,Digital Media Solutions,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1483,Moran Foods (Save-A-Lot),cons.retail,,medium,p14-queue,"long tail, 2026-10-21"
+1484,Diamond Standard,fin.markets,,medium,p14-queue,"long tail, 2026-10-21"
+1485,Quorum Health,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
+1486,Par Health,hc.services,,medium,p14-queue,2026-10-21: confirmed operating company
+1487,Ilumed,hc.services,,medium,p14-queue,2026-10-21: confirmed operating company
+1488,GridSource,ind.business_services,,medium,p14-queue,2026-10-21: confirmed operating company
+1489,Arena Brands,,,unclear,p14-queue,"2026-10-21: confirmed operating company, industry not yet classified"
+1490,Sapience Therapeutics,hc.biotech,,medium,p14-queue,Series B-1 preferred and warrants; 2026-10-21 review
+1491,BARBRI,cons.education,,high,p14-queue,BarBri Topco L.P.: bar-exam preparation; 2026-10-21 review
+1492,EverSaaS,tech.software,,medium,p14-queue,EverSaaS Holdings Pte. Ltd: software holding company; 2026-10-21 review
+1493,Danger Devices,tech.semis,,medium,p14-queue,2026-10-21: confirmed operating company
+1494,Golden NA Power,enr.power,,medium,p14-queue,2026-10-21: confirmed operating company
+1495,CCS Medical,hc.services,,high,p14-queue,Chronic Care Services (titles: CCS MEDICAL INC.(CHRONIC CARE)); 2026-10-21 review
+1496,Colony Labs,,,unclear,p14-queue,"business not confirmed; 2026-10-21: confirmed operating company, industry not yet classified"
+1497,Ciro Holding,,,unclear,p14-queue,"Argentina; business not confirmed; 2026-10-21: confirmed operating company, industry not yet classified"
+1498,Lumilens,tech.semis,ai,medium,p14-queue,2026-10-21: confirmed operating company
+1499,Mining Investments Resources,mat.mining,,medium,p14-queue,2026-10-21: confirmed operating company
+1500,Drafteame,comm.media,,medium,p14-queue,Brazil fantasy sports; 2026-10-21: confirmed operating company
+1501,Upscale AI,tech.semis,ai,medium,p14-queue,2026-10-21: confirmed operating company
+1502,BlueVoyant,tech.security,,high,p14-queue,BlueVoyant LLC / Inc.; 2026-10-21 review
+1503,Vantage Airport Group,ind.transport,,medium,p14-queue,Vantage Airport Group (New York) LLC: airport operator; 2026-10-21 review
+1504,ClareMedica,hc.services,,medium,p14-queue,"ClareMedica Parent Holdings, LP Class A units; 2026-10-21 review"
+1505,Invisible Narratives,,,unclear,p14-queue,Series A preferred; business not confirmed; 2026-10-21 review
+1506,Massiv Brands,cons.brands,,medium,p14-queue,2026-10-21: confirmed operating company
+1507,CuraeChoice,hc.services,,medium,p14-queue,2026-10-21: confirmed operating company
+1508,Central Nevada Gold,mat.mining,,medium,p14-queue,2026-10-21: confirmed operating company
+1509,Revenant Energy,enr.oil_gas,,medium,p14-queue,2026-10-21: confirmed operating company
+1510,Codefied,,,unclear,p14-queue,"2026-10-21: confirmed operating company, industry not yet classified"
+1511,Nuture,cons.food,,medium,p14-queue,2026-10-21: confirmed operating company
+1512,Bizzy,tech.software,,medium,p14-queue,2026-10-21: confirmed operating company
+1513,Cutting Edge Group,comm.media,,medium,p14-queue,film music rights; 2026-10-21: confirmed operating company
+1514,Nova Austral,cons.food,,medium,p14-queue,Nova Austral SA: salmon farming (Chile); 2026-10-21 review
+1515,Physician Recovery Solutions,hc.services,,medium,p14-queue,2026-10-21: confirmed operating company
+1516,Amex Gold Mining,mat.mining,,medium,p14-queue,2026-10-21: confirmed operating company
+1517,The Thermal Group,ind.manufacturing,,medium,p14-queue,2026-10-21: confirmed operating company
+1518,Laurentian Mountain Resources,mat.mining,,medium,p14-queue,2026-10-21: confirmed operating company
+1519,Baylor Genetics,hc.services,,high,p14-queue,"titles: Baylor Genetics Holdings, Inc., Series B (genetic testing lab); 2026-10-21 review"
+1520,Gateway Fleets,ind.transport,,medium,p14-queue,2026-10-21: confirmed operating company
+1521,Infinant Health,hc.services,,medium,p14-queue,2026-10-21: confirmed operating company
+1522,Nova Labs,,,unclear,p14-queue,"2026-10-21: confirmed operating company, industry not yet classified"
+1523,Key Carbon,mat.mining,,medium,p14-queue,2026-10-21: confirmed operating company
+1524,Tenrgys,enr.oil_gas,,medium,p14-queue,2026-10-21: confirmed operating company
+1525,Mobile Pro Systems,ind.manufacturing,,medium,p14-queue,2026-10-21: confirmed operating company
+1526,Passage,tech.software,,medium,p14-queue,2026-10-21: confirmed operating company
+1527,Base Social,tech.consumer_internet,,medium,p14-queue,2026-10-21: confirmed operating company
+1528,Letterhead,tech.software,,medium,p14-queue,2026-10-21: confirmed operating company
+1529,Diversified Packaging,mat.materials,,medium,p14-queue,2026-10-21: confirmed operating company
+1530,SVI International,ind.manufacturing,,medium,p14-queue,2026-10-21: confirmed operating company
+1531,DataX,tech.software,,medium,p14-queue,2026-10-21: confirmed operating company
+1532,G-ILS Transportation,ind.transport,,medium,p14-queue,2026-10-21: confirmed operating company
+1533,Rhino Labs,,,unclear,p14-queue,"2026-10-21: confirmed operating company, industry not yet classified"
+1534,MC CIF Wealth Management UK,fin.wealth,,medium,p14-queue,2026-10-21: confirmed operating company
+1535,Neurogenesis,hc.biotech,,medium,p14-queue,2026-10-21: confirmed operating company
+1536,GreenPark Infrastructure,enr.power,climate,medium,p14-queue,2026-10-21: confirmed operating company
+1537,GoAuto,cons.retail,,medium,p14-queue,2026-10-21: confirmed operating company
+1538,Features & Labels,tech.software,ai,medium,p14-queue,2026-10-21: confirmed operating company
+1539,Venture360 / Liquifi,tech.software,fintech,medium,p14-queue,"Venture360, Inc. Series A-2; 2026-10-21 review"
+1540,PPL Home Healthcare,hc.services,,medium,p14-queue,2026-10-21: confirmed operating company
+1541,Iterate Studio,tech.software,ai,medium,p14-queue,2026-10-21: confirmed operating company
+1542,Fortrex,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1543,OpenEvidence,hc.healthtech,ai,medium,p14-queue,"long tail, 2026-10-21"
+1544,Mitratech,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1545,IsoTalent,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1546,Contentful,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1547,Abra,fin.crypto,crypto,medium,p14-queue,"long tail, 2026-10-21"
+1548,Ascend Performance Materials,mat.materials,,medium,p14-queue,"long tail, 2026-10-21"
+1549,Casma Therapeutics,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1550,Jasper Infotech (Snapdeal),cons.retail,,medium,p14-queue,"long tail, 2026-10-21"
+1551,Incendia Therapeutics,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1552,IQ Bar,cons.food,,medium,p14-queue,"long tail, 2026-10-21"
+1553,Procera Networks,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1554,Tiernan Gold,mat.mining,,medium,p14-queue,"long tail, 2026-10-21"
+1555,Flowcode (DTX),tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1556,Home Service Champ,cons.services,,medium,p14-queue,"long tail, 2026-10-21"
+1557,P.J. Fitzpatrick,cons.services,,medium,p14-queue,"long tail, 2026-10-21"
+1558,Hoosier HD Holdings,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1559,José Andrés Group,cons.food,,medium,p14-queue,"long tail, 2026-10-21"
+1560,Dutch Gold Honey,cons.food,,medium,p14-queue,"long tail, 2026-10-21"
+1561,Ottonomy,ind.autonomy,robotics,medium,p14-queue,"long tail, 2026-10-21"
+1562,Firmly,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1563,Compass Education,cons.education,,medium,p14-queue,"long tail, 2026-10-21"
+1564,athenahealth,hc.healthtech,,medium,p14-queue,"long tail, 2026-10-21"
+1565,Illumio,tech.security,,medium,p14-queue,"long tail, 2026-10-21"
+1566,Ownors Technologies,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1567,Premier Modular Group,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1568,GCM HVAC,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1569,EFC International,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1570,Men's Wearhouse,cons.retail,,medium,p14-queue,"long tail, 2026-10-21"
+1571,Glasstech,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1572,ANI Technologies (Ola),cons.mobility,,medium,p14-queue,"long tail, 2026-10-21"
+1573,BioTheryX,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1574,Woodland Foods,cons.food,,medium,p14-queue,"long tail, 2026-10-21"
+1575,Haul Hub,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1576,Detroit Defense,ind.aerospace_defense,defense,medium,p14-queue,"long tail, 2026-10-21"
+1577,Nox Metals,mat.materials,,medium,p14-queue,"long tail, 2026-10-21"
+1578,Consolis (Aurora SAS),ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1579,Travelex,fin.payments,fintech,medium,p14-queue,"long tail, 2026-10-21"
+1580,Aviceda Therapeutics,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1581,Abre.io,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1582,CTI Foods,cons.food,,medium,p14-queue,"long tail, 2026-10-21"
+1583,Learning Care Group,cons.education,,medium,p14-queue,"long tail, 2026-10-21"
+1584,Acerta Energy,enr.oil_gas,,medium,p14-queue,"long tail, 2026-10-21"
+1585,Singer (SVP),cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1586,SI Tickets,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1587,Walden Mutual,fin.banking,,medium,p14-queue,"long tail, 2026-10-21"
+1588,Altice Europe,comm.telecom,,medium,p14-queue,"long tail, 2026-10-21"
+1589,Flare Therapeutics,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1590,Spruce Software,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1591,Misfits Market,cons.retail,,medium,p14-queue,"long tail, 2026-10-21"
+1592,Digitact,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1593,Frances Valentine,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1594,Top Tier Admissions,cons.education,,medium,p14-queue,"long tail, 2026-10-21"
+1595,PowerTransitions,enr.power,climate,medium,p14-queue,"long tail, 2026-10-21"
+1596,Brock Group,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1597,Advantage Capital Holdings,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1598,Line Financial,fin.banking,fintech,medium,p14-queue,"long tail, 2026-10-21"
+1599,21st Century Oncology,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
+1600,Welldoc,hc.healthtech,,medium,p14-queue,"long tail, 2026-10-21"
+1601,Campus Ink,cons.retail,,medium,p14-queue,"long tail, 2026-10-21"
+1602,Softdrive Technologies,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1603,J.Crew,cons.retail,,medium,p14-queue,"long tail, 2026-10-21"
+1604,Checkers Drive-In,cons.food,,medium,p14-queue,"long tail, 2026-10-21"
+1605,Wyndly Health,hc.healthtech,,medium,p14-queue,"long tail, 2026-10-21"
+1606,Tank Holdings,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1607,Tebra Technologies,hc.healthtech,,medium,p14-queue,"long tail, 2026-10-21"
+1608,Nephron Pharmaceuticals,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1609,I-Pulse,mat.mining,,medium,p14-queue,"long tail, 2026-10-21"
+1610,Dr Pino,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1611,FleetPride,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1612,ProfitOptics,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1613,Cano Health,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
+1614,OROS (Lukla),cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1615,Omnee Technologies,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1616,Vinesight,tech.software,ai,medium,p14-queue,"long tail, 2026-10-21"
+1617,NewLife Forest Restoration,ind.business_services,climate,medium,p14-queue,"long tail, 2026-10-21"
+1618,Launchpad Home Group,cons.services,,medium,p14-queue,"long tail, 2026-10-21"
+1619,Antares Therapeutics,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1620,SouthStreet Securities,fin.markets,,medium,p14-queue,"long tail, 2026-10-21"
+1621,Quiver Quantitative,fin.markets,fintech,medium,p14-queue,"long tail, 2026-10-21"
+1622,Pear Suite,hc.healthtech,,medium,p14-queue,"long tail, 2026-10-21"
+1623,Outrider Technologies,ind.autonomy,ai|robotics,medium,p14-queue,"long tail, 2026-10-21"
+1624,Ultra Electronics,ind.aerospace_defense,defense,medium,p14-queue,"long tail, 2026-10-21"
+1625,Smart Family Tech,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1626,Risotto (ACA Projects),tech.software,ai,medium,p14-queue,"long tail, 2026-10-21"
+1627,Kartel.AI,tech.software,ai,medium,p14-queue,"long tail, 2026-10-21"
+1628,Endiatx,hc.devices,robotics,medium,p14-queue,"long tail, 2026-10-21"
+1629,BuildOps,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1630,Anthology (Astra Acquisition),tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1631,True Footage,re.proptech,,medium,p14-queue,"long tail, 2026-10-21"
+1632,Flipkart,cons.retail,,medium,p14-queue,"long tail, 2026-10-21"
+1633,Narratize,tech.software,ai,medium,p14-queue,"long tail, 2026-10-21"
+1634,1Fort,fin.insurance,fintech,medium,p14-queue,"long tail, 2026-10-21"
+1635,BrightSign,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1636,Hydrow,cons.electronics,,medium,p14-queue,"long tail, 2026-10-21"
+1637,Healogics,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
+1638,Kommu,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1639,Jeeves,fin.payments,fintech,medium,p14-queue,"long tail, 2026-10-21"
+1640,Fireroad Holdings,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1641,Bolt Energy,enr.clean,climate,medium,p14-queue,"long tail, 2026-10-21"
+1642,Lycia Therapeutics,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1643,Centric Brands,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1644,Solaray,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1645,Nielsen-Kellerman,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1646,Attralus,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1647,Dalian Wanda Commercial Management,re.real_estate,,medium,p14-queue,"long tail, 2026-10-21"
+1648,Doncasters,ind.aerospace_defense,,medium,p14-queue,"long tail, 2026-10-21"
+1649,Claira Technologies,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1650,Hone Health (Time Therapeutics),hc.healthtech,,medium,p14-queue,"long tail, 2026-10-21"
+1651,Colorcast,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1652,Samba TV,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1653,Cloverleaf.me,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1654,Eat Just,cons.food,climate,medium,p14-queue,"long tail, 2026-10-21"
+1655,Silverfort,tech.security,,medium,p14-queue,"long tail, 2026-10-21"
+1656,Siem Industries,ind.transport,,medium,p14-queue,"long tail, 2026-10-21"
+1657,Cognito Forms,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1658,Evamore,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1659,Luminos,tech.software,ai,medium,p14-queue,"long tail, 2026-10-21"
+1660,Nine West,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1661,Journeyfront,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1662,Nordic Trustee,fin.markets,,medium,p14-queue,"long tail, 2026-10-21"
+1663,Accredible (EdInvent),tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1664,ApplyBoard,cons.education,,medium,p14-queue,"long tail, 2026-10-21"
+1665,Cyware,tech.security,,medium,p14-queue,"long tail, 2026-10-21"
+1666,Big League Advance,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1667,Job&Talent,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1668,Signifyd,tech.security,fintech,medium,p14-queue,"long tail, 2026-10-21"
+1669,American Academy Holdings,cons.education,,medium,p14-queue,"long tail, 2026-10-21"
+1670,Boca Homecare,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
+1671,Hearth Display,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1672,Smart Chemical Solutions,mat.materials,,medium,p14-queue,"long tail, 2026-10-21"
+1673,Guest House (Eloit Street),cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1674,Create Music Group,comm.media,,medium,p14-queue,"long tail, 2026-10-21"
+1675,GreenSquare,enr.clean,climate,medium,p14-queue,"long tail, 2026-10-21"
+1676,Havenly,cons.services,,medium,p14-queue,"long tail, 2026-10-21"
+1677,Helus Pharma,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1678,Whitcraft,ind.aerospace_defense,,medium,p14-queue,"long tail, 2026-10-21"
+1679,Apex Group,fin.wealth,,medium,p14-queue,"long tail, 2026-10-21"
+1680,Live Cyber Holdings,tech.security,,medium,p14-queue,"long tail, 2026-10-21"
+1681,Hikerkind,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1682,Lazzaro Medical,hc.devices,,medium,p14-queue,"long tail, 2026-10-21"
+1683,ParkPayUSA,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1684,Shappi,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1685,The Nonsense Company,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1686,Cricket Valley Energy Center,enr.power,,medium,p14-queue,"long tail, 2026-10-21"
+1687,DistroKid,comm.media,,medium,p14-queue,"long tail, 2026-10-21"
+1688,Allonic,ind.autonomy,robotics,medium,p14-queue,"long tail, 2026-10-21"
+1689,OpStart Growth,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1690,ATI Physical Therapy,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
+1691,DxTx Pain and Spine,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
+1692,Pinion Insurance Group,fin.insurance,,medium,p14-queue,"long tail, 2026-10-21"
+1693,Cloud Apartments,re.proptech,,medium,p14-queue,"long tail, 2026-10-21"
+1694,PureCode Software,tech.software,ai,medium,p14-queue,"long tail, 2026-10-21"
+1695,Elliott Davis,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1696,Bridge Solar Energy,enr.clean,climate,medium,p14-queue,"long tail, 2026-10-21"
+1697,Nomadica,cons.food,,medium,p14-queue,"long tail, 2026-10-21"
+1698,Parallel Health,hc.healthtech,,medium,p14-queue,"long tail, 2026-10-21"
+1699,The Dyrt,tech.consumer_internet,,medium,p14-queue,"long tail, 2026-10-21"
+1700,Visible,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1701,RelaDyne,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1702,Team Air Distributing,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1703,Echo Logistics,ind.transport,,medium,p14-queue,"long tail, 2026-10-21"
+1704,Core Supplement,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1705,Ebombo,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1706,Flexible Technology Solutions,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1707,Houski,re.proptech,,medium,p14-queue,"long tail, 2026-10-21"
+1708,Ranked Media,comm.media,,medium,p14-queue,"long tail, 2026-10-21"
+1709,Rejuvenate Bio,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1710,SocialMama,tech.consumer_internet,,medium,p14-queue,"long tail, 2026-10-21"
+1711,Cogency Global,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1712,TripScout,tech.consumer_internet,,medium,p14-queue,"long tail, 2026-10-21"
+1713,Ingenovis Health,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
+1714,Sortium,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1715,Applied Aerospace Structures,ind.aerospace_defense,,medium,p14-queue,"long tail, 2026-10-21"
+1716,De Soi,cons.food,,medium,p14-queue,"long tail, 2026-10-21"
+1717,PetVet Care Centers,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
+1718,FEAT Socks,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1719,Best Lawyers,comm.media,,medium,p14-queue,"long tail, 2026-10-21"
+1720,FragilePak,mat.materials,,medium,p14-queue,"long tail, 2026-10-21"
+1721,Cloudbreak,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1722,Cosmed,hc.devices,,medium,p14-queue,"long tail, 2026-10-21"
+1723,VitalSource,cons.education,,medium,p14-queue,"long tail, 2026-10-21"
+1724,Resolute Forest Products,mat.materials,,medium,p14-queue,"long tail, 2026-10-21"
+1725,BKF Engineers,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1726,Anchor Glass Container,mat.materials,,medium,p14-queue,"long tail, 2026-10-21"
+1727,Xfit Brands,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1728,4Degrees,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1729,Branded Hospitality Group,cons.food,,medium,p14-queue,"long tail, 2026-10-21"
+1730,Cognata,ind.autonomy,ai,medium,p14-queue,"long tail, 2026-10-21"
+1731,Crew Home Technologies,re.proptech,,medium,p14-queue,"long tail, 2026-10-21"
+1732,GuideAI Technologies,tech.software,ai,medium,p14-queue,"long tail, 2026-10-21"
+1733,Medicaidsoft,hc.healthtech,,medium,p14-queue,"long tail, 2026-10-21"
+1734,Nokking,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1735,Parrott Finance,fin.banking,fintech,medium,p14-queue,"long tail, 2026-10-21"
+1736,Science Retail,cons.retail,,medium,p14-queue,"long tail, 2026-10-21"
+1737,Pavewise,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1738,Stackline,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1739,Lannett,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1740,Cengage,cons.education,,medium,p14-queue,"long tail, 2026-10-21"
+1741,Finc Technologies,fin.banking,fintech,medium,p14-queue,"long tail, 2026-10-21"
+1742,Rescription,hc.healthtech,,medium,p14-queue,"long tail, 2026-10-21"
+1743,TCare,hc.healthtech,,medium,p14-queue,"long tail, 2026-10-21"
+1744,Musely (Trusper),cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1745,Guardian Fire Services,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1746,Blue Marlin Therapeutics,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1747,Octave Music Group (TouchTunes),comm.media,,medium,p14-queue,"long tail, 2026-10-21"
+1748,Cenveo,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1749,SmartShift Technologies,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1750,Avison Young,re.real_estate,,medium,p14-queue,"long tail, 2026-10-21"
+1751,Rock Labor,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1752,Cority,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1753,Conformal Medical,hc.devices,,medium,p14-queue,"long tail, 2026-10-21"
+1754,Elate,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1755,Abertis Infraestructuras,ind.transport,,medium,p14-queue,"long tail, 2026-10-21"
+1756,Hornbeck Offshore,enr.oil_gas,,medium,p14-queue,"long tail, 2026-10-21"
+1757,SmartRIA,fin.wealth,fintech,medium,p14-queue,"long tail, 2026-10-21"
+1758,Forecastr,tech.software,fintech,medium,p14-queue,"long tail, 2026-10-21"
+1759,LR Health & Beauty,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1760,Dwyer Instruments,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1761,Aerin Medical,hc.devices,,medium,p14-queue,"long tail, 2026-10-21"
+1762,"GO, Inc.",,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1763,UBQ AI,tech.software,ai,medium,p14-queue,"long tail, 2026-10-21"
+1764,Hill Research (Hill Pepper),tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1765,INTRVL,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1766,Stacks,fin.payments,fintech,medium,p14-queue,"long tail, 2026-10-21"
+1767,Stagetime,comm.media,,medium,p14-queue,"long tail, 2026-10-21"
+1768,Surf Therapeutics,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1769,Whipz,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1770,Wonderlab,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1771,Heritage Energy,enr.oil_gas,,medium,p14-queue,"long tail, 2026-10-21"
+1772,Safety Products Holdings,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1773,Grapefruit Health,hc.healthtech,,medium,p14-queue,"long tail, 2026-10-21"
+1774,Spatco,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1775,Wellpath,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
+1776,Sword Diagnostics,hc.tools,,medium,p14-queue,"long tail, 2026-10-21"
+1777,Gestalt Tech,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1778,Obra,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1779,Gooder AI,tech.software,ai,medium,p14-queue,"long tail, 2026-10-21"
+1780,BBB Industries,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1781,Shur-Co,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1782,Lycra Company,mat.materials,,medium,p14-queue,"long tail, 2026-10-21"
+1783,Luby's,cons.food,,medium,p14-queue,"long tail, 2026-10-21"
+1784,Ice House America,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1785,Magna Legal Services,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1786,MRC Impact,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1787,Nada Holdings,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1788,Byju's (Think & Learn),cons.education,,medium,p14-queue,"long tail, 2026-10-21"
+1789,Bishop Street Underwriters,fin.insurance,,medium,p14-queue,"long tail, 2026-10-21"
+1790,Made With Love Wellness,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1791,Fastsigns,cons.services,,medium,p14-queue,"long tail, 2026-10-21"
+1792,Langar Holdings,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1793,Open Bay Autos AI,tech.software,ai,medium,p14-queue,"long tail, 2026-10-21"
+1794,OperateIQ,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1795,Out of Office,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1796,Revnest,re.proptech,,medium,p14-queue,"long tail, 2026-10-21"
+1797,Savetic,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1798,Shadowscape,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1799,Steadi Technologies,hc.devices,,medium,p14-queue,"long tail, 2026-10-21"
+1800,ThinkRisk,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1801,Warp World,comm.media,,medium,p14-queue,"long tail, 2026-10-21"
+1802,IMS Legal Strategies,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1803,Advantage Surveillance,tech.security,,medium,p14-queue,"long tail, 2026-10-21"
+1804,ProServ,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1805,Western Dental,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
+1806,Opus Inspection,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1807,Pro Vision,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
+1808,Nozomi Networks,tech.security,,medium,p14-queue,"long tail, 2026-10-21"
+1809,Mission Microwave,ind.aerospace_defense,defense,medium,p14-queue,"long tail, 2026-10-21"
+1810,RapidAir,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1811,Traffic and Parking Control,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1812,Harrel Fish,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1813,Cosm,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1814,Ziyad Brothers,cons.food,,medium,p14-queue,"long tail, 2026-10-21"
+1815,Dawgs Door and Window Guard,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1816,Americo Chemical Products,mat.materials,,medium,p14-queue,"long tail, 2026-10-21"
+1817,Onsite Dealer Services,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1818,Neiman Marcus (NMG Parent),cons.retail,,medium,p14-queue,"long tail, 2026-10-21"
+1819,Five Star Holding,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1820,RRD (R.R. Donnelley),ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1821,Dataserv,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1822,CWT (Carlson Travel),cons.travel,,medium,p14-queue,"long tail, 2026-10-21"
+1823,Deep Instinct,tech.security,ai,medium,p14-queue,"long tail, 2026-10-21"
+1824,Gumloop (AgentHub),tech.software,ai,medium,p14-queue,"long tail, 2026-10-21"
+1825,Nomad Health,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
+1826,Acrons Grow,cons.food,,medium,p14-queue,"long tail, 2026-10-21"
+1827,Metallizing Service Company,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1828,Production Resource Group,comm.media,,medium,p14-queue,"long tail, 2026-10-21"
+1829,ASC Communications (Becker's),comm.media,,medium,p14-queue,"long tail, 2026-10-21"
+1830,Du-Art Film Labs,comm.media,,medium,p14-queue,"long tail, 2026-10-21"
+1831,Elevate Textiles,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1832,Phoenix Industrial Minerals,mat.mining,,medium,p14-queue,"long tail, 2026-10-21"
+1833,Heal,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
+1834,Blu Homes,re.real_estate,,medium,p14-queue,"long tail, 2026-10-21"
+1835,HemaSource,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
+1836,Lipari Foods,cons.food,,medium,p14-queue,"long tail, 2026-10-21"
+1837,Shermco,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1838,Newforma,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1839,Handle,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1840,Sandvine,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1841,American Roller Company,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1842,ChromaCode,hc.tools,,medium,p14-queue,"long tail, 2026-10-21"
+1843,Magic Leap,tech.semis,,medium,p14-queue,"long tail, 2026-10-21"
+1844,Rego Restaurant Holdings,cons.food,,medium,p14-queue,"long tail, 2026-10-21"
+1845,LeadsOnline,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1846,DayZero,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1847,Samson Investment Co.,enr.oil_gas,,medium,p14-queue,"long tail, 2026-10-21"
+1848,Morae Global,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1849,RideNow Group,cons.retail,,medium,p14-queue,"long tail, 2026-10-21"
+1850,American Zinc Recycling,mat.materials,climate,medium,p14-queue,"long tail, 2026-10-21"
+1851,ReadySet Surgical,hc.devices,,medium,p14-queue,"long tail, 2026-10-21"
+1852,RPS Group,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1853,Cash Flow Management,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1854,North American Lifting,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1855,Merchant Industry,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1856,ConvergeOne,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1857,Propagate Content,comm.media,,medium,p14-queue,"long tail, 2026-10-21"
+1858,Lumni,fin.banking,fintech,medium,p14-queue,"long tail, 2026-10-21"
+1859,Permian Production Partners,enr.oil_gas,,medium,p14-queue,"long tail, 2026-10-21"
+1860,Tristrux (TSX Fiber Services),comm.telecom,,medium,p14-queue,"long tail, 2026-10-21"
+1861,Learfield Communications,comm.media,,medium,p14-queue,"long tail, 2026-10-21"
+1862,Signal Cortex,tech.software,ai,medium,p14-queue,"long tail, 2026-10-21"
+1863,Unosquare,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1864,International Textile Group,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1865,Fathead,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1866,SOURCE Global,enr.clean,climate,medium,p14-queue,"long tail, 2026-10-21"
+1867,Audacy,comm.media,,medium,p14-queue,"long tail, 2026-10-21"
+1868,Accurus Aerospace,ind.aerospace_defense,,medium,p14-queue,"long tail, 2026-10-21"
+1869,NFV Co-Pilot,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1870,Pico Quantitative,fin.markets,,medium,p14-queue,"long tail, 2026-10-21"
+1871,Free Brands,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1872,Southcross Energy,enr.oil_gas,,medium,p14-queue,"long tail, 2026-10-21"
+1873,RefleXion Medical,hc.devices,,medium,p14-queue,"long tail, 2026-10-21"
+1874,Acorns,fin.wealth,fintech,medium,p14-queue,"long tail, 2026-10-21"
+1875,Ethos Risk Services,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1876,AgBiome,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1877,Akorn,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1878,CNSX Markets,fin.markets,,medium,p14-queue,"long tail, 2026-10-21"
+1879,Docker,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1880,Malamute Energy,enr.oil_gas,,medium,p14-queue,"long tail, 2026-10-21"
+1881,Innovia Medical,hc.devices,,medium,p14-queue,"long tail, 2026-10-21"
+1882,PES Energy,enr.oil_gas,,medium,p14-queue,"long tail, 2026-10-21"
+1883,North Atlantic Imports,cons.food,,medium,p14-queue,"long tail, 2026-10-21"
+1884,Northwest Hardwoods,mat.materials,,medium,p14-queue,"long tail, 2026-10-21"
+1885,VB Spine,hc.devices,,medium,p14-queue,"long tail, 2026-10-21"
+1886,Swift Health Systems,hc.devices,,medium,p14-queue,"long tail, 2026-10-21"
+1887,PureWest,enr.oil_gas,,medium,p14-queue,"long tail, 2026-10-21"
+1888,Lecta,mat.materials,,medium,p14-queue,"long tail, 2026-10-21"
+1889,Riverbed Technology,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1890,Lasalle Tools,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1891,New Moda,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1892,Ameriforge Group,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1893,League One Volleyball,cons.services,,medium,p14-queue,"long tail, 2026-10-21"
+1894,Sierra Hamilton,enr.oil_gas,,medium,p14-queue,"long tail, 2026-10-21"
+1895,TNT Crane & Rigging,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1896,Nomi Health,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
+1897,WorldStrides (Lakeland Tours),cons.travel,,medium,p14-queue,"long tail, 2026-10-21"
+1898,Constellis,ind.aerospace_defense,defense,medium,p14-queue,"long tail, 2026-10-21"
+1899,4L Technologies,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1900,CURO Group,fin.banking,,medium,p14-queue,"long tail, 2026-10-21"
+1901,Research Now (Dynata),tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1902,Juice Plus,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1903,Blue Spark Energy Systems,enr.clean,,medium,p14-queue,"long tail, 2026-10-21"
+1904,Yak Access,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1905,Enevate,enr.clean,climate,medium,p14-queue,"long tail, 2026-10-21"
+1906,Quintis,cons.food,,medium,p14-queue,"long tail, 2026-10-21"
+1907,Rad Power Bikes,cons.mobility,,medium,p14-queue,"long tail, 2026-10-21"
+1908,New Look Builders,re.real_estate,,medium,p14-queue,"long tail, 2026-10-21"
+1909,Cap Hill Brands,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1910,New Look Retailers,cons.retail,,medium,p14-queue,"long tail, 2026-10-21"
+1911,IO Light Holdings,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1912,Athlyt,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1913,Card.io,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1914,Chezuba,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
+1915,Creators and Makers,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1916,Petal,fin.payments,fintech,medium,p14-queue,"long tail, 2026-10-21"
+1917,Cabonline,cons.mobility,,medium,p14-queue,"long tail, 2026-10-21"
+1918,FlyReno IFR,ind.transport,,medium,p14-queue,"long tail, 2026-10-21"
+1919,Priothera,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1920,Walter Energy,mat.mining,,medium,p14-queue,"long tail, 2026-10-21"
+1921,Isagenix,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1922,Intarcia Therapeutics,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1923,RSA Security,tech.security,,medium,p14-queue,"long tail, 2026-10-21"
+1924,SellerX,cons.retail,,medium,p14-queue,"long tail, 2026-10-21"
+1925,Lessen,re.proptech,,medium,p14-queue,"long tail, 2026-10-21"
+1926,Cercacor Laboratories,hc.devices,,medium,p14-queue,"long tail, 2026-10-21"
+1927,Razor Group,cons.retail,,medium,p14-queue,"long tail, 2026-10-21"
+1928,Chime Biologics,hc.tools,,medium,p14-queue,"long tail, 2026-10-21"
+1929,Alpha Natural Resources,mat.mining,,medium,p14-queue,"long tail, 2026-10-21"
+1930,Sonder,cons.travel,,medium,p14-queue,"long tail, 2026-10-21"
+1931,Motif FoodWorks,cons.food,climate,medium,p14-queue,"long tail, 2026-10-21"
+1932,Limetree Bay,enr.oil_gas,,medium,p14-queue,"long tail, 2026-10-21"
+1933,Super73,cons.mobility,,medium,p14-queue,"long tail, 2026-10-21"
+1934,Palouse Fiber,comm.telecom,,medium,p14-queue,"long tail, 2026-10-21"
+1935,Edcon,cons.retail,,medium,p14-queue,"long tail, 2026-10-21"
+1936,U.S. Shipping,ind.transport,,medium,p14-queue,"long tail, 2026-10-21"
+1937,Internap,tech.ai_infra,,medium,p14-queue,"long tail, 2026-10-21"
+1938,Flint Group,mat.materials,,medium,p14-queue,"long tail, 2026-10-21"
+1939,AliphCom (Jawbone),cons.electronics,,medium,p14-queue,"long tail, 2026-10-21"
+1940,Caresyntax,hc.healthtech,,medium,p14-queue,"long tail, 2026-10-21"
+1941,Cirkul,cons.food,,medium,p14-queue,"long tail, 2026-10-21"
+1942,Optoro,tech.software,climate,medium,p14-queue,"long tail, 2026-10-21"
+1943,Clarience Technologies,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1944,Jackrabbit Power,enr.power,,medium,p14-queue,"long tail, 2026-10-21"
+1945,AES Puerto Rico,enr.power,,medium,p14-queue,"long tail, 2026-10-21"
+1946,Kellermeyer Bergensons,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1947,BIS Industries,mat.mining,,medium,p14-queue,"long tail, 2026-10-21"
+1948,Deverra Therapeutics,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1949,Quincy Health,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
+1950,Muth Mirror Systems,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
+1951,Blaize Events & Media,comm.media,,medium,p14-queue,"long tail, 2026-10-21"
+1952,XenoTherapeutics,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
+1953,Haights Cross Communications,cons.education,,medium,p14-queue,"long tail, 2026-10-21"
+1954,Mythic,tech.semis,ai,medium,p14-queue,"long tail, 2026-10-21"
+1955,Service King,cons.services,,medium,p14-queue,"long tail, 2026-10-21"
+1956,Thrasio,cons.retail,,medium,p14-queue,"long tail, 2026-10-21"
+1957,Blaize,tech.semis,ai,medium,p14-queue,"long tail, 2026-10-21"
+1958,Berkline Benchcraft,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
+1959,Volocopter,ind.aerospace_defense,,medium,p14-queue,"long tail, 2026-10-21"
+1960,Next Renewable Fuels,enr.clean,climate,medium,p14-queue,"long tail, 2026-10-21"
+1961,Affinion,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
+1962,AFGlobal,enr.oil_gas,,medium,p14-queue,"long tail, 2026-10-21"
+1963,Getir,cons.retail,,medium,p14-queue,"long tail, 2026-10-21"

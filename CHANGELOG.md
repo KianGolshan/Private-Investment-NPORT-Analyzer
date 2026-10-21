@@ -2,6 +2,21 @@
 
 Releases of the public site. Detail lives in [docs/STATUS.md](docs/STATUS.md) and its archive.
 
+## v2.4.0: sectors, industries and themes; 572 more private companies (P14), 2026-10-21
+
+- **572 private companies added:** real private companies that never met the review bar (2+ funds and $50M), e.g.
+  Plymouth Rock, Digicel, Unit4, ThreatLocker, Neuralink, Polymarket, Reflection AI, ElevenLabs. Market's
+  operating-company total at Aug 31, 2026 moves from $64.1B to $73.3B; every other company's value is unchanged.
+- **Every private company has a sector, an industry and themes** (such as AI or Fintech), shown on its page. These
+  are Vantage's reviewed labels: SEC fund filings have no industry field.
+- **Sectors page:** holdings by sector, industry or theme as of any date, how they changed by quarter (from
+  positions vs from marks), and a per-share mark index, for the typical company and value-weighted.
+- **A page per sector, industry and theme:** each company's per-share mark change over any window, e.g. "AI companies
+  from Q1 to Q3 2026".
+- **Explore** groups by sector, industry and theme.
+- **Fix:** a fund that restated a holding in other units (0.04 shares one quarter, 88,175 the next) no longer reads as
+  billions moved between "from positions" and "from marks".
+
 ## v2.3.0: outside review fixes (P13), 2026-10-19
 
 - **Fund pages count only what they can name:** a holding whose filing gives no issuer name ("N/A") is listed as

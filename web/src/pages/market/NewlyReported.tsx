@@ -6,6 +6,7 @@ import { ScopeBar } from '../../scope/ScopeBar';
 import { isRange, useScope } from '../../scope/scope';
 import { Badge, Card, ErrorBox, FilingRef, Kpi, Loading } from '../../ui/bits';
 import { CategoryBadge, CategorySwitch, useCategoryFilter } from '../../ui/Category';
+import { industryColumn, SectorFilter, useSectorFilter } from '../../ui/SectorFilter';
 import { DataTable, type Column } from '../../ui/DataTable';
 
 // Newly reported (P6b W4): companies whose first stored holding (any fund,
@@ -28,7 +29,8 @@ export default function NewlyReported() {
   const to = range ? scope.to : (newest ?? '');
   const from = range ? scope.from : newest ? addYears(newest, -1) : '';
   const cat = useCategoryFilter();
-  const n = useApi<Answer>(to ? `/api/market/new${qs({ from, to, category: cat.category })}` : null);
+  const group = useSectorFilter();
+  const n = useApi<Answer>(to ? `/api/market/new${qs({ from, to, category: cat.category, ...group.params })}` : null);
   const d = n.data;
 
   const columns: Column<Row>[] = [
@@ -48,6 +50,7 @@ export default function NewlyReported() {
       ],
       wrap: true,
     },
+    industryColumn<Row>(),
     {
       id: 'first',
       header: 'First mark date',
@@ -94,6 +97,7 @@ export default function NewlyReported() {
         </p>
         <span class="spacer" />
         <CategorySwitch />
+        <SectorFilter />
         <ScopeBar supports={{ range: true }} newest={newest} />
       </div>
       <ErrorBox error={n.error} />

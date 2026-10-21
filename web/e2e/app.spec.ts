@@ -111,6 +111,7 @@ test('the nav starts at Market, the watchlist never opens empty, and old links s
   await expect(nav.getByRole('link')).toHaveText([
     'Market',
     'Firms',
+    'Sectors',
     "What's new",
     'Explore',
     'Compare',
@@ -366,4 +367,25 @@ test('a CSV export opens a formula-like name as text and says how it reads histo
   // the cell starts with an apostrophe inside its quotes: text, not a formula
   expect(row).toContain(`"'=HYPERLINK(""http://x"")`);
   expect(row).not.toMatch(/(^|,)=HYPERLINK/);
+});
+
+test('sectors: holdings add up to Market, a sector opens its page, Market filters by industry (P14)', async ({
+  page,
+}) => {
+  const errors = errorsOf(page);
+  await page.goto('/sectors');
+  await expect(page.getByRole('heading', { name: 'Private companies by sector' })).toBeVisible();
+  await expect(page.getByText('the same total as Market')).toBeVisible();
+  await page.getByRole('link', { name: 'Technology' }).first().click();
+  await expect(page).toHaveURL(/\/sectors\/sector\/tech/);
+  await expect(page.getByRole('heading', { name: 'Technology' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Companies as of/ })).toBeVisible();
+  await page.goto('/?industry=tech.ai_models');
+  await expect(page.getByRole('combobox', { name: 'Sector, industry or theme' })).toHaveValue(
+    'industry:tech.ai_models'
+  );
+  await expect(page.getByRole('link', { name: 'AI models & labs' }).first()).toBeVisible();
+  await page.goto(`/company/${ANTHROPIC}`);
+  await expect(page.getByRole('link', { name: /Technology · AI models & labs/ })).toBeVisible();
+  expect(errors).toEqual([]);
 });

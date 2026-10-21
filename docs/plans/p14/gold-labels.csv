@@ -1,0 +1,198 @@
+id,company,industry,themes,confidence,note
+1,Anthropic,tech.ai_models,ai,high,
+2,Databricks,tech.software,ai,high,data and ML platform counts under the AI rule (platforms used to build and run models)
+7,OpenAI,tech.ai_models,ai,high,
+5,Stripe,fin.payments,fintech,high,
+3,Waymo,ind.autonomy,ai|robotics,high,
+4,ByteDance,tech.consumer_internet,,high,TikTok/Douyin; uses AI but not AI-native under the rule
+10,Anduril Industries,ind.aerospace_defense,defense|robotics|ai,high,
+6,Canva,tech.software,,high,
+12,Revolut,fin.banking,fintech,high,
+11,Fanatics,cons.retail,,high,
+756,Hockey Parent Holdings,fin.insurance,,high,brand Hub International per aliases.csv note
+13,Zipline International,ind.transport,robotics,high,drone delivery
+23,Oura,cons.electronics,,high,
+15,PsiQuantum,tech.quantum,quantum,high,
+9,Epic Games,comm.media,,high,
+19,Kobold Metals,mat.mining,climate,high,uses AI for exploration; not AI-native under the rule
+29,Vast Data,tech.ai_infra,ai,high,
+100,Mustang Express,,,unclear,ARM MUSTANG EXPRESS HOLDCO LLC; web search found no operating business
+57,Crusoe,tech.ai_infra,ai|climate,high,
+14,Acrisure,fin.insurance,fintech,high,
+21,Lightmatter,tech.semis,ai,high,photonic AI compute
+741,FHU US Holdings,cons.food,,high,brand Chobani per aliases.csv note
+37,iCapital,fin.wealth,fintech,high,
+17,Nuro,ind.autonomy,ai|robotics,high,Form D name match says Biotechnology: a different 2015 Nuro (name collision)
+138,Kalshi,fin.markets,fintech,high,
+44,Element Labs,tech.semis,ai,medium,one directory source: AI inference processors (founders from Habana); unconfirmed by a primary source
+39,Figure AI,ind.autonomy,ai|robotics,high,
+38,Alliant (AH Parent),fin.insurance,,high,Alliant Insurance Services
+25,Gusto,tech.software,,high,payroll and HR software
+31,Incora,ind.aerospace_defense,,high,aerospace parts supply chain (formerly Wesco Aircraft)
+27,SambaNova Systems,tech.semis,ai,high,
+22,SandboxAQ (SB Technology),tech.software,ai|quantum,high,
+18,Redwood Materials,enr.clean,climate,high,
+20,Starling Bank,fin.banking,fintech,high,
+43,IQHQ,re.real_estate,,high,life-science real estate
+782,FEH,,,unclear,FEH GROUP LLC; web search finds only a possible match (Family Entertainment Holdings)
+47,Rotech Healthcare,hc.services,,high,home medical equipment
+30,Diamond Foundry,mat.materials,,high,lab-grown diamonds
+153,Ramp,fin.payments,fintech,high,
+24,Tenstorrent,tech.semis,ai,high,
+28,Kardium,hc.devices,,high,
+62,Endeavor,comm.media,,high,
+792,Sidewalk Infrastructure Partners,enr.power,climate,medium,Alphabet spin-out building and investing in infrastructure; close to an investment vehicle
+59,Form Energy,enr.clean,climate,high,
+26,Checkr,tech.software,,high,
+179,Ferrellgas (escrow equity),enr.oil_gas,,high,propane distribution
+65,Davidson Homes,re.real_estate,,high,
+33,Skyryse,ind.aerospace_defense,robotics,medium,flight automation
+35,Bolt Technology,cons.mobility,,high,Bolt Technology OU (Estonia)
+32,Xsight Labs,tech.semis,ai,medium,networking chips for AI data centers
+66,Aimbridge Topco,cons.travel,,high,hotel management
+73,New Windstream,comm.telecom,,high,
+55,Versa Networks,tech.security,,high,
+93,Quintoandar,re.proptech,,high,
+84,GrubMarket,cons.food,,high,Form D says Restaurants; it is food supply chain
+83,Frore Systems,tech.semis,ai,medium,solid-state cooling chips; AI data-center cooling
+56,SiFive,tech.semis,,high,
+96,World Labs,tech.ai_models,ai,high,
+42,Treeline Bio,hc.biotech,,high,
+87,Physical Intelligence,tech.ai_models,ai|robotics,high,
+40,Astranis Space Technologies,ind.space,space,high,
+64,PHI Group Inc/DE,ind.transport,,high,helicopter services
+41,Altice France,comm.telecom,,high,
+160,Hadrian Automation,ind.manufacturing,defense|robotics,high,
+118,Flock,tech.security,,medium,"Flock Safety (public-safety cameras), assumed from the name"
+165,Fluidstack,tech.ai_infra,ai,high,
+174,Vinted,cons.retail,,high,
+50,Blink Health,hc.healthtech,,high,
+34,Sila Nano,mat.materials,climate,high,battery materials
+75,Applied Intuition,ind.autonomy,ai|robotics|defense,high,
+135,Creditas Financial Solutions,fin.banking,fintech,high,
+230,Gallop Holdings LP - Ascot,fin.insurance,,medium,holds Ascot Group (insurer); ledger flags "fund interest?"
+49,Syniverse,comm.telecom,,high,
+101,Energy Technologies,,,unclear,"two raw names (INC. and LTD.); web search finds several unrelated companies"
+86,My Alarm Center,ind.business_services,,high,
+169,Nearfield Instruments,tech.semis,,high,semiconductor metrology equipment
+52,Cleerly,hc.healthtech,ai,high,AI cardiac imaging is the core product
+61,Moloco,tech.software,ai,high,machine-learning ad platform
+48,ACNR,mat.mining,,medium,American Consolidated Natural Resources (coal)
+110,Ascent CNR,,,unclear,no confirmed operating business
+125,Alliant Cali,fin.insurance,,medium,Alliant Insurance entity
+203,At&T Mobility II,comm.telecom,,high,preferred interests in an AT&T subsidiary
+51,Element Biosciences,hc.tools,,high,
+781,Midwave Wireless,comm.telecom,,medium,
+170,Wayve Technologies,ind.autonomy,ai|robotics,high,
+102,Fabletics,cons.brands,,high,
+121,Apptronik,ind.autonomy,ai|robotics,high,
+36,Tanium,tech.security,,high,
+89,Payward (Kraken),fin.crypto,crypto|fintech,high,
+114,Empower Semiconductor,tech.semis,,high,
+68,Insitro,hc.biotech,ai,high,machine-learning drug discovery is the core product
+70,Monitronics International,ind.business_services,,high,Brinks Home alarm monitoring
+78,Alif Semiconductor,tech.semis,,high,
+106,Taalas,tech.semis,ai,high,
+120,Genesis Molecular AI,hc.biotech,ai,high,
+80,Runway AI,tech.ai_models,ai,high,
+79,Sail Biomedicines,hc.biotech,,high,
+159,Airwallex,fin.payments,fintech,high,
+81,Celonis,tech.software,,high,
+94,Commercial Barge Line,ind.transport,,high,
+145,Lambda,tech.ai_infra,ai,high,
+97,National Resilience,hc.tools,,high,biomanufacturing
+786,PG Polaris TopCo S.a.r.l,,,unclear,Partners Group holding company; operating business not named
+198,CRB,fin.banking,fintech,medium,CRB Group (Cross River Bank) assumed from the raw names
+91,Lyte AI,ind.autonomy,ai|robotics,medium,robot perception
+143,Valuedrive Technologies Pvt,cons.retail,,high,Cars24 (used cars)
+129,Checkout Payments,fin.payments,fintech,high,
+163,True Anomaly,ind.space,space|defense,high,
+63,Illuminated,,,unclear,ILLUMINATED HOLDINGS INC; web search found no match
+45,Rappi,tech.consumer_internet,,high,
+795,Techem,ind.business_services,climate,high,energy submetering
+46,Mesquite Energy,enr.oil_gas,,high,
+53,Foresea,enr.oil_gas,,high,offshore drilling
+92,Sima Technologies,tech.semis,ai,high,SiMa.ai edge AI chips
+128,Apnimed,hc.biotech,,high,
+82,Galvanize Therapeutics,hc.devices,,high,pulsed-field ablation devices
+141,Perplexity AI,tech.ai_models,ai,high,
+77,Dataminr,tech.software,ai,high,
+103,Skyhawk Therapeutics,hc.biotech,,high,
+146,Arctic Wolf Networks,tech.security,,high,
+116,Wasabi,tech.software,,high,cloud storage
+740,Trumid,fin.markets,fintech,high,
+85,Retym,tech.semis,,high,
+767,High Power Exploration,mat.mining,,high,
+74,Loadsmart,ind.transport,,high,
+126,Mirador Therapeutics,hc.biotech,,high,
+105,Celestial AI,tech.semis,ai,high,
+113,Paragon Biosciences Emalex Capital,hc.biotech,,high,
+142,Nscale,tech.ai_infra,ai,high,
+164,Boom Technology,ind.aerospace_defense,,high,
+177,Saks Global Hldgs,cons.retail,,high,
+58,Gobrands,cons.retail,,high,goPuff
+115,Superhuman (formerly Grammarly),tech.software,ai,high,
+124,Rapyd Financial Network 2016,fin.payments,fintech,high,
+136,Axiom Space,ind.space,space,high,
+71,Aledade,hc.services,,high,
+134,Kartos Therapeutics,hc.biotech,,high,
+60,Discord,tech.consumer_internet,,high,
+108,Castle Creek Biosciences,hc.biotech,,high,
+107,Apartment List,re.proptech,,high,
+88,Snorkel AI,tech.software,ai,high,
+109,Impulse Dynamics Ireland,hc.devices,,high,
+167,Tonian Holdings,,,unclear,Form D industry group is Pooled Investment Fund (0001099263 rows); likely a fund interest
+104,Candid Therapeutics,hc.biotech,,high,
+150,A24 Films,comm.media,,high,
+239,HIG Intermediate,,,unclear,ledger: holding vehicle
+111,Socure,tech.security,fintech,high,identity verification
+67,Cellink,ind.manufacturing,climate,medium,assumed CelLink Corp (flexible harnesses for EVs); Form D says Other Technology
+168,Recovery Solutions,,,unclear,no confirmed operating business
+155,Valsoft,tech.software,,high,
+173,Navacord,fin.insurance,,high,
+112,Jumpcloud,tech.security,,high,
+90,Snyk,tech.security,,high,
+166,Cellares,hc.tools,,high,
+208,Acr Iii Lsc,,,unclear,ledger: holding vehicle
+216,Keystone Power Conemaugh,enr.power,,high,power plant ownership interests
+156,Johnnie-O,cons.brands,,high,
+132,Manus Bio,mat.materials,,high,
+117,Tory Burch,cons.brands,,high,
+154,RapidSOS,tech.software,,high,
+152,Mitel (MLN US Holdco),comm.telecom,,high,
+224,Legacy Gateway Jv,re.real_estate,,high,ledger: real estate joint venture
+151,Upgrade,fin.banking,fintech,high,
+130,OneTrust,tech.security,,high,
+140,Medical Microinstruments,hc.devices,robotics,high,surgical robotics
+139,Cellanome,hc.tools,,high,
+69,GTT Communications,comm.telecom,,high,
+149,Robertshaw (Range Red Acquisition),ind.manufacturing,,high,
+187,MYT,,,unclear,MYT HOLDING LLC; no confirmed operating business
+257,Scrs Intermediate,,,unclear,ledger: holding vehicle
+162,City Therapeutics,hc.biotech,,high,
+127,Somatus,hc.services,,high,
+119,Ant International,fin.payments,fintech,high,
+95,Drillco Hldg Lux,enr.oil_gas,,medium,offshore drilling holding company
+178,Cesiumastro,ind.space,space|defense,high,
+122,New Cineworld,comm.media,,high,cinemas
+742,Color Health,hc.services,,high,
+147,Jetti,mat.mining,,high,Jetti Resources
+171,Groq,tech.semis,ai,high,
+131,Selecta Group,cons.food,,high,vending
+175,Hometown Food,cons.food,,high,
+144,Neon Payments,fin.banking,fintech,high,
+148,Bombas,cons.brands,,high,
+98,Cineworld,comm.media,,high,
+76,Ascent Resources,enr.oil_gas,,high,
+133,Patreon,tech.consumer_internet,,high,
+16,Amsurg,hc.services,,high,
+157,Talwandi Sabo Power,enr.power,,high,
+234,Aestas Management,,,unclear,ledger: SPV manager (not an operating company)
+72,Windstream Parent,comm.telecom,,high,
+137,Formagrid,tech.software,,high,Airtable
+8,xAI,tech.ai_models,ai,high,
+99,YiChang HEC ChangJiang Pharmaceutical,hc.biotech,,high,
+123,Cruise (GM Cruise Holdings),ind.autonomy,ai|robotics,high,
+172,Bluejay Therapeutics,hc.biotech,,high,Form D says Other Technology
+798,Nexus Apex,,,unclear,NEXUS APEX HOLDINGS LLC; no confirmed operating business
+872,Insight M,ind.business_services,climate,medium,aerial methane detection (formerly Kairos Aerospace)

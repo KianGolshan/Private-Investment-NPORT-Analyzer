@@ -103,6 +103,8 @@ export const companyPath = (id: number, name: string) => `/company/${id}-${slugO
 export const entityPath = (key: string) => `/name/${encodeURIComponent(key)}`;
 export const fundPath = (key: string) => `/fund/${encodeURIComponent(key)}`;
 export const firmPath = (id: number) => `/firm/${id}`;
+export const sectorPath = (level: 'sector' | 'industry' | 'theme', code: string) =>
+  `/sectors/${level}/${encodeURIComponent(code)}`;
 
 /** The filing's EDGAR index page (the source of truth for every number). */
 export function edgarUrl(cik: string | number | null | undefined, accession: string | null | undefined) {

@@ -1,0 +1,347 @@
+{
+  "version": "2026-10-20.draft2",
+  "sectors": [
+    {
+      "code": "tech",
+      "name": "Technology",
+      "industries": [
+        {
+          "code": "tech.ai_models",
+          "name": "AI models & labs",
+          "def": "Builds and sells its own AI models or AI agents as the core product.",
+          "examples": ["Anthropic", "OpenAI"]
+        },
+        {
+          "code": "tech.ai_infra",
+          "name": "AI compute & cloud",
+          "def": "Sells compute, data centers or data infrastructure built for training and running AI models.",
+          "examples": ["Crusoe", "Lambda"]
+        },
+        {
+          "code": "tech.semis",
+          "name": "Semiconductors & hardware",
+          "def": "Designs or makes chips, photonics, networking silicon or chip-making equipment.",
+          "examples": ["Tenstorrent", "SiFive"]
+        },
+        {
+          "code": "tech.software",
+          "name": "Enterprise software",
+          "def": "Sells software or cloud services to businesses (not primarily security).",
+          "examples": ["Databricks", "Celonis"]
+        },
+        {
+          "code": "tech.security",
+          "name": "Cybersecurity & identity",
+          "def": "Protects networks, endpoints, identities or data; public-safety technology.",
+          "examples": ["Tanium", "Snyk"]
+        },
+        {
+          "code": "tech.quantum",
+          "name": "Quantum computing",
+          "def": "Builds quantum computers or quantum-specific software as the core product.",
+          "examples": ["PsiQuantum"]
+        },
+        {
+          "code": "tech.consumer_internet",
+          "name": "Consumer internet",
+          "def": "Apps, social networks, marketplaces and delivery platforms used by consumers.",
+          "examples": ["ByteDance", "Discord"]
+        }
+      ]
+    },
+    {
+      "code": "comm",
+      "name": "Communications & media",
+      "industries": [
+        {
+          "code": "comm.telecom",
+          "name": "Telecom & wireless",
+          "def": "Fixed, wireless, fiber or messaging networks and services.",
+          "examples": ["Syniverse", "New Windstream"]
+        },
+        {
+          "code": "comm.media",
+          "name": "Media, entertainment & gaming",
+          "def": "Film, live events, cinemas, sports media and video games.",
+          "examples": ["Epic Games", "A24 Films"]
+        }
+      ]
+    },
+    {
+      "code": "fin",
+      "name": "Financials",
+      "industries": [
+        {
+          "code": "fin.payments",
+          "name": "Payments & spend",
+          "def": "Moves money: payment processing, cards, cross-border payments, spend management.",
+          "examples": ["Stripe", "Ramp"]
+        },
+        {
+          "code": "fin.banking",
+          "name": "Digital banking & lending",
+          "def": "Licensed or partner banks, neobanks and consumer or business lenders.",
+          "examples": ["Revolut", "Starling Bank"]
+        },
+        {
+          "code": "fin.markets",
+          "name": "Trading & market infrastructure",
+          "def": "Exchanges, trading venues, prediction markets and market data for trading.",
+          "examples": ["Kalshi", "Trumid"]
+        },
+        {
+          "code": "fin.crypto",
+          "name": "Crypto & digital assets",
+          "def": "Exchanges, custody and infrastructure for crypto assets as the core business.",
+          "examples": ["Payward (Kraken)"]
+        },
+        {
+          "code": "fin.insurance",
+          "name": "Insurance & brokerage",
+          "def": "Insurers, reinsurers and insurance brokers (operating companies, not sidecars).",
+          "examples": ["Acrisure", "Hub International"]
+        },
+        {
+          "code": "fin.wealth",
+          "name": "Wealth & asset-management technology",
+          "def": "Platforms serving advisers, wealth managers and asset managers.",
+          "examples": ["iCapital"]
+        }
+      ]
+    },
+    {
+      "code": "hc",
+      "name": "Health care",
+      "industries": [
+        {
+          "code": "hc.biotech",
+          "name": "Biotech & pharmaceuticals",
+          "def": "Discovers or develops drugs and therapies.",
+          "examples": ["Insitro", "Skyhawk Therapeutics"]
+        },
+        {
+          "code": "hc.devices",
+          "name": "Medical devices",
+          "def": "Makes medical devices and surgical systems used by clinicians.",
+          "examples": ["Kardium", "Impulse Dynamics"]
+        },
+        {
+          "code": "hc.tools",
+          "name": "Life-science tools & biomanufacturing",
+          "def": "Instruments, cell-therapy manufacturing and research tools sold to drug makers and labs.",
+          "examples": ["Element Biosciences", "Cellares"]
+        },
+        {
+          "code": "hc.services",
+          "name": "Health care services",
+          "def": "Provides care or care management to patients.",
+          "examples": ["Aledade", "Amsurg"]
+        },
+        {
+          "code": "hc.healthtech",
+          "name": "Health care technology",
+          "def": "Software, AI diagnostics and pharmacy platforms for health care.",
+          "examples": ["Cleerly", "Blink Health"]
+        }
+      ]
+    },
+    {
+      "code": "ind",
+      "name": "Industrials",
+      "industries": [
+        {
+          "code": "ind.aerospace_defense",
+          "name": "Aerospace & defense",
+          "def": "Defense systems, aircraft and aerospace supply chain.",
+          "examples": ["Anduril Industries", "Boom Technology"]
+        },
+        {
+          "code": "ind.autonomy",
+          "name": "Autonomous vehicles & robotics",
+          "def": "Self-driving vehicles, humanoid and industrial robots, and the autonomy software for them.",
+          "examples": ["Waymo", "Figure AI"]
+        },
+        {
+          "code": "ind.space",
+          "name": "Space",
+          "def": "Satellites, spacecraft and space stations.",
+          "examples": ["Astranis", "Axiom Space"]
+        },
+        {
+          "code": "ind.transport",
+          "name": "Transportation & logistics",
+          "def": "Moves goods or people: freight, barges, helicopters, drone delivery.",
+          "examples": ["Zipline International", "Commercial Barge Line"]
+        },
+        {
+          "code": "ind.manufacturing",
+          "name": "Industrial manufacturing",
+          "def": "Makes industrial components and equipment.",
+          "examples": ["Hadrian Automation", "Robertshaw"]
+        },
+        {
+          "code": "ind.business_services",
+          "name": "Business & building services",
+          "def": "Services to businesses and buildings: alarm monitoring, metering, inspection.",
+          "examples": ["Techem", "Monitronics International"]
+        }
+      ]
+    },
+    {
+      "code": "enr",
+      "name": "Energy & power",
+      "industries": [
+        {
+          "code": "enr.clean",
+          "name": "Clean energy, storage & batteries",
+          "def": "Energy storage, battery materials and recycling, renewable generation technology.",
+          "examples": ["Form Energy", "Redwood Materials"]
+        },
+        {
+          "code": "enr.oil_gas",
+          "name": "Oil, gas & drilling",
+          "def": "Exploration, production, drilling and fuel distribution.",
+          "examples": ["Ascent Resources", "Foresea"]
+        },
+        {
+          "code": "enr.power",
+          "name": "Power generation & utilities",
+          "def": "Owns or operates power plants and grid assets.",
+          "examples": ["Talwandi Sabo Power"]
+        }
+      ]
+    },
+    {
+      "code": "mat",
+      "name": "Materials & mining",
+      "industries": [
+        {
+          "code": "mat.mining",
+          "name": "Mining & metals",
+          "def": "Finds or mines minerals, metals and coal.",
+          "examples": ["Kobold Metals", "Jetti"]
+        },
+        {
+          "code": "mat.materials",
+          "name": "Chemicals & advanced materials",
+          "def": "Makes chemicals, engineered materials, lab-grown diamonds or bio-based ingredients.",
+          "examples": ["Sila Nano", "Manus Bio"]
+        }
+      ]
+    },
+    {
+      "code": "cons",
+      "name": "Consumer",
+      "industries": [
+        {
+          "code": "cons.retail",
+          "name": "Retail & e-commerce",
+          "def": "Sells goods to consumers, online or in stores.",
+          "examples": ["Fanatics", "Vinted"]
+        },
+        {
+          "code": "cons.brands",
+          "name": "Consumer brands & apparel",
+          "def": "Owns and sells consumer product brands, mostly apparel.",
+          "examples": ["Tory Burch", "Bombas"]
+        },
+        {
+          "code": "cons.food",
+          "name": "Food & beverage",
+          "def": "Makes or distributes food and beverages.",
+          "examples": ["Chobani (FHU US Holdings)", "GrubMarket"]
+        },
+        {
+          "code": "cons.electronics",
+          "name": "Consumer hardware",
+          "def": "Consumer electronics and wearables.",
+          "examples": ["Oura"]
+        },
+        {
+          "code": "cons.travel",
+          "name": "Hospitality & leisure",
+          "def": "Hotels, travel and leisure operators.",
+          "examples": ["Aimbridge Topco"]
+        },
+        {
+          "code": "cons.mobility",
+          "name": "Mobility services",
+          "def": "Ride-hailing, micromobility and car-sharing.",
+          "examples": ["Bolt Technology"]
+        },
+        {
+          "code": "cons.education",
+          "name": "Education",
+          "def": "Schools, education services and education publishers.",
+          "examples": ["Nord Anglia Education", "Spring Education Group"]
+        },
+        {
+          "code": "cons.services",
+          "name": "Consumer services",
+          "def": "Services sold to consumers in person: car washes, gyms, pest control, home services.",
+          "examples": ["EOS Fitness", "LUV Car Wash"]
+        }
+      ]
+    },
+    {
+      "code": "re",
+      "name": "Real estate",
+      "industries": [
+        {
+          "code": "re.real_estate",
+          "name": "Real estate & homebuilding",
+          "def": "Owns, develops or builds property.",
+          "examples": ["IQHQ", "Davidson Homes"]
+        },
+        {
+          "code": "re.proptech",
+          "name": "Property technology",
+          "def": "Software and marketplaces for buying, renting or managing property.",
+          "examples": ["Quintoandar", "Apartment List"]
+        }
+      ]
+    }
+  ],
+  "themes": [
+    {
+      "code": "ai",
+      "name": "AI",
+      "def": "AI-native: the core product is an AI model or AI system, or the compute, chips or data platforms used to build and run models. Using AI inside another product does not count."
+    },
+    {
+      "code": "fintech",
+      "name": "Fintech",
+      "def": "Technology-led financial services: payments, digital banking, lending, trading and insurance distribution built on software."
+    },
+    {
+      "code": "defense",
+      "name": "Defense tech",
+      "def": "Sells to defense or national-security customers as a core market."
+    },
+    {
+      "code": "climate",
+      "name": "Climate",
+      "def": "The core product cuts emissions or enables the energy transition (storage, battery materials, clean power, low-carbon compute)."
+    },
+    {
+      "code": "crypto",
+      "name": "Crypto",
+      "def": "Crypto assets are the core business."
+    },
+    {
+      "code": "space",
+      "name": "Space",
+      "def": "Builds or operates hardware in space."
+    },
+    {
+      "code": "robotics",
+      "name": "Robotics & autonomy",
+      "def": "Builds robots or autonomous machines (vehicles, drones, humanoids, surgical robots)."
+    },
+    {
+      "code": "quantum",
+      "name": "Quantum",
+      "def": "Quantum computing, sensing or post-quantum security is the core product."
+    }
+  ]
+}
