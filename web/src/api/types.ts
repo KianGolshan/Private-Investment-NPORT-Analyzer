@@ -107,6 +107,15 @@ export interface SearchHit {
 export type UnifiedHit =
   | SearchHit
   | {
+      type: 'sector';
+      level: 'sector' | 'industry' | 'theme';
+      code: string;
+      name: string;
+      sector?: string;
+      companies: number;
+      strong: boolean;
+    }
+  | {
       type: 'firm';
       id: number;
       name: string;
@@ -447,6 +456,10 @@ export interface TopCompanies extends Envelope {
     companyId: number;
     name: string;
     category: CompanyCategory;
+    sector?: string | null;
+    industry?: string | null;
+    industryLabel?: string | null;
+    themes?: string[];
     tracked: boolean;
     funds: number;
     value: number;
@@ -939,7 +952,7 @@ export interface Drill extends Envelope, ScopeEcho {
   events: DrillEvent[];
 }
 
-export interface Mover {
+export interface Mover extends RowLabels {
   companyId: number;
   name: string;
   category?: CompanyCategory;
@@ -979,6 +992,10 @@ export interface NewlyReported extends Envelope {
     companyId: number;
     name: string;
     category?: CompanyCategory;
+    sector?: string | null;
+    industry?: string | null;
+    industryLabel?: string | null;
+    themes?: string[];
     tracked: boolean;
     firstMarkDate: string;
     firstFunds: number;
@@ -1180,3 +1197,13 @@ export interface MarkChanges extends Envelope {
     path: { date: string; level: number | null }[];
   }[];
 }
+
+/** A list row's sector labels (Market, movers, newly reported). */
+export interface RowLabels {
+  sector?: string | null;
+  industry?: string | null;
+  industryLabel?: string | null;
+  themes?: string[];
+}
+
+export interface TaxonomyAnswer extends Envelope, Taxonomy {}

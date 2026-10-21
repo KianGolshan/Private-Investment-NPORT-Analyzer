@@ -3,7 +3,7 @@ import { useLocation } from 'preact-iso';
 import { getJSON, qs } from '../api/client';
 import { useDialog } from './useDialog';
 import type { Envelope, SearchHit, UnifiedHit } from '../api/types';
-import { companyPath, entityPath, firmPath, fundPath, moneyC } from '../lib/format';
+import { companyPath, entityPath, firmPath, fundPath, moneyC, sectorPath } from '../lib/format';
 
 // One search box for everything (⌘K or /): one call to the unified search,
 // which ranks private companies, unreviewed names (with the match reason),
@@ -11,7 +11,7 @@ import { companyPath, entityPath, firmPath, fundPath, moneyC } from '../lib/form
 // highlighted result.
 
 export interface PaletteItem {
-  kind: 'Company' | 'Name' | 'Fund' | 'Firm' | 'Class';
+  kind: 'Company' | 'Name' | 'Fund' | 'Firm' | 'Class' | 'Sector' | 'Industry' | 'Theme';
   title: string;
   detail: string;
   href: string;
@@ -71,7 +71,7 @@ export function hitToItem(h: SearchHit): PaletteItem {
   };
 }
 
-const SEARCH_KINDS = 'company,entity,firm,fund,class';
+const SEARCH_KINDS = 'company,entity,firm,fund,class,sector';
 
 /** One ranked list from the server; tier keeps its order (byKind sorts by tier first). */
 export function unifiedToItem(h: UnifiedHit, rank: number): PaletteItem {
@@ -95,6 +95,15 @@ export function unifiedToItem(h: UnifiedHit, rank: number): PaletteItem {
       href: fundPath(f.fundKey),
     };
   }
+  if (h.type === 'sector')
+    return {
+      kind: h.level === 'sector' ? 'Sector' : h.level === 'industry' ? 'Industry' : 'Theme',
+      title: h.name,
+      tier: rank,
+      strong: h.strong,
+      detail: `${h.sector ? `${h.sector} · ` : ''}${h.companies} private companies`,
+      href: sectorPath(h.level, h.code),
+    };
   if (h.type === 'class')
     return {
       kind: 'Class',
@@ -116,7 +125,7 @@ export async function searchAll(q: string, signal?: AbortSignal): Promise<Palett
   return (r.results ?? []).map(unifiedToItem);
 }
 
-const KIND_ORDER: PaletteItem['kind'][] = ['Company', 'Firm', 'Class', 'Name', 'Fund'];
+const KIND_ORDER: PaletteItem['kind'][] = ['Company', 'Firm', 'Class', 'Name', 'Fund', 'Sector', 'Industry', 'Theme'];
 /** Best match first: how exactly it matched, then companies, firms, unreviewed names, funds. */
 export const byKind = (items: PaletteItem[]) =>
   [...items].sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0) || KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind));

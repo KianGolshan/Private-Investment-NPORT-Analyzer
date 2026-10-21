@@ -185,3 +185,42 @@ test('page titles: a sector page names its group; an unknown code or level is no
   assert.deepEqual(pageMetaOf(db, '/sectors/galaxy/ai'), { notFound: true });
   assert.deepEqual(pageMetaOf(db, '/sectors/theme/%E0%A4%A'), { notFound: true });
 });
+
+test('filters: Market, movers and newly reported by sector equal the sector totals; rows carry labels', async () => {
+  const date = '2026-06-30';
+  const t = sectors.totals(db, { date, level: 'industry' });
+  for (const g of t.groups.filter(x => x.key !== 'unclassified').slice(0, 4)) {
+    const top = market.topCompanies(db, {
+      date,
+      limit: 1e9,
+      categories: ['company'],
+      group: { level: 'industry', key: g.key },
+    });
+    assert.ok(near(top.totalValue, g.value), g.key);
+    assert.equal(top.companies, g.companies);
+    assert.ok(top.results.every(r => r.industry === g.key));
+    assert.deepEqual(top.results.map(r => r.rank).slice(0, 3), [1, 2, 3].slice(0, Math.min(3, top.results.length)));
+  }
+  assert.throws(() => market.topCompanies(db, { group: { level: 'industry', key: 'tech.nope' } }), /no industry/);
+  const mv = analysis.movers(db, { categories: ['company'], group: { level: 'theme', key: 'ai' }, limit: 100 });
+  const ai = new Set(sectors.groupCompanies(db, { level: 'theme', key: 'ai', date }).results.map(r => r.companyId));
+  for (const r of [...mv.markUp, ...mv.markDown, ...mv.flowIn, ...mv.flowOut])
+    assert.ok(r.themes.includes('ai'), r.name);
+  assert.ok(mv.markUp.some(r => ai.has(r.companyId)));
+  const nr = analysis.newlyReported(db, { categories: ['company'], group: { level: 'sector', key: 'tech' } });
+  assert.ok(nr.results.every(r => r.sector === 'tech'));
+  const api1 = await api('/api/market/top?date=2026-06-30&category=company&industry=tech.ai_models&limit=5');
+  assert.equal(api1.status, 200);
+  assert.equal(api1.body.results[0].name, 'Anthropic');
+  assert.equal((await api('/api/market/top?sector=tech&theme=ai')).status, 400);
+  const tax = await api('/api/sectors/taxonomy');
+  assert.ok(tax.body.sectors.length >= 9 && tax.body.themes.some(x => x.code === 'ai'));
+});
+
+test('search: sector, industry and theme names; "AI" is a strong match for the theme', () => {
+  const { unifiedSearch } = require('../lib/services/search');
+  const hits = unifiedSearch(db, 'AI', { limit: 10 });
+  assert.deepEqual([hits[0].type, hits[0].code, hits[0].strong], ['sector', 'ai', true]);
+  assert.ok(unifiedSearch(db, 'biotech').some(h => h.type === 'sector' && h.code === 'hc.biotech'));
+  assert.equal(unifiedSearch(db, 'Anthropic')[0].type, 'company');
+});

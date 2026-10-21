@@ -7,6 +7,7 @@ import { ScopeBar } from '../../scope/ScopeBar';
 import { isRange, useParam, useScope } from '../../scope/scope';
 import { Card, ErrorBox, Kpi, Loading } from '../../ui/bits';
 import { CategoryBadge, CategorySwitch, useCategoryFilter } from '../../ui/Category';
+import { industryColumn, SectorFilter, useSectorFilter } from '../../ui/SectorFilter';
 import { Chart } from '../../ui/Chart';
 import { DataTable, type Column } from '../../ui/DataTable';
 import { baseOption, type ChartTheme } from '../../ui/theme';
@@ -27,13 +28,16 @@ export default function Movers() {
   const [scope] = useScope();
   const [tracked, setTracked] = useParam('tracked');
   const cat = useCategoryFilter();
+  const group = useSectorFilter();
   const fresh = useApi<Freshness>('/api/freshness');
   const newest = fresh.data?.newestReportDate ?? null;
   const range = isRange(scope);
   const to = range ? scope.to : (newest ?? '');
   const from = range ? scope.from : newest ? addYears(newest, -1) : '';
   const m = useApi<MoversAnswer>(
-    to ? `/api/market/movers${qs({ from, to, tracked: tracked === '1', limit: 25, category: cat.category })}` : null
+    to
+      ? `/api/market/movers${qs({ from, to, tracked: tracked === '1', limit: 25, category: cat.category, ...group.params })}`
+      : null
   );
   const d = m.data;
 
@@ -53,6 +57,7 @@ export default function Movers() {
         { header: 'Category', value: r => r.category },
       ],
     },
+    industryColumn<Mover>(),
     {
       id: main,
       header: main === 'markEffect' ? 'From marks' : 'From positions (net)',
@@ -118,6 +123,7 @@ export default function Movers() {
         </p>
         <span class="spacer" />
         <CategorySwitch />
+        <SectorFilter />
         <ScopeBar supports={{ range: true }} newest={newest} />
         <label class="row small">
           <input

@@ -2,7 +2,7 @@ import { BASIS } from '../../ui/Basis';
 import { useCallback, useMemo } from 'preact/hooks';
 import { qs, useApi } from '../../api/client';
 import type { Bridge, Pivot } from '../../api/types';
-import { companyPath, moneyC, moneyDelta, num, tone } from '../../lib/format';
+import { companyPath, longDate, moneyC, moneyDelta, num, sectorPath, share, tone } from '../../lib/format';
 import { FIRST_DATE, ScopeBar } from '../../scope/ScopeBar';
 import { isRange, useParam, useScope } from '../../scope/scope';
 import { Card, Empty, ErrorBox, Loading, Segmented } from '../../ui/bits';
@@ -42,6 +42,12 @@ export function BookOverview({ who, name, newest }: { who: Who; name: string; ne
   const bridge = useApi<Bridge>(to ? `/api/analysis/bridge${qs({ ...who, from, to })}` : null);
   const effects = useApi<Pivot>(
     to ? `/api/analysis/pivot${qs({ ...who, rows: 'company', period: 'quarter', from, to, limit: 1 })}` : null
+  );
+  // the book by sector (ADR 0010): operating companies only, the labels' scope
+  const bySector = useApi<Pivot>(
+    to
+      ? `/api/analysis/pivot${qs({ ...who, category: 'company', rows: 'sector', period: 'quarter', from, to, limit: 100 })}`
+      : null
   );
   const p = pivot.data;
   const ends = useMemo(() => p?.periods.map(x => x.to) ?? [], [p]);
@@ -220,6 +226,7 @@ export function BookOverview({ who, name, newest }: { who: Who; name: string; ne
       )}
       {bridge.data && <BridgeView bridge={bridge.data} name={name} />}
       {effects.data && <PeriodEffects pivot={effects.data} name={name} />}
+      {bySector.data && bySector.data.results.length > 0 && <SectorMix pivot={bySector.data} name={name} />}
       {p && (
         <Card title={`By company, ${p.periods[i0]?.label ?? ''} – ${p.periods[i1]?.label ?? ''}`} flush>
           <DataTable
@@ -244,5 +251,58 @@ export function BookOverview({ who, name, newest }: { who: Who; name: string; ne
         </Card>
       )}
     </div>
+  );
+}
+
+// The book by sector over the window: held at each end, and what changed it.
+function SectorMix({ pivot, name }: { pivot: Pivot; name: string }) {
+  type Row = Pivot['results'][number];
+  const sumOf = (xs: number[]) => xs.reduce((t, v) => t + v, 0);
+  const endOf = (r: Pivot['total'] | Row) => r.value[r.value.length - 1] ?? 0;
+  const total = endOf(pivot.total);
+  return (
+    <Card title={`By sector, ${longDate(pivot.from)} – ${longDate(pivot.to)} (operating companies)`} flush>
+      <DataTable<Row>
+        basis={`${BASIS}. Operating companies. Sectors are Vantage's labels (taxonomy ${pivot.taxonomyVersion ?? ''}).`}
+        source={pivot}
+        columns={[
+          {
+            id: 'label',
+            header: 'Sector',
+            value: r => r.label,
+            render: r => <a href={sectorPath('sector', String(r.key))}>{r.label}</a>,
+            exportAs: [{ header: 'Code', value: r => r.key }],
+          },
+          { id: 'start', header: 'Start', value: r => r.startValue, num: true, render: r => moneyC(r.startValue) },
+          { id: 'end', header: 'End', value: endOf, num: true, render: r => moneyC(endOf(r)) },
+          {
+            id: 'share',
+            header: 'Share at end',
+            value: r => (total ? endOf(r) / total : null),
+            num: true,
+            render: r => share(total ? endOf(r) / total : null, 1),
+          },
+          {
+            id: 'pos',
+            header: 'From positions',
+            value: r => sumOf(r.positionEffect),
+            num: true,
+            render: r => moneyDelta(sumOf(r.positionEffect)),
+          },
+          {
+            id: 'mark',
+            header: 'From marks',
+            value: r => sumOf(r.markEffect),
+            num: true,
+            render: r => moneyDelta(sumOf(r.markEffect)),
+          },
+        ]}
+        rows={pivot.results}
+        rowKey={r => String(r.key)}
+        sort={{ id: 'end', desc: true }}
+        exportName={`${name}-book-by-sector`}
+        totals={() => ({ label: 'All sectors', start: moneyC(pivot.total.startValue), end: moneyC(total) })}
+      />
+    </Card>
   );
 }
