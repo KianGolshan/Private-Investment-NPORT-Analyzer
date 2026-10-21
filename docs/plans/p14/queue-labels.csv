@@ -1,0 +1,301 @@
+entity_id,clean_name,entity_type,industry,themes,basis,confidence,note
+51724,Fundrise SFR JV,real_estate,re.real_estate,,direct,high,Fundrise single-family-rental joint ventures
+62437,Partners Group investment companies,investment_vehicle,,,direct,high,PG Investment Company S.a r.l. holdcos across several countries; underlying businesses not named
+47258,Isagen,fund_interest,enr.power,climate,look_through,high,Brookfield Infrastructure Income Fund label: Colombian Renewable Power (Isagen)
+62760,Plymouth Rock,operating_company,fin.insurance,,direct,high,The Plymouth Rock Company (auto insurer); Central Securities holding
+54975,Icebox Parent,investment_vehicle,,,direct,medium,Partners Group LP holdco; underlying business not named in rows
+69418,Duke Energy Florida / FirstEnergy Transmission,fund_interest,enr.power,,look_through,high,Brookfield label: U.S. Utility minority stakes
+52318,Neoen,fund_interest,enr.power,climate,look_through,high,Brookfield label: Global Renewable Power (Neoen)
+60958,Westinghouse,fund_interest,enr.power,climate,look_through,high,Brookfield label: Nuclear Services (Westinghouse)
+60733,Enercare / HomeServe,fund_interest,ind.business_services,,look_through,medium,Brookfield label: North American Residential Infrastructure
+69386,Brookfield U.K. & European infrastructure,fund_interest,,,look_through,medium,Brookfield label without a named asset
+47259,Colonial Pipeline,fund_interest,enr.oil_gas,,look_through,high,Brookfield label: U.S. Pipeline System (Colonial)
+52701,Green DC LuxCo,investment_vehicle,,,direct,medium,Partners Group Luxembourg holdco; name suggests a data-center platform
+49454,EdgeCore Digital Infrastructure,operating_company,tech.ai_infra,,direct,medium,EdgeCore Holdings LP (data centers); Partners Group
+49815,Encore Holdings,investment_vehicle,,,direct,low,Partners Group LP holdco; business not named
+61575,Orbiter Investment,investment_vehicle,,,direct,medium,Partners Group Swiss holdco
+67086,Starfish Intermediate,investment_vehicle,,,direct,low,code name; business not named
+69545,Unit4,operating_company,tech.software,,direct,high,ERP software (Netherlands)
+51712,Fundrise MF JV,real_estate,re.real_estate,,direct,high,Fundrise multifamily JV
+48684,Dermatology Holdings,operating_company,hc.services,,direct,medium,dermatology practice platform (holdco LP)
+69416,SH 130 toll road,fund_interest,ind.transport,,look_through,high,Brookfield label: U.S. Toll Road (SH 130)
+45563,Inter Pipeline,fund_interest,enr.oil_gas,,look_through,high,Brookfield label: Canadian Midstream (Inter Pipeline)
+51706,Fundrise Industrial JV,real_estate,re.real_estate,,direct,high,Fundrise industrial JVs
+55028,Idera,operating_company,tech.software,,direct,medium,Idera Parent LP (database and developer tools software)
+51431,FPS LLC,investment_vehicle,,,direct,low,FPA Crescent holding; filed as PF; business not named
+56933,KKR private equity fund,fund_interest,,,direct,high,KKR fund interest
+69411,Geronimo Power / Modal Power,fund_interest,enr.power,climate,look_through,high,Brookfield label: U.S. Renewable Power
+66871,Specialty Pharma Holdings,investment_vehicle,,,direct,low,Partners Group LP holdco; business not named
+51486,Franklin Lexington fund,fund_interest,,,direct,high,Franklin Lexington (secondaries) fund interest
+58087,Luxembourg Investment Company 414,investment_vehicle,,,direct,high,Partners Group numbered holdco
+62450,PG TLP,investment_vehicle,,,direct,medium,Partners Group Italian holdco
+69396,5C Group,fund_interest,tech.ai_infra,ai,look_through,medium,Brookfield label: U.S. Digital Infrastructure Platform (5C)
+65324,SaxeCap Advisors VIII,fund_interest,,,direct,high,LP interest held by Fundrise Innovation Fund
+43565,AusNet Services,fund_interest,enr.power,,look_through,high,Brookfield label: Australian Utility (AusNet)
+68964,Trans Bay Cable,fund_interest,enr.power,,look_through,high,Brookfield label: U.S. Electric Transmission
+64772,Root JVCo,investment_vehicle,,,direct,low,Partners Group Luxembourg JV holdco
+68446,Thermostat Purchaser,investment_vehicle,,,direct,low,acquisition vehicle; business not named
+67342,Strider Topco,investment_vehicle,,,direct,low,French code-named holdco
+60498,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64); Highland Income Fund
+57104,KPOCH Holdings,investment_vehicle,,,direct,low,Partners Group LP holdco
+68251,TerraForm Power,fund_interest,enr.power,climate,look_through,high,Brookfield label: Terraform Renewable Power
+48348,CyrusOne,operating_company,tech.ai_infra,,direct,high,data centers; filed as CyrusOne Finance Corp equity
+69394,Hotwire Communications,fund_interest,comm.telecom,,look_through,high,Brookfield label: U.S. Fiber Network (Hotwire)
+55040,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64); FS MVP Private Markets Fund
+62431,PG Delta HoldCo,investment_vehicle,,,direct,high,Partners Group holding vehicle (auto-admit note)
+43443,atNorth,operating_company,tech.ai_infra,ai,direct,high,Nordic data centers for AI/HPC
+66152,SIH RP HoldCo,investment_vehicle,,,direct,low,code-named holdco
+42992,Ares Strategic Income Fund,fund_interest,,,direct,high,Ares fund LP interest
+50374,GD Towers,fund_interest,comm.telecom,,look_through,high,Brookfield label: European Telecom Towers
+52281,Triton International,fund_interest,ind.transport,,look_through,high,Brookfield label: container leasing
+69412,Renewbrook Energy,fund_interest,enr.clean,climate,look_through,medium,Brookfield label: U.S. Residential Solar
+68519,ThreatLocker,operating_company,tech.security,,direct,high,
+61031,NVP VIII,fund_interest,,,direct,high,Norwest Venture Partners VIII LP interest
+49917,EnfraGen,operating_company,enr.power,climate,direct,high,Latin American power generation
+51591,FRP Investors II,fund_interest,,,direct,medium,LP interest
+47041,Climeworks,operating_company,enr.clean,climate,direct,high,direct air capture
+71612,YOUR.WORLD HoldCo,investment_vehicle,,,direct,low,Dutch holdco; business not confirmed
+46339,Chaos Industries,operating_company,ind.aerospace_defense,defense,direct,high,
+55207,Fundrise Income 1 TRS,real_estate,re.real_estate,,direct,medium,Fundrise income real estate vehicle
+44789,PG BRPC Investment,investment_vehicle,,,direct,high,Partners Group vehicle
+59628,Monzo,operating_company,fin.banking,fintech,direct,high,
+45810,Carlyle Tactical Private Credit,fund_interest,,,direct,high,
+60497,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64); Highland fund
+47859,Cosette Pharmaceuticals,operating_company,hc.biotech,,direct,high,held via Hamilton Lane (filed PF)
+58093,Luxembourg Investment Company 430,investment_vehicle,,,direct,high,Partners Group numbered holdco
+51325,Fort Greene Reinsurance,insurance_vehicle,,,direct,medium,reinsurance holding LLC (Blackstone)
+60499,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+46098,Cedar Funding,clo,,,direct,high,CLO (Oxford Lane)
+69387,SGN,fund_interest,enr.oil_gas,,look_through,high,Brookfield label: U.K. Gas Distribution (SGN)
+53826,Heartland Dental,operating_company,hc.services,,direct,high,held via AMG Pantheon (filed PF)
+44429,Bernhard,operating_company,ind.business_services,climate,direct,medium,Bernhard (energy-as-a-service for buildings); Partners Group
+52230,New Giving Acquisition,investment_vehicle,,,direct,low,acquisition vehicle (FS Credit)
+67586,SureWerx,operating_company,ind.manufacturing,,direct,high,safety products (SureWerx Topco LP)
+60500,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+52124,George Street RE Funded,insurance_vehicle,,,direct,low,reinsurance-style funded vehicle; not confirmed
+47415,Confluent Health,operating_company,hc.services,,direct,high,physical therapy
+43824,Bad Boy Mowers,operating_company,ind.manufacturing,,direct,medium,JV investment LP; mower maker
+65967,Sherman Opportunity-A,fund_interest,,,direct,medium,
+69413,Intel Arizona fab partnership,fund_interest,tech.semis,,look_through,high,Brookfield label: U.S. Semiconductor Facility (Intel)
+59733,MPM,operating_company,,,direct,low,Partners Group UK; business not confirmed
+61610,Orion Opportunity,fund_interest,,,direct,medium,
+64251,Reflection AI,operating_company,tech.ai_models,ai,direct,high,
+60766,North Wall Tactical Credit,fund_interest,,,direct,high,feeder fund interest
+66925,Spring Education Group,operating_company,cons.travel,,direct,low,private schools; no education industry in the taxonomy (taxonomy gap)
+46299,CG Panther,investment_vehicle,,,direct,low,code name (auto-admit note: unclear)
+58088,Luxembourg Investment Company 261,investment_vehicle,,,direct,high,Partners Group numbered holdco
+44048,Banyan Software,operating_company,tech.software,,direct,high,
+49867,Enercoast Energy Infrastructure,operating_company,enr.oil_gas,,direct,medium,
+42935,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+50063,EQT IX,fund_interest,,,direct,high,EQT fund LP interest
+65178,San Cristobal Mining,operating_company,mat.mining,,direct,high,
+32986,7RIDGE EIF 2 Carry,fund_interest,,,direct,high,carry LP interest
+59060,Mercor,operating_company,tech.ai_models,ai,direct,high,AI talent/data platform
+41201,ACM Uprise Direct 2024,investment_vehicle,,,direct,medium,credit vehicle (Blue Owl)
+51590,Frozen Bakery Holdco,operating_company,cons.food,,direct,medium,
+64596,Rivage LuxCo,investment_vehicle,,,direct,low,
+58010,LSI Financing,investment_vehicle,,,direct,medium,life-science royalty financing vehicle
+60440,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+46037,CCI GPCC Syndicate,investment_vehicle,,,direct,medium,syndication vehicle
+56699,Homer City redevelopment,operating_company,enr.power,,direct,medium,KH Homer City LP (power/data-center site)
+56896,KKR Infrastructure Conglomerate,fund_interest,,,direct,high,
+64957,Ryan LLC,operating_company,ind.business_services,,direct,high,tax services firm
+61010,Nuveen Global Cities REIT,fund_interest,re.real_estate,,look_through,high,non-traded REIT
+57113,KPSKY Holdings,investment_vehicle,,,direct,low,
+51982,GEI Side CF,fund_interest,,,direct,medium,side-car fund interest
+42809,Aquarian Peninsula Holdings,investment_vehicle,,,direct,low,auto-admit note: unclear
+63943,Quintain,operating_company,re.real_estate,,direct,high,UK property developer (Wembley Park)
+45680,Capvis Equity V,fund_interest,,,direct,high,
+70068,Vercel,operating_company,tech.software,,direct,high,
+70649,Walleye Opportunities,fund_interest,,,direct,high,hedge fund interest
+61926,Pantheon InfraRed Digital Core Plus I,fund_interest,,,direct,high,
+70122,Versus Capital REIT sub,fund_interest,re.real_estate,,look_through,medium,
+70046,Veonet,operating_company,hc.services,,direct,high,ophthalmology clinics (Germany)
+43767,Ayar Labs,operating_company,tech.semis,ai,direct,high,optical I/O for AI chips
+41676,AI Access 12,investment_vehicle,,,direct,medium,Fundrise SPV; underlying not named
+59799,MTS Belmont Holdings,investment_vehicle,,,direct,low,
+48754,DFJ Growth 2006 Continuation,fund_interest,,,direct,high,
+49162,DSC Meridian,fund_interest,,,direct,high,hedge fund interest
+65222,Sanoptis,operating_company,hc.services,,direct,medium,ophthalmology group; Project Roller SARL
+46769,CIFC Funding,clo,,,direct,high,
+68133,Tekion,operating_company,tech.software,,direct,high,auto-retail software
+58943,Medicus Healthcare Solutions,operating_company,hc.services,,direct,medium,
+58051,Lumin Digital,operating_company,tech.software,fintech,direct,high,digital banking software
+64159,Real Alloy,operating_company,mat.materials,,direct,medium,aluminum recycling
+65267,Saronic Technologies,operating_company,ind.aerospace_defense,defense|robotics,direct,high,autonomous ships
+59955,Nanotronics Imaging,operating_company,tech.semis,ai,direct,medium,also merges CUBEFABS (grouping error in the note)
+52855,GrowthCo TB Holdings,investment_vehicle,,,direct,low,Fidelity holdco; business not named
+55121,Ilumed,operating_company,hc.services,,direct,low,
+42939,Ares Loan Funding,clo,,,direct,high,
+53094,H.I.G. CHA,fund_interest,,,direct,medium,
+41959,Alliant Insurance (Alliant Holdings LP),operating_company,fin.insurance,,direct,high,possible merge into reviewed company 38 Alliant (AH Parent): needs identity check
+68888,TPG Growth V Melody CI,fund_interest,,,direct,high,co-invest LP
+65453,SCP Harbor,fund_interest,,,direct,medium,
+59690,Motive Technologies,operating_company,tech.software,ai,direct,high,fleet management with AI dashcams
+49158,Dryden Senior Loan Fund,clo,,,direct,high,
+68886,TPG Growth V Amplifier CI,fund_interest,,,direct,high,co-invest LP
+44857,BOAC Up Owl Night JV,investment_vehicle,,,direct,medium,
+55087,IK PF II Luxco 6,fund_interest,,,direct,high,
+55837,ISC CG Parent,investment_vehicle,,,direct,low,
+68950,Tradeshift,operating_company,fin.payments,fintech,direct,high,
+48586,Deepgram,operating_company,tech.ai_models,ai,direct,high,speech AI
+51620,FSTK FR,investment_vehicle,,,direct,low,Fundrise SPV
+63195,PPRO,operating_company,fin.payments,fintech,direct,high,
+46137,Cendyn,operating_company,tech.software,,direct,high,hospitality software
+48230,Anysphere (Cursor),operating_company,tech.ai_models,ai,direct,high,filed as PF by Coatue fund; possible SPV
+63495,ProPharma,operating_company,hc.services,,direct,medium,
+48535,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+70851,Welsh Carson Anderson & Stowe XII,fund_interest,,,direct,high,
+49829,Endeavor BioMedicines,operating_company,hc.biotech,,direct,high,
+55206,Inclusive Language Services,investment_vehicle,,,direct,low,auto-admit note: unclear
+49258,Dyna Robotics,operating_company,ind.autonomy,ai|robotics,direct,high,
+71778,Zippy Shell,operating_company,ind.business_services,,direct,medium,portable storage
+56449,K2 Space,operating_company,ind.space,space|defense,direct,high,
+41967,Allied Benefit Systems,operating_company,fin.insurance,,direct,medium,benefits administration
+56824,Zepto,operating_company,cons.retail,,direct,high,quick commerce (India)
+68887,TPG Growth V Deacon,fund_interest,,,direct,high,co-invest LP
+67543,Sunsure Energy,operating_company,enr.clean,climate,direct,high,Indian renewable developer; country filed as US
+52072,Genesys,operating_company,tech.software,ai,direct,medium,contact-center software (AI-led platform is borderline under the AI rule)
+60732,North American Railcar Network,fund_interest,ind.transport,,look_through,high,Brookfield label
+66784,SP21Z Opportunities (OpenAI SPV),investment_vehicle,tech.ai_models,ai,look_through,high,SPV invested in OpenAI (name says so); possible spv_map link to company 7
+50519,EXPG Holdings,investment_vehicle,,,direct,low,
+65833,Shamrock PN Holdco,investment_vehicle,,,direct,low,
+67186,StepStone Private Venture and Growth Fund,fund_interest,,,direct,high,
+58272,Magnetite XLV,clo,,,direct,high,
+63391,Project Colombia,investment_vehicle,,,direct,low,code name
+41503,Aergo Capital,operating_company,ind.transport,,direct,medium,aircraft leasing
+67958,Tarana Wireless,operating_company,comm.telecom,,direct,high,fixed wireless equipment
+59377,Minerva Holdco,investment_vehicle,,,direct,low,
+63587,PRTN TB Holdings,investment_vehicle,,,direct,low,Fidelity holdco; business not named
+42740,Apollo Infrastructure Co,fund_interest,,,direct,high,
+60763,North Star,investment_vehicle,,,direct,low,
+52726,Green Equity Investors Side VIII,fund_interest,,,direct,high,Leonard Green fund
+49616,Eliyan,operating_company,tech.semis,ai,direct,high,chiplet interconnect for AI chips
+58517,Mars 2025 Holdings,investment_vehicle,,,direct,low,China holdco filed PF
+50577,Factorial Frontier,fund_interest,,,direct,medium,
+47270,Colossal Biosciences,operating_company,hc.biotech,,direct,high,
+48546,DCert (DigiCert),operating_company,tech.security,,direct,medium,DCert Preferred Holdings
+59880,MWAM VC SpaceX-II (SpaceX SPV),investment_vehicle,,,direct,high,SpaceX exposure; SpaceX is public in this project (CLAUDE.md) so no private sector label
+67528,Sunrise Energy Metals,listed_security,mat.mining,climate,direct,medium,ASX-listed; held via warrants and shares
+66782,SP Private Investments XIII,investment_vehicle,,,direct,low,Fundrise SPV
+69101,Trinity Gas Holdings,operating_company,enr.oil_gas,,direct,medium,gas storage
+69074,Trident VII,fund_interest,,,direct,high,Stone Point fund
+50300,Estancia Ruby Intermed Agg,investment_vehicle,,,direct,low,
+54470,Hosen FCV I,fund_interest,,,direct,medium,
+48072,Crimson FLS Topco,investment_vehicle,,,direct,low,
+71182,Wonder,operating_company,cons.food,,direct,high,Wonder Group (food delivery/halls)
+56543,KAWP Holdings,investment_vehicle,,,direct,low,
+57263,Horseshoe Re (Labrador),insurance_vehicle,,,direct,high,reinsurance sidecar
+60709,Nordic Capital IX,fund_interest,,,direct,high,
+62232,PennantPark Senior Secured,fund_interest,,,direct,high,registered credit fund (RF)
+65452,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+56960,Klarna,listed_security,fin.payments,fintech,direct,medium,Klarna listed on NYSE Sept 2025; rows are older Klarna Bank AB stakes
+69018,Tree Line Direct Lending II,fund_interest,,,direct,high,
+41278,Adagia Capital Europe,fund_interest,,,direct,high,
+62817,Polar Investors,investment_vehicle,,,direct,low,
+66038,Shore Capital co-invest fund,fund_interest,,,direct,medium,
+71482,XRP,listed_security,fin.crypto,crypto,direct,high,crypto asset held by an ETF; not a company
+60715,Nordic Capital XI,fund_interest,,,direct,high,
+54827,HX One,investment_vehicle,,,direct,low,
+57957,Lorient Peregrine Investment,investment_vehicle,,,direct,low,
+46106,Celebration Bidco,investment_vehicle,,,direct,low,
+62225,Peninsula Gaming,operating_company,cons.travel,,direct,medium,casino operator
+70964,WHCG Purchaser,investment_vehicle,,,direct,low,
+45993,CB Poly Holdings,investment_vehicle,,,direct,low,
+63215,(Series B-1 preferred; name missing),unclear,,,direct,low,ARK row named only by share class
+64386,Replit,operating_company,tech.software,ai,direct,high,AI coding agent
+55310,Infinity Fincorp,operating_company,fin.banking,fintech,direct,medium,Indian NBFC
+68815,Total Fleet Solutions,operating_company,ind.business_services,,direct,low,
+56993,KMNOCH Investor,investment_vehicle,,,direct,low,
+68638,Time Forward Flow loans,claim,,,direct,medium,loan purchase agreement (asset-backed); not equity in a company
+50369,Knutsen LNG,fund_interest,ind.transport,,look_through,high,Brookfield label: European LNG Vessels
+43309,Astorg CF II (GP),fund_interest,,,direct,high,
+45661,Capodagli Mezz,real_estate,re.real_estate,,direct,medium,real estate preferred equity
+48413,Daintree,investment_vehicle,,,direct,low,
+42068,AlphaSense,operating_company,tech.software,ai,direct,high,
+52814,GridSource,operating_company,ind.business_services,,direct,low,
+50592,FairJourney Biologics,operating_company,hc.tools,,direct,high,antibody discovery services
+53444,Hadron Holdings,investment_vehicle,,,direct,low,
+51505,Frazier Healthcare ATNA feeder,fund_interest,,,direct,high,
+44455,Betterment,operating_company,fin.wealth,fintech,direct,high,
+60268,Neurovance milestone interest,claim,,,direct,high,milestone claim
+56495,Kandou,operating_company,tech.semis,,direct,high,
+60705,Nordic Capital CF1 Alpha,fund_interest,,,direct,high,
+70589,Vulcan Elements,operating_company,mat.materials,defense,direct,high,rare-earth magnets
+46041,CCMP Capital Investors IV,fund_interest,,,direct,high,
+47599,AIP lending contracts,claim,,,direct,medium,loan contracts; not equity
+68890,TPG Growth VI,fund_interest,,,direct,high,
+67996,Taurus I Cayman TopCo,investment_vehicle,,,direct,low,
+51723,Fundrise SFR Dev JV,real_estate,re.real_estate,,direct,high,
+43653,Avetta,operating_company,tech.software,,direct,high,supply-chain risk software
+56536,Kasper 1 SPV,investment_vehicle,,,direct,low,
+70003,Velocity Holdings,investment_vehicle,,,direct,low,
+41268,Acumatica,operating_company,tech.software,,direct,high,
+70570,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+42650,Apex Clean Energy,operating_company,enr.clean,climate,direct,high,
+43728,Axcel VI,fund_interest,,,direct,high,
+62175,Peak Topco,investment_vehicle,,,direct,low,
+60704,Nordic Capital X,fund_interest,,,direct,high,
+52134,German Tax (code name),investment_vehicle,,,direct,low,
+66525,Snowpoint Growth 2.8,investment_vehicle,,,direct,low,SPV series
+62536,Pibb Member Holdings,investment_vehicle,,,direct,low,
+48578,Deel,operating_company,tech.software,fintech,direct,high,global payroll
+69144,Triveni Bio,operating_company,hc.biotech,,direct,high,
+67580,SuperMoose NewCo,investment_vehicle,,,direct,low,
+42719,Apollo Asset Backed Credit Co,fund_interest,,,direct,high,
+46115,cellcentric,operating_company,enr.clean,climate,direct,medium,fuel cells (Daimler/Volvo JV)
+66714,South Florida Motorsports,operating_company,comm.media,,direct,medium,Miami Grand Prix
+45462,Calamos Strategic Total Return,listed_security,,,direct,high,listed closed-end fund (preferred)
+41099,ACBL Holding,operating_company,ind.transport,,direct,high,American Commercial Barge Line; possible merge into reviewed company 94 Commercial Barge Line
+69022,Treeline Biosciences,operating_company,hc.biotech,,direct,high,merge candidate: reviewed company 42 Treeline Bio
+50440,Evolve Vacation Rental,operating_company,cons.travel,,direct,high,
+68882,TPG Growth V,fund_interest,,,direct,high,
+52019,General Catalyst Group VIII,fund_interest,,,direct,high,
+56683,Keycon Power Holdings,operating_company,enr.power,,direct,medium,
+43149,ASAPP,operating_company,tech.software,ai,direct,high,
+33696,8VC ANSE SPV,investment_vehicle,,,direct,medium,8VC SPV; underlying not named
+50019,Epirus,operating_company,ind.aerospace_defense,defense,direct,high,
+41331,ADARx Pharmaceuticals,operating_company,hc.biotech,,direct,high,
+41542,AFC Acquisitions,investment_vehicle,,,direct,low,
+54979,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+68462,Third Arc Bio,operating_company,hc.biotech,,direct,high,
+45122,Brightline West warrants,operating_company,ind.transport,,direct,medium,high-speed rail project; equity warrants held by muni funds
+64582,Ripple,operating_company,fin.crypto,crypto|fintech,direct,high,
+48489,Dawn Opportunity,fund_interest,,,direct,medium,
+49686,Elvaston V,investment_vehicle,,,direct,low,
+42209,AM Bidco,investment_vehicle,,,direct,low,held by muni funds; business not confirmed
+67298,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+60259,Neuralink,operating_company,hc.devices,,direct,high,
+44830,ClearNote Health,operating_company,hc.healthtech,,direct,medium,cancer detection diagnostics
+57680,LifeMine Therapeutics,operating_company,hc.biotech,,direct,high,
+41682,AI-LLM SPV,investment_vehicle,,ai,direct,medium,Fundrise SPV; underlying AI company not named
+50763,FH EP Parent,investment_vehicle,,,direct,low,
+42180,Altos Labs,operating_company,hc.biotech,,direct,high,
+60314,New Horizon Health,listed_security,hc.healthtech,,direct,high,HKEX-listed (suspended); ISIN present
+69279,Tubulis,operating_company,hc.biotech,,direct,high,
+44282,BE VI,fund_interest,,,direct,medium,
+44998,BPEA EQT Mid Market Growth,fund_interest,,,direct,high,
+55041,(unnamed),unclear,,,direct,low,row has no issuer name (trap 64)
+55441,Insightec,operating_company,hc.devices,,direct,high,
+61767,OZLM,clo,,,direct,high,
+44851,BOAC Crevasse I,investment_vehicle,,,direct,medium,
+63617,PSG Encore-A,fund_interest,,,direct,medium,
+49602,ElevenLabs,operating_company,tech.ai_models,ai,direct,high,
+69179,Trouvaille Re,insurance_vehicle,,,direct,high,
+44642,Blackbird Purchaser,investment_vehicle,,,direct,low,
+41769,Akeana,operating_company,tech.semis,,direct,high,RISC-V processors
+58092,Luxembourg Investment Company 404,investment_vehicle,,,direct,high,Partners Group numbered holdco
+48823,Different Technologies,operating_company,tech.software,,direct,medium,Mexico
+70852,Welsh Carson Anderson & Stowe XIII,fund_interest,,,direct,high,
+66656,Sonoma Biotherapeutics,operating_company,hc.biotech,,direct,high,
+42934,Arena Brands,operating_company,cons.brands,,direct,low,
+48672,Density AI,operating_company,tech.software,ai,direct,medium,occupancy sensing
+46224,CeQur,operating_company,hc.devices,,direct,high,insulin patch
+68791,Torchy's Tacos,operating_company,cons.food,,direct,high,restaurants
+62850,Pollen Street Capital III,fund_interest,,,direct,high,
+68924,TPG Twin Brook Direct Lending,fund_interest,,,direct,high,registered credit fund (RF)
+64266,Regatta 32 Funding,clo,,,direct,high,
+43667,Avid Bioservices,operating_company,hc.tools,,direct,high,CDMO taken private 2025
+49955,Enstructure,operating_company,ind.transport,,direct,medium,ports and terminals
+64158,Real Alloy Holding,operating_company,mat.materials,,direct,medium,merge candidate with entity 64159 Real Alloy Equity
+65670,Sentinel Midstream Highline JV,operating_company,enr.oil_gas,,direct,medium,
