@@ -26,7 +26,7 @@ export const GLOSSARY: Record<TermId, { term: string; text: string }> = {
   },
   markIndex: {
     term: 'Per-share mark index',
-    text: 'How marks moved, following each fund’s own security from report to report (split-adjusted). A company moves with the median of its funds, so a step-up funds report in different quarters counts once. The index follows the companies marked at the start (later arrivals cannot move it) and is shown for the typical company (the median) and weighted by value. It is not shown with fewer than 5 companies.',
+    text: 'How marks moved, following each fund’s own security from report to report (split-adjusted). A company moves with the median of its funds, so a step-up funds report in different quarters counts once. Each period counts only the companies marked at both ends of it, so a company first reported later joins without moving the level (it cannot add its entry price). The index is shown for the typical company (the median) and weighted by value. A period needs at least 5 companies; the index starts at the first such period.',
   },
   mark: {
     term: 'Mark',

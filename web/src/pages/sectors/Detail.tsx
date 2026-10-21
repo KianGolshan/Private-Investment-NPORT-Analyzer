@@ -80,7 +80,7 @@ export default function SectorDetail() {
           <Kpi
             label="Value-weighted mark"
             value={last.valueIndex == null ? '—' : indexPct(last.valueIndex)}
-            sub={`${num(g.cohort)} companies marked at the start`}
+            sub={`${num(g.cohort)} companies measured`}
           />
           <Kpi
             label="Last period"

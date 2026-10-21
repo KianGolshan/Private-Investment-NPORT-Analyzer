@@ -3,8 +3,8 @@
 // Market's operating-company total; Explore's sector rows add up to the total
 // row and drill to their cell; the mark index follows each fund's own security
 // (F62: Fidelity Hastings Street Trust's Anthropic Series F, $140.96 on
-// 2025-12-31 to $589.01 on 2026-06-30, raw EDGAR), counts a company only from
-// a mark in force at the start, and gives no value below its minimum sample.
+// 2025-12-31 to $589.01 on 2026-06-30, raw EDGAR), links period returns of the
+// companies marked at both ends, and gives no value below its minimum sample.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const request = require('supertest');
@@ -123,7 +123,17 @@ test('mark index: a company is the median of its own chains (F62: Anthropic +317
   for (const r of c.companies) assert.equal(r.path[0].level, 1, r.name);
 });
 
-test('mark index: no value below the minimum sample; a fixed cohort; partial periods flagged', () => {
+test("mark index: a company's linked period returns multiply to its change over the window (F62 once, not twice)", () => {
+  const id = idOf('Anthropic');
+  const { dates } = sectors.windowOf(db, { from: '2025-12-31', to: '2026-06-30', period: 'quarter' });
+  const periods = sectors.companyReturns(db, { dates, keep: c => c === id }).get(id);
+  assert.equal(periods[0], null);
+  const linked = periods.slice(1).reduce((t, p) => t * (1 + p.ret), 1);
+  assert.ok(Math.abs(linked - 589.01 / 140.96) < 1e-9, String(linked));
+  for (const p of periods.slice(1)) assert.ok(p.chains >= 1 && p.weight > 0);
+});
+
+test('mark index: no value below the minimum sample; chain-linked; partial periods flagged', () => {
   // the fixture holds two AI companies: below the 5-company minimum, so no index value
   const ai = sectors.markIndex(db, { level: 'theme', keys: ['ai'], from: '2025-12-31', to: '2026-06-30' });
   assert.equal(ai.groups[0].cohort, 2);
@@ -134,8 +144,16 @@ test('mark index: no value below the minimum sample; a fixed cohort; partial per
       g.points.every(p => p.companies <= g.cohort),
       g.key
     );
-    const first = g.points[0];
-    if (first.sufficient) assert.equal(first.index, 100);
+    // 100 the date before the first period with a value; each value is the last one times (1 + change)
+    const first = g.points.findIndex(p => p.index != null);
+    if (first < 0) continue;
+    assert.equal(g.points[first].index, 100, g.key);
+    for (let i = first + 1; i < g.points.length && g.points[i].index != null; i++) {
+      const p = g.points[i];
+      assert.ok(p.sufficient, g.key);
+      assert.ok(Math.abs(p.index - g.points[i - 1].index * (1 + p.change)) < 1e-9, g.key);
+      assert.ok(p.p25 <= p.change && p.change <= p.p75, g.key);
+    }
   }
   const partial = sectors.markIndex(db, { level: 'sector', from: '2025-06-30', to: '2026-05-15' });
   assert.equal(partial.groups[0].points.at(-1).partial, true);

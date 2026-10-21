@@ -170,5 +170,5 @@ function periodCell(p: { date: string; partial: boolean; label: string }) {
 /** "12 companies · 340 chains" under a chart. */
 export const coverage = (idx: MarkIndex, key: string) => {
   const g = idx.groups.find(x => x.key === key);
-  return g ? `${num(g.cohort)} companies marked at the start` : '';
+  return g ? `${num(g.cohort)} companies measured` : '';
 };
