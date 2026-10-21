@@ -141,6 +141,7 @@ test('mark index: no value below the minimum sample; a fixed cohort; partial per
   assert.equal(partial.groups[0].points.at(-1).partial, true);
   assert.throws(() => sectors.markIndex(db, { from: '2026-06-30', to: '2025-06-30' }), /from must be before to/);
   assert.throws(() => sectors.markIndex(db, { period: 'week' }), /period must be/);
+  assert.throws(() => sectors.markIndex(db, { level: 'theme', keys: ['ai', 'tech.nope'] }), /no theme "tech.nope"/);
 });
 
 test('API: sectors, companies, index, marks, Explore rows and the company classification', async () => {
