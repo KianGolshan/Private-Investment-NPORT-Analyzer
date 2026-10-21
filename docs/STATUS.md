@@ -86,6 +86,9 @@ has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB 
   Sectors pages, deploy drill) and on `main`.
 - **Open:** 58 companies not yet classified (code names; label as evidence appears); an opt-in cheap-model suggestion
   for new names is not built (no paid bulk labeling, by the user's decision).
+- **Weekly review:** the scheduled task `vantage-weekly-review` (Claude desktop app, Mondays 9:12) admits and labels new
+  private companies from the nightly watch reports ([WEEKLY-REVIEW.md](WEEKLY-REVIEW.md), log in
+  [reviews/LOG.md](reviews/LOG.md)) and opens a PR; the user merges.
 - **Next prompt:** "label the unclassified companies" or the user's instructions.
 
 ## Where things stand (2026-10-21)
