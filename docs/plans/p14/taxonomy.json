@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-20.draft1",
+  "version": "2026-10-20.draft2",
   "sectors": [
     {
       "code": "tech",
@@ -268,6 +268,18 @@
           "name": "Mobility services",
           "def": "Ride-hailing, micromobility and car-sharing.",
           "examples": ["Bolt Technology"]
+        },
+        {
+          "code": "cons.education",
+          "name": "Education",
+          "def": "Schools, education services and education publishers.",
+          "examples": ["Nord Anglia Education", "Spring Education Group"]
+        },
+        {
+          "code": "cons.services",
+          "name": "Consumer services",
+          "def": "Services sold to consumers in person: car washes, gyms, pest control, home services.",
+          "examples": ["EOS Fitness", "LUV Car Wash"]
         }
       ]
     },
@@ -311,8 +323,16 @@
       "name": "Climate",
       "def": "The core product cuts emissions or enables the energy transition (storage, battery materials, clean power, low-carbon compute)."
     },
-    { "code": "crypto", "name": "Crypto", "def": "Crypto assets are the core business." },
-    { "code": "space", "name": "Space", "def": "Builds or operates hardware in space." },
+    {
+      "code": "crypto",
+      "name": "Crypto",
+      "def": "Crypto assets are the core business."
+    },
+    {
+      "code": "space",
+      "name": "Space",
+      "def": "Builds or operates hardware in space."
+    },
     {
       "code": "robotics",
       "name": "Robotics & autonomy",
