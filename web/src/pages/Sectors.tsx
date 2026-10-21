@@ -103,8 +103,8 @@ export default function Sectors() {
             options={[
               {
                 id: 'typical',
-                label: 'Typical company',
-                title: 'The median company: most private marks do not move every quarter',
+                label: 'Average company',
+                title: 'Each company counts the same; the most extreme 5% at each end are capped',
               },
               { id: 'value', label: 'Value-weighted', title: 'Each company weighted by its value at the start' },
             ]}
@@ -131,7 +131,7 @@ export default function Sectors() {
                     <IndexChart
                       idx={idx.data}
                       view={view}
-                      label={`Per-share mark index by ${LEVEL_LABEL[level].toLowerCase()}, ${view === 'value' ? 'value-weighted' : 'typical company'}`}
+                      label={`Per-share mark index by ${LEVEL_LABEL[level].toLowerCase()}, ${view === 'value' ? 'value-weighted' : 'average company'}`}
                     />
                   </div>
                   <IndexTable

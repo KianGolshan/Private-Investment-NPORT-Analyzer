@@ -73,7 +73,7 @@ export default function SectorDetail() {
             sub={c ? `${num(c.companies)} companies` : undefined}
           />
           <Kpi
-            label="Typical company's mark"
+            label="Average company's mark"
             value={last.index == null ? '—' : indexPct(last.index)}
             sub={`since ${longDate(idx.data!.from)}${last.partial ? ' (partial)' : ''}`}
           />
@@ -100,7 +100,7 @@ export default function SectorDetail() {
             value={view}
             onChange={v => setParams({ view: v === 'typical' ? '' : v })}
             options={[
-              { id: 'typical', label: 'Typical company' },
+              { id: 'typical', label: 'Average company' },
               { id: 'value', label: 'Value-weighted' },
             ]}
           />

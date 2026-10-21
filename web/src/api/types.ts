@@ -1162,6 +1162,7 @@ export interface MarkIndexPoint {
   p75: number | null;
   valueIndex: number | null;
   change: number | null;
+  median: number | null;
   valueChange: number | null;
   unchanged: number | null;
   up: number | null;

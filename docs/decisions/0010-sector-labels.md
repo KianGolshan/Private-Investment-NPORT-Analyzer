@@ -40,7 +40,8 @@ time") need every private company labeled by industry. Checked on real filings:
    - A company's level is the median of its chains, so a step-up that funds report in different quarters
      (staggered calendars) counts once.
    - Chain-linked: each period's change is the median (and the value-weighted) return of the companies marked at both ends of the period, so a company first reported later joins without moving the level, and long windows keep a sample. A company's later chain is spliced in at the company's level. The index starts at 100 before the first period with 5 companies and 20 chains, and stops at a later period without them.
-   - It is shown for the typical company (the median) and value-weighted, and not shown below 5 companies and 20
+   - It is shown for the average company (each period's mean company return, winsorized at the 5th and 95th
+     percentiles; the median is often 0 because many marks do not change) and value-weighted, and not shown below 5 companies and 20
      chains.
 6. **Backfill and future names.** The backfill was labeled in session from the warehouse names, with web search to
    confirm. New names reach a person through the nightly watch report's "New names" section, which lists every

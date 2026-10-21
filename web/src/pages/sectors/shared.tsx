@@ -14,7 +14,7 @@ const signedPct = (v: number | null | undefined) => (v == null ? '—' : pct(v *
 
 export type IndexView = 'typical' | 'value';
 
-/** Index lines for several groups, typical company (median) or value-weighted. */
+/** Index lines for several groups, average company or value-weighted. */
 export function IndexChart({
   idx,
   view,
@@ -41,7 +41,7 @@ export function IndexChart({
             {
               name: '25th percentile',
               type: 'line',
-              data: g0.points.map(p => p.p25),
+              data: g0.points.map((p, i) => bandAt(g0.points, i, p.p25)),
               lineStyle: { opacity: 0 },
               stack: 'band',
               symbol: 'none',
@@ -50,7 +50,11 @@ export function IndexChart({
             {
               name: '25th–75th percentile',
               type: 'line',
-              data: g0.points.map(p => (p.p75 != null && p.p25 != null ? p.p75 - p.p25 : null)),
+              data: g0.points.map((p, i) => {
+                const lo = bandAt(g0.points, i, p.p25);
+                const hi = bandAt(g0.points, i, p.p75);
+                return lo != null && hi != null ? hi - lo : null;
+              }),
               lineStyle: { opacity: 0 },
               areaStyle: { opacity: 0.15, color: t.series[0] },
               stack: 'band',
@@ -64,7 +68,7 @@ export function IndexChart({
       legend: { ...b.legend, data: groups.map(g => g.label) },
       tooltip: { ...b.tooltip, valueFormatter: (v: number) => (v == null ? '—' : v.toFixed(1)) },
       xAxis: { type: 'category', data: dates, boundaryGap: false, ...b.xAxisDefaults },
-      yAxis: { type: 'value', scale: true, ...b.yAxisDefaults, name: 'start = 100' },
+      yAxis: { type: 'value', scale: true, ...b.yAxisDefaults },
       series: [
         ...bandSeries,
         ...groups.map((g, i) => ({
@@ -115,12 +119,19 @@ export function IndexTable({ idx, level, exportName }: { idx: MarkIndex; level: 
         { id: 'companies', header: 'Companies marked', value: r => r.companies, num: true },
         {
           id: 'index',
-          header: 'Typical company (start = 100)',
+          header: 'Average company (start = 100)',
           value: r => r.index,
           num: true,
           render: r => fmtIdx(r.index),
         },
         { id: 'change', header: 'Change in period', value: r => r.change, num: true, render: r => signedPct(r.change) },
+        {
+          id: 'median',
+          header: 'Median company',
+          value: r => r.median,
+          num: true,
+          render: r => signedPct(r.median),
+        },
         {
           id: 'valueIndex',
           header: 'Value-weighted (start = 100)',
@@ -144,6 +155,12 @@ export function IndexTable({ idx, level, exportName }: { idx: MarkIndex; level: 
       maxHeight={480}
     />
   );
+}
+// The band's edge in index points: the period's 25th or 75th percentile return
+// applied to the index at the period start.
+function bandAt(points: MarkIndex['groups'][number]['points'], i: number, r: number | null) {
+  const before = i > 0 ? (points[i - 1]?.index ?? null) : null;
+  return before != null && r != null ? before * (1 + r) : null;
 }
 const fmtIdx = (v: number | null) =>
   v == null ? (
