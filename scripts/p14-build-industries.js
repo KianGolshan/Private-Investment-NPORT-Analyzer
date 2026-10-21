@@ -36,6 +36,15 @@ function main() {
   const companies = db
     .prepare("SELECT id, name FROM companies WHERE status = 'private' AND category = 'company' ORDER BY id")
     .all();
+  // companies in aliases.csv the warehouse does not have yet (added since the
+  // last import): written with a blank id, which the import resolves by name
+  const known = new Set(companies.map(c => c.name));
+  const pending = new Set();
+  for (const r of read('data/review/aliases.csv'))
+    if (r.company && r.status === 'private' && !(r.category || '').trim() && !known.has(r.company))
+      pending.add(r.company);
+  const inWarehouse = db.prepare('SELECT 1 FROM companies WHERE name = ?');
+  for (const name of pending) if (!inWarehouse.get(name)) companies.push({ id: '', name });
   const gold = new Map(read('docs/plans/p14/gold-labels.csv').map(r => [Number(r.id), r]));
   const ownerOfKey = new Map(
     read('data/review/aliases.csv')
@@ -45,7 +54,7 @@ function main() {
   const keysOf = db.prepare('SELECT keys FROM unreviewed_entities WHERE id = ?');
   const byCompany = new Map(); // company name -> best queue label
   for (const r of read('docs/plans/p14/queue-labels.csv')) {
-    if (r.entity_type !== 'operating_company' || !r.industry) continue;
+    if (r.entity_type !== 'operating_company') continue;
     const e = keysOf.get(Number(r.entity_id));
     if (!e) continue;
     const owners = new Set(
@@ -55,7 +64,12 @@ function main() {
     );
     for (const name of owners) {
       const have = byCompany.get(name);
-      if (!have || RANK[r.confidence] > RANK[have.confidence]) byCompany.set(name, r);
+      // a label with an industry beats one without; then the higher confidence
+      const better =
+        !have ||
+        (!!r.industry && !have.industry) ||
+        (!!r.industry === !!have.industry && RANK[r.confidence] > RANK[have.confidence]);
+      if (better) byCompany.set(name, r);
     }
   }
 
@@ -80,9 +94,9 @@ function main() {
       rows.push({
         company_id: c.id,
         company: c.name,
-        industry: q.industry,
-        themes: q.themes,
-        confidence: q.confidence,
+        industry: q.industry || '',
+        themes: q.industry ? q.themes : '',
+        confidence: q.industry ? q.confidence : 'unclear',
         source: 'p14-queue',
         note: q.note,
       });

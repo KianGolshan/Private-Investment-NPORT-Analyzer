@@ -147,3 +147,18 @@ test('committed labels: every private operating company has one decision; sector
   assert.equal(label('Stripe'), 'fin.payments');
   assert.equal(label('Databricks'), 'tech.software');
 });
+
+test('industries: a blank id (a company new in this import) resolves by exact name; an unknown name fails', () => {
+  const r = importIndustries(db, [...others, row({ company_id: '' })]);
+  assert.equal(r.resolved, 1);
+  assert.equal(r.rows.find(x => x.company === 'Anthropic').company_id, idOf('Anthropic'));
+  assert.ok(
+    r.rows.every((x, i, a) => i === 0 || a[i - 1].company_id < x.company_id),
+    'written back in id order'
+  );
+  assert.throws(
+    () => importIndustries(db, [...others, row({ company_id: '', company: 'Anthropic Inc.' })]),
+    /no company named "Anthropic Inc\."/
+  );
+  reimport();
+});
