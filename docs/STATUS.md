@@ -1,11 +1,9 @@
 # Vantage v2 Status
 
-**Phase:** **P13 W1–W4 built** (the 2026-10-18 outside review, ROADMAP §13; branch `v2-review3-w1`, PR #30 for the
-user to merge; v2.3.0). **P12 is complete** (the 2026-10-15 copy and UX review: W1 #23, W2 #24, W3 #25, W4 #28 merged and live,
-the close-out PR with the tab pattern and CHANGELOG v2.2.0; ROADMAP §12). P11 (the 2026-10-14 engineering and
-security review) is complete and live. Vantage is live at **https://vantage-kian.duckdns.org** (Oracle Cloud Always
-Free VM on Pay As You Go, DuckDNS, HTTPS from Caddy, nightly SEC refresh, auto-deploy of every green commit on
-`main`; [DEPLOY.md](DEPLOY.md)). **`main` is protected:** changes go through a pull request with the CI checks green
+**Phase:** **P14 is live** (sectors, industries and themes; PR #31 merged 2026-10-21, v2.4.0; ROADMAP §14). P13
+W1–W4 are live (PR #30). Vantage is live at **https://vantage-kian.duckdns.org** (Oracle Cloud Always Free VM on Pay
+As You Go, DuckDNS, HTTPS from Caddy, nightly SEC refresh, auto-deploy of every green commit on `main`;
+[DEPLOY.md](DEPLOY.md)). **`main` is protected:** changes go through a pull request with the CI checks green
 (`archive/v1` keeps v1). Waiting on the user: the Oracle security-list rule for SSH (DEPLOY.md 1A.6). Not started or
 deferred by choice: P7 (MCP server), P8's 30-night checkpoint. Next: the user's instructions.
 
@@ -20,9 +18,9 @@ deferred by choice: P7 (MCP server), P8's 30-night checkpoint. Next: the user's 
 - [x] P9: public deployment, live 2026-10-14 ([plan](plans/P9-deployment.md), [DEPLOY.md](DEPLOY.md)).
 - [x] P10: launch review remediation (ROADMAP §10). W0 and W1 live; W2 done except off-site backups (not now).
 - [x] P12: copy and UX review (ROADMAP §12). W1–W4 and the close-out merged 2026-10-15..18.
-- [~] P13: outside review (ROADMAP §13, [plan](plans/P13-outside-review.md)). W1–W4 built in PR #30; the user merges.
-- [~] P14: sectors, industries and themes ([plan](plans/P14-sectors.md), ROADMAP §14). W0 done except the classifier
-  pilot (needs an Anthropic API key); branch `v2-p14-w0`.
+- [x] P13: outside review (ROADMAP §13, [plan](plans/P13-outside-review.md)). W1–W4 live (PR #30).
+- [x] P14: sectors, industries and themes ([plan](plans/P14-sectors.md), ROADMAP §14). Live 2026-10-21 (PR #31).
+      Labels made in session from the warehouse names; no paid model (the user's decision).
 - [x] P11: engineering and security review remediation (ROADMAP §11). W1, W2, W3 live 2026-10-15; the user's
       Oracle SSH rule pending.
 
@@ -65,6 +63,30 @@ tag **`v1-archive`** (and branch `archive/v1`).
 On the server: `sudo vantage-run npm run doctor`; timers `vantage-nightly` (06:15 New York), `vantage-monthly` (3rd),
 `vantage-autodeploy` (5 min), `vantage-duckdns`. Units come from `setup.sh`, not from deploys; the live server also
 has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB cap, 3 GB heap; 2026-10-14).
+
+## Where things stand (2026-10-21, P14 live)
+
+- **Merged and deployed:** PR #31 (P14) merged 2026-10-21; the live build is `0bc241f`, and the deploy's review
+  import published generation 44 with the labels.
+- **Live checks (generation 44):** Market's operating companies equal the sector sum and the industry sum to the cent
+  at 2025-12-31 (1,087, $49,300,823,919.14), 2026-06-30 (1,233, $71,890,454,514.20) and 2026-08-31 (1,245,
+  $73,936,489,513.82). 1,250 private operating companies carry a decision; 58 are "not yet classified" (57 held at
+  2026-08-31, $1.1B: code names).
+- **Review pass on the build (this session):**
+  - The per-share mark index is now **chain-linked**: each period's change is the median (and value-weighted) return
+    of the companies marked at both ends of it. The fixed cohort had emptied out on long windows (AI by year since
+    2019: 4 companies, no values); now AI by year runs 2020–2026 (111 companies measured) and Q1–Q3 2026 has 112–141
+    companies per quarter. A company's later chain is spliced in at its level, so a step-up is still counted once
+    (test: Anthropic's linked returns multiply to F62 exactly). `companyMarkChanges` keeps the fixed cohort.
+  - Checked against the filings: biotech's value-weighted −67% in 2020 is real (Fidelity funds marked Intarcia
+    preferred $40.44 → $0.00001 a share, 0001752724-20-240890).
+  - Accessibility: the sector page's "Sectors" link sat in muted text with no underline (axe link-in-text-block);
+    links in page eyebrows are now underlined.
+- **Gates:** backend 492 (488 pass, 4 skipped); web 67; lint and format clean; CI green on PR #31 (e2e, a11y on the
+  Sectors pages, deploy drill) and on `main`.
+- **Open:** 58 companies not yet classified (code names; label as evidence appears); an opt-in cheap-model suggestion
+  for new names is not built (no paid bulk labeling, by the user's decision).
+- **Next prompt:** "label the unclassified companies" or the user's instructions.
 
 ## Where things stand (2026-10-21)
 
