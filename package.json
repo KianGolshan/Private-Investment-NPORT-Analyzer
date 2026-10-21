@@ -43,7 +43,6 @@
     "dev:web": "npm --prefix web run dev"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.137.0",
     "axios": "^1.6.7",
     "better-sqlite3": "^13.0.3",
     "dotenv": "^16.4.1",
