@@ -138,16 +138,14 @@ model, prompt_version, labeled_at)`; `company_themes(company_id, theme_code, ori
   asset category, units, Level, holders and fund names, value, accessions. Optionally SEC data through `secGet`: the
   EDGAR company search, plus Form D `industryGroup` and SIC where a CIK exists. Form D is used here only as a
   cross-check on industry, never as a position source. W0 measures whether it is worth it.
-- **Claude call:**
-  - model `claude-opus-5-5`, adaptive thinking, effort set explicitly;
-  - `web_search_20260209` with `max_uses` capped;
-  - structured output (`output_config.format`, a JSON schema with enums taken from taxonomy.json);
-  - rubric and taxonomy in a cached system prefix (`cache_control`);
-  - `fallbacks: "default"` on the Messages API;
-  - `@anthropic-ai/sdk`, the first LLM dependency, in `lib/classify` only.
-- **Backfill** goes through the Message Batches API (half price). **Nightly** sends a handful of single calls. Cost is
-  measured on the W0 pilot before anything larger runs. My rough guess for 3,500 names with search is a few hundred
-  dollars once and cents per night, but it is unmeasured.
+- **Claude call (new names only, superseded by the 2026-10-20 call in the W0 results):**
+  - model `claude-haiku-5-5`, the cheapest current model;
+  - no web search by default;
+  - structured output (a JSON schema with enums taken from taxonomy.json);
+  - rubric and taxonomy in a cached system prefix;
+  - `@anthropic-ai/sdk` in `lib/classify` only;
+  - a hard nightly budget in cents; the run stops when the budget is reached.
+- **Backfill:** no API. Done in session from the warehouse names, the reviewed ledgers and deterministic rules.
 - **Reproducibility:** each answer is cached in `data/review/classify/` (JSONL), keyed by
   entity + evidence hash + prompt version + model. Re-runs read the cache, so a rebuild never calls the API. The job
   imports from the ledger, so the recorded input is the input used. A label changes only when the evidence, prompt or
@@ -302,6 +300,38 @@ builds the real index.
   comparable marks".**
 - The newest private mark in generation 34 is 2026-07-31. Q3 2026 is partial until the September reports arrive.
 
-**4. Classifier pilot: not run.** There is no Anthropic API key on this machine (`ANTHROPIC_API_KEY` is unset and the
-`ant` CLI is not installed). The pilot needs a key: about 60 calls, a few dollars at most. It is the first step of the
-next session. **The plan's W0 gate (§4 accuracy on the pilot) is still open.**
+**4. Classifier pilot (stopped by the user after 56 of 62 names; ~$2.70 spent, Opus 5.5).**
+
+Scored offline against the draft labels:
+
+- entity type: 42 of 48 right;
+- sector: 35 of 36, and industry 35 of 36, on operating companies;
+- AI theme: 10 true positives, 1 false positive (Kobold Metals), 0 misses;
+- the Claris grouping error was caught (`same_issuer = false`);
+- TPG VII was called a fund interest, and the three listed foreign stocks were called listed.
+
+Every wrong answer was on a vehicle or holdco, and **every one was marked medium or low confidence**:
+
+- PG Delta HoldCo and Acr III LSC were called operating companies;
+- Sidewalk Infrastructure Partners was called a vehicle;
+- OHA SFR was called a vehicle rather than real estate.
+
+"Apply only high-confidence answers" would have made no wrong call in this sample. The model also matched Ascent CNR
+to Ascent Resources (high confidence), which is a possible duplicate company id for W1 to check against the raw rows.
+
+**Cost:**
+
+- ~$0.02 per known company, ~$0.07 when it searches the web;
+- the rulebook prefix (9.4k tokens) is cached after the first call.
+
+**The user's call (2026-10-20): no paid API for the backfill.**
+
+- The 197 reviewed companies and the whole unreviewed queue are labeled **in session**, from the warehouse names, the
+  reviewed ledgers and deterministic rules. The order is: listed identifiers, issuer type, vehicle and real-estate name
+  rules, then my review by value.
+- Only names that first appear in new filings go to the **cheapest current model (Haiku 5.5)**:
+  - no web search unless the user enables it;
+  - a hard nightly budget in cents;
+  - only high-confidence answers are applied;
+  - everything else goes to the person queue.
+- §3's Opus/Batches backfill is withdrawn.
