@@ -414,3 +414,21 @@ The user approved the plan and asked for W1.
 "Filed by" is offered on Market and Firms only (Explore and the bridge stay hindsight); a co-advised fund counts in
 full for each firm, once in the all-firms total; a fund with several marks under one label is left out of the
 statistics, its rows still shown; Firms, firm pages and Explore default to operating companies.
+
+## Phase 14: sectors, industries and themes (2026-10-20; plan: [plans/P14-sectors.md](plans/P14-sectors.md))
+
+**Goal:** every name in the dataset in a final, labeled state (sector → industry, themes; fund, CLO, insurance, real
+estate, claim, listed or "needs a person"), and trend views by sector and theme as of any date: holdings, the bridge
+(from positions vs from marks) and a matched-pair per-share mark index. The user approved the plan on 2026-10-20 and
+added the whole unreviewed queue to the scope.
+
+| Wave    | Scope                                                                                                          | State                                              |
+| ------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| **W0**  | taxonomy draft, Form D check, draft labels for the 197 reviewed companies, index feasibility, classifier pilot | Done except the pilot (needs an Anthropic API key) |
+| **W1**  | ADR 0010, migration 0023, `industries.csv` ledger, import and validation, category fixes                       | Not started                                        |
+| **W2**  | classifier (`lib/classify`), cache, offline eval, watch queue                                                  | Not started                                        |
+| **W2b** | whole unreviewed queue to a final state; unresolved value ≥ $1M = $0                                           | Not started                                        |
+| **W3**  | sector totals, pivot rows, sector bridge, mark index                                                           | Not started                                        |
+| **W4**  | `/sectors`, `/sector`, `/theme`, filters, exports                                                              | Not started                                        |
+| **W5**  | nightly labeling of new names, coverage metric, monthly audit                                                  | Not started                                        |
+| **W6**  | adversarial pass, docs, close-out                                                                              | Not started                                        |

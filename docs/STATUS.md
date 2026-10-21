@@ -21,6 +21,8 @@ deferred by choice: P7 (MCP server), P8's 30-night checkpoint. Next: the user's 
 - [x] P10: launch review remediation (ROADMAP §10). W0 and W1 live; W2 done except off-site backups (not now).
 - [x] P12: copy and UX review (ROADMAP §12). W1–W4 and the close-out merged 2026-10-15..18.
 - [~] P13: outside review (ROADMAP §13, [plan](plans/P13-outside-review.md)). W1–W4 built in PR #30; the user merges.
+- [~] P14: sectors, industries and themes ([plan](plans/P14-sectors.md), ROADMAP §14). W0 done except the classifier
+  pilot (needs an Anthropic API key); branch `v2-p14-w0`.
 - [x] P11: engineering and security review remediation (ROADMAP §11). W1, W2, W3 live 2026-10-15; the user's
       Oracle SSH rule pending.
 
@@ -62,6 +64,21 @@ tag **`v1-archive`** (and branch `archive/v1`).
 On the server: `sudo vantage-run npm run doctor`; timers `vantage-nightly` (06:15 New York), `vantage-monthly` (3rd),
 `vantage-autodeploy` (5 min), `vantage-duckdns`. Units come from `setup.sh`, not from deploys; the live server also
 has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB cap, 3 GB heap; 2026-10-14).
+
+## Where things stand (2026-10-20)
+
+- **P14 sectors and themes, W0 (branch `v2-p14-w0`, stacked on `v2-review3-w1`/PR #30):** the user approved the plan
+  ([plans/P14-sectors.md](plans/P14-sectors.md)): one Claude classifier pass for names, entity type and
+  sector/industry/themes; the whole unreviewed queue brought to a final state; a sector bridge and a matched-pair mark
+  index. Results:
+  - draft taxonomy (9 sectors, 39 industries, 8 themes);
+  - draft labels for all 197 reviewed operating companies (high 95.5% of value, medium 2.6%, unclear 1.9%);
+  - six category errors found in the reviewed list;
+  - Form D rejected as an industry source (34% of value, coarse groups, name collisions);
+  - biotech has too few repeat marks for Q3 2026 (4 companies), so the index gets a minimum sample.
+- **Open:** the classifier pilot (needs `ANTHROPIC_API_KEY`); a person's check of the medium labels plus 20 random high
+  labels before W1.
+- **Next prompt:** "P14: run the W0 classifier pilot (key is set), then build W1."
 
 ## Where things stand (2026-10-19)
 
