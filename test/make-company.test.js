@@ -15,7 +15,9 @@ const request = require('supertest');
 const { openFixtureWarehouse } = require('./helpers/warehouseFixture');
 const { readReview } = require('./helpers/warehouseApp');
 const { openWarehouse } = require('../lib/warehouse/db');
-const { importAliases } = require('../lib/entities/review');
+const { importAliases, COMPANY_ID_COLUMNS } = require('../lib/entities/review');
+const { parseCsv, toCsv } = require('../lib/entities/csv');
+const { ALIAS_COLUMNS } = require('../lib/entities/seed');
 const { resolveCompanies } = require('../lib/entities/resolve');
 const { rebuildEntities } = require('../lib/entities/entities');
 const { identityUpkeep } = require('../lib/entities/report');
@@ -27,11 +29,18 @@ const company = require('../lib/services/company');
 const { search } = require('../lib/services/search');
 
 const REVIEW = path.join(__dirname, '..', 'data', 'review');
+// Verily became a reviewed company in P14 (2026-10-20). These tests need a real
+// name nobody has reviewed yet, so they run on the reviewed files without it.
+const UNREVIEWED = 'Verily';
+const withoutUnreviewed = rows => rows.filter(r => r.company !== UNREVIEWED);
 
 function reviewedWarehouse(file = ':memory:') {
   const { db: fixture } = openFixtureWarehouse(path.join(__dirname, 'fixtures', 'fund', 'warehouse.json.gz'));
   const db = file === ':memory:' ? fixture : fixtureToFile(fixture, file);
-  importAliases(db, readReview('aliases.csv'), { ids: readReview('company_ids.csv'), now: '2026-09-30T00:00:00Z' });
+  importAliases(db, withoutUnreviewed(readReview('aliases.csv')), {
+    ids: withoutUnreviewed(readReview('company_ids.csv')),
+    now: '2026-09-30T00:00:00Z',
+  });
   resolveCompanies(db);
   rebuildEntities(db, identityUpkeep(db, { curation: loadCuration() }));
   return db;
@@ -44,6 +53,14 @@ function fixtureToFile(db, file) {
 function reviewCopy() {
   const dir = tmpDir('review');
   for (const f of fs.readdirSync(REVIEW)) fs.copyFileSync(path.join(REVIEW, f), path.join(dir, f));
+  for (const [f, columns] of [
+    ['aliases.csv', ALIAS_COLUMNS],
+    ['company_ids.csv', COMPANY_ID_COLUMNS],
+  ])
+    fs.writeFileSync(
+      path.join(dir, f),
+      toCsv(columns, withoutUnreviewed(parseCsv(fs.readFileSync(path.join(dir, f), 'utf8'))))
+    );
   return dir;
 }
 const ledgerMax = dir =>
@@ -105,7 +122,6 @@ test('make this a company: Verily Life Sciences becomes a company with the next 
   assert.equal(again.prepare('SELECT id FROM companies WHERE name = ?').get('Verily Life Sciences').id, next);
 });
 
-const { parseCsv } = require('../lib/entities/csv');
 const readReviewFrom = (dir, f) => parseCsv(fs.readFileSync(path.join(dir, f), 'utf8'));
 
 test('make this a company: refused while a refresh runs; refused for a name already a company or not unreviewed', () => {
