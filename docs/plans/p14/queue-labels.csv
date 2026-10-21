@@ -369,7 +369,7 @@ entity_id,clean_name,entity_type,industry,themes,basis,confidence,note
 69927,Vanquish Topco,investment_vehicle,,,direct,low,
 50447,Evozyne,operating_company,hc.biotech,ai,direct,medium,AI protein design
 46729,Churchill secondary fund,fund_interest,,,direct,high,
-56362,JP Morgan (unspecified),unclear,,,direct,low,raw name only "JP MORGAN"; likely a fund or note, not a private company
+56362,JP Morgan (unspecified),unclear,,,direct,low,raw name only JP MORGAN; likely a fund or note and not a private company
 68042,TCV X,fund_interest,,,direct,high,
 54940,i80 Group ABF,fund_interest,,,direct,high,
 49916,Enfinity Global,operating_company,enr.clean,climate,direct,high,
