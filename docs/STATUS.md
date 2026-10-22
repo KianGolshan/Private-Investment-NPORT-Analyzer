@@ -1,7 +1,7 @@
 # Vantage v2 Status
 
 **Phase:** **P14 is live** (sectors, industries and themes; PR #31 merged 2026-10-21, v2.4.0; ROADMAP §14). A full UI audit
-and its fixes (v2.4.1, [UI-COVERAGE.md](UI-COVERAGE.md)) are on a branch for review. P13
+and its fixes (v2.4.1, [UI-COVERAGE.md](UI-COVERAGE.md)) merged 2026-10-22 (PR #35). P13
 W1–W4 are live (PR #30). Vantage is live at **https://vantage-kian.duckdns.org** (Oracle Cloud Always Free VM on Pay
 As You Go, DuckDNS, HTTPS from Caddy, nightly SEC refresh, auto-deploy of every green commit on `main`;
 [DEPLOY.md](DEPLOY.md)). **`main` is protected:** changes go through a pull request with the CI checks green
@@ -65,7 +65,7 @@ On the server: `sudo vantage-run npm run doctor`; timers `vantage-nightly` (06:1
 `vantage-autodeploy` (5 min), `vantage-duckdns`. Units come from `setup.sh`, not from deploys; the live server also
 has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB cap, 3 GB heap; 2026-10-14).
 
-## Where things stand (2026-10-21, UI audit, v2.4.1)
+## Where things stand (2026-10-22, UI audit merged, v2.4.1)
 
 - **Asked:** test every UI feature, chart, filter and number; find and fix what is wrong (a sector graph looked
   odd). Plan and method: [UI-COVERAGE.md](UI-COVERAGE.md).
@@ -87,8 +87,11 @@ has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB 
 - **Gates:** backend 494 (490 pass, 4 skipped); web unit 71; browser suite on the golden warehouse 110 pass, 2
   skipped (no unreviewed name, one page of changes in the fixture); the new specs on the full local warehouse
   (generation 42) 65/65; lint, lint:web, format, typecheck clean.
-- **Next prompt:** "merge the UI audit PR", or run the audit on the full warehouse after each wave
-  (UI-COVERAGE.md, "Running it").
+- **Merged:** PR #35, 2026-10-22 (`092af18`); CI green on the PR (7 checks); deploys with main's green run.
+- **Open:** 58 companies not yet classified; the opt-in cheap-model label suggestion (not built); P7 (MCP server) and
+  P8's 30-night checkpoint deferred; the Oracle SSH rule (the user). Run the UI audit on the full warehouse after
+  each wave (UI-COVERAGE.md, "Running it"): CI covers only the golden fixture.
+- **Next prompt:** "label the unclassified companies", or the user's instructions.
 
 ## Where things stand (2026-10-21, P14 live)
 
