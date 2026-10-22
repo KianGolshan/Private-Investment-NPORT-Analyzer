@@ -133,6 +133,74 @@ test("mark index: a company's linked period returns multiply to its change over 
   for (const p of periods.slice(1)) assert.ok(p.chains >= 1 && p.weight > 0);
 });
 
+test('mark index: a mark up from a placeholder or a unit restatement ends a chain; write-downs and real step-ups do not (trap 68)', () => {
+  const leg = o => ({
+    change: 'unchanged',
+    per_share: 1,
+    split: null,
+    prev_report_date: o.prev,
+    report_date: o.date,
+    ...o,
+  });
+  // Arctic Canadian Diamond, 0001752724-23-092546: 1,633 sh carried at $0.000006, then $354.32
+  const arctic = leg({
+    prev: '2022-11-30',
+    date: '2023-02-28',
+    balance: 1633,
+    prev_balance: 1633,
+    prev_price: 0.00000612369871402327,
+    price: 354.32249846907536,
+  });
+  assert.equal(sectors.continues(arctic, '2022-11-30'), false);
+  // Climeworks, 0001752724-24-126215: 58,205,144.23 units at $1.49 to 7,823,400 at $11.09, both $86.7M
+  const climeworks = leg({
+    prev: '2023-12-31',
+    date: '2024-03-31',
+    change: 'reduced',
+    balance: 7823400,
+    prev_balance: 58205144.23,
+    prev_price: 1.4888394997797259,
+    price: 11.09046453587954,
+  });
+  assert.equal(sectors.continues(climeworks, '2023-12-31'), false);
+  // Intarcia, 0001752724-20-240890: $4.89 to $0.00001, a real write-down
+  const intarcia = leg({
+    prev: '2020-06-30',
+    date: '2020-09-30',
+    balance: 2100446,
+    prev_balance: 2100446,
+    prev_price: 4.89,
+    price: 0.000009997876641437104,
+  });
+  assert.equal(sectors.continues(intarcia, '2020-06-30'), true);
+  // Figure AI, 0000940400-25-014993: $14.57 to $120.91 (x8.3), a real step-up
+  const figure = leg({
+    prev: '2025-07-31',
+    date: '2025-10-31',
+    balance: 189096,
+    prev_balance: 189096,
+    prev_price: 14.57,
+    price: 120.91,
+  });
+  assert.equal(sectors.continues(figure, '2025-07-31'), true);
+  // the same step-up with more shares bought is still a mark move
+  assert.equal(sectors.continues({ ...figure, balance: 189096 * 3, change: 'added' }, '2025-07-31'), true);
+});
+
+test('mark index: the average company caps the extreme 5% at each end; the default window starts at a period end', () => {
+  const returns = [...Array(19).fill(0), 100]; // 19 unchanged marks and one +10,000%
+  const avg = sectors.averageReturn(returns);
+  // the 95th percentile of 20 values is 0.05 of the way from 0 to 100: capped at 5
+  assert.ok(Math.abs(avg - 5 / 20) < 1e-12, String(avg));
+  assert.equal(sectors.averageReturn([0.1, 0.1, 0.1, 0.1, 0.1]), 0.1);
+  for (const period of ['month', 'quarter', 'year']) {
+    const w = sectors.windowOf(db, { period });
+    assert.ok(w.dates[1] > w.start);
+    const m = Number(w.start.slice(5, 7));
+    assert.ok(period === 'month' || (period === 'quarter' ? m % 3 === 0 : m === 12), `${period} ${w.start}`);
+  }
+});
+
 test('mark index: no value below the minimum sample; chain-linked; partial periods flagged', () => {
   // the fixture holds two AI companies: below the 5-company minimum, so no index value
   const ai = sectors.markIndex(db, { level: 'theme', keys: ['ai'], from: '2025-12-31', to: '2026-06-30' });
