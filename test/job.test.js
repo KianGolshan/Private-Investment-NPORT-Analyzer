@@ -273,6 +273,25 @@ test('M6: a lock held by a live job is "busy" (try later); the review import the
   assert.match(bad.stderr, /review import failed/);
 });
 
+test('a job whose reviewed files cannot be read fails and leaves no staged copy behind', async () => {
+  const { dbPath } = tmpWarehouse();
+  const missing = path.join(tmpDir('review'), 'missing');
+  const tmpEnv = process.env.TMPDIR;
+  const stageRoot = tmpDir('stage-root');
+  process.env.TMPDIR = stageRoot; // the stage would land here
+  try {
+    await assert.rejects(
+      runJob('curation', () => ({}), { dbPath, curationDir: missing }),
+      /ENOENT/
+    );
+  } finally {
+    if (tmpEnv === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = tmpEnv;
+  }
+  assert.deepEqual(fs.readdirSync(stageRoot), []);
+  assert.ok(!fs.existsSync(`${dbPath}.lock`), 'lock released');
+});
+
 test('lock: a live process on this host is never taken over, however old its heartbeat (R03)', () => {
   const { dbPath } = tmpWarehouse();
   const lock = acquireLock(dbPath, 'refresh');
@@ -841,7 +860,8 @@ test('crash drill: a job killed with SIGKILL mid-run blocks nothing; the next jo
         .runJob('refresh', () => { require('fs').writeFileSync(${JSON.stringify(marker)}, ''); return new Promise(() => {}); },
           { dbPath: ${JSON.stringify(dbPath)} });`,
     ],
-    { stdio: 'ignore' }
+    // the killed job cannot remove its curation stage: it lands in a directory this test removes
+    { stdio: 'ignore', env: { ...process.env, TMPDIR: tmpDir('crash-stage') } }
   );
   const t0 = Date.now();
   while (!fs.existsSync(marker)) {

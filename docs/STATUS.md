@@ -65,6 +65,20 @@ On the server: `sudo vantage-run npm run doctor`; timers `vantage-nightly` (06:1
 `vantage-autodeploy` (5 min), `vantage-duckdns`. Units come from `setup.sh`, not from deploys; the live server also
 has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB cap, 3 GB heap; 2026-10-14).
 
+## Where things stand (2026-10-22, project check, v2.4.2)
+
+- **Asked:** a comprehensive debug, security and data-integrity check of the whole project. Report:
+  [reviews/2026-10-22-project-check.md](reviews/2026-10-22-project-check.md).
+- **Fixed (C1–C4):** `period`/`kind` values such as `__proto__` crashed two routes (500); unknown `/api` paths got
+  HTML; a job that could not read its reviewed folder left a staged copy in the temp folder; the crash drill leaked
+  its stage (1,974 stale test folders removed). New `test/api-fuzz.test.js` fuzzes every route from the router's own
+  source.
+- **Clean:** npm audit 0; no secrets in files or history; parameterized SQL; headers, HSTS, admin gate, redirects;
+  14,172-request fuzz on the full warehouse; integrity queries all 0; 60 stored totals = recomputation; id ledgers;
+  LIVE 4/4, oracle 6/6, 12/12 random positions = raw EDGAR.
+- **Gates:** backend 496 (492 pass, 4 skipped); browser app + consistency 22/22; lint, format clean.
+- **Next prompt:** "label the unclassified companies", or the user's instructions.
+
 ## Where things stand (2026-10-22, UI audit merged, v2.4.1)
 
 - **Asked:** test every UI feature, chart, filter and number; find and fix what is wrong (a sector graph looked

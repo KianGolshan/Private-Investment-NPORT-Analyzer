@@ -259,6 +259,14 @@ test('scope: bad filters and class without a company answer 400', async () => {
   await request(app).get('/api/analysis/bridge?class=Series%20G').expect(400);
   await request(app).get('/api/analysis/pivot?rows=country').expect(400);
   await request(app).get('/api/analysis/timeline').expect(400);
+  // names every object has are not valid values (the API fuzz found them as 500s, 2026-10-22)
+  for (const v of ['__proto__', 'constructor', 'toString', 'hasOwnProperty']) {
+    await request(app).get(`/api/analysis/pivot?rows=company&period=${v}`).expect(400);
+    await request(app).get(`/api/sectors/index?period=${v}`).expect(400);
+    await request(app)
+      .get(`/api/companies/${idOf('Anthropic')}/exposure?kind=${v}`)
+      .expect(400);
+  }
 });
 
 test('timeline: a firm’s events equal firmChanges by type, and its value equals the firm book', () => {
