@@ -359,6 +359,8 @@ select.input {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--sp-3) var(--sp-4);
+  /* a long name with no spaces wraps inside its tile instead of widening the page (UI audit) */
+  overflow-wrap: anywhere;
 }
 .kpi .label {
   font-size: var(--fs-xs);
@@ -522,6 +524,9 @@ select.input {
 
 /* Tables */
 .table-wrap {
+  /* the containing block of the hidden link text (.sr-only), which otherwise
+     escaped the scroll box and widened the page on phones (UI audit) */
+  position: relative;
   overflow: auto;
   max-height: var(--table-max-h, none);
 }

@@ -1,6 +1,7 @@
 # Vantage v2 Status
 
-**Phase:** **P14 is live** (sectors, industries and themes; PR #31 merged 2026-10-21, v2.4.0; ROADMAP §14). P13
+**Phase:** **P14 is live** (sectors, industries and themes; PR #31 merged 2026-10-21, v2.4.0; ROADMAP §14). A full UI audit
+and its fixes (v2.4.1, [UI-COVERAGE.md](UI-COVERAGE.md)) are on a branch for review. P13
 W1–W4 are live (PR #30). Vantage is live at **https://vantage-kian.duckdns.org** (Oracle Cloud Always Free VM on Pay
 As You Go, DuckDNS, HTTPS from Caddy, nightly SEC refresh, auto-deploy of every green commit on `main`;
 [DEPLOY.md](DEPLOY.md)). **`main` is protected:** changes go through a pull request with the CI checks green
@@ -63,6 +64,31 @@ tag **`v1-archive`** (and branch `archive/v1`).
 On the server: `sudo vantage-run npm run doctor`; timers `vantage-nightly` (06:15 New York), `vantage-monthly` (3rd),
 `vantage-autodeploy` (5 min), `vantage-duckdns`. Units come from `setup.sh`, not from deploys; the live server also
 has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB cap, 3 GB heap; 2026-10-14).
+
+## Where things stand (2026-10-21, UI audit, v2.4.1)
+
+- **Asked:** test every UI feature, chart, filter and number; find and fix what is wrong (a sector graph looked
+  odd). Plan and method: [UI-COVERAGE.md](UI-COVERAGE.md).
+- **Built (web/e2e):**
+  - `audit.ts`: the page and chart audit; charts are read from what ECharts draws (the instance is on the chart's
+    element): series vs axis, numbers, period order and gaps, stacked areas, helper series in tooltips, legend,
+    log axes, empty charts; page text (NaN, undefined…), sideways scrolling, console and API errors;
+  - `coverage.spec.ts`: 38 routes, every tab, button group, drop-down and switch (~560 states on the full warehouse),
+    phone width, sorting, CSV exports, chart = table/API checks; `interactions.spec.ts`: search, drill-down,
+    watchlist, Compare, as-of picker, paging, theme, XLSX, date carry-over; `consistency.spec.ts`: Market = sectors
+    = industries = sector pages, company = holdings = Market row, firm = companies = funds, bridges, index chaining,
+    Explore sums, at three dates; `audit.spec.ts`: each rule flags its bad case;
+  - `E2E_BASE_URL` runs it against any server.
+- **Found and fixed (U1–U8 in UI-COVERAGE.md):** the sector band a period behind its line (now 25th/75th percentile
+  columns); chart screen-reader text reading "NaN"; Newly reported scrolling sideways on phones; a picked as-of date
+  dropped by Movers, Newly reported, Sectors over time, Explore, Compare, book overviews and company changes
+  (`windowOf`); sector KPIs dated from the window start when the index starts later; the per-share chart's hidden
+  9th+ groups; empty charts; KPI tiles widened by a long name.
+- **Gates:** backend 494 (490 pass, 4 skipped); web unit 71; browser suite on the golden warehouse 110 pass, 2
+  skipped (no unreviewed name, one page of changes in the fixture); the new specs on the full local warehouse
+  (generation 42) 65/65; lint, lint:web, format, typecheck clean.
+- **Next prompt:** "merge the UI audit PR", or run the audit on the full warehouse after each wave
+  (UI-COVERAGE.md, "Running it").
 
 ## Where things stand (2026-10-21, P14 live)
 

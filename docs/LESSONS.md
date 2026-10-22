@@ -76,6 +76,13 @@ Data traps are in [DATA-QUALITY.md](DATA-QUALITY.md). Numbers are stable: code a
     answer's real time to the visitor who asked, make paths case-sensitive, and test a route the list forgot
     (2026-10-14 review, H1, H2).
 
+43. **Read a chart by what it draws, and walk the controls instead of listing them.** A sector band ran a period
+    behind its line for a release: no test looked at the chart's data, and no list of cases had that page. The UI
+    audit reads every chart's series from ECharts and clicks every tab, button group, drop-down and switch
+    (docs/UI-COVERAGE.md); its first run found eight faults, from an empty chart to a date dropped between tabs.
+    Run it on the full warehouse too: the golden fixture is too small to show most odd charts, and too small to
+    hide some (2026-10-21).
+
 ## Running jobs
 
 9. Long jobs run in the foreground, in timed batches under 10 minutes, resumable; no background waiters without an

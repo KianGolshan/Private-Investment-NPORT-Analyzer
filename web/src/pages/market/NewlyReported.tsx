@@ -3,7 +3,7 @@ import { qs, useApi } from '../../api/client';
 import type { Freshness, NewlyReported as Answer } from '../../api/types';
 import { companyPath, fundPath, longDate, moneyC, num } from '../../lib/format';
 import { ScopeBar } from '../../scope/ScopeBar';
-import { isRange, useScope } from '../../scope/scope';
+import { useScope, windowOf } from '../../scope/scope';
 import { Badge, Card, ErrorBox, FilingRef, Kpi, Loading } from '../../ui/bits';
 import { CategoryBadge, CategorySwitch, useCategoryFilter } from '../../ui/Category';
 import { industryColumn, SectorFilter, useSectorFilter } from '../../ui/SectorFilter';
@@ -15,19 +15,12 @@ import { DataTable, type Column } from '../../ui/DataTable';
 // first seen then is never "new".
 
 type Row = Answer['results'][number];
-const addYears = (iso: string, n: number) => {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCFullYear(d.getUTCFullYear() + n);
-  return d.toISOString().slice(0, 10);
-};
 
 export default function NewlyReported() {
   const [scope] = useScope();
   const fresh = useApi<Freshness>('/api/freshness');
   const newest = fresh.data?.newestReportDate ?? null;
-  const range = isRange(scope);
-  const to = range ? scope.to : (newest ?? '');
-  const from = range ? scope.from : newest ? addYears(newest, -1) : '';
+  const { from, to } = windowOf(scope, newest, 1);
   const cat = useCategoryFilter();
   const group = useSectorFilter();
   const n = useApi<Answer>(to ? `/api/market/new${qs({ from, to, category: cat.category, ...group.params })}` : null);

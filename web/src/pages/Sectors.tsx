@@ -4,7 +4,7 @@ import type { Freshness, MarkIndex, Pivot, SectorLevel, SectorTotals } from '../
 import { companyPath, longDate, moneyC, moneyDelta, num, sectorPath, share } from '../lib/format';
 import { PAGE_TITLES, usePageTitle } from '../lib/title';
 import { ScopeBar } from '../scope/ScopeBar';
-import { isRange, useParam, useScope, useSetParams } from '../scope/scope';
+import { isRange, useParam, useScope, useSetParams, windowOf } from '../scope/scope';
 import { BASIS, BasisNote } from '../ui/Basis';
 import { Card, ErrorBox, Loading, Segmented, TabPanel, Tabs } from '../ui/bits';
 import { Chart } from '../ui/Chart';
@@ -20,11 +20,6 @@ const TABS = [
   { id: 'marks', label: 'Per-share marks' },
 ];
 const TOP = 7;
-const addYears = (iso: string, n: number) => {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCFullYear(d.getUTCFullYear() + n);
-  return d.toISOString().slice(0, 10);
-};
 
 // Private operating companies by sector, industry or theme (P14, ADR 0010):
 // holdings as of a date (adding up to Market's operating-company total), how
@@ -45,8 +40,7 @@ export default function Sectors() {
   const known = useKnown(scope.asof);
   const totals = useApi<SectorTotals>(`/api/sectors${qs({ level, date: scope.asof, known: known.on })}`);
   const range = isRange(scope);
-  const to = range ? scope.to : (newest ?? '');
-  const from = range ? scope.from : newest ? addYears(newest, -2) : '';
+  const { from, to } = windowOf(scope, newest, 2);
   const pivot = useApi<Pivot>(
     tab === 'trends' && to
       ? `/api/analysis/pivot${qs({ rows: level, period: 'quarter', from, to, limit: 100, category: 'company' })}`
@@ -134,6 +128,12 @@ export default function Sectors() {
                       label={`Per-share mark index by ${LEVEL_LABEL[level].toLowerCase()}, ${view === 'value' ? 'value-weighted' : 'average company'}`}
                     />
                   </div>
+                  {idx.data.groups.length > 8 && (
+                    <p class="muted small" style={{ margin: '4px 12px 0' }}>
+                      The chart draws the 8 {LEVEL_PLURAL[level].toLowerCase()} with the most companies measured; the
+                      table has all {num(idx.data.groups.length)}.
+                    </p>
+                  )}
                   <IndexTable
                     idx={idx.data}
                     level={level}

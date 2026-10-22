@@ -18,6 +18,9 @@ async function main() {
   const { runJob } = require(path.join(ROOT, 'lib', 'warehouse', 'job'));
   await runJob('curation', () => ({}), { dbPath });
   process.env.SEC_USER_AGENT ||= 'Vantage e2e test@example.com';
+  // one visitor (the browser suite) walks every route and control: no per-visitor limits
+  for (const k of ['HEAVY_RATE_LIMIT_PER_MIN', 'VISITOR_MS_PER_MIN', 'BUSY_VISITOR_MS', 'API_RATE_LIMIT_PER_MIN'])
+    process.env[k] ||= '100000000';
   const app = require(path.join(ROOT, 'server'));
   const port = Number(process.env.E2E_PORT || 4173);
   app.listen(port, '127.0.0.1', () => console.log(`e2e server on ${port}, warehouse ${dbPath}`));

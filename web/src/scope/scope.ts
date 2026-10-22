@@ -43,6 +43,24 @@ export function parseScope(search: string): Scope {
 
 export const isRange = (s: Scope) => !!(s.from && s.to);
 
+/** An ISO date moved by whole years. */
+export const addYears = (iso: string, n: number) => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCFullYear(d.getUTCFullYear() + n);
+  return d.toISOString().slice(0, 10);
+};
+
+/**
+ * The window a range view reads: the range in the URL, or the `years` up to
+ * the as-of date (a date picked on an as-of view carries over; the UI audit
+ * found it silently dropped), or up to the newest filing.
+ */
+export function windowOf(s: Scope, newest: string | null, years: number) {
+  if (isRange(s)) return { from: s.from, to: s.to };
+  const to = s.asof || newest || '';
+  return { from: to ? addYears(to, -years) : '', to };
+}
+
 /** Scope as URL params, merged over the URL's other params (e.g. a page's tab). */
 export function scopeQuery(s: Scope, others: URLSearchParams = new URLSearchParams()): string {
   const sp = new URLSearchParams(others);

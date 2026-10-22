@@ -5,7 +5,7 @@ import { qs, useApi } from '../api/client';
 import type { Compare as Answer, Freshness, UnifiedHit } from '../api/types';
 import { escapeHtml, companyPath, firmPath, fundPath, money, moneyC, moneyDelta, tone } from '../lib/format';
 import { ScopeBar } from '../scope/ScopeBar';
-import { isRange, useScope, useSetParams } from '../scope/scope';
+import { useScope, useSetParams, windowOf } from '../scope/scope';
 import { Badge, Card, Empty, ErrorBox, Loading, Segmented } from '../ui/bits';
 import { Chart } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
@@ -27,11 +27,6 @@ const KINDS: { id: Rows; label: string; one: string; search: string }[] = [
   { id: 'fund', label: 'Funds', one: 'Fund', search: 'fund' },
   { id: 'class', label: 'Share classes', one: 'Share class', search: 'class' },
 ];
-const addYears = (iso: string, n: number) => {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCFullYear(d.getUTCFullYear() + n);
-  return d.toISOString().slice(0, 10);
-};
 const nameOf = (r: Row) => r.label ?? String(r.key);
 // null when nothing is known (a subject that is not live), never a plausible 0
 const sum = (xs: (number | null)[]) => (xs.some(v => v != null) ? xs.reduce<number>((t, v) => t + (v ?? 0), 0) : null);
@@ -63,9 +58,7 @@ export default function Compare() {
   const [indexed, setIndexed] = useState(false);
   const fresh = useApi<Freshness>('/api/freshness');
   const newest = fresh.data?.newestReportDate ?? null;
-  const range = isRange(scope);
-  const to = range ? scope.to : (newest ?? '');
-  const from = range ? scope.from : newest ? addYears(newest, -3) : '';
+  const { from, to } = windowOf(scope, newest, 3);
 
   // Keys are repeated params (?key=1&key=5); set them through the URL so Back works.
   const setKeys = (next: string[], nextRows: Rows = rows) => {

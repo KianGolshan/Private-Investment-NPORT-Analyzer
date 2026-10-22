@@ -2,6 +2,18 @@
 
 Releases of the public site. Detail lives in [docs/STATUS.md](docs/STATUS.md) and its archive.
 
+## v2.4.1: every view tested, chart and layout fixes, 2026-10-21
+
+- **Sector pages:** the shaded band on the per-share mark chart ran a period behind the line; it is gone, and the
+  table has each period's 25th and 75th percentile instead. The index's "since" date is the quarter where it starts.
+- **A date you pick carries over:** choosing "as of" a past date on Market's Top tab and then opening Movers or
+  Newly reported (or Sectors over time, Explore, Compare) now shows the year to that date, not the latest year.
+- **Phones:** Newly reported and pages with a long company name no longer scroll sideways.
+- **Charts:** screen readers hear what a chart shows and its series (not "NaN"); a chart with nothing to draw says why;
+  the per-share chart says when it shows 8 of more groups.
+- **Tests:** a browser suite opens every page, tab, button group, drop-down and switch, and checks every chart and
+  number against the others ([docs/UI-COVERAGE.md](docs/UI-COVERAGE.md)).
+
 ## v2.4.0: sectors, industries and themes; 572 more private companies (P14), 2026-10-21
 
 - **572 private companies added:** real private companies that never met the review bar (2+ funds and $50M), e.g.

@@ -3,11 +3,11 @@ import { qs, useApi } from '../../api/client';
 import type { Activity, Bridge, Pivot } from '../../api/types';
 import { num } from '../../lib/format';
 import { ScopeBar } from '../../scope/ScopeBar';
-import { isRange, scopeParams, useScope } from '../../scope/scope';
+import { isRange, scopeParams, useScope, windowOf } from '../../scope/scope';
 import { Card, ErrorBox, Kpi, Loading } from '../../ui/bits';
 import { ChangesTable } from '../../ui/ChangesTable';
 import { BridgeView, PeriodEffects } from '../../ui/BridgeView';
-import { FilterPickers, addDays, addYears, useFilterOptions, type ViewProps } from './shared';
+import { FilterPickers, addDays, useFilterOptions, type ViewProps } from './shared';
 
 // Changes over a range (default: the year to the newest mark date):
 //   the bridge (start value, each kind of change, end value; reconciled to the
@@ -20,8 +20,7 @@ export default function Changes({ base, sq, subject, name, newest, openPosition 
   const [scope] = useScope();
   const opts = useFilterOptions(base, sq);
   const range = isRange(scope);
-  const to = range ? scope.to : (newest ?? '');
-  const from = range ? scope.from : newest ? addYears(newest, -1) : '';
+  const { from, to } = windowOf(scope, newest, 1);
   const filters = scopeParams(scope);
   const bridge = useApi<Bridge>(to ? `${base}/bridge${qs({ from, to, ...sq, ...filters })}` : null);
   const pivot = useApi<Pivot>(
