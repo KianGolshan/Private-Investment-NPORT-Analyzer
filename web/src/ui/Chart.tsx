@@ -58,6 +58,8 @@ export function Chart({
         if (disposed || !el.current) return;
         const c = echarts.init(el.current, undefined, { renderer: 'canvas' });
         chart.current = c;
+        // the browser suite reads what each chart draws (e2e/audit.ts)
+        (el.current as HTMLDivElement & { __chart?: ECharts }).__chart = c;
         ro = new ResizeObserver(() => c.resize());
         ro.observe(el.current);
       },
@@ -85,7 +87,23 @@ export function Chart({
         requestAnimationFrame(draw);
         return;
       }
-      c.setOption(build(readTheme()), { notMerge: true });
+      // ECharts' aria writes its own description over the element's label, reading
+      // gaps as "NaN"; this one says what the chart shows and names its series, and
+      // the table twin has the numbers
+      const option = build(readTheme()) as EChartsCoreOption & { series?: { name?: string }[] };
+      const names = [...new Set((option.series ?? []).map(x => x.name).filter(Boolean))];
+      c.setOption(
+        {
+          ...option,
+          aria: {
+            enabled: true,
+            label: {
+              description: `${label}.${names.length ? ` Series: ${names.join(', ')}.` : ''} The table has the same numbers.`,
+            },
+          },
+        },
+        { notMerge: true }
+      );
       c.off('click');
       c.off('datazoom');
       for (const [ev, fn] of Object.entries(on ?? {})) {
@@ -97,7 +115,7 @@ export function Chart({
     return () => {
       cancelled = true;
     };
-  }, [build, theme, on, failed]);
+  }, [build, theme, on, failed, label]);
 
   if (failed)
     return (

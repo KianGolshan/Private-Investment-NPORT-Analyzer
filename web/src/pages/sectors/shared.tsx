@@ -14,76 +14,55 @@ const signedPct = (v: number | null | undefined) => (v == null ? '—' : pct(v *
 
 export type IndexView = 'typical' | 'value';
 
-/** Index lines for several groups, average company or value-weighted. */
+/**
+ * Index lines for several groups, average company or value-weighted. The
+ * spread of the companies' returns in each period (25th to 75th percentile)
+ * is in the table: drawn as a band on the index it applied each period's
+ * spread to the level before it, so it ran a period behind the line.
+ */
 export function IndexChart({
   idx,
   view,
   keys,
   label,
-  band = false,
 }: {
   idx: MarkIndex;
   view: IndexView;
   keys?: string[];
   label: string;
-  /** One group: show its 25th-75th percentile band. */
-  band?: boolean;
 }) {
   const groups = idx.groups.filter(g => !keys || keys.includes(g.key)).slice(0, 8);
   const dates = groups[0]?.points.map(p => p.label) ?? [];
   const build = (t: ChartTheme) => {
     const b = baseOption(t);
     const pick = (p: MarkIndex['groups'][number]['points'][number]) => (view === 'value' ? p.valueIndex : p.index);
-    const g0 = groups[0];
-    const bandSeries =
-      band && g0 && view === 'typical'
-        ? [
-            {
-              name: '25th percentile',
-              type: 'line',
-              data: g0.points.map((p, i) => bandAt(g0.points, i, p.p25)),
-              lineStyle: { opacity: 0 },
-              stack: 'band',
-              symbol: 'none',
-              itemStyle: { color: t.series[0] },
-            },
-            {
-              name: '25th–75th percentile',
-              type: 'line',
-              data: g0.points.map((p, i) => {
-                const lo = bandAt(g0.points, i, p.p25);
-                const hi = bandAt(g0.points, i, p.p75);
-                return lo != null && hi != null ? hi - lo : null;
-              }),
-              lineStyle: { opacity: 0 },
-              areaStyle: { opacity: 0.15, color: t.series[0] },
-              stack: 'band',
-              symbol: 'none',
-              tooltip: { show: false },
-            },
-          ]
-        : [];
     return {
       ...b,
       legend: { ...b.legend, data: groups.map(g => g.label) },
       tooltip: { ...b.tooltip, valueFormatter: (v: number) => (v == null ? '—' : v.toFixed(1)) },
       xAxis: { type: 'category', data: dates, boundaryGap: false, ...b.xAxisDefaults },
       yAxis: { type: 'value', scale: true, ...b.yAxisDefaults },
-      series: [
-        ...bandSeries,
-        ...groups.map((g, i) => ({
-          name: g.label,
-          type: 'line',
-          data: g.points.map(pick),
-          connectNulls: false,
-          showSymbol: true,
-          symbolSize: 5,
-          itemStyle: { color: t.series[i % 8] },
-          lineStyle: { width: 2 },
-        })),
-      ],
+      series: groups.map((g, i) => ({
+        name: g.label,
+        type: 'line',
+        data: g.points.map(pick),
+        connectNulls: false,
+        showSymbol: true,
+        showAllSymbol: true,
+        symbolSize: 5,
+        itemStyle: { color: t.series[i % 8] },
+        lineStyle: { width: 2 },
+      })),
     };
   };
+  // fewer than 5 companies marked in every period: nothing to draw, and an empty chart reads as broken
+  const pickOf = (p: MarkIndex['groups'][number]['points'][number]) => (view === 'value' ? p.valueIndex : p.index);
+  if (!groups.some(g => g.points.some((p, i) => i > 0 && pickOf(p) != null)))
+    return (
+      <p class="muted small" style={{ margin: '8px 0' }}>
+        No index to draw: fewer than 5 companies here have marks in each period. The table has the counts.
+      </p>
+    );
   return <Chart build={build} label={label} height={300} />;
 }
 
@@ -133,6 +112,22 @@ export function IndexTable({ idx, level, exportName }: { idx: MarkIndex; level: 
           render: r => signedPct(r.median),
         },
         {
+          id: 'p25',
+          header: '25th percentile',
+          title: "A quarter of the companies' per-share changes in the period were below this",
+          value: r => r.p25,
+          num: true,
+          render: r => signedPct(r.p25),
+        },
+        {
+          id: 'p75',
+          header: '75th percentile',
+          title: "A quarter of the companies' per-share changes in the period were above this",
+          value: r => r.p75,
+          num: true,
+          render: r => signedPct(r.p75),
+        },
+        {
           id: 'valueIndex',
           header: 'Value-weighted (start = 100)',
           value: r => r.valueIndex,
@@ -155,12 +150,6 @@ export function IndexTable({ idx, level, exportName }: { idx: MarkIndex; level: 
       maxHeight={480}
     />
   );
-}
-// The band's edge in index points: the period's 25th or 75th percentile return
-// applied to the index at the period start.
-function bandAt(points: MarkIndex['groups'][number]['points'], i: number, r: number | null) {
-  const before = i > 0 ? (points[i - 1]?.index ?? null) : null;
-  return before != null && r != null ? before * (1 + r) : null;
 }
 const fmtIdx = (v: number | null) =>
   v == null ? (

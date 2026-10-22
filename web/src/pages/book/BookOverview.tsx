@@ -4,7 +4,7 @@ import { qs, useApi } from '../../api/client';
 import type { Bridge, Pivot } from '../../api/types';
 import { companyPath, longDate, moneyC, moneyDelta, num, sectorPath, share, tone } from '../../lib/format';
 import { FIRST_DATE, ScopeBar } from '../../scope/ScopeBar';
-import { isRange, useParam, useScope } from '../../scope/scope';
+import { isRange, useParam, useScope, windowOf } from '../../scope/scope';
 import { Card, Empty, ErrorBox, Loading, Segmented } from '../../ui/bits';
 import { BridgeView, PeriodEffects } from '../../ui/BridgeView';
 import { Chart } from '../../ui/Chart';
@@ -21,11 +21,6 @@ export type Who = { firm: number; category?: string } | { fund: string };
 
 type Row = Pivot['results'][number];
 const TOP = 7;
-const addYears = (iso: string, n: number) => {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCFullYear(d.getUTCFullYear() + n);
-  return d.toISOString().slice(0, 10);
-};
 
 export function BookOverview({ who, name, newest }: { who: Who; name: string; newest: string | null }) {
   const [scope, setScope] = useScope();
@@ -37,8 +32,7 @@ export function BookOverview({ who, name, newest }: { who: Who; name: string; ne
       ? `/api/analysis/pivot${qs({ ...who, rows: 'company', period, from: FIRST_DATE, to: newest, limit: 1000 })}`
       : null
   );
-  const to = range ? scope.to : (newest ?? '');
-  const from = range ? scope.from : newest ? addYears(newest, -1) : '';
+  const { from, to } = windowOf(scope, newest, 1);
   const bridge = useApi<Bridge>(to ? `/api/analysis/bridge${qs({ ...who, from, to })}` : null);
   const effects = useApi<Pivot>(
     to ? `/api/analysis/pivot${qs({ ...who, rows: 'company', period: 'quarter', from, to, limit: 1 })}` : null

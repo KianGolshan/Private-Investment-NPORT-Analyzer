@@ -130,8 +130,4 @@ export function FilterPickers({ firms, classes, kinds }: { firms?: FirmRef[]; cl
 const DAY = 86400000;
 export const addDays = (iso: string, n: number) =>
   new Date(Date.parse(`${iso}T00:00:00Z`) + n * DAY).toISOString().slice(0, 10);
-export const addYears = (iso: string, n: number) => {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCFullYear(d.getUTCFullYear() + n);
-  return d.toISOString().slice(0, 10);
-};
+export { addYears } from '../../scope/scope';

@@ -497,7 +497,8 @@ web/src/ui/useDialog.ts focus trap, Escape, focus back to the trigger (palette, 
 web/src/ui/Basis.tsx    how cross-company views read history (today's curation and advisers); Basis export column
 web/src/pages/company/markLines.ts   per-class, per-lineage split-adjusted marks for the position drawer
 web/src/lib/export.ts csvText        spreadsheet-formula-safe CSV text; format.ts escapeHtml for chart tooltips
-web/e2e/                Playwright suite (app.spec.ts, a11y.spec.ts with axe) on the golden warehouse
+web/e2e/                Playwright suite on the golden warehouse (E2E_BASE_URL: any server): app.spec.ts, a11y.spec.ts (axe),
+                        coverage/interactions/consistency.spec.ts with the page and chart audit (audit.ts); docs/UI-COVERAGE.md
 test/oracle.test.js     raw-EDGAR oracle (test/fixtures/oracle, scripts/verify-edgar.js rawHoldings)
 lib/api/heavy.js        per-visitor budget and load shedding on the heavy routes (review F-05)
 ```

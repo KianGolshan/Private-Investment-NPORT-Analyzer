@@ -35,6 +35,9 @@ export default function SectorDetail() {
   if (isNotFound(cos.error)) return <NotFound />;
   const g = idx.data?.groups[0];
   const last = g?.points[g.points.length - 1];
+  // where each index is 100: the window's start, or the first period with enough companies marked
+  const base = g?.points.find(p => p.index != null);
+  const valueBase = g?.points.find(p => p.valueIndex != null);
   const c = cos.data;
 
   return (
@@ -75,12 +78,12 @@ export default function SectorDetail() {
           <Kpi
             label="Average company's mark"
             value={last.index == null ? '—' : indexPct(last.index)}
-            sub={`since ${longDate(idx.data!.from)}${last.partial ? ' (partial)' : ''}`}
+            sub={base ? `since ${longDate(base.date)}${last.partial ? ' (last period partial)' : ''}` : undefined}
           />
           <Kpi
             label="Value-weighted mark"
             value={last.valueIndex == null ? '—' : indexPct(last.valueIndex)}
-            sub={`${num(g.cohort)} companies measured`}
+            sub={`${num(g.cohort)} companies measured${valueBase ? `, since ${longDate(valueBase.date)}` : ''}`}
           />
           <Kpi
             label="Last period"
@@ -108,14 +111,8 @@ export default function SectorDetail() {
         {idx.loading && !idx.data && <Loading rows={4} />}
         {idx.data && g && (
           <>
-            {!g.points.some(p => p.sufficient) && (
-              <p class="muted small" style={{ padding: '0 12px' }}>
-                Fewer than 5 companies here have marks to follow, so there is no index; each company’s own change is
-                below.
-              </p>
-            )}
             <div style={{ padding: '0 12px' }}>
-              <IndexChart idx={idx.data} view={view} label={`${label}: per-share mark index`} band />
+              <IndexChart idx={idx.data} view={view} label={`${label}: per-share mark index`} />
             </div>
             <IndexTable idx={idx.data} level={level} exportName={`mark-index-${key}-${idx.data.from}-${idx.data.to}`} />
           </>

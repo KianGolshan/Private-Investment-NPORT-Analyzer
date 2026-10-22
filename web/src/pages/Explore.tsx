@@ -19,7 +19,7 @@ import {
 } from '../lib/format';
 import { FirmPicker } from '../scope/FirmPicker';
 import { ScopeBar } from '../scope/ScopeBar';
-import { isRange, scopeParams, useParam, useScope, useSetParams } from '../scope/scope';
+import { scopeParams, useParam, useScope, useSetParams, windowOf } from '../scope/scope';
 import { Badge, Card, Empty, ErrorBox, FilingRef, Kpi, Loading, Segmented } from '../ui/bits';
 import { Chart } from '../ui/Chart';
 import { DataTable, type Column } from '../ui/DataTable';
@@ -73,12 +73,6 @@ const ROW_PLURAL: Record<Rows, string> = {
   theme: 'Themes',
 };
 
-const addYears = (iso: string, n: number) => {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCFullYear(d.getUTCFullYear() + n);
-  return d.toISOString().slice(0, 10);
-};
-
 function rowHref(rows: Rows, r: { key: string | number; label: string | null }): string | null {
   if (rows === 'firm') return r.key === 0 ? null : firmPath(Number(r.key));
   if (rows === 'fund') return fundPath(String(r.key));
@@ -107,9 +101,7 @@ export default function Explore() {
   const period: Period = (['month', 'year'] as const).find(x => x === perP) ?? 'quarter';
   const metric: PivotMetric = METRICS.find(m => m === metricP) ?? 'value';
   const limit = nP === '200' ? 200 : 50;
-  const range = isRange(scope);
-  const to = range ? scope.to : (newest ?? '');
-  const from = range ? scope.from : newest ? addYears(newest, period === 'month' ? -1 : -2) : '';
+  const { from, to } = windowOf(scope, newest, period === 'month' ? 1 : 2);
   const filters = scopeParams(scope, ['firm', 'fund']);
   // Operating companies by default, like Market (?show=all: every private holding; review 2026-10-18 W4).
   const cat = useCategoryFilter();

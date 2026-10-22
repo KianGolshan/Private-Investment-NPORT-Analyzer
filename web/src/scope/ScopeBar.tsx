@@ -3,7 +3,7 @@ import { useApi } from '../api/client';
 import { longDate } from '../lib/format';
 import type { Envelope, Firm } from '../api/types';
 import { Segmented } from '../ui/bits';
-import { isRange, useScope, type Scope } from './scope';
+import { addYears, isRange, useScope, type Scope } from './scope';
 
 // The scope bar: as of one date or over a range, and the active filters as
 // removable chips. Pages say which parts apply to them (`supports`); a filter
@@ -17,12 +17,6 @@ export interface ScopeSupport {
   /** The filters this view applies; only these show as chips. */
   filters?: FilterKind[];
 }
-
-const addYears = (iso: string, n: number) => {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCFullYear(d.getUTCFullYear() + n);
-  return d.toISOString().slice(0, 10);
-};
 
 export const FIRST_DATE = '2019-09-30';
 

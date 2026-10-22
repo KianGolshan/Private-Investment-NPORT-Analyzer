@@ -10,12 +10,19 @@ export default defineConfig({
   retries: 0,
   timeout: 60_000,
   reporter: [['list']],
-  use: { baseURL: 'http://127.0.0.1:4173', acceptDownloads: true, ...devices['Desktop Chrome'] },
-  webServer: {
-    command: 'node e2e/server.cjs',
-    url: 'http://127.0.0.1:4173/api/freshness',
-    reuseExistingServer: false,
-    timeout: 120_000,
-    stdout: 'pipe',
+  use: {
+    baseURL: process.env.E2E_BASE_URL || 'http://127.0.0.1:4173',
+    acceptDownloads: true,
+    ...devices['Desktop Chrome'],
   },
+  // E2E_BASE_URL: audit a server already running (the full warehouse), with no golden server
+  webServer: process.env.E2E_BASE_URL
+    ? undefined
+    : {
+        command: 'node e2e/server.cjs',
+        url: 'http://127.0.0.1:4173/api/freshness',
+        reuseExistingServer: false,
+        timeout: 120_000,
+        stdout: 'pipe',
+      },
 });

@@ -4,8 +4,8 @@ import { qs, useApi } from '../../api/client';
 import type { Freshness, Mover, Movers as MoversAnswer } from '../../api/types';
 import { companyPath, longDate, moneyC, moneyDelta, num, tone } from '../../lib/format';
 import { ScopeBar } from '../../scope/ScopeBar';
-import { isRange, useParam, useScope } from '../../scope/scope';
-import { Card, ErrorBox, Kpi, Loading } from '../../ui/bits';
+import { useParam, useScope, windowOf } from '../../scope/scope';
+import { Card, Empty, ErrorBox, Kpi, Loading } from '../../ui/bits';
 import { CategoryBadge, CategorySwitch, useCategoryFilter } from '../../ui/Category';
 import { industryColumn, SectorFilter, useSectorFilter } from '../../ui/SectorFilter';
 import { Chart } from '../../ui/Chart';
@@ -18,12 +18,6 @@ import { baseOption, type ChartTheme } from '../../ui/theme';
 // prior marks). A company's numbers here are its bridge (a test holds them
 // equal); its name opens the company's Changes tab for the same range.
 
-const addYears = (iso: string, n: number) => {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCFullYear(d.getUTCFullYear() + n);
-  return d.toISOString().slice(0, 10);
-};
-
 export default function Movers() {
   const [scope] = useScope();
   const [tracked, setTracked] = useParam('tracked');
@@ -31,9 +25,7 @@ export default function Movers() {
   const group = useSectorFilter();
   const fresh = useApi<Freshness>('/api/freshness');
   const newest = fresh.data?.newestReportDate ?? null;
-  const range = isRange(scope);
-  const to = range ? scope.to : (newest ?? '');
-  const from = range ? scope.from : newest ? addYears(newest, -1) : '';
+  const { from, to } = windowOf(scope, newest, 1);
   const m = useApi<MoversAnswer>(
     to
       ? `/api/market/movers${qs({ from, to, tracked: tracked === '1', limit: 25, category: cat.category, ...group.params })}`
@@ -149,7 +141,15 @@ export default function Movers() {
             />
           </div>
           <Card title="Largest mark moves, up and down (top 8 each)">
-            <Chart build={build} height={460} label="Largest mark moves, with the change from positions beside them" />
+            {d.markUp.length || d.markDown.length ? (
+              <Chart
+                build={build}
+                height={460}
+                label="Largest mark moves, with the change from positions beside them"
+              />
+            ) : (
+              <Empty>No mark moved in this window{Object.keys(group.params).length ? ' for this group' : ''}.</Empty>
+            )}
           </Card>
           <div class="grid-2">
             {(
