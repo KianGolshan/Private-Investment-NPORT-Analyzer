@@ -3,7 +3,7 @@ const path = require('path');
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { openWarehouseReadOnly } = require('./lib/warehouse/db');
-const { warehouseRouter } = require('./lib/api/warehouse');
+const { warehouseRouter, apiNotFound } = require('./lib/api/warehouse');
 const { adminRouter, adminEnabled, isLocalRequest } = require('./lib/api/admin');
 const { heavyGuard } = require('./lib/api/heavy');
 const pages = require('./lib/api/pages');
@@ -259,6 +259,8 @@ app.get('/api/config', (req, res) => {
       : null,
   });
 });
+
+app.use('/api', apiNotFound);
 
 // Any other page a browser asks for: the workspace's not-found view, as a 404
 // (a crawler then drops the URL). API paths and files keep their plain 404.

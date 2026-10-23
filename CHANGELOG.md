@@ -2,6 +2,15 @@
 
 Releases of the public site. Detail lives in [docs/STATUS.md](docs/STATUS.md) and its archive.
 
+## v2.4.2: project check (debugging, security, data integrity), 2026-10-22
+
+- **API:** two unusual parameter values (`period=__proto__`, `constructor`) no longer crash a request; an unknown
+  API address answers with a JSON error like every other one.
+- **Updates:** a job that cannot read its reviewed files no longer leaves a temporary copy behind.
+- **Checked and fine:** no vulnerable dependencies or leaked secrets, security headers, admin lock, redirects,
+  14,172 hostile API requests, warehouse integrity, and random positions against SEC EDGAR to the cent
+  ([report](docs/reviews/2026-10-22-project-check.md)).
+
 ## v2.4.1: every view tested, chart and layout fixes, 2026-10-21
 
 - **Sector pages:** the shaded band on the per-share mark chart ran a period behind the line; it is gone, and the
