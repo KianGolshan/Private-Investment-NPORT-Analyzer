@@ -1,0 +1,48 @@
+{
+  "builtAt": "2026-10-29T04:34:54.010Z",
+  "filings": {
+    "0000707823-26-000042": {
+      "cik": "707823",
+      "doc": "filing12370.htm",
+      "family": "fidelity",
+      "funds": [
+        "Fidelity® Growth Company Fund",
+        "Fidelity® Growth Strategies Fund"
+      ],
+      "note": "Fidelity Mt. Vernon Street Trust N-CSRS 2026-05-31: Growth Company (234 cost rows), Growth Strategies (4)",
+      "events": 509
+    },
+    "0001193125-26-195253": {
+      "cik": "44201",
+      "doc": "8dea0ac98b6ba57.htm",
+      "family": "capital",
+      "note": "Growth Fund of America N-CSRS 2026-02-28: 29 cost rows, a continued table, Stripe Class B in two N-PORT legs",
+      "events": 71
+    },
+    "0001193125-26-247125": {
+      "cik": "858744",
+      "doc": "8deb6d449805be9.htm",
+      "family": "capital",
+      "note": "SMALLCAP World Fund N-CSRS 2026-03-31: \"— (h)\" amounts, a note principal \"USD 25,314\", \"21 | <fund>\" footers",
+      "events": 127
+    }
+  },
+  "holdings": {
+    "0000035402-26-004656": {
+      "note": "Fidelity Growth Company Fund (S000007119) 2026-05-31",
+      "rows": 255
+    },
+    "0000035402-26-004657": {
+      "note": "Fidelity Growth Strategies Fund (S000007118) 2026-05-31",
+      "rows": 4
+    },
+    "0001193125-26-182055": {
+      "note": "Growth Fund of America (S000009228) 2026-02-28",
+      "rows": 30
+    },
+    "0001193125-26-243462": {
+      "note": "SMALLCAP World Fund (S000009599) 2026-03-31",
+      "rows": 60
+    }
+  }
+}

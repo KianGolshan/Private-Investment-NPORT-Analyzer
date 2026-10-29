@@ -6,7 +6,7 @@ W1–W4 are live (PR #30). Vantage is live at **https://vantage-kian.duckdns.org
 As You Go, DuckDNS, HTTPS from Caddy, nightly SEC refresh, auto-deploy of every green commit on `main`;
 [DEPLOY.md](DEPLOY.md)). **`main` is protected:** changes go through a pull request with the CI checks green
 (`archive/v1` keeps v1). Waiting on the user: the Oracle security-list rule for SSH (DEPLOY.md 1A.6). Not started or
-deferred by choice: P7 (MCP server), P8's 30-night checkpoint. Next: the user's instructions.
+deferred by choice: P7 (MCP server), P8's 30-night checkpoint. Next: the user's instructions (N-CSR pilot done 2026-10-28, see below).
 
 ## Phase tracker
 
@@ -64,6 +64,27 @@ tag **`v1-archive`** (and branch `archive/v1`).
 On the server: `sudo vantage-run npm run doctor`; timers `vantage-nightly` (06:15 New York), `vantage-monthly` (3rd),
 `vantage-autodeploy` (5 min), `vantage-duckdns`. Units come from `setup.sh`, not from deploys; the live server also
 has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB cap, 3 GB heap; 2026-10-14).
+
+## Where things stand (2026-10-28, N-CSR cost pilot)
+
+- **Asked:** can N-CSR / N-CSRS add investment cost and more to Vantage (research), then "build the pilot".
+  Write-up and results: [plans/ncsr-research.md](plans/ncsr-research.md).
+- **Built (read-only, nothing stored in the warehouse):** `lib/ncsr/` (HTML reader; Fidelity and Capital Group
+  restricted-table parsers that fail loudly; the join to N-PORT by shares and value, never by name);
+  `node scripts/ncsr-pilot.js` (latest 2 reports of 4 registrants, report in `reports/ncsr/`); `test/ncsr.test.js`
+  on real trimmed filings (`test/fixtures/ncsr/build-fixture.js`). Golden numbers F64–F68.
+- **Result:** 8 filings, 24 fund reports, 2,110 cost rows; every fund passes its self-checks against the filing's own
+  totals. Equity rows joined to N-PORT: Fidelity 91.2% ($11.35B of $12.28B cost), Capital Group 94.4% ($6.76B of
+  $7.48B); 146 private companies, 1,577 single-date entry prices. Databricks Series J costs $92.50 a share at both
+  firms (F65).
+- **Found:** N-CSR names four of Fidelity's opaque vehicles by matching numbers (TB HOLDINGS = Tory Burch, AB2 =
+  Adimab, TC = Tulco, VETERINARY = Veterinary Emergency Group; F66); 94 Fidelity holdings carry a different value in
+  the N-CSR than in the same-date N-PORT (F67); Growth Fund of America's N-CSR lists Anthropic Class F at 2025-08-31,
+  its N-PORT does not (F68).
+- **Gates:** backend 505 (501 pass, 4 skipped); lint and format clean. Branch `v2-ncsr-pilot` (off `main`;
+  the uncommitted review CSV edits in the working tree are not part of it).
+- **Next prompt:** "add the four N-CSR vehicle identities", "check three more fund families", or "N-CSR: plan the
+  ingest".
 
 ## Where things stand (2026-10-22, project check, v2.4.2)
 
