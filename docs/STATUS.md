@@ -6,7 +6,7 @@ W1–W4 are live (PR #30). Vantage is live at **https://vantage-kian.duckdns.org
 As You Go, DuckDNS, HTTPS from Caddy, nightly SEC refresh, auto-deploy of every green commit on `main`;
 [DEPLOY.md](DEPLOY.md)). **`main` is protected:** changes go through a pull request with the CI checks green
 (`archive/v1` keeps v1). Waiting on the user: the Oracle security-list rule for SSH (DEPLOY.md 1A.6). Not started or
-deferred by choice: P7 (MCP server), P8's 30-night checkpoint. Next: the user's instructions (N-CSR pilot done 2026-10-28, see below).
+deferred by choice: P7 (MCP server), P8's 30-night checkpoint. Next: the user's instructions (N-CSR pilot and big sample done 2026-10-28, see below; nothing applied).
 
 ## Phase tracker
 
@@ -64,6 +64,25 @@ tag **`v1-archive`** (and branch `archive/v1`).
 On the server: `sudo vantage-run npm run doctor`; timers `vantage-nightly` (06:15 New York), `vantage-monthly` (3rd),
 `vantage-autodeploy` (5 min), `vantage-duckdns`. Units come from `setup.sh`, not from deploys; the live server also
 has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB cap, 3 GB heap; 2026-10-14).
+
+## Where things stand (2026-10-28, N-CSR big sample)
+
+- **Asked:** do the recommended next steps (vehicle identities, three more families) over a much bigger sample (20+
+  more filings, 10 more periods); **nothing into the live database or app**. Write-up:
+  [plans/ncsr-research.md](plans/ncsr-research.md) "Big sample"; proposal:
+  [plans/ncsr-vehicle-identities.md](plans/ncsr-vehicle-identities.md).
+- **Built (read-only):** parsers for T. Rowe Price (costs inline in positioned text) and Morgan Stanley (cost in the
+  name cell); Fidelity and Capital Group parsers extended to every layout back to 2020; fail-closed guards (a stated
+  restricted total or a known table header without a readable cost table is an error); the script keeps going past
+  an unreadable filing and reports it. 4 new trimmed real fixtures, 15 N-CSR tests. Golden F69–F71.
+- **Result:** 98 filings tried, 82 read, 236 fund reports, 11,487 cost rows (2020–2026). Equity cost joined to N-PORT:
+  Fidelity 95.4%, Capital Group 91.7%, T. Rowe Price 98.5%, Morgan Stanley 100%; 221 private companies. Same
+  company + same date at two families: 38 of 40 same price.
+- **Found:** 16 T. Rowe Price reports (2020 to mid-2022) are page images (F71); 181 Fidelity rows (every period) have
+  another value in N-CSR than in the same-date N-PORT; splits change per-share cost (Databricks $59.12 vs $177.37);
+  11 Fidelity vehicles named, four with $505.5M now counted toward no company (proposal, not applied).
+- **Not applied:** nothing in `data/review/`, the warehouse or the app (the user's instruction).
+- **Next prompt:** "apply the vehicle proposal", "N-CSR: plan the ingest", or the user's instructions.
 
 ## Where things stand (2026-10-28, N-CSR cost pilot)
 

@@ -1,9 +1,13 @@
-// N-CSR cost pilot (docs/plans/ncsr-research.md): the HTML reader, the Fidelity and
-// Capital Group restricted-table parsers, and the join to N-PORT holdings, on REAL
-// filings trimmed by test/fixtures/ncsr/build-fixture.js:
+// N-CSR cost pilot (docs/plans/ncsr-research.md): the HTML reader, the Fidelity, Capital
+// Group, T. Rowe Price and Morgan Stanley restricted-table parsers, and the join to N-PORT
+// holdings, on REAL filings trimmed by test/fixtures/ncsr/build-fixture.js:
 //   0000707823-26-000042  Fidelity Mt. Vernon Street Trust N-CSRS 2026-05-31
+//   0001379491-21-003390  Fidelity Mt. Vernon Street Trust N-CSRS 2021-05-31 (older layout)
 //   0001193125-26-195253  Growth Fund of America N-CSRS 2026-02-28
+//   0000051931-22-001052  Growth Fund of America N-CSR 2022-08-31 (older layout)
 //   0001193125-26-247125  SMALLCAP World Fund N-CSRS 2026-03-31
+//   0001193125-26-062850  T. Rowe Price Science & Technology Fund N-CSR 2025-12-31
+//   0001104659-26-104596  Morgan Stanley Institutional Fund N-CSRS 2026-06-30
 // and the warehouse's N-PORT rows for the same funds and dates (holdings.json).
 //
 // Run with: npm test
@@ -13,7 +17,17 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const { htmlEvents, parseAmount, parseDateRange, parseLongDate, stripFootnotes } = require('../lib/ncsr/html');
-const { parseNcsr, parseFidelity, parseCapitalGroup, securityName, parsePct, thousands } = require('../lib/ncsr/parse');
+const {
+  parseNcsr,
+  parseFidelity,
+  parseCapitalGroup,
+  parseTRowePrice,
+  parseMorganStanley,
+  securityName,
+  parsePct,
+  thousands,
+  joinCells,
+} = require('../lib/ncsr/parse');
 const { matchToNport, selfChecks, tolerance, isDebtName } = require('../lib/ncsr/match');
 const { headerSeries, seriesFor, normName } = require('../scripts/ncsr-pilot');
 
@@ -108,6 +122,7 @@ test('Fidelity: each fund section, its cost table and the stated restricted tota
     acquiredFirst: '2024-05-31',
     acquiredLast: '2024-05-31',
     cost: 7055558,
+    costUnit: 1,
     value: null,
     belowUnit: false,
     pctNav: null,
@@ -163,7 +178,7 @@ test('parsers fail loudly on layouts they cannot read', () => {
       parseFidelity(
         '<div>Fidelity X Fund</div><div>Schedule of Investments May 31, 2026</div><table><tr><td>A</td><td>1</td><td>2</td></tr></table>'
       ),
-    /no "NET ASSETS - 100.0%"/
+    /no "NET ASSETS - 100%"/
   );
   assert.throws(() => parseCapitalGroup('<div>nothing</div>'), /no "Investment portfolio/);
   const two = '<div>Investment portfolio May 31, 2026</div><div>Investment portfolio May 31, 2026</div>';
@@ -172,7 +187,7 @@ test('parsers fail loudly on layouts they cannot read', () => {
   assert.throws(() => parseCapitalGroup(bad), /unreadable restricted row: Anthropic, PBC, Class F/);
   const noTotal = read('0001193125-26-195253.html').replace(/<tr><td>Total<\/td>.*?<\/tr>/, '');
   assert.throws(() => parseCapitalGroup(noTotal), /no "Total" row/);
-  assert.throws(() => parseNcsr('', 'troweprice'), /unknown N-CSR family/);
+  assert.throws(() => parseNcsr('', 'baron'), /unknown N-CSR family/);
 });
 
 test('join to N-PORT: by shares and value, legs, holding vehicles, value differences, debt', () => {
@@ -271,4 +286,138 @@ test('helpers: tolerance, debt names, filing-header series and fund names', () =
   assert.equal(seriesFor(GFA, [{ seriesId: 'S000009228', name: 'GROWTH FUND OF AMERICA' }]).seriesId, 'S000009228');
   assert.equal(seriesFor(GFA, series), null, 'a single-fund parse needs a single-series filing');
   assert.equal(normName('The Growth Fund of America ®'), 'growth fund of america');
+});
+
+test('older layouts: Fidelity 2021 (thousands, issuer lines, paragraph footnotes, two-digit years)', () => {
+  const [nmf] = parseFidelity(read('0001379491-21-003390.html'));
+  assert.equal(nmf.fundName, 'Fidelity New Millennium Fund', 'the name from the report cover');
+  assert.deepEqual([nmf.periodEnd, nmf.unit, nmf.netAssets], ['2021-05-31', 1000, 2841675000]);
+  assert.deepEqual(nmf.restrictedTotal, { mark: 'd', value: 95498000, pctNav: 3.4 });
+  assert.equal(nmf.restricted.length, 20);
+  // "Allbirds, Inc.:" on its own line, then "Series A (a)(d)(e) | 8,775 | 95"
+  assert.deepEqual(
+    [one(nmf.schedule, 'Allbirds, Inc. Series A').shares, one(nmf.schedule, 'Allbirds, Inc. Series A').value],
+    [8775, 95000]
+  );
+  const a = one(nmf.restricted, 'Allbirds, Inc. Series A');
+  assert.deepEqual([a.acquiredFirst, a.cost, a.costUnit], ['2018-10-09', 96000, 1000], '"10/9/18", "$96" in (000s)');
+  // a long name over two lines: "(Cost $8,368) | 8,367,654 | 3,715"
+  assert.equal(one(nmf.schedule, 'Utica Shale Drilling Program (non-operating revenue interest)').value, 3715000);
+  for (const c of selfChecks(nmf)) assert.ok(c.ok, `${c.check} (${c.detail})`);
+  const res = matchToNport(nmf, HOLDINGS['0001752724-21-152583']);
+  assert.equal(res.filter(r => r.match === 'exact').length, 17, 'thousands join within one unit');
+  assert.deepEqual(parseDateRange('9/17/14 - 6/05/15'), { first: '2014-09-17', last: '2015-06-05' });
+  assert.deepEqual(parseDateRange('12/21/98'), { first: '1998-12-21', last: '1998-12-21' });
+});
+
+test('older layouts: Capital Group 2022 (numeric marks, split cells, a header over three rows)', () => {
+  assert.deepEqual(joinCells(['A', '$', '142,918', '$', '(16,465', ')', '.06', '%']), [
+    'A',
+    '$ 142,918',
+    '$ (16,465)',
+    '.06 %',
+  ]);
+  const [gfa] = parseCapitalGroup(read('0000051931-22-001052.html'));
+  assert.equal(gfa.periodEnd, '2022-08-31');
+  assert.deepEqual(gfa.restrictedTotal, { mark: '6', cost: 785823000, value: 604547000, pctNav: 0.28 });
+  const w = one(gfa.restricted, 'Waymo, LLC, Series A-2, 8.00% noncumulative preferred shares');
+  assert.deepEqual([w.cost, w.value, w.pctNav], [100000000, 106818000, 0.05], '"1,2,5" marks dropped, ".05 | %" read');
+  for (const c of selfChecks(gfa)) assert.ok(c.ok, `${c.check} (${c.detail})`);
+  const res = matchToNport(gfa, HOLDINGS['0001145549-22-063355']);
+  assert.deepEqual(
+    res.reduce((m, r) => ({ ...m, [r.match]: (m[r.match] || 0) + 1 }), {}),
+    { exact: 13, debt: 1 }
+  );
+  assert.equal(securityName('Stripe, Inc., Class B 1,4', true), 'Stripe, Inc., Class B');
+  assert.equal(securityName('TAE Technologies, Series 11', false), 'TAE Technologies, Series 11');
+  assert.equal(parsePct('.00 16'), 0);
+  assert.deepEqual(thousands('— 9'), { amount: 0, belowUnit: true });
+});
+
+test('T. Rowe Price: costs inline in positioned text, checked against the stated total', () => {
+  const [st] = parseTRowePrice(read('0001193125-26-062850.html'));
+  assert.deepEqual([st.periodEnd, st.unit, st.netAssets], ['2025-12-31', 1000, 11912426000]);
+  assert.deepEqual(st.restrictedTotal, { mark: '3', value: 370822000, pctNav: 3.1 });
+  assert.equal(st.restricted.length, 32);
+  // "Cost $ (1)(2)(3)": rights received at no cost
+  const rights = one(st.restricted, 'Hadrian Automation, Rights, 12/19/26');
+  assert.deepEqual([rights.cost, rights.value, rights.shares], [0, 2366000, 793223]);
+  // "7,289 " with a blank value; the cost in dollars for a rupee security
+  const tl = one(st.restricted, 'Think & Learn');
+  assert.deepEqual([tl.cost, tl.value, tl.currency], [11621000, 0, 'INR']);
+  for (const c of selfChecks(st)) assert.ok(c.ok, `${c.check} (${c.detail})`);
+  const res = matchToNport(st, HOLDINGS['0001099263-26-002527']);
+  assert.equal(res.filter(r => r.match === 'exact').length, 32);
+  // dropping one line breaks the stated total
+  assert.ok(selfChecks({ ...st, restricted: st.restricted.slice(1), schedule: st.schedule.slice(1) }).some(c => !c.ok));
+  assert.throws(() => parseTRowePrice('<div>Annual report</div>'), /no "Statement of Assets and Liabilities/);
+});
+
+test('Morgan Stanley: one filing, many portfolios; the cost in the name cell', () => {
+  const funds = parseMorganStanley(read('0001104659-26-104596.html'));
+  const growth = funds.find(f => f.fundName === 'Growth Portfolio');
+  const inception = funds.find(f => f.fundName === 'Inception Portfolio');
+  assert.deepEqual([growth.periodEnd, growth.unit, growth.netAssets], ['2026-06-30', 1000, 3589221000]);
+  const d = one(growth.restricted, 'Databricks, Inc., Series H');
+  assert.deepEqual([d.acquiredFirst, d.cost, d.shares, d.value], ['2021-08-31', 63187000, 859870, 161269000]);
+  const g = matchToNport(growth, HOLDINGS['0001410368-26-084089']);
+  // the same entry price as Fidelity's Series H (golden F69)
+  assert.equal(one(g, 'Databricks, Inc., Series H').costPerShare.toFixed(2), '73.48');
+  assert.equal(one(g, 'Stripe, Inc., Series I').costPerShare.toFixed(2), '20.13');
+  // two restricted rows print no cost (Infleqtion, SomaLogic warrants): reported as a note, not a failure
+  const count = selfChecks(inception).find(c => /rows in schedule/.test(c.check));
+  assert.deepEqual([count.ok, count.severity], [false, 'note']);
+  assert.equal(matchToNport(inception, HOLDINGS['0001410368-26-084068']).filter(r => r.match === 'exact').length, 2);
+});
+
+test('fail closed: a cost table the parser cannot find is an error, never "no restricted holdings"', () => {
+  // Capital Group: SMALLCAP World 2022-03-31 titled its table "Private placement securities 4"; an unknown
+  // title with the known header row must fail, not return an empty table
+  const cap = h =>
+    `<div>Investment portfolio March 31, 2022</div><table><tr><td>Acme, Inc. 4</td><td>10</td><td>5</td></tr>` +
+    `<tr><td>Net assets 100.00%</td><td>$ 100</td></tr></table><div>${h}</div><table>` +
+    `<tr><td>Acquisition date(s)</td><td>Cost (000)</td><td>Value (000)</td><td>Percent of net assets</td></tr>` +
+    `<tr><td>Acme, Inc.</td><td>3/9/2021</td><td>4</td><td>5</td><td>.01</td></tr>` +
+    `<tr><td>Total</td><td>$ 4</td><td>$ 5</td><td>.01 %</td></tr></table>`;
+  assert.equal(parseCapitalGroup(cap('Private placement securities 4'))[0].restricted.length, 1);
+  assert.equal(parseCapitalGroup(cap('Restricted securities 4'))[0].restrictedTotal.mark, '4');
+  assert.throws(() => parseCapitalGroup(cap('Securities with restrictions')), /without a heading this parser reads/);
+  // the heading as a one-cell row (Growth Fund of America 2023-02-28 read as empty before)
+  const asRow = cap('').replace('<div></div><table>', '<table><tr><td>Restricted securities 5</td></tr>');
+  assert.equal(parseCapitalGroup(asRow)[0].restricted.length, 1);
+  // Fidelity: a stated restricted total with no cost table
+  const fid =
+    '<div>Fidelity X Fund</div><div>Semi-Annual Report</div><div>Schedule of Investments May 31, 2026</div>' +
+    '<table><tr><td>Acme (e)</td><td>10</td><td>5</td></tr><tr><td>NET ASSETS - 100.0%</td><td>100</td></tr>' +
+    '<tr><td>(e)</td><td>Restricted securities (including private placements) - Investment in securities not ' +
+    'registered under the Securities Act of 1933 (excluding 144A issues). At the end of the period, the value of ' +
+    'restricted securities (excluding 144A issues) amounted to $5 or 5.0% of net assets.</td></tr></table>';
+  assert.throws(() => parseFidelity(fid), /restricted securities stated but no cost table found/);
+});
+
+test('Capital Group cell variants: en dashes, side-column sector labels, names over two rows', () => {
+  assert.deepEqual(thousands('– 6'), { amount: 0, belowUnit: true });
+  const doc =
+    '<div>Investment portfolio September 30, 2024</div><table>' +
+    '<tr><td>Industrials</td><td>Relativity Space, Inc., Series D, preferred shares 2,4,5</td><td>2,143,751</td><td>48,599</td></tr>' +
+    '<tr><td>0.18%</td><td>Relativity Space, Inc., Series E, preferred shares 2,4,5</td><td>464,197</td><td>10,523</td></tr>' +
+    '<tr><td>Candid Therapeutics, Inc., Class B, noncumulative convertible preferred shares 5</td><td>1</td><td>20,000</td></tr>' +
+    '<tr><td>Net assets 100.00%</td><td>$ 77,077,041</td></tr></table><div>Restricted securities 5</div><table>' +
+    '<tr><td>Acquisition date(s)</td><td>Cost (000)</td><td>Value (000)</td><td>Percent of net assets</td></tr>' +
+    '<tr><td>Relativity Space, Inc., Series D, preferred shares 2,4</td><td>11/20/2020</td><td>$ 32,000</td><td>$ 48,599</td><td>.06 %</td></tr>' +
+    '<tr><td>Relativity Space, Inc., Series E, preferred shares 2,4</td><td>5/27/2021</td><td>10,600</td><td>10,523</td><td>.02</td></tr>' +
+    '<tr><td>Candid Therapeutics, Inc., Class B,</td></tr>' +
+    '<tr><td>noncumulative convertible preferred shares 4</td><td>8/27/2024</td><td>20,000</td><td>20,000</td><td>.03</td></tr>' +
+    '<tr><td>Total</td><td>$ 62,600</td><td>$ 79,122</td><td>.11 %</td></tr></table>';
+  const [f] = parseCapitalGroup(doc);
+  assert.deepEqual(
+    f.schedule.map(r => [r.name, r.shares]),
+    [
+      ['Relativity Space, Inc., Series D, preferred shares', 2143751],
+      ['Relativity Space, Inc., Series E, preferred shares', 464197],
+      ['Candid Therapeutics, Inc., Class B, noncumulative convertible preferred shares', 1],
+    ]
+  );
+  assert.equal(f.restricted[2].name, 'Candid Therapeutics, Inc., Class B, noncumulative convertible preferred shares');
+  for (const c of selfChecks(f)) assert.ok(c.ok, `${c.check} (${c.detail})`);
 });

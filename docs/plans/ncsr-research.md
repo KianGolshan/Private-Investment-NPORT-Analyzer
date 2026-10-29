@@ -161,9 +161,71 @@ private companies with 1,577 single-date entry prices.
 4. **Fidelity's cost table has no value column:** the value comes from the schedule row of the same name, so
    duplicate names stay ambiguous.
 
+## Big sample (2026-10-28, second pass)
+
+Asked: the same analysis over 20+ more filings and 10 more periods, plus three more fund families; nothing into the
+live database or app. Done read-only (`node scripts/ncsr-pilot.js --periods 12 --out reports/ncsr/sample`).
+
+**Scope:** 9 registrants, 4 families; 98 filings tried, **82 read**, 236 fund reports, **11,487 cost rows**,
+2020-02 to 2026-06.
+
+| Family         | Filings read | Fund reports | Cost rows | Equity rows joined | Equity cost joined |
+| -------------- | ------------ | ------------ | --------- | ------------------ | ------------------ |
+| Fidelity       | 24 of 24     | 106          | 8,783     | 8,097 (93.8%)      | $52.98B of $55.56B |
+| Capital Group  | 24 of 24     | 24           | 780       | 717 (94.2%)        | $23.05B of $25.13B |
+| T. Rowe Price  | 32 of 48     | 32           | 1,908     | 1,773 (92.9%)      | $28.87B of $29.31B |
+| Morgan Stanley | 2 of 2       | 10           | 16        | 16 (100%)          | $0.26B of $0.26B   |
+
+Joined rows reach **221 private companies**, with 667 distinct single-date entry prices (company, date, price).
+The join rate holds in every year: 2020 92.0%, 2021 96.4%, 2022 96.7%, 2023 96.0%, 2024 92.0%, 2025 92.2%,
+2026 90.3%.
+
+**The three new families (step 2 of the last recommendation):**
+
+- **T. Rowe Price: yes.** Each restricted line carries its date and cost inline ("Databricks, Series J, Acquisition
+  Date: 12/17/24, Cost $1,974 … 21,342 4,754", in $000s); every readable report's lines add up exactly to the stated
+  restricted total. **Negative:** the 16 reports from 2020 to mid-2022 (filer agent 0001206774) carry the portfolio
+  as page images (40+ JPGs per filing, F71); they cannot be read by machine.
+- **Morgan Stanley: yes, but small.** "(acquisition cost — $63,187; acquired 8/31/21)" in the name cell; 22
+  portfolios in one 42–87 MB filing, 8 private rows. Two restricted rows print no cost (Infleqtion, SomaLogic warrants).
+- **Baron: discloses, not parsed.** A restricted table with acquisition dates and values, and cost per security in
+  the schedule; its restricted book is almost all SpaceX (public), so a parser adds little.
+
+**Findings that hold across the sample:**
+
+1. **One price per round.** Where two families report the same company bought on the same date, 38 of 40 agree within
+   0.5% (Databricks Series J $92.50 at Fidelity, Capital Group and T. Rowe Price; Series H $73.48 at Fidelity and
+   Morgan Stanley; Waymo 2020 $85.87; Anduril 2025 $40.88; Nuro 2021 $20.85; F65, F69). The 2 others mix different
+   instruments on one date (OpenAI notes and shares; a biotech's two series).
+2. **Splits change the per-share cost.** Fidelity's Databricks 2021 lots read $59.12 a share in some reports and
+   $177.37 in others: the cost stays, the share count changes. An entry price must be split-adjusted
+   (`lib/analytics/splits.js`) before it is compared over time.
+3. **Two values for one date are a Fidelity pattern.** 181 rows, all Fidelity, in every period since 2020; the median
+   N-CSR value is 1.12× the N-PORT value (quartiles 1.015–1.333). No other family shows it.
+4. **Holding vehicles are named.** 111 N-CSR rows add up to 42 vehicle rows; 11 Fidelity vehicles are identified, four
+   with **$505.5M** at their latest marks that Vantage counts toward no company. Proposal (not applied):
+   [ncsr-vehicle-identities.md](ncsr-vehicle-identities.md).
+5. **Untitled N-PORT rows get names.** T. Rowe Price files many private rows with no issuer name; N-CSR names 120+ of
+   them, and shows renames (FOG Pharma → Parabilis Medicines) and SPAC mergers.
+6. **Fail closed matters.** Two Capital Group reports first parsed as "no restricted holdings" because the table's
+   title differed (a one-cell row; "Private placement securities"). The parsers now fail when a stated restricted
+   total or a known table header has no cost table they can read (tests).
+
+**Still unread or flagged (each listed in the report):** 16 image-only T. Rowe Price reports; SMALLCAP World
+2024-09-30 (a side-column layout, 49 of 59 rows found, its self-check fails); SMALLCAP World 2020-09-30 (a summary
+portfolio that prints "Other private placement securities" as one line); Fidelity Flex Mid Cap Growth Fund (in
+Mt. Vernon's 2022 filing but not in its header's series list, so not joined).
+
+**Formats handled** (each one a test on a trimmed real filing): Fidelity 2020–2026 (dollars or (000s), issuer lines
+with class lines, paragraph or row footnotes, two-digit years, page breaks inside the cost table, names over two
+lines); Capital Group 2020–2026 (letter or numeric marks, split "$ | 142,918" cells, a header over three rows,
+"Private placement securities", "—"/"–" below $1,000, sector labels in a side column, names over two rows); T. Rowe
+Price 2022–2026; Morgan Stanley 2025–2026.
+
 ## Recommended next step
 
-1. Add the four holding-vehicle identities (finding 1) to the review data with the N-CSR accessions as evidence.
-2. Check three more families (T. Rowe Price, Baron, Morgan Stanley) for the same table before deciding on a backfill.
-3. If kept: a migration (`ncsr_filings`, `cost_basis`), a `runJob` ingest of the joined rows, and the company page's
-   entry price per class.
+1. Approve or edit the vehicle proposal ([ncsr-vehicle-identities.md](ncsr-vehicle-identities.md)); applying it is a
+   review import, and nothing is applied until then.
+2. Decide whether to build the ingest: a migration (`ncsr_filings`, `cost_basis`, split-adjusted entry prices), a
+   `runJob` ingest of the joined rows for these four families, and the company page's entry price per class. The
+   sample says the data is there for 2020–2026 at Fidelity and Capital Group, and 2022–2026 at T. Rowe Price.

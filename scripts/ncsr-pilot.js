@@ -30,7 +30,15 @@ const PILOT = {
   24238: { family: 'fidelity', note: 'Fidelity Contrafund' },
   44201: { family: 'capital', note: 'The Growth Fund of America' },
   858744: { family: 'capital', note: 'SMALLCAP World Fund' },
+  80257: { family: 'troweprice', note: 'T. Rowe Price Growth Stock Fund' },
+  80248: { family: 'troweprice', note: 'T. Rowe Price New Horizons Fund' },
+  819930: { family: 'troweprice', note: 'T. Rowe Price Science & Technology Fund' },
+  1002624: { family: 'troweprice', note: 'T. Rowe Price Health Sciences Fund' },
+  // 40-90 MB per report for about 8 private rows: the latest 2 reports at most
+  836487: { family: 'morganstanley', note: 'Morgan Stanley Institutional Fund (22 portfolios)', maxPeriods: 2 },
 };
+// Morgan Stanley's annual report is 87 MB; the client's default limit is 25 MB.
+const LARGE = { maxContentLength: 150 * 1024 * 1024, maxBodyLength: 150 * 1024 * 1024, timeout: 300000 };
 
 function args(argv) {
   const out = { ciks: null, periods: 2, out: 'reports/ncsr' };
@@ -47,10 +55,24 @@ function args(argv) {
 async function cached(cacheDir, name, url) {
   const file = path.join(cacheDir, name);
   if (fs.existsSync(file)) return fs.readFileSync(file, 'utf8');
-  const body = String(await secGet(url));
+  const body = String(await secGet(url, LARGE));
   fs.mkdirSync(cacheDir, { recursive: true });
   fs.writeFileSync(file, body);
   return body;
+}
+
+// The document holding the shareholder report. Usually the primary document; before 2022
+// T. Rowe Price filed a short cover (119 KB) with the report as an exhibit, so a small primary
+// document gives way to the filing's largest HTML file.
+const SMALL_PRIMARY = 1024 * 1024;
+async function reportDocument(cacheDir, dir, rep) {
+  const html = await cached(cacheDir, `${rep.accession}.htm`, `${dir}/${rep.primaryDocument}`);
+  if (html.length >= SMALL_PRIMARY) return html;
+  const index = JSON.parse(await cached(cacheDir, `${rep.accession}-index.json`, `${dir}/index.json`));
+  const docs = index.directory.item
+    .filter(x => /\.html?$/i.test(x.name) && !/index/i.test(x.name) && Number(x.size) > html.length)
+    .sort((a, b) => Number(b.size) - Number(a.size));
+  return docs.length ? cached(cacheDir, `${rep.accession}-${docs[0].name}`, `${dir}/${docs[0].name}`) : html;
 }
 
 // The latest `n` original N-CSR / N-CSRS filings of a registrant (amendments are listed, not read).
@@ -161,21 +183,31 @@ async function main() {
   const db = openWarehouseReadOnly();
   const csv = [CSV_COLUMNS.join(',')];
   const funds = [];
+  const unreadable = [];
   const problems = [];
   try {
     for (const cik of ciks) {
       const p = PILOT[cik];
       if (!p) throw new Error(`CIK ${cik} is not a pilot registrant (${Object.keys(PILOT).join(', ')})`);
-      for (const rep of await latestReports(cacheDir, cik, opt.periods)) {
+      for (const rep of await latestReports(cacheDir, cik, Math.min(opt.periods, p.maxPeriods || Infinity))) {
         const dir = `https://www.sec.gov/Archives/edgar/data/${cik}/${rep.accession.replace(/-/g, '')}`;
         const header = await cached(
           cacheDir,
           `${rep.accession}-headers.html`,
           `${dir}/${rep.accession}-index-headers.html`
         );
-        const html = await cached(cacheDir, `${rep.accession}.htm`, `${dir}/${rep.primaryDocument}`);
+        const html = await reportDocument(cacheDir, dir, rep);
         const series = headerSeries(header);
-        for (const fund of parseNcsr(html, p.family)) {
+        let parsed;
+        try {
+          parsed = parseNcsr(html, p.family);
+        } catch (err) {
+          // an unreadable filing is reported and fails the run, but the other filings are still read
+          unreadable.push({ rep, error: err.message });
+          problems.push(`${rep.accession} (${rep.form} ${rep.reportDate}): ${err.message}`);
+          continue;
+        }
+        for (const fund of parsed) {
           const s = seriesFor(fund, series);
           const name = fund.fundName || (s && s.name) || rep.registrant;
           const checks = selfChecks(fund);
@@ -187,7 +219,8 @@ async function main() {
             });
           const entry = { rep, family: p.family, name, series: s, fund, checks, results: [], nport: null };
           funds.push(entry);
-          for (const c of checks) if (!c.ok) problems.push(`${rep.accession} ${name}: ${c.check} (${c.detail})`);
+          for (const c of checks)
+            if (!c.ok && c.severity !== 'note') problems.push(`${rep.accession} ${name}: ${c.check} (${c.detail})`);
           if (!s) {
             problems.push(`${rep.accession} ${name}: no single series in the filing header matches this fund`);
             continue;
@@ -257,7 +290,7 @@ async function main() {
     for (const k of KINDS) totals[k] += count(k);
     totals.cost += cost;
     totals.costMatched += costMatched;
-    const failed = f.checks.filter(c => !c.ok);
+    const failed = f.checks.filter(c => !c.ok && c.severity !== 'note');
     md.push(
       `| ${f.rep.form} ${f.rep.accession} | ${f.name} | ${f.series ? f.series.seriesId : 'unmapped'} | ${f.fund.periodEnd} | ${f.fund.restricted.length} | ${KINDS.map(count).join(' | ')} | ${usd(costMatched)} of ${usd(cost)} (${pct(costMatched, cost)}) | ${f.nport ? f.nport.accession : 'none at this date'} | ${failed.length ? failed.map(c => c.check).join('; ') : `${f.checks.length} ok`} |`
     );
@@ -267,6 +300,12 @@ async function main() {
     `**All:** ${totals.rows} cost rows; ${KINDS.map(k => `${k} ${totals[k]}`).join(', ')}; equity cost joined ${usd(totals.costMatched)} of ${usd(totals.cost)} (${pct(totals.costMatched, totals.cost)}).`,
     ''
   );
+  if (unreadable.length) {
+    md.push('## Filings the parsers could not read', '');
+    for (const u of unreadable)
+      md.push(`- ${u.rep.accession} ${u.rep.registrant} ${u.rep.form} ${u.rep.reportDate}: ${u.error}`);
+    md.push('');
+  }
   md.push('## Rows not joined one to one', '');
   for (const f of funds)
     for (const r of f.results.filter(x => x.match !== 'exact'))
@@ -276,7 +315,9 @@ async function main() {
   md.push('', '## Checks', '');
   for (const f of funds)
     for (const c of f.checks)
-      md.push(`- ${c.ok ? 'ok' : '**FAILED**'} ${f.rep.accession} ${f.name}: ${c.check} (${c.detail})`);
+      md.push(
+        `- ${c.ok ? 'ok' : c.severity === 'note' ? 'note' : '**FAILED**'} ${f.rep.accession} ${f.name}: ${c.check} (${c.detail})`
+      );
   const mdPath = path.join(opt.out, `pilot-${day}.md`);
   fs.writeFileSync(mdPath, md.join('\n') + '\n');
 
