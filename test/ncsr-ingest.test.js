@@ -326,11 +326,13 @@ test('admission is strict: one dollar too far, one share off, an unreviewed comp
 });
 
 test('a fund report that fails a self-check gives no cost at all', () => {
-  // drop the first line of Growth Strategies' cost table: its marked rows no longer equal its table
+  // a marked schedule row cut from Growth Strategies (Suncrete): the stated restricted total holds a
+  // row the parse did not read, a shortfall nothing can set apart
   const html = read(`${FID}.html`);
   const section = html.indexOf('Fidelity® Growth Strategies Fund');
-  const header = html.indexOf('</tr>', html.indexOf('Acquisition Cost', section)) + 5;
-  const cut = html.slice(0, header) + html.slice(html.indexOf('</tr>', header) + 5);
+  const row = html.indexOf('<tr><td>Suncrete Inc (d)</td>', section);
+  assert.ok(row > section);
+  const cut = html.slice(0, row) + html.slice(html.indexOf('</tr>', row) + 5);
   const w = loaded();
   w.put(FID, '707823', 'fidelity', '2026-05-31', '2026-07-24', cut, 'N-CSRS', '0000707823-26-999999');
   const fund = name =>
@@ -351,6 +353,74 @@ test('a fund report that fails a self-check gives no cost at all', () => {
     0,
     'the later, failing report replaces the earlier one and gives Growth Strategies no cost'
   );
+});
+
+test('lines set apart: the rest of the report is admitted, the set-apart name is not', () => {
+  // the cost line of Anthropic Series H cut from Growth Strategies: the schedule still marks it, the
+  // stated total still holds it. Its name is set apart; the other lines prove out exactly.
+  const html = read(`${FID}.html`);
+  const section = html.indexOf('Fidelity® Growth Strategies Fund');
+  const table = html.indexOf('Acquisition Cost', section);
+  const row = html.lastIndexOf('<tr>', html.indexOf('Anthropic PBC Series H</td>', table));
+  assert.ok(row > table);
+  const cut = html.slice(0, row) + html.slice(html.indexOf('</tr>', row) + 5);
+  const w = loaded();
+  const before = w.db
+    .prepare(
+      "SELECT c.name, f.cost_usd FROM cost_facts f JOIN companies c ON c.id = f.company_id WHERE fund_key = 'S000007118' ORDER BY 1"
+    )
+    .all();
+  assert.deepEqual(
+    before.map(r => r.name),
+    ['Anthropic', 'Databricks']
+  );
+  w.put(FID, '707823', 'fidelity', '2026-05-31', '2026-07-24', cut, 'N-CSRS', '0000707823-26-999999');
+  const f = w.db
+    .prepare(
+      "SELECT status, checks FROM ncsr_funds WHERE accession = '0000707823-26-999999' AND fund_name = 'Fidelity Growth Strategies Fund'"
+    )
+    .get();
+  assert.equal(f.status, 'ok');
+  const apart = JSON.parse(f.checks).find(c => c.check === 'lines set apart (not admitted)');
+  assert.match(apart.detail, /^Anthropic PBC Series H: printed a different number of times/);
+  buildCostFacts(w.db);
+  const after = w.db
+    .prepare(
+      "SELECT c.name, f.cost_usd FROM cost_facts f JOIN companies c ON c.id = f.company_id WHERE fund_key = 'S000007118' ORDER BY 1"
+    )
+    .all();
+  assert.deepEqual(
+    after,
+    before.filter(r => r.name !== 'Anthropic'),
+    'the same costs as the whole report, Anthropic left out'
+  );
+});
+
+test('re-read after a parser change: by fund-report status or by family; nothing else is fetched', async () => {
+  const { db } = goldenWarehouse();
+  const docs = realDocs();
+  await ingestNcsr(db, { ciks: ['707823', '44201'], get: fakeSec({ keep: [FID, GFA], docs }).get });
+  db.prepare("UPDATE ncsr_funds SET status = 'checks' WHERE accession = ? AND fund_no = 2").run(FID);
+  const byStatus = fakeSec({ keep: [FID, GFA], docs });
+  const r = await ingestNcsr(db, { ciks: ['707823', '44201'], get: byStatus.get, reread: { statuses: ['checks'] } });
+  assert.equal(r.ok, 1);
+  assert.ok(byStatus.calls.some(u => u.includes(primaryOf('707823', FID))));
+  assert.ok(
+    !byStatus.calls.some(u => u.includes(primaryOf('44201', GFA))),
+    'a filing with every report ok is not read'
+  );
+  assert.equal(
+    db.prepare("SELECT COUNT(*) n FROM ncsr_funds WHERE accession = ? AND status = 'ok'").get(FID).n,
+    2,
+    'read again with the parser: its stored rows replaced whole'
+  );
+  const byFamily = fakeSec({ keep: [FID, GFA], docs });
+  const r2 = await ingestNcsr(db, { ciks: ['707823', '44201'], get: byFamily.get, reread: { families: ['capital'] } });
+  assert.equal(r2.ok, 1);
+  assert.ok(byFamily.calls.some(u => u.includes(primaryOf('44201', GFA))));
+  assert.ok(!byFamily.calls.some(u => u.includes(primaryOf('707823', FID))));
+  const none = fakeSec({ keep: [FID, GFA], docs });
+  assert.equal((await ingestNcsr(db, { ciks: ['707823', '44201'], get: none.get })).ok, 0);
 });
 
 test('the latest read filing wins; an unreadable amendment withholds the period', () => {

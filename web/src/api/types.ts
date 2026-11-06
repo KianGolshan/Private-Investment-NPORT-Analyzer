@@ -668,6 +668,22 @@ export interface FilingRow {
   country: string | null;
   viaSpv: boolean;
   counts: boolean;
+  /** The admitted N-CSR cost line joined to this row (P15), as printed; absent elsewhere. */
+  ncsr?: NcsrLine;
+}
+
+export interface NcsrLine {
+  accession: string;
+  cik: string;
+  form: string;
+  periodEnd: string;
+  filingDate: string;
+  security: string;
+  costUsd: number;
+  acquiredFirst: string;
+  acquiredLast: string;
+  /** N-PORT rows the line covers (one line for several legs): its cost is the line's. */
+  rows: number;
 }
 
 export interface FilingRows extends Envelope, ScopeEcho {
@@ -679,6 +695,8 @@ export interface FilingRows extends Envelope, ScopeEcho {
   funds: number;
   truncated: boolean;
   rows: FilingRow[];
+  /** N-CSR filings whose admitted cost lines join the rows returned (P15); absent when none. */
+  ncsrFilings?: number;
 }
 
 export interface Leadership extends Envelope, ScopeEcho {

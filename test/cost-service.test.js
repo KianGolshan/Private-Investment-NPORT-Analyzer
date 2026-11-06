@@ -225,4 +225,51 @@ test('answers: holders, the drawer, the X-Ray, a firm book and round prices', as
   const a = book.byCompany.find(c => c.companyId === anthropic);
   assert.ok(a.positions.some(p => p.cost && p.fundKey === 'S000007119'));
   for (const p of a.positions.filter(q => q.cost)) assert.equal(p.cost.valueToCost, p.value / p.cost.usd);
+  // the Filings tab: each N-PORT row an admitted line joined, with that line; the rows of an
+  // N-CSR's filing only, the line's cost said once per row it covers
+  const rows = (await request(app).get(`/api/companies/${anthropic}/rows`)).body;
+  const crossed = rows.rows.filter(r => r.ncsr);
+  assert.ok(crossed.length >= 5);
+  assert.equal(rows.ncsrFilings, new Set(crossed.map(r => r.ncsr.accession)).size);
+  for (const r of crossed) {
+    const f = db
+      .prepare(
+        `SELECT f.* FROM cost_facts f JOIN ncsr_cost_links l ON l.accession = f.ncsr_accession
+           AND l.fund_no = f.fund_no AND l.line_no = f.line_no
+         WHERE l.nport_accession = ? AND l.row_key = ?`
+      )
+      .get(r.accession, r.rowKey);
+    assert.ok(f, `${r.accession} ${r.rowKey} is joined by an admitted line`);
+    assert.equal(r.ncsr.costUsd, f.cost_usd);
+    assert.equal(r.ncsr.accession, f.ncsr_accession);
+    assert.equal(r.fundKey, f.fund_key);
+  }
+  const f1 = crossed.find(r => r.ncsr.accession === GFA && /F-1/.test(r.title));
+  assert.equal(f1.ncsr.costUsd, 403109000);
+  assert.equal(f1.ncsr.periodEnd, '2026-02-28');
+  // a refused line (the whole Fidelity report is admitted; nothing refused joins a row)
+  const refused = db
+    .prepare(
+      `SELECT l.nport_accession, l.row_key FROM ncsr_cost_links l JOIN ncsr_costs c USING (accession, fund_no, line_no)
+       WHERE c.refused IS NOT NULL`
+    )
+    .all();
+  for (const x of refused)
+    assert.ok(!crossed.some(r => r.accession === x.nport_accession && r.rowKey === x.row_key && !r.ncsr));
+  // the Status page's counts
+  const st = (await request(app).get('/api/stats')).body.stats.ncsr;
+  assert.equal(st.filings, 2);
+  assert.equal(st.families, 2);
+  assert.equal(st.newestPeriod, '2026-05-31');
+  assert.equal(st.costs, db.prepare('SELECT COUNT(*) n FROM cost_facts').get().n);
+  assert.equal(st.failed, 0);
+});
+
+test('Filings rows and Status counts are unchanged before any N-CSR is read', async () => {
+  const { db, app, idOf } = goldenWarehouse();
+  const rows = (await request(app).get(`/api/companies/${idOf('Anthropic')}/rows`)).body;
+  assert.equal(rows.ncsrFilings, undefined);
+  assert.ok(rows.rows.every(r => r.ncsr === undefined));
+  assert.equal((await request(app).get('/api/stats')).body.stats.ncsr, undefined);
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM ncsr_filings').get().n, 0);
 });

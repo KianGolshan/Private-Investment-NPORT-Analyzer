@@ -30,7 +30,7 @@ const DATES = ['2025-06-30', '2025-12-31', '2026-06-30', null]; // null: the new
 // hashes the reviewed files the data reflects, is still compared.
 const VOLATILE = new Set(['refreshId', 'job', 'generation', 'curationRev']);
 // fields the cost work (P15) may add to an existing answer; nothing else may change
-const ALLOWED_ADDED = new Set(['cost', 'costCoverage', 'roundPrices', 'ncsrFilings', 'acquired']);
+const ALLOWED_ADDED = new Set(['cost', 'costCoverage', 'roundPrices', 'ncsrFilings', 'acquired', 'ncsr']);
 
 const q = params => {
   const s = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== null && v !== undefined)).toString();

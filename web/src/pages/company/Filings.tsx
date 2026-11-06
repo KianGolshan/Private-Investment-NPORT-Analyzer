@@ -141,6 +141,40 @@ export default function Filings({ base, sq, name, newest, openPosition }: ViewPr
     },
     { id: 'country', header: 'Country', value: r => r.country },
   ];
+  // P15: the N-CSR cost line that joined each row by shares and value, only when one did
+  if (d?.ncsrFilings)
+    columns.push({
+      id: 'ncsr',
+      header: 'N-CSR cross-check',
+      title:
+        'The fund’s own N-CSR report for the same date lists this holding with the same shares and value, and its cost. Shown only where every check passes (ADR 0011)',
+      value: r => r.ncsr?.costUsd ?? null,
+      render: r =>
+        r.ncsr ? (
+          <span class="small">
+            cost {moneyC(r.ncsr.costUsd)}
+            {r.ncsr.rows > 1 && ` for ${r.ncsr.rows} rows`} ·{' '}
+            {r.ncsr.acquiredFirst === r.ncsr.acquiredLast
+              ? `acquired ${r.ncsr.acquiredFirst}`
+              : `acquired ${r.ncsr.acquiredFirst} to ${r.ncsr.acquiredLast}`}
+            <div class="muted">
+              <FilingRef cik={r.ncsr.cik} accession={r.ncsr.accession} date={r.ncsr.form} form={r.ncsr.form} />{' '}
+              {r.ncsr.periodEnd}
+            </div>
+          </span>
+        ) : (
+          <span class="muted">—</span>
+        ),
+      exportAs: [
+        { header: 'N-CSR accession', value: r => r.ncsr?.accession ?? null },
+        { header: 'N-CSR period end', value: r => r.ncsr?.periodEnd ?? null },
+        { header: 'N-CSR security as printed', value: r => r.ncsr?.security ?? null },
+        { header: 'N-CSR acquired from', value: r => r.ncsr?.acquiredFirst ?? null },
+        { header: 'N-CSR acquired to', value: r => r.ncsr?.acquiredLast ?? null },
+        { header: 'N-CSR rows covered', value: r => r.ncsr?.rows ?? null },
+      ],
+      wrap: true,
+    });
 
   return (
     <div class="stack">
@@ -165,6 +199,13 @@ export default function Filings({ base, sq, name, newest, openPosition }: ViewPr
             />
             <Kpi label="Filings" value={num(d.filings)} sub={d.truncated ? 'every matching row' : undefined} />
             <Kpi label="Funds" value={num(d.funds)} sub={d.truncated ? 'every matching row' : undefined} />
+            {!!d.ncsrFilings && (
+              <Kpi
+                label="Cross-checked by N-CSR"
+                value={num(d.rows.filter(r => r.ncsr).length)}
+                sub={`rows, from ${num(d.ncsrFilings)} N-CSR filings`}
+              />
+            )}
           </div>
           <Card title="Stored rows" flush>
             <DataTable

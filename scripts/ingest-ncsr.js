@@ -7,6 +7,9 @@
 //   npm run ingest:ncsr -- --backfill       # every filing not read yet, no cap
 //   npm run ingest:ncsr -- --cik 707823,44201 --max 10
 //   npm run ingest:ncsr -- --reread-unmapped  # again, filings with a fund no series matched
+//   npm run ingest:ncsr -- --reread checks,unmapped --reread-family troweprice
+//                                           # again, after a parser change: filings with a fund
+//                                           # report in these statuses, every read filing of a family
 //
 // Runs in the foreground; resumable (read filings are skipped, failed ones retried).
 require('dotenv').config();
@@ -14,11 +17,21 @@ const { ingestNcsr } = require('../lib/warehouse/ncsr');
 const { runJob } = require('../lib/warehouse/job');
 
 function args(argv) {
-  const out = { ciks: null, max: 150, rereadUnmapped: false };
+  const out = { ciks: null, max: 150, rereadUnmapped: false, reread: { statuses: [], families: [] } };
+  const STATUSES = ['unmapped', 'no_nport', 'checks', 'ok'];
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--backfill') out.max = Infinity;
     else if (argv[i] === '--reread-unmapped') out.rereadUnmapped = true;
-    else if (argv[i] === '--max') out.max = Number(argv[++i]);
+    else if (argv[i] === '--reread') {
+      out.reread.statuses = argv[++i].split(',');
+      const bad = out.reread.statuses.filter(x => !STATUSES.includes(x));
+      if (bad.length) throw new Error(`--reread: unknown status ${bad.join(', ')} (${STATUSES.join(', ')})`);
+    } else if (argv[i] === '--reread-family') {
+      out.reread.families = argv[++i].split(',');
+      const known = ['fidelity', 'capital', 'troweprice', 'morganstanley'];
+      const bad = out.reread.families.filter(x => !known.includes(x));
+      if (bad.length) throw new Error(`--reread-family: unknown family ${bad.join(', ')}`);
+    } else if (argv[i] === '--max') out.max = Number(argv[++i]);
     else if (argv[i] === '--cik') out.ciks = argv[++i].split(',').map(s => s.replace(/^0+/, ''));
     else throw new Error(`unknown argument: ${argv[i]}`);
   }
@@ -36,6 +49,7 @@ async function main() {
         ciks: opt.ciks,
         max: opt.max,
         rereadUnmapped: opt.rereadUnmapped,
+        reread: opt.reread,
         log: console.log,
       });
       for (const f of n.failedFilings) console.error(`  failed ${f.accession} (${f.form}, CIK ${f.cik}): ${f.error}`);

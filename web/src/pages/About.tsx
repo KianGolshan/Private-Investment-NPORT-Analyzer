@@ -18,6 +18,17 @@ export interface WarehouseStats {
   newestReportDate: string | null;
   /** The newest mark date of any private holding in force (W1). */
   newestPrivateMark?: string | null;
+  /** N-CSR cost reports (P15): absent before the first one is read. */
+  ncsr?: {
+    filings: number;
+    unreadable: number;
+    failed: number;
+    families: number;
+    newestPeriod: string | null;
+    costs: number;
+    companies: number;
+    funds: number;
+  };
 }
 
 const REPO = 'https://github.com/KianGolshan/Private-Investment-NPORT-Analyzer';

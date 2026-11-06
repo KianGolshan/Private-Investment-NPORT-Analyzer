@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-11-06T20:52:12.128Z",
+  "builtAt": "2026-11-06T21:12:12.237Z",
   "filings": {
     "0000707823-26-000042": {
       "cik": "707823",
@@ -62,6 +62,50 @@
       ],
       "note": "American Funds Insurance Series N-CSRS 2026-06-30: 24 portfolios in one report; Global Growth (no restricted table) and Growth Fund (16 cost lines) kept",
       "events": 574
+    },
+    "0000754510-26-000028": {
+      "cik": "754510",
+      "doc": "filing11205.htm",
+      "family": "fidelity",
+      "funds": [
+        "Fidelity® Blue Chip Growth Fund"
+      ],
+      "note": "Fidelity Blue Chip Growth N-CSRS 2026-01-31: Chobani and Trade Republic marked restricted but outside the stated total (set apart)",
+      "events": 300
+    },
+    "0000707823-25-000029": {
+      "cik": "707823",
+      "doc": "filing8325.htm",
+      "family": "fidelity",
+      "funds": [
+        "Fidelity® Growth Company Fund"
+      ],
+      "note": "Fidelity Growth Company N-CSRS 2024-11-30: DNA Script twice in the schedule, once in the cost table (set apart); \"Agomab Therapeutics SA:\" then \"warrants 10/10/33\"",
+      "events": 463
+    },
+    "0001193125-23-046133": {
+      "cik": "75170",
+      "doc": null,
+      "family": "troweprice",
+      "positioned": true,
+      "note": "T. Rowe Price Small-Cap Stock N-CSR 2022-12-31: no U+200C in the portfolio, \"Cost $—\", 62 restricted lines = $450,903 (000s)",
+      "events": 845
+    },
+    "0001193125-26-062880": {
+      "cik": "75170",
+      "doc": null,
+      "family": "troweprice",
+      "positioned": true,
+      "note": "T. Rowe Price Small-Cap Stock N-CSR 2025-12-31: no U+200C in the portfolio, a blank value cell (Farmers Business Network)",
+      "events": 873
+    },
+    "0001193125-26-062863": {
+      "cik": "313212",
+      "doc": null,
+      "family": "troweprice",
+      "textChunks": true,
+      "note": "T. Rowe Price Dynamic Credit N-CSR 2025-12-31: a coupon and maturity after the cost, \"†\" (not unitized) value-only lines, \"(2) (8)\"",
+      "events": 17
     },
     "0001104659-26-104596": {
       "cik": "836487",
