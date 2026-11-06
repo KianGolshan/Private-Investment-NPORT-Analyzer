@@ -100,6 +100,14 @@ export default function About() {
               it in its latest N-CEN, and that mapping is applied to every period.
             </li>
             <li>
+              <strong>Form N-CSR</strong> (and N-CSRS), the funds’ annual and semiannual shareholder reports, for what a
+              fund paid for each restricted holding and when it bought it. Read for Fidelity, Capital Group, T. Rowe
+              Price and Morgan Stanley funds. A cost is shown only when the report checks out against its own totals and
+              the line matches the fund’s N-PORT holding at the same date share for share and dollar for dollar;
+              anything less is left out, so many holdings have no cost. N-CSR never changes a holding, a mark or a
+              total.
+            </li>
+            <li>
               <strong>Fund calendars are staggered.</strong> Each fund files one N-PORT per fiscal quarter, within 60
               days of the quarter’s end, and only the quarter’s last month is made public. Some funds’ quarters end in
               Jan/Apr/Jul/Oct, others in Feb/May/Aug/Nov or Mar/Jun/Sep/Dec, so every holding shows its own mark date.

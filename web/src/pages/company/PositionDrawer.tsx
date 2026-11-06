@@ -6,6 +6,7 @@ import { scopeParams, useScope } from '../../scope/scope';
 import { Card, Empty, ErrorBox, FilingRef, Kpi, Loading } from '../../ui/bits';
 import { Chart } from '../../ui/Chart';
 import { DataTable, type Column } from '../../ui/DataTable';
+import { costColumns } from '../../ui/Cost';
 import { baseOption, type ChartTheme } from '../../ui/theme';
 import { useDialog } from '../../ui/useDialog';
 import { markLines, type MarkLine } from './markLines';
@@ -154,6 +155,8 @@ export function PositionDrawer({
       exportAs: [{ header: 'Prior mark', value: l => l.prevPrice }],
     },
     { id: 'value', header: 'Value', value: l => l.value, num: true, render: l => moneyC(l.value) },
+    // P15: the cost of a leg at its own N-CSR filing, or carried with the same shares
+    ...costColumns(hist.data?.legs ?? [], l => l.cost),
     {
       id: 'pos',
       header: 'From positions',

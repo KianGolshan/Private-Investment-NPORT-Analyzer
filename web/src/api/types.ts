@@ -142,6 +142,46 @@ export interface FundRef {
   fundLabel?: string;
 }
 
+/**
+ * A position's cost basis (P15, ADR 0011): reported by the fund in its N-CSR / N-CSRS
+ * cost table, admitted only when it validates completely (lib/services/cost.js).
+ * `carried`: the cost is from an earlier filing of the same fund and class, held with the
+ * same shares and no split since.
+ */
+export interface Cost {
+  usd: number;
+  shares: number;
+  /** Cost / shares, for a single-date lot only (a date range blends lots). */
+  perShare: number | null;
+  acquiredFirst: string;
+  acquiredLast: string;
+  singleLot: boolean;
+  /** The report date of the N-CSR (and N-PORT) the cost comes from. */
+  asOf: string;
+  carried: boolean;
+  valueToCost: number | null;
+  ncsrAccession: string;
+  nportAccession: string;
+}
+
+/** A total's cost: only when every position under it has one. */
+export interface CostTotal {
+  usd: number;
+  valueToCost: number | null;
+  positions: number;
+}
+
+/** Single-date lots of one class bought on one date at 2+ firms, within 0.5% (ADR 0011). */
+export interface RoundPrice {
+  classLabel: string;
+  acquiredOn: string;
+  price: number;
+  firms: number;
+  funds: number;
+  asOf: string;
+  evidence: { fundKey: string; firmId: number; ncsrAccession: string; reportDate: string; costPerShare: number }[];
+}
+
 export interface Position {
   rowKey: string;
   issuerName: string;
@@ -163,6 +203,7 @@ export interface Position {
   kind: 'direct' | 'spv' | 'fund';
   /** Percent of the fund's net assets as filed (N-PORT pctVal): 0.83 means 0.83%. */
   pctNav: number | null;
+  cost?: Cost;
 }
 
 export interface FirmRef {
@@ -184,6 +225,7 @@ export interface Holding extends FundRef {
   label: string | null;
   /** The fund's advising firms (current N-CEN adviser). */
   firms?: FirmRef[];
+  cost?: CostTotal;
 }
 
 export interface Exposure extends Envelope {
@@ -356,6 +398,7 @@ export interface MarkSeries extends Envelope {
     low: number | null;
     high: number | null;
   }[];
+  roundPrices?: RoundPrice[];
 }
 
 export interface Firm {
@@ -404,7 +447,9 @@ export interface FirmBook extends Envelope {
       value: number;
       pctNav: number | null;
       viaSpv: boolean;
+      cost?: Cost;
     }[];
+    cost?: CostTotal;
   }[];
   byFund: (FundRef & {
     markDate: string;
@@ -583,6 +628,7 @@ export interface FactLeg {
   markEffect: number;
   otherEffect: number;
   pctNav: number | null;
+  cost?: Cost;
 }
 
 export interface LegsAt extends Envelope, ScopeEcho {
@@ -792,6 +838,7 @@ export interface XrayHolding {
   unreviewed: { key: string; name?: string } | null;
   labels: string[];
   reason?: string;
+  cost?: Cost;
 }
 
 export interface Xray extends Envelope {
@@ -834,6 +881,14 @@ export interface Xray extends Envelope {
     }[];
     /** lists cut to the `shown` largest rows by value; the counts are the full lists' (lib/services/fund.js forDisplay) */
     truncated: { shown: number; privateHoldings: number; notPrivate: number } | null;
+    /** Private rows with a cost (P15): their count, value, cost, and share of private value. */
+    costCoverage?: {
+      positions: number;
+      valueUsd: number;
+      costUsd: number;
+      share: number | null;
+      valueToCost: number | null;
+    };
   };
 }
 

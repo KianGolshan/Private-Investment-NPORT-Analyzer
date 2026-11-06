@@ -113,6 +113,20 @@ export default function Marks({ base, sq, name, newest }: ViewProps) {
           }),
         ];
       }
+      // P15: confirmed round prices (N-CSR: 2+ firms, one date, one price) as dated markers on
+      // the classes shown; none, no series (the chart reads as before)
+      const shownSet = new Set(cls ? [cls] : shownClasses);
+      const rounds = (m?.roundPrices ?? []).filter(r => shownSet.has(r.classLabel));
+      if (rounds.length)
+        series.push({
+          name: 'Confirmed round price',
+          type: 'scatter',
+          data: rounds.map(r => ({ value: [r.acquiredOn, r.price], name: `${r.classLabel} · ${r.firms} firms` })),
+          symbol: 'diamond',
+          symbolSize: 11,
+          itemStyle: { color: t.text },
+          z: 5,
+        });
       return {
         ...b,
         legend: { ...b.legend, data: series.map(x => x.name as string).filter(n => n !== 'Low') },

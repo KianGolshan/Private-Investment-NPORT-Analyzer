@@ -75,10 +75,19 @@ async function answers(app, db) {
   }
   for (const id of firms) urls.push(`/api/firms/${id}`, `/api/firms/${id}?date=2026-03-31`, `/api/firms/${id}/changes`);
   urls.push('/api/market/top', '/api/market/top?date=2026-03-31', '/api/sectors', '/api/firms', '/api/stats');
+  // one server and the global fetch's keep-alive pool: hundreds of requests on a few sockets (a new
+  // connection per request ran the machine out of local ports beside the API fuzz test)
+  const server = app.listen(0);
+  const base = `http://127.0.0.1:${server.address().port}`;
   const out = new Map();
-  for (const u of urls) {
-    const res = await request(app).get(u);
-    out.set(u, { status: res.status, body: stable(res.body) });
+  try {
+    for (const u of urls) {
+      const res = await fetch(base + u, { headers: { 'accept-encoding': 'identity' } });
+      const text = await res.text();
+      out.set(u, { status: res.status, body: stable(JSON.parse(text)) });
+    }
+  } finally {
+    server.close();
   }
   return out;
 }
