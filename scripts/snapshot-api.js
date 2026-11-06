@@ -25,7 +25,10 @@ const { warehouseRouter } = require('../lib/api/warehouse');
 
 const COMPANIES = ['Anthropic', 'Databricks', 'Anduril Industries'];
 const DATES = ['2025-06-30', '2025-12-31', '2026-06-30', null]; // null: the newest
-const VOLATILE = new Set(['refreshId', 'job', 'generation']);
+// curationRev: the git version of data/review the generation was built from, which changes
+// with any commit there (P15 adds data/review/ncsr_families.csv); the curation digest, which
+// hashes the reviewed files the data reflects, is still compared.
+const VOLATILE = new Set(['refreshId', 'job', 'generation', 'curationRev']);
 // fields the cost work (P15) may add to an existing answer; nothing else may change
 const ALLOWED_ADDED = new Set(['cost', 'costCoverage', 'roundPrices', 'ncsrFilings', 'acquired']);
 
