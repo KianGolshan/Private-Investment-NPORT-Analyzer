@@ -369,7 +369,16 @@ test('T. Rowe Price: costs inline in positioned text, checked against the stated
   assert.equal(res.filter(r => r.match === 'exact').length, 32);
   // dropping one line breaks the stated total
   assert.ok(selfChecks({ ...st, restricted: st.restricted.slice(1), schedule: st.schedule.slice(1) }).some(c => !c.ok));
-  assert.throws(() => parseTRowePrice('<div>Annual report</div>'), /no "Statement of Assets and Liabilities/);
+  // no restricted holdings at all (T. Rowe Price's ETFs): no fund report with a cost, not an error
+  assert.deepEqual(
+    parseTRowePrice('<div>Annual report</div><table><tr><td>NET ASSETS</td><td>$17,090</td></tr></table>'),
+    []
+  );
+  // a restricted marker without the statement this parser reads: still an error
+  assert.throws(
+    () => parseTRowePrice('<div>Think &amp; Learn, Acquisition Date: 12/23/20, Cost $44,697</div>'),
+    /no "Statement of Assets and Liabilities/
+  );
 });
 
 test('Morgan Stanley: one filing, many portfolios; the cost in the name cell', () => {
