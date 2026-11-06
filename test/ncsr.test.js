@@ -612,6 +612,16 @@ test('T. Rowe Price credit funds: a coupon after the cost, value-only fund inter
     [one(dc.restricted, 'Altera Infrastructure').shares, one(dc.restricted, 'Kobold Metals, Series C-2').value],
     [639, 5745000]
   );
+  // Global Growth Stock 2024-04-30 prints a value below the unit as an undecoded Windows-1252 dash
+  // (U+0097): shares and "—", never a value-only line (the stated total caught the misreading)
+  const gg = parseTRowePrice(
+    '<div>April 30, 2024 Statement of Assets and Liabilities</div><div>NET ASSETS $ 1,000\u200c</div>' +
+      '<div>(3) Security cannot be offered for public resale without first being registered.</div>' +
+      '<div>The aggregate value of restricted securities (excluding 144A holdings) at period end amounts to $0 and represents 0.0% of net assets.</div>' +
+      '<div>Reliance Industries 149,438\u200c 5,242\u200c Think &amp; Learn, Acquisition Date: 12/23/20 - 1/15/21, Cost $1,309 (1)(2)(3) 821\u200c \u0097\u200c United Spirits 142,370\u200c 1,998\u200c</div>'
+  )[0];
+  const tl = one(gg.restricted, 'Think & Learn');
+  assert.deepEqual([tl.shares, tl.value, tl.belowUnit, tl.cost], [821, 0, true, 1309000]);
   // a value-only line never joins N-PORT: no share count to match
   assert.equal(
     refusal({ ...feeder, match: 'none', nport: [], scheduleFound: true }, { fundOk: true, unit: 1000 }),

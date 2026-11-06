@@ -16,7 +16,7 @@ const path = require('node:path');
 
 const { goldenWarehouse } = require('./helpers/warehouseApp');
 const { ingestNcsr, readFiling, store, readFamilies } = require('../lib/warehouse/ncsr');
-const { buildCostFacts } = require('../lib/warehouse/cost-facts');
+const { buildCostFacts, roundPrices, precise } = require('../lib/warehouse/cost-facts');
 const { buildPositionFacts } = require('../lib/warehouse/position-facts');
 const { refusal, allChecksPassed } = require('../lib/ncsr/match');
 const { imageOnly } = require('../lib/ncsr/filing');
@@ -270,6 +270,25 @@ test('confirmed round prices: two firms, one date, one class, within 0.5%', () =
   ]);
   // Series L: Fidelity 2025-12-18, Capital Group 2025-12-16 (two dates); Anthropic H: one firm (two Fidelity funds)
   assert.ok(!rows.some(r => r.class_label === 'Series L' || r.name === 'Anthropic'));
+
+  // a lot too small for its printed unit neither confirms nor contradicts: 459 Series J shares at "$42"
+  // thousand (T. Rowe Price, 2025-04-30) are $90.41 to $92.59 a share; a precise lot at that price does refuse
+  assert.equal(precise({ shares: 459, cost_unit: 1000, cost_per_share: 42000 / 459 }), false);
+  assert.equal(precise({ shares: 292276, cost_unit: 1000, cost_per_share: 27036000 / 292276 }), true);
+  assert.equal(precise({ shares: 1, cost_unit: 1000, cost_per_share: 1000 }), false);
+  const facts = db.prepare('SELECT * FROM cost_facts').all();
+  const j = facts.find(f => f.class_label === 'Series J' && f.acquired_first === '2024-12-17');
+  const lot = (shares, cost) => ({
+    ...j,
+    fund_key: 'S000007118',
+    shares,
+    cost_usd: cost,
+    cost_per_share: cost / shares,
+    cost_unit: 1000,
+  });
+  const jOf = list => roundPrices(db, list).find(r => r.class_label === 'Series J');
+  assert.equal(Math.round(jOf([...facts, lot(459, 42000)]).price * 100) / 100, 92.5);
+  assert.equal(jOf([...facts, lot(459000, 42000000)]), undefined, '$91.50 on 459,000 shares disagrees');
 });
 
 test('admission is strict: one dollar too far, one share off, an unreviewed company or a vehicle refuse the line', () => {
