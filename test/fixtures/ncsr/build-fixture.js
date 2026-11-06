@@ -63,6 +63,13 @@ const FILINGS = {
     textChunks: true,
     note: 'T. Rowe Price Science & Technology N-CSR 2025-12-31: costs inline, a blank cost ("Cost $") and a blank value',
   },
+  '0001193125-26-383201': {
+    cik: '729528',
+    doc: null,
+    family: 'capital',
+    sections: ['Global Growth Fund', 'Growth Fund'],
+    note: 'American Funds Insurance Series N-CSRS 2026-06-30: 24 portfolios in one report; Global Growth (no restricted table) and Growth Fund (16 cost lines) kept',
+  },
   '0001104659-26-104596': {
     cik: '836487',
     doc: null,
@@ -82,6 +89,7 @@ const HOLDINGS = {
   '0001099263-26-002527': 'T. Rowe Price Science & Technology Fund (S000002119) 2025-12-31',
   '0001410368-26-084089': 'Morgan Stanley Growth Portfolio (S000002828) 2026-06-30',
   '0001410368-26-084068': 'Morgan Stanley Inception Portfolio (S000002825) 2026-06-30',
+  '0001193125-26-371320': 'American Funds Insurance Series Growth Fund (S000008791) 2026-06-30',
 };
 const IMAGE_ONLY = '0001206774-21-000424'; // T. Rowe Price Growth Stock N-CSR 2020-12-31 (F71)
 const OTHER_ROWS = 3; // unmarked schedule rows kept per fund (the parser must skip them for the cost table)
@@ -176,6 +184,16 @@ async function main() {
       ].map(re => (text.match(re) || [''])[0]);
       const lines = [...text.matchAll(TROWE_ROW)].map(m => m[0]);
       kept = [...pick, ...lines].filter(Boolean).map(t => ({ type: 'text', text: t }));
+    } else if (f.sections) {
+      // whole portfolios of a multi-fund Capital Group report: each from its fund's name to the next one's
+      const heads = events
+        .map((e, i) => (/^(?:Summary )?[Ii]nvestment portfolio \w+ \d/.test(e.type === 'row' ? e.cells.join(' | ') : e.text) ? i : -1))
+        .filter(i => i >= 0);
+      for (const name of f.sections) {
+        const k = heads.findIndex(h => (events[h - 1].text || '').replace(/\s*\(formerly [^)]*\)/, '') === name);
+        if (k < 0) throw new Error(`${accession}: no portfolio for ${name}`);
+        kept = kept.concat(events.slice(heads[k] - 1, k + 1 < heads.length ? heads[k + 1] - 1 : events.length));
+      }
     } else if (f.whole && f.family === 'morganstanley') {
       const starts = events
         .map((e, i) => (e.type === 'text' && /^(?:Consolidated )?Portfolio of Investments$/.test(e.text) ? i : -1))

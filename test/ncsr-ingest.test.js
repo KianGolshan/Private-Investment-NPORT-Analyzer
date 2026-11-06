@@ -152,6 +152,9 @@ test('ingest: an image-only report is unreadable (not retried); an SEC refusal s
     assert.equal(again.unreadable + again.failed + again.ok, 0, 'an unreadable report is final');
     assert.ok(imageOnly(read(`imageonly/${IMG}.htm`), 43));
     assert.ok(!imageOnly(read(`${GFA}.html`), 43), 'a report with a portfolio is never image-only');
+    // a note's words are not a portfolio (T. Rowe Price Health Sciences 2022-06-30, 37 page images)
+    assert.ok(imageOnly('<p>Private Investments Issued by Special Purpose Acquisition Companies</p>', 37));
+    assert.ok(!imageOnly('<p>Databricks, Series J, Acquisition Date: 12/17/24, Cost $1,974</p>', 37));
     // HTTP 503 after the client's retries: the run stops there; filings read before it are kept,
     // the refused one is not touched, and the next run starts at it
     const { db: db2 } = goldenWarehouse();

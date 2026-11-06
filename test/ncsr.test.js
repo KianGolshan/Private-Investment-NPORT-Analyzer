@@ -182,7 +182,7 @@ test('parsers fail loudly on layouts they cannot read', () => {
   );
   assert.throws(() => parseCapitalGroup('<div>nothing</div>'), /no "Investment portfolio/);
   const two = '<div>Investment portfolio May 31, 2026</div><div>Investment portfolio May 31, 2026</div>';
-  assert.throws(() => parseCapitalGroup(two), /multi-fund/);
+  assert.throws(() => parseCapitalGroup(two), /no fund name above the investment portfolio/);
   const bad = read('0001193125-26-195253.html').replace('<td>8/29/2025</td>', '<td>8/29/2025</td><td>extra</td>');
   assert.throws(() => parseCapitalGroup(bad), /unreadable restricted row: Anthropic, PBC, Class F/);
   const noTotal = read('0001193125-26-195253.html').replace(/<tr><td>Total<\/td>.*?<\/tr>/, '');
@@ -461,4 +461,30 @@ test('Fidelity SAI funds: the distribution notice between the name and "Annual R
     '<div>Schedule of Investments October 31, 2025</div>' +
     '<table><tr><td>Acme Corp.</td><td>10</td><td>5</td></tr><tr><td>NET ASSETS - 100.0%</td><td>100</td></tr></table>';
   assert.equal(parseFidelity(doc)[0].fundName, 'Fidelity SAI International Index Fund');
+});
+
+test('Capital Group multi-fund report (American Funds Insurance Series): one section per portfolio', () => {
+  const funds = parseCapitalGroup(read('0001193125-26-383201.html'));
+  assert.deepEqual(
+    funds.map(f => [f.fundName, f.periodEnd, f.restricted.length]),
+    [
+      ['Global Growth Fund', '2026-06-30', 0],
+      ['Growth Fund', '2026-06-30', 16],
+    ]
+  );
+  const series = headerSeries(read('headers/0001193125-26-383201.html'));
+  assert.equal(series.length, 24, 'the header names all 24 portfolios');
+  assert.deepEqual(
+    funds.map(f => seriesFor(f, series).seriesId),
+    ['S000008786', 'S000008791']
+  );
+  for (const f of funds) for (const c of selfChecks(f)) assert.ok(c.ok, `${f.fundName}: ${c.check} (${c.detail})`);
+  const res = matchToNport(funds[1], HOLDINGS['0001193125-26-371320']);
+  assert.ok(res.filter(r => r.match === 'exact').length >= 10, 'Growth Fund lines join its N-PORT');
+  // a section without its fund's name above the heading: an error, never a guess
+  assert.throws(
+    () =>
+      parseCapitalGroup('<div>Investment portfolio June 30, 2026</div><div>Investment portfolio June 30, 2026</div>'),
+    /no fund name above the investment portfolio/
+  );
 });

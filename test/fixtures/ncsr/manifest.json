@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-11-06T05:07:53.234Z",
+  "builtAt": "2026-11-06T20:52:12.128Z",
   "filings": {
     "0000707823-26-000042": {
       "cik": "707823",
@@ -52,6 +52,17 @@
       "note": "T. Rowe Price Science & Technology N-CSR 2025-12-31: costs inline, a blank cost (\"Cost $\") and a blank value",
       "events": 36
     },
+    "0001193125-26-383201": {
+      "cik": "729528",
+      "doc": null,
+      "family": "capital",
+      "sections": [
+        "Global Growth Fund",
+        "Growth Fund"
+      ],
+      "note": "American Funds Insurance Series N-CSRS 2026-06-30: 24 portfolios in one report; Global Growth (no restricted table) and Growth Fund (16 cost lines) kept",
+      "events": 574
+    },
     "0001104659-26-104596": {
       "cik": "836487",
       "doc": null,
@@ -100,6 +111,10 @@
     "0001410368-26-084068": {
       "note": "Morgan Stanley Inception Portfolio (S000002825) 2026-06-30",
       "rows": 3
+    },
+    "0001193125-26-371320": {
+      "note": "American Funds Insurance Series Growth Fund (S000008791) 2026-06-30",
+      "rows": 16
     }
   }
 }
