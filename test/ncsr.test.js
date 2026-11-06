@@ -374,6 +374,8 @@ test('T. Rowe Price: costs inline in positioned text, checked against the stated
     parseTRowePrice('<div>Annual report</div><table><tr><td>NET ASSETS</td><td>$17,090</td></tr></table>'),
     []
   );
+  // nothing in the text at all (a report printed as images): an error, never "none"
+  assert.throws(() => parseTRowePrice('<div>Annual report</div><div>T. Rowe Price</div>'), /no statements in the text/);
   // a restricted marker without the statement this parser reads: still an error
   assert.throws(
     () => parseTRowePrice('<div>Think &amp; Learn, Acquisition Date: 12/23/20, Cost $44,697</div>'),
