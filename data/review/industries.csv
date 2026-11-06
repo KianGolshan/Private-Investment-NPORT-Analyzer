@@ -60,7 +60,7 @@ company_id,company,industry,themes,confidence,source,note
 60,Discord,tech.consumer_internet,,high,p14-review,
 61,Moloco,tech.software,ai,high,p14-review,machine-learning ad platform
 62,Endeavor,comm.media,,high,p14-review,
-63,Illuminated,,,unclear,p14-review,ILLUMINATED HOLDINGS INC; web search found no match
+63,Illuminated,hc.tools,,medium,weekly-review,Illuminated Holdings: Janesville WI holding company of SHINE Technologies (fusion-based medical isotopes) and Phoenix imaging; 0000035402-26-006748; weekly review 2026-11-05
 64,PHI Group Inc/DE,ind.transport,,high,p14-review,helicopter services
 65,Davidson Homes,re.real_estate,,high,p14-review,
 66,Aimbridge Topco,cons.travel,,high,p14-review,hotel management
@@ -97,7 +97,7 @@ company_id,company,industry,themes,confidence,source,note
 97,National Resilience,hc.tools,,high,p14-review,biomanufacturing
 98,Cineworld,comm.media,,high,p14-review,
 99,YiChang HEC ChangJiang Pharmaceutical,hc.biotech,,high,p14-review,
-100,Mustang Express,,,unclear,p14-review,ARM MUSTANG EXPRESS HOLDCO LLC; web search found no operating business
+100,Mustang Express,enr.oil_gas,,medium,weekly-review,ARM Mustang Express Holdco: ARM Energy/PIMCO 236-mile Texas natural gas pipeline to Gulf Coast LNG (FID Oct 2025); 0001410368-26-090256; weekly review 2026-11-05
 101,Energy Technologies,,,unclear,p14-review,two raw names (INC. and LTD.); web search finds several unrelated companies
 102,Fabletics,cons.brands,,high,p14-review,
 103,Skyhawk Therapeutics,hc.biotech,,high,p14-review,
@@ -107,7 +107,7 @@ company_id,company,industry,themes,confidence,source,note
 107,Apartment List,re.proptech,,high,p14-review,
 108,Castle Creek Biosciences,hc.biotech,,high,p14-review,
 109,Impulse Dynamics Ireland,hc.devices,,high,p14-review,
-110,Ascent CNR,,,unclear,p14-review,no confirmed operating business
+110,Ascent CNR,enr.oil_gas,,medium,weekly-review,"Ascent CNR Corporation: continues Ascent Resources LLC Class A in the same funds (instrument ECA1316, 1,102,146 sh) from 2026-01; business taken from Ascent Resources, a gas E&P; 0001193125-26-130881; weekly review 2026-11-05"
 111,Socure,tech.security,fintech,high,p14-review,identity verification
 112,Jumpcloud,tech.security,,high,p14-review,
 113,Paragon Biosciences Emalex Capital,hc.biotech,,high,p14-review,
@@ -589,8 +589,6 @@ company_id,company,industry,themes,confidence,source,note
 1301,Minted,cons.retail,,high,p14-queue,
 1302,Compass Precision,ind.manufacturing,,high,p14-queue,
 1303,TAE Technologies,enr.clean,climate,high,p14-queue,fusion energy
-1304,Odyssey Therapeutics,hc.biotech,,high,p14-queue,
-1305,AgomAb Therapeutics,hc.biotech,,high,p14-queue,
 1306,Manipal Health Enterprises,hc.services,,high,p14-queue,Indian hospital chain
 1307,Serta Simmons Bedding,cons.brands,,high,p14-queue,post-restructuring
 1308,Gibson Brands,cons.brands,,high,p14-queue,guitars
@@ -774,7 +772,7 @@ company_id,company,industry,themes,confidence,source,note
 1486,Par Health,hc.services,,medium,p14-queue,2026-10-21: confirmed operating company
 1487,Ilumed,hc.services,,medium,p14-queue,2026-10-21: confirmed operating company
 1488,GridSource,ind.business_services,,medium,p14-queue,2026-10-21: confirmed operating company
-1489,Arena Brands,,,unclear,p14-queue,"2026-10-21: confirmed operating company, industry not yet classified"
+1489,Arena Brands,cons.brands,,medium,weekly-review,"Arena Brands: parent of Hatco (Stetson, Resistol hats) and western brands; 0000035402-26-006131; weekly review 2026-11-05"
 1490,Sapience Therapeutics,hc.biotech,,medium,p14-queue,Series B-1 preferred and warrants; 2026-10-21 review
 1491,BARBRI,cons.education,,high,p14-queue,BarBri Topco L.P.: bar-exam preparation; 2026-10-21 review
 1492,EverSaaS,tech.software,,medium,p14-queue,EverSaaS Holdings Pte. Ltd: software holding company; 2026-10-21 review
@@ -782,7 +780,7 @@ company_id,company,industry,themes,confidence,source,note
 1494,Golden NA Power,enr.power,,medium,p14-queue,2026-10-21: confirmed operating company
 1495,CCS Medical,hc.services,,high,p14-queue,Chronic Care Services (titles: CCS MEDICAL INC.(CHRONIC CARE)); 2026-10-21 review
 1496,Colony Labs,,,unclear,p14-queue,"business not confirmed; 2026-10-21: confirmed operating company, industry not yet classified"
-1497,Ciro Holding,,,unclear,p14-queue,"Argentina; business not confirmed; 2026-10-21: confirmed operating company, industry not yet classified"
+1497,Ciro Holding,hc.services,,low,weekly-review,Ciro Holding S.A.: Buenos Aires holding company whose listed subsidiaries include Swiss Medical S.A. (health plans and clinics); 0000880859-26-000161; weekly review 2026-11-05
 1498,Lumilens,tech.semis,ai,medium,p14-queue,2026-10-21: confirmed operating company
 1499,Mining Investments Resources,mat.mining,,medium,p14-queue,2026-10-21: confirmed operating company
 1500,Drafteame,comm.media,,medium,p14-queue,Brazil fantasy sports; 2026-10-21: confirmed operating company
@@ -790,7 +788,7 @@ company_id,company,industry,themes,confidence,source,note
 1502,BlueVoyant,tech.security,,high,p14-queue,BlueVoyant LLC / Inc.; 2026-10-21 review
 1503,Vantage Airport Group,ind.transport,,medium,p14-queue,Vantage Airport Group (New York) LLC: airport operator; 2026-10-21 review
 1504,ClareMedica,hc.services,,medium,p14-queue,"ClareMedica Parent Holdings, LP Class A units; 2026-10-21 review"
-1505,Invisible Narratives,,,unclear,p14-queue,Series A preferred; business not confirmed; 2026-10-21 review
+1505,Invisible Narratives,comm.media,,high,weekly-review,"Invisible Narratives: digital content studio (creator IP incl. Skibidi Toilet), founded by ex-Paramount president Adam Goodman; 0001049169-26-002356; weekly review 2026-11-05"
 1506,Massiv Brands,cons.brands,,medium,p14-queue,2026-10-21: confirmed operating company
 1507,CuraeChoice,hc.services,,medium,p14-queue,2026-10-21: confirmed operating company
 1508,Central Nevada Gold,mat.mining,,medium,p14-queue,2026-10-21: confirmed operating company
@@ -839,7 +837,6 @@ company_id,company,industry,themes,confidence,source,note
 1551,Incendia Therapeutics,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
 1552,IQ Bar,cons.food,,medium,p14-queue,"long tail, 2026-10-21"
 1553,Procera Networks,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
-1554,Tiernan Gold,mat.mining,,medium,p14-queue,"long tail, 2026-10-21"
 1555,Flowcode (DTX),tech.software,,medium,p14-queue,"long tail, 2026-10-21"
 1556,Home Service Champ,cons.services,,medium,p14-queue,"long tail, 2026-10-21"
 1557,P.J. Fitzpatrick,cons.services,,medium,p14-queue,"long tail, 2026-10-21"
@@ -1134,7 +1131,6 @@ company_id,company,industry,themes,confidence,source,note
 1846,DayZero,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
 1847,Samson Investment Co.,enr.oil_gas,,medium,p14-queue,"long tail, 2026-10-21"
 1848,Morae Global,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
-1849,RideNow Group,cons.retail,,medium,p14-queue,"long tail, 2026-10-21"
 1850,American Zinc Recycling,mat.materials,climate,medium,p14-queue,"long tail, 2026-10-21"
 1851,ReadySet Surgical,hc.devices,,medium,p14-queue,"long tail, 2026-10-21"
 1852,RPS Group,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
@@ -1242,10 +1238,23 @@ company_id,company,industry,themes,confidence,source,note
 1954,Mythic,tech.semis,ai,medium,p14-queue,"long tail, 2026-10-21"
 1955,Service King,cons.services,,medium,p14-queue,"long tail, 2026-10-21"
 1956,Thrasio,cons.retail,,medium,p14-queue,"long tail, 2026-10-21"
-1957,Blaize,tech.semis,ai,medium,p14-queue,"long tail, 2026-10-21"
 1958,Berkline Benchcraft,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
 1959,Volocopter,ind.aerospace_defense,,medium,p14-queue,"long tail, 2026-10-21"
 1960,Next Renewable Fuels,enr.clean,climate,medium,p14-queue,"long tail, 2026-10-21"
 1961,Affinion,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
 1962,AFGlobal,enr.oil_gas,,medium,p14-queue,"long tail, 2026-10-21"
 1963,Getir,cons.retail,,medium,p14-queue,"long tail, 2026-10-21"
+1964,Souffle Therapeutics,hc.biotech,,medium,weekly-review,Souffle Therapeutics: RNA (siRNA) therapeutics developer; Fidelity Series rows 0000035402-26-006789; weekly review 2026-11-05
+1965,Epicrispr Biotechnologies,hc.biotech,,high,weekly-review,Epicrispr Biotechnologies (Epic Bio): epigenetic gene-editing therapies; 0000035402-26-006876; weekly review 2026-11-05
+1966,Build Holdco,,,unclear,weekly-review,"Build Holdco, LLC: Fidelity bond-fund equity (instrument NAH837000), operating business not found on the web; 0000035402-26-006860; weekly review 2026-11-05"
+1967,Velaura AI,tech.semis,ai,high,weekly-review,Velaura AI (formerly Auradine): low-power AI compute chips; Aug 2026 Series A led by Seligman Ventures; 0001410368-26-109470; weekly review 2026-11-05
+1968,Core Automation,tech.ai_models,ai,high,weekly-review,Core Automation: AI research lab (continual-learning agents) founded by ex-OpenAI VP Jerry Tworek; 0001410368-26-109470; weekly review 2026-11-05
+1969,Clockwork Systems,tech.software,ai,medium,weekly-review,Clockwork Systems (formerly Tick Tock Networks): network software for AI/GPU clusters (FleetIQ); LEI 549300N1JVMJVBPAI636; 0001410368-26-109470; weekly review 2026-11-05
+1970,Maven Robotics,ind.autonomy,robotics,high,weekly-review,Maven Robotics: general-purpose industrial robots; Sep 2026 $100M Series A led by RoboStrategy; 0000894189-26-030076; weekly review 2026-11-05
+1971,STG Logistics,ind.transport,,high,weekly-review,"STG Logistics: intermodal and container logistics; lenders took equity on exit from chapter 11 (Jul 2026); STG Distribution, LLC rows 0001112996-26-000422; weekly review 2026-11-05"
+1972,Eccentric Machines,ind.autonomy,robotics,medium,weekly-review,Eccentric Machines: actuators and motion control for robots; 0000894189-26-030076; weekly review 2026-11-05
+1973,Quantix (A&R Logistics),ind.transport,,high,weekly-review,Quantix (A&R Logistics): bulk chemical and plastics trucking and logistics; lender restructuring 2026; 0001112996-26-000422; weekly review 2026-11-05
+1974,Coco Robotics,ind.autonomy,robotics,high,weekly-review,"Coco Robotics (legal name Cyan Robotics, Inc.): sidewalk delivery robots; SAFE via SPV (filer id COCO_SPV_SAFE); 0000894189-26-030076; weekly review 2026-11-05"
+1975,Athletico Physical Therapy,hc.services,,high,weekly-review,"Athletico Physical Therapy: outpatient physical therapy clinics; Athletico Group, LLC rows 0000035402-26-006860; weekly review 2026-11-05"
+1976,Affinivax,hc.biotech,,high,weekly-review,Affinivax: vaccine developer (acquired by GSK in 2022); 0001752724-22-189683; weekly review 2026-11-05
+1977,United FP Holdings,cons.services,,medium,weekly-review,United FP (United PF) Holdings: Planet Fitness franchisee gyms; LEI 2549002AF6PASVP2G486; 0001410368-26-109087; weekly review 2026-11-05
