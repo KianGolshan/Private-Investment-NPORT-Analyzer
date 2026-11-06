@@ -431,3 +431,18 @@ asked to "fix and implement everything" without a paid model for the backfill.
 | **W4**  | `/sectors`, `/sectors/:level/:code`, the company classification chip, glossary                                                                                    | Done  |
 | **W5**  | nightly watch: new names over $1M in any number of funds, and companies not yet classified                                                                        | Done  |
 | Later   | an opt-in cheap-model suggestion for new names (capped in cents); the 8 companies not yet classified; deploy (the user merges)                                    | Open  |
+
+## Phase 15: cost basis from N-CSR (2026-11-05; plan approved by the user, ADR 0011)
+
+Research and sample: [plans/ncsr-research.md](plans/ncsr-research.md). The user's rule: only 100% validatable data;
+any doubt, leave it out; every current datapoint keeps working; Anthropic, Databricks and Anduril are the test cases.
+
+| Wave   | What                                                                                                                                                                            | State |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| **W0** | ADR 0011; the non-regression harness (`scripts/snapshot-api.js`, 6,881 answers) and its baseline                                                                                | Done  |
+| **W1** | migration 0024, `lib/warehouse/ncsr.js`, `npm run ingest:ncsr`, family registry (93), quarantine, doctor, nightly step (150)                                                    | Done  |
+| **W2** | `cost_facts` under the admission rule, confirmed round prices                                                                                                                   | Done  |
+| **W3** | `lib/services/cost.js`; cost on holders, drawer legs, X-Ray rows, firm book; round prices on company and marks answers                                                          | Done  |
+| **W4** | workspace: Cost and Value ÷ cost columns where a cost exists, the round-price tile and chart markers, glossary, About                                                           | Done  |
+| **W5** | backfill (2,576 filings: 1,934 read, 420 image-only, 222 failed); 17,872 costs; 1,335 primary-company costs = raw EDGAR (F72)                                                   | Done  |
+| Later  | parsers for the refused layouts (Capital Group multi-fund AFIS, Morgan Stanley's other trusts, Fidelity ETF statements); the vehicle-identity proposal (separate review import) | Open  |

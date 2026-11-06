@@ -155,7 +155,7 @@ const read = (dir, group) => {
   const out = new Map();
   for (const line of zlib.gunzipSync(fs.readFileSync(file)).toString().trim().split('\n')) {
     const r = JSON.parse(line);
-    out.set(r.url, r);
+    out.set(r.url, { ...r, body: stable(r.body) }); // provenance dropped on both sides, whenever recorded
   }
   return out;
 };
