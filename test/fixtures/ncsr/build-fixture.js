@@ -83,6 +83,7 @@ const HOLDINGS = {
   '0001410368-26-084089': 'Morgan Stanley Growth Portfolio (S000002828) 2026-06-30',
   '0001410368-26-084068': 'Morgan Stanley Inception Portfolio (S000002825) 2026-06-30',
 };
+const IMAGE_ONLY = '0001206774-21-000424'; // T. Rowe Price Growth Stock N-CSR 2020-12-31 (F71)
 const OTHER_ROWS = 3; // unmarked schedule rows kept per fund (the parser must skip them for the cost table)
 
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -246,6 +247,34 @@ async function main() {
     db.close();
   }
   fs.writeFileSync(path.join(OUT, 'holdings.json'), JSON.stringify(holdings) + '\n');
+  // each filing's SGML header (the series it covers), verbatim, and each registrant's submissions
+  // listing cut to its N-CSR forms: what the ingest (lib/warehouse/ncsr.js) reads besides the report
+  fs.mkdirSync(path.join(OUT, 'headers'), { recursive: true });
+  for (const accession of Object.keys(FILINGS))
+    fs.copyFileSync(path.join(cacheDir, `${accession}-headers.html`), path.join(OUT, 'headers', `${accession}.html`));
+  const submissions = {};
+  for (const cik of [...new Set(Object.values(FILINGS).map(f => f.cik))]) {
+    const sub = JSON.parse(fs.readFileSync(path.join(cacheDir, `submissions-${cik.padStart(10, '0')}.json`), 'utf8'));
+    const r = sub.filings.recent;
+    const keep = r.form.map((f, i) => (/^N-CSRS?(\/A)?$/.test(f) ? i : -1)).filter(i => i >= 0);
+    const pick = k => keep.map(i => r[k][i]);
+    submissions[cik] = {
+      cik: sub.cik,
+      name: sub.name,
+      filings: {
+        recent: Object.fromEntries(
+          ['accessionNumber', 'filingDate', 'reportDate', 'form', 'primaryDocument'].map(k => [k, pick(k)])
+        ),
+        files: [],
+      },
+    };
+  }
+  fs.writeFileSync(path.join(OUT, 'submissions.json'), JSON.stringify(submissions, null, 1) + '\n');
+  // a report printed as page images (T. Rowe Price Growth Stock 2020-12-31): its text
+  // document and its index (43 JPG pages), verbatim, for the "unreadable" path
+  fs.mkdirSync(path.join(OUT, 'imageonly'), { recursive: true });
+  for (const name of [`${IMAGE_ONLY}.htm`, `${IMAGE_ONLY}-index.json`, `${IMAGE_ONLY}-headers.html`])
+    fs.copyFileSync(path.join(cacheDir, name), path.join(OUT, 'imageonly', name));
   const manifest = {
     builtAt: new Date().toISOString(),
     filings: built,
