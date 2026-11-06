@@ -79,8 +79,9 @@ export function costColumns<T>(rows: T[], costOf: (r: T) => Cost | CostTotal | u
 /** The company header's tile: the newest confirmed round prices. */
 export function roundPriceTile(prices: RoundPrice[] | undefined) {
   if (!prices || !prices.length) return null;
+  // each price with its own date and firms: two classes are often bought on different dates
+  // (Anthropic H-1 2026-05-28 at 3 firms, G-1 2026-01-27 at 2)
   const shown = prices.slice(0, 2);
-  const first = prices[0]!;
   return {
     label: 'Confirmed round price',
     value: (
@@ -91,14 +92,18 @@ export function roundPriceTile(prices: RoundPrice[] | undefined) {
             style={{ display: 'block' }}
             title={`${p.funds} funds at ${p.firms} firms report paying ${money(p.price)} a share on ${p.acquiredOn} (N-CSR cost tables)`}
           >
-            {p.classLabel}: {money(p.price)}
+            {p.classLabel}: {money(p.price)}{' '}
+            <span class="muted">
+              · {p.acquiredOn} · {p.firms} firms
+            </span>
           </span>
         ))}
       </span>
     ),
     sub: (
       <>
-        bought {first.acquiredOn} · {first.firms} firms · <Term id="roundPrice" />
+        bought on the date shown · <Term id="roundPrice" />
+        {prices.length > shown.length && ` · ${prices.length - shown.length} more on Marks by class`}
       </>
     ),
   };

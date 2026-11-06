@@ -158,8 +158,12 @@ export default function Filings({ base, sq, name, newest, openPosition }: ViewPr
               ? `acquired ${r.ncsr.acquiredFirst}`
               : `acquired ${r.ncsr.acquiredFirst} to ${r.ncsr.acquiredLast}`}
             <div class="muted">
-              <FilingRef cik={r.ncsr.cik} accession={r.ncsr.accession} date={r.ncsr.form} form={r.ncsr.form} />{' '}
-              {r.ncsr.periodEnd}
+              <FilingRef
+                cik={r.ncsr.cik}
+                accession={r.ncsr.accession}
+                date={`${r.ncsr.form} ${r.ncsr.periodEnd}`}
+                form={r.ncsr.form}
+              />
             </div>
           </span>
         ) : (

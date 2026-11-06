@@ -43,6 +43,23 @@ change the per-share cost; some reports are page images.
 6. **Holding vehicles named by N-CSR are review suggestions,** applied only through the review import
    (`aliases.csv`, `via_spv`), never by the ingest.
 
+## Amendment, 2026-11-06: lines set apart
+
+The rule "any doubt, leave it out" applies to the line in doubt. A Fidelity fund report whose self-checks fail only
+because of **named lines** no longer refuses its other lines, when the filing's own totals prove those lines out:
+
+- a name printed a different number of times among the schedule's marked rows and in the cost table (DNA Script:
+  two schedule rows, one cost line, Growth Company 2022–2025): that name is set apart;
+- the marked rows exceed the stated restricted total by **exactly** the value of one row or of two rows, and no
+  other row or pair fits (Chobani and Trade Republic, bought Oct and Dec 2025, marked restricted but outside the
+  stated total, Blue Chip Growth 2026-01-31): those names are set apart.
+
+At most three names. With them taken out of the schedule, the cost table and the stated total, the rest of the
+report must pass every check outright. A shortfall (the stated total holds a row the parse did not read), a gap two
+pairings explain, or more names still refuse the whole report. A set-apart line is never admitted (refused `set
+apart`). The check list stored with the report records the names, why, and the failures before (`lines set apart`).
+Real cases and counterexamples: `test/ncsr.test.js`, `test/ncsr-ingest.test.js`.
+
 ## Consequences
 
 - Many holdings have no cost; the app shows "—" and a coverage share wherever a total appears. No cost totals in
