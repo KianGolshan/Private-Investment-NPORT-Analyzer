@@ -152,11 +152,27 @@ test('ingest: an image-only report is unreadable (not retried); an SEC refusal s
     assert.equal(again.unreadable + again.failed + again.ok, 0, 'an unreadable report is final');
     assert.ok(imageOnly(read(`imageonly/${IMG}.htm`), 43));
     assert.ok(!imageOnly(read(`${GFA}.html`), 43), 'a report with a portfolio is never image-only');
-    // HTTP 500/429 after the client's retries: the run fails, nothing is stored for the filing
+    // HTTP 503 after the client's retries: the run stops there; filings read before it are kept,
+    // the refused one is not touched, and the next run starts at it
     const { db: db2 } = goldenWarehouse();
-    const boom = fakeSec({ keep: [FID], fail: { [`${dirOf('707823', FID)}/${FID}-index-headers.html`]: 500 } });
-    await assert.rejects(ingestNcsr(db2, { ciks: ['707823'], get: boom.get }), /HTTP 500/);
-    assert.equal(db2.prepare('SELECT COUNT(*) n FROM ncsr_filings').get().n, 0);
+    const boom = fakeSec({
+      keep: [FID, GFA],
+      docs: realDocs(),
+      fail: { [`${dirOf('707823', FID)}/${FID}-index-headers.html`]: 503 },
+    });
+    const r2 = await ingestNcsr(db2, { ciks: ['707823', '44201'], get: boom.get });
+    assert.deepEqual([r2.ok, r2.stopped.accession, r2.stopped.status, r2.pending], [1, FID, 503, 1]);
+    assert.deepEqual(
+      db2.prepare('SELECT accession, status FROM ncsr_filings').all(),
+      [{ accession: GFA, status: 'ok' }],
+      'Growth Fund of America (filed first) kept; Fidelity not touched'
+    );
+    assert.equal(db2.prepare("SELECT status FROM ingest_log WHERE kind = 'ncsr'").get().status, 'partial');
+    const resumed = await ingestNcsr(db2, {
+      ciks: ['707823', '44201'],
+      get: fakeSec({ keep: [FID, GFA], docs: realDocs() }).get,
+    });
+    assert.deepEqual([resumed.ok, resumed.pending, resumed.stopped], [1, 0, null]);
   } finally {
     delete SUBMISSIONS['80257'];
   }

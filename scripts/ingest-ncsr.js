@@ -33,10 +33,12 @@ async function main() {
       const n = await ingestNcsr(db, { ciks: opt.ciks, max: opt.max, log: console.log });
       for (const f of n.failedFilings) console.error(`  failed ${f.accession} (${f.form}, CIK ${f.cik}): ${f.error}`);
       if (n.pending) console.log(`${n.pending} filing(s) left for the next run`);
-      return {
-        status: n.failedFilings.length ? 'partial' : 'ok',
-        note: n.failedFilings.length ? `${n.failedFilings.length} N-CSR filing(s) failed` : null,
-      };
+      if (n.stopped) console.error(`stopped: the SEC answered ${n.stopped.status} at ${n.stopped.accession}`);
+      const notes = [
+        n.failedFilings.length && `${n.failedFilings.length} N-CSR filing(s) failed`,
+        n.stopped && `stopped at ${n.stopped.accession} (SEC ${n.stopped.status}); ${n.pending} left for the next run`,
+      ].filter(Boolean);
+      return { status: notes.length ? 'partial' : 'ok', note: notes.join('; ') || null };
     },
     { log: console.log }
   );
