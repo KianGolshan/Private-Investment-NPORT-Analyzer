@@ -6,6 +6,7 @@
 //   npm run ingest:ncsr                     # filings not read yet, at most 150
 //   npm run ingest:ncsr -- --backfill       # every filing not read yet, no cap
 //   npm run ingest:ncsr -- --cik 707823,44201 --max 10
+//   npm run ingest:ncsr -- --reread-unmapped  # again, filings with a fund no series matched
 //
 // Runs in the foreground; resumable (read filings are skipped, failed ones retried).
 require('dotenv').config();
@@ -13,9 +14,10 @@ const { ingestNcsr } = require('../lib/warehouse/ncsr');
 const { runJob } = require('../lib/warehouse/job');
 
 function args(argv) {
-  const out = { ciks: null, max: 150 };
+  const out = { ciks: null, max: 150, rereadUnmapped: false };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--backfill') out.max = Infinity;
+    else if (argv[i] === '--reread-unmapped') out.rereadUnmapped = true;
     else if (argv[i] === '--max') out.max = Number(argv[++i]);
     else if (argv[i] === '--cik') out.ciks = argv[++i].split(',').map(s => s.replace(/^0+/, ''));
     else throw new Error(`unknown argument: ${argv[i]}`);
@@ -30,7 +32,12 @@ async function main() {
   const r = await runJob(
     'ingest-ncsr',
     async db => {
-      const n = await ingestNcsr(db, { ciks: opt.ciks, max: opt.max, log: console.log });
+      const n = await ingestNcsr(db, {
+        ciks: opt.ciks,
+        max: opt.max,
+        rereadUnmapped: opt.rereadUnmapped,
+        log: console.log,
+      });
       for (const f of n.failedFilings) console.error(`  failed ${f.accession} (${f.form}, CIK ${f.cik}): ${f.error}`);
       if (n.pending) console.log(`${n.pending} filing(s) left for the next run`);
       if (n.stopped) console.error(`stopped: the SEC answered ${n.stopped.status} at ${n.stopped.accession}`);

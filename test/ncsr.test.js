@@ -286,6 +286,25 @@ test('helpers: tolerance, debt names, filing-header series and fund names', () =
   assert.equal(seriesFor(GFA, [{ seriesId: 'S000009228', name: 'GROWTH FUND OF AMERICA' }]).seriesId, 'S000009228');
   assert.equal(seriesFor(GFA, series), null, 'a single-fund parse needs a single-series filing');
   assert.equal(normName('The Growth Fund of America ®'), 'growth fund of america');
+  // real naming gaps from the backfill (2026-11-06): the header escapes names; ℠; VIP prefixes
+  const fid = headerSeries(
+    '<pre>&lt;SERIES-ID&gt;S000000001\n&lt;SERIES-NAME&gt;Fidelity Capital &amp; Income Fund\n' +
+      '&lt;SERIES-ID&gt;S000000002\n&lt;SERIES-NAME&gt;Fidelity Women&#39;s Leadership Fund\n' +
+      '&lt;SERIES-ID&gt;S000000003\n&lt;SERIES-NAME&gt;International Index Portfolio\n' +
+      '&lt;SERIES-ID&gt;S000000004\n&lt;SERIES-NAME&gt;Freedom 2065 Portfolio\n</pre>'
+  );
+  const id = name => (seriesFor({ fundName: name }, fid) || {}).seriesId || null;
+  assert.equal(id('Fidelity Capital & Income Fund'), 'S000000001');
+  assert.equal(id('Fidelity Women’s Leadership Fund'), 'S000000002');
+  assert.equal(id('VIP International Index Portfolio'), 'S000000003');
+  assert.equal(id('VIP Freedom 2065 Portfolio℠'), 'S000000004');
+  assert.equal(id('VIP Index 500 Portfolio'), null, 'not in the header: no guess');
+  const twice = [...fid, { seriesId: 'S000000005', name: 'VIP International Index Portfolio' }];
+  assert.equal(
+    seriesFor({ fundName: 'Fidelity International Index Portfolio' }, twice),
+    null,
+    'two loose matches: none'
+  );
 });
 
 test('older layouts: Fidelity 2021 (thousands, issuer lines, paragraph footnotes, two-digit years)', () => {
@@ -420,4 +439,15 @@ test('Capital Group cell variants: en dashes, side-column sector labels, names o
   );
   assert.equal(f.restricted[2].name, 'Candid Therapeutics, Inc., Class B, noncumulative convertible preferred shares');
   for (const c of selfChecks(f)) assert.ok(c.ok, `${c.check} (${c.detail})`);
+});
+
+test('Fidelity SAI funds: the distribution notice between the name and "Annual Report" is not the name', () => {
+  const doc =
+    '<div>Fidelity SAI International Index Fund</div>' +
+    '<div>Offered exclusively to certain clients of the Adviser or its affiliates - not available for sale to the ' +
+    'general public. Fidelity SAI is a product name of Fidelity funds dedicated to certain programs affiliated with ' +
+    'Strategic Advisers LLC.</div><div>Annual Report</div><div>October 31, 2025</div>' +
+    '<div>Schedule of Investments October 31, 2025</div>' +
+    '<table><tr><td>Acme Corp.</td><td>10</td><td>5</td></tr><tr><td>NET ASSETS - 100.0%</td><td>100</td></tr></table>';
+  assert.equal(parseFidelity(doc)[0].fundName, 'Fidelity SAI International Index Fund');
 });
