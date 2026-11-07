@@ -10,6 +10,8 @@
 //   npm run ingest:ncsr -- --reread checks,unmapped --reread-family troweprice
 //                                           # again, after a parser change: filings with a fund
 //                                           # report in these statuses, every read filing of a family
+//   npm run ingest:ncsr -- --retry-failed   # every failed filing now (failures otherwise wait 30 days
+//                                           # after their third attempt)
 //
 // Runs in the foreground; resumable (read filings are skipped, failed ones retried).
 require('dotenv').config();
@@ -22,6 +24,7 @@ function args(argv) {
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--backfill') out.max = Infinity;
     else if (argv[i] === '--reread-unmapped') out.rereadUnmapped = true;
+    else if (argv[i] === '--retry-failed') out.retryFailed = true;
     else if (argv[i] === '--reread') {
       out.reread.statuses = argv[++i].split(',');
       const bad = out.reread.statuses.filter(x => !STATUSES.includes(x));
@@ -50,6 +53,7 @@ async function main() {
         max: opt.max,
         rereadUnmapped: opt.rereadUnmapped,
         reread: opt.reread,
+        retryFailed: opt.retryFailed,
         log: console.log,
       });
       for (const f of n.failedFilings) console.error(`  failed ${f.accession} (${f.form}, CIK ${f.cik}): ${f.error}`);

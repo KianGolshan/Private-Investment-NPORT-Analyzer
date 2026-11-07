@@ -60,6 +60,18 @@ pairings explain, or more names still refuse the whole report. A set-apart line 
 apart`). The check list stored with the report records the names, why, and the failures before (`lines set apart`).
 Real cases and counterexamples: `test/ncsr.test.js`, `test/ncsr-ingest.test.js`.
 
+## Amendment, 2026-11-06: nominal costs, precise round prices, re-linking
+
+- **A nominal cost is not a cost:** a line under one cent a share (warrants received with a round: Farmers Business
+  Network, $1 for 993,920; ASAPP, $2 for 2,365,967) is refused `nominal cost`, at the read and again at every
+  rebuild. Its value over cost (millions of times) would mislead.
+- **Round prices from precise lots only:** a lot whose printed unit's rounding moves its price by more than 0.5%
+  (459 shares at "$42" thousand) neither confirms nor contradicts a round price.
+- **Re-linking (nightly):** a fund report read before its N-PORT was stored is read again within 180 days; one
+  whose N-PORT was amended since (no longer canonical) is read again. Until then its costs fail closed.
+- **Failed filings** are retried on the next runs, then every 30 days after the third attempt (`--retry-failed`
+  forces them); never every night.
+
 ## Consequences
 
 - Many holdings have no cost; the app shows "—" and a coverage share wherever a total appears. No cost totals in

@@ -113,8 +113,8 @@ test('ingest: reads, stores, retries failures, never re-reads a stored filing, a
   assert.deepEqual([capped.ok, capped.pending], [1, 1]);
   assert.equal(
     db2.prepare('SELECT accession FROM ncsr_filings').get().accession,
-    GFA,
-    'filed 2026-04-30, before Fidelity'
+    FID,
+    'newest first: Fidelity filed 2026-07-23, Growth Fund of America 2026-04-30'
   );
   const log = db2.prepare("SELECT * FROM ingest_log WHERE kind = 'ncsr'").get();
   assert.deepEqual([log.filings, log.status], [1, 'ok']);
@@ -161,14 +161,14 @@ test('ingest: an image-only report is unreadable (not retried); an SEC refusal s
     const boom = fakeSec({
       keep: [FID, GFA],
       docs: realDocs(),
-      fail: { [`${dirOf('707823', FID)}/${FID}-index-headers.html`]: 503 },
+      fail: { [`${dirOf('44201', GFA)}/${GFA}-index-headers.html`]: 503 },
     });
     const r2 = await ingestNcsr(db2, { ciks: ['707823', '44201'], get: boom.get });
-    assert.deepEqual([r2.ok, r2.stopped.accession, r2.stopped.status, r2.pending], [1, FID, 503, 1]);
+    assert.deepEqual([r2.ok, r2.stopped.accession, r2.stopped.status, r2.pending], [1, GFA, 503, 1]);
     assert.deepEqual(
       db2.prepare('SELECT accession, status FROM ncsr_filings').all(),
-      [{ accession: GFA, status: 'ok' }],
-      'Growth Fund of America (filed first) kept; Fidelity not touched'
+      [{ accession: FID, status: 'ok' }],
+      'Fidelity (filed last, read first) kept; Growth Fund of America not touched'
     );
     assert.equal(db2.prepare("SELECT status FROM ingest_log WHERE kind = 'ncsr'").get().status, 'partial');
     const resumed = await ingestNcsr(db2, {
@@ -412,6 +412,90 @@ test('lines set apart: the rest of the report is admitted, the set-apart name is
     after,
     before.filter(r => r.name !== 'Anthropic'),
     'the same costs as the whole report, Anthropic left out'
+  );
+});
+
+test('a failed filing is retried on the next runs, then monthly; --retry-failed forces it', async () => {
+  const { db } = goldenWarehouse();
+  const sec = () => fakeSec({ keep: [FID, GFA, '0000707823-26-000019'], docs: realDocs() });
+  const run = (when, opt = {}) =>
+    ingestNcsr(db, { ciks: ['707823', '44201'], get: sec().get, now: () => when, ...opt });
+  assert.equal((await run('2026-11-01T00:00:00Z')).failed, 1); // attempt 1
+  assert.equal((await run('2026-11-02T00:00:00Z')).failed, 1); // 2
+  assert.equal((await run('2026-11-03T00:00:00Z')).failed, 1); // 3
+  assert.equal((await run('2026-11-04T00:00:00Z')).failed, 0, 'three attempts: waits');
+  assert.equal((await run('2026-11-04T00:00:00Z', { retryFailed: true })).failed, 1, 'forced');
+  assert.equal((await run('2026-11-20T00:00:00Z')).failed, 0);
+  assert.equal((await run('2026-12-06T00:00:00Z')).failed, 1, '30 days after its last attempt');
+});
+
+test('the nightly re-link: a fund report whose N-PORT came later or was amended is read again', async () => {
+  const { db } = goldenWarehouse();
+  const docs = realDocs();
+  await ingestNcsr(db, { ciks: ['707823', '44201'], get: fakeSec({ keep: [FID, GFA], docs }).get });
+  const now = () => '2026-11-06T00:00:00Z';
+  // nothing to re-link: nothing is fetched
+  const quiet = fakeSec({ keep: [FID, GFA], docs });
+  assert.equal((await ingestNcsr(db, { ciks: ['707823', '44201'], get: quiet.get, relink: true, now })).ok, 0);
+  // read before its N-PORT was stored (filed 2026-07-23, within 180 days): read again and joined
+  db.prepare(
+    "UPDATE ncsr_funds SET status = 'no_nport', nport_accession = NULL, fund_key = NULL WHERE accession = ? AND fund_no = 2"
+  ).run(FID);
+  const late = fakeSec({ keep: [FID, GFA], docs });
+  assert.equal((await ingestNcsr(db, { ciks: ['707823', '44201'], get: late.get, relink: true, now })).ok, 1);
+  assert.ok(late.calls.some(u => u.includes(primaryOf('707823', FID))));
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM ncsr_funds WHERE accession = ? AND status = 'ok'").get(FID).n, 2);
+  // more than 180 days after its filing: not looked for again
+  db.prepare("UPDATE ncsr_funds SET status = 'no_nport' WHERE accession = ? AND fund_no = 2").run(FID);
+  const old = fakeSec({ keep: [FID, GFA], docs });
+  assert.equal(
+    (await ingestNcsr(db, { ciks: ['707823', '44201'], get: old.get, relink: true, now: () => '2027-03-01T00:00:00Z' }))
+      .ok,
+    0
+  );
+  // joined to an N-PORT that is no longer canonical (amended since): read again
+  db.prepare(
+    "UPDATE ncsr_funds SET status = 'ok', nport_accession = '0000000000-26-000000' WHERE accession = ? AND fund_no = 2"
+  ).run(FID);
+  const amended = fakeSec({ keep: [FID, GFA], docs });
+  assert.equal(
+    (
+      await ingestNcsr(db, {
+        ciks: ['707823', '44201'],
+        get: amended.get,
+        relink: true,
+        now: () => '2028-01-01T00:00:00Z',
+      })
+    ).ok,
+    1
+  );
+});
+
+test('a nominal cost is never admitted (warrants received for $1)', () => {
+  const r = {
+    match: 'exact',
+    nport: [{ balance: 993920, value_usd: 2494739.2 }],
+    scheduleFound: true,
+    shares: 993920,
+    value: 2494739.2,
+  };
+  assert.equal(refusal({ ...r, cost: 1 }, { fundOk: true, unit: 1 }), 'nominal cost');
+  assert.equal(refusal({ ...r, cost: 9939.2 }, { fundOk: true, unit: 1 }), null, 'one cent a share is a cost');
+  // stored before the rule: refused at the rebuild too
+  const w = loaded();
+  const line = w.db
+    .prepare('SELECT f.ncsr_accession a, f.fund_no n, f.line_no l, f.shares s FROM cost_facts f LIMIT 1')
+    .get();
+  w.db
+    .prepare('UPDATE ncsr_costs SET cost_usd = ? WHERE accession = ? AND fund_no = ? AND line_no = ?')
+    .run(line.s * 0.001, line.a, line.n, line.l);
+  const r2 = buildCostFacts(w.db);
+  assert.equal(r2.refusals['nominal cost'], 1);
+  assert.equal(
+    w.db
+      .prepare('SELECT COUNT(*) n FROM cost_facts WHERE ncsr_accession = ? AND fund_no = ? AND line_no = ?')
+      .get(line.a, line.n, line.l).n,
+    0
   );
 });
 

@@ -73,6 +73,24 @@ export function costColumns<T>(rows: T[], costOf: (r: T) => Cost | CostTotal | u
       },
       title: 'The value shown divided by the cost: not a return (no dividends, no sales)',
     },
+    {
+      id: 'acquired',
+      header: 'Acquired',
+      value: r => per(r)?.acquiredFirst ?? null,
+      render: r => {
+        const c = per(r);
+        if (!c) return <span class="muted">—</span>;
+        // one date for a single lot; months for lots bought over a span
+        return (
+          <span class="small" title={costTitle(c)}>
+            {c.acquiredFirst === c.acquiredLast
+              ? c.acquiredFirst
+              : `${c.acquiredFirst.slice(0, 7)} to ${c.acquiredLast.slice(0, 7)}`}
+          </span>
+        );
+      },
+      title: 'When the fund bought these shares, as its N-CSR reports (the first and last purchase for several lots)',
+    },
   ];
 }
 

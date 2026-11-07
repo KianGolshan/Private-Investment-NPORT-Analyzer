@@ -65,6 +65,23 @@ On the server: `sudo vantage-run npm run doctor`; timers `vantage-nightly` (06:1
 `vantage-autodeploy` (5 min), `vantage-duckdns`. Units come from `setup.sh`, not from deploys; the live server also
 has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB cap, 3 GB heap; 2026-10-14).
 
+## Where things stand (2026-11-06, P15 full check)
+
+- **Asked:** a full check of progress, alignment, gaps, bugs, logic, UI and data.
+- **Clean:** 14 invariants over every admitted cost (shares and value = the joined N-PORT rows and leg, no cost from
+  a failed report, no duplicates, dates, canonical filings); round prices within the first mark's range (4
+  outliers explained: classes first marked years later); every cost surface agrees (Holders, drawer, X-Ray, firm
+  book, Filings, Status); cost decoration about 5 ms an answer; warehouse 680 MB.
+- **Fixed:** nominal costs (warrants at $1 for millions of shares, 128 lines) refused; failed filings retried on the
+  next runs, then monthly (they were re-fetched every night), `--retry-failed`; the doctor's N-CSR line is
+  information (it would have paged every night); unread filings newest first; nightly re-link of late or amended
+  N-PORT; the cost index built at warm-up; an "Acquired" column wherever a cost shows.
+- **Generation 85:** 20,404 costs on 249 companies in 187 funds, 48 round prices, 6,881 answers = baseline.
+- **Found, not fixed (own change):** warrants titled "WT" filed as equity are labeled Common (trap 74; 1,674 legs, 32
+  companies).
+- **Not run:** the browser e2e suite (asks first). After the merge: `npm run ingest:ncsr -- --backfill` once on the
+  server, or the nightly fills it over about two weeks.
+
 ## Where things stand (2026-11-06, P15 W6: refused layouts, more datapoints)
 
 - **Asked:** "Fix everything needed, then continue incorporation and implementation of the new datapoints."
@@ -78,7 +95,7 @@ has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB 
 - **New in the app:** Company › Filings "N-CSR cross-check" column and KPI (Anthropic: 233 rows from 66 N-CSR
   filings); N-CSR coverage on Status; the round-price tile gives each price its own date and firms (it had printed
   the first's under both).
-- **Re-read (generation 84):** 20,532 admitted costs (from 17,872) on 249 companies in 187 funds; every admitted cost
+- **Re-read (generation 84):** 20,532 admitted costs (from 17,872; 20,404 at generation 85 after nominal costs were refused) on 249 companies in 187 funds; every admitted cost
   of generation 81 still admitted, unchanged; 48 confirmed round prices; 6,881 recorded answers = baseline except
   the added fields; all **1,453** admitted costs of Anthropic, Databricks and Anduril = raw EDGAR on both sides (F72). Filings: 1,948 read, 478 image-only, 151 failed (Morgan Stanley's other trusts, ETFs, credit
   funds that do not reconcile; fail closed).
