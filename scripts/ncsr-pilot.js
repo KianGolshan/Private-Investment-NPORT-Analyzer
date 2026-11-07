@@ -21,6 +21,7 @@ const { secGet } = require('../lib/warehouse/delta');
 const { openWarehouseReadOnly } = require('../lib/warehouse/db');
 const { parseNcsr } = require('../lib/ncsr/parse');
 const { matchToNport, selfChecks, JOINED } = require('../lib/ncsr/match');
+const { headerSeries, seriesFor, normName } = require('../lib/ncsr/filing');
 
 const KINDS = ['exact', 'legs', 'combined', 'value', 'ambiguous', 'debt', 'none'];
 
@@ -96,32 +97,6 @@ async function latestReports(cacheDir, cik, n) {
     });
   }
   return reports;
-}
-
-// The series a filing covers, from its SGML header (the filer's own identifiers).
-function headerSeries(text) {
-  const t = text
-    .replace(/<[^>]*>/g, '')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>');
-  const out = [];
-  for (const m of t.matchAll(/<SERIES-ID>\s*(S\d{9})\s*<SERIES-NAME>\s*([^\n<]+)/g))
-    out.push({ seriesId: m[1], name: m[2].trim() });
-  return out;
-}
-
-const normName = s =>
-  String(s)
-    .toLowerCase()
-    .replace(/[®™]/g, '')
-    .replace(/^the\s+/, '')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
-
-function seriesFor(fund, series) {
-  if (fund.fundName === null) return series.length === 1 ? series[0] : null;
-  const hits = series.filter(s => normName(s.name) === normName(fund.fundName));
-  return hits.length === 1 ? hits[0] : null;
 }
 
 function nportFor(db, seriesId, reportDate) {

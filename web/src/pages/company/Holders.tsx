@@ -18,6 +18,7 @@ import { scopeParams, useParam, useScope } from '../../scope/scope';
 import { Card, ErrorBox, FilingRef, Kpi, Loading, Segmented } from '../../ui/bits';
 import { DataTable, type Column, type Group } from '../../ui/DataTable';
 import { FilterPickers, KindBadge, firmNames, kindText, useFilterOptions, type ViewProps } from './shared';
+import { costColumns } from '../../ui/Cost';
 
 // Holders as of a date, within the scope (the server filters), each position
 // with its fund's change since the fund's previous filing: shares, position
@@ -167,6 +168,8 @@ export default function Holders({ base, sq, name, newest, openPosition }: ViewPr
       render: r => price(r.pricePerShare ?? r.pricePerUnit, r.unit),
     },
     { id: 'value', header: 'Value', value: r => r.valueUsd, num: true, render: r => moneyC(r.valueUsd) },
+    // P15: only when a position has a cost (N-CSR), so a company without one reads as before
+    ...costColumns(rows, r => r.cost),
     {
       id: 'pctNav',
       header: '% of fund',

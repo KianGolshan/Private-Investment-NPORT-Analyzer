@@ -90,6 +90,13 @@ position_facts(fund_key, company_id, accession, report_date, filing_date, next_r
                other_effect, pct_nav, …)   -- P6b W1 (0019): one row per activity leg of a fund in a private company;
                                            -- as of D = SUM(value) where report_date <= D < next_report_date, within
                                            -- 123 days; derived, rebuilt by every refresh and curation run
+ncsr_filings, ncsr_funds, ncsr_costs, ncsr_cost_links   -- P15 (0024, ADR 0011): N-CSR cost tables as read, every
+                                           -- line with its join to N-PORT and the reason it was refused (if any)
+cost_facts(ncsr_accession, fund_no, line_no, fund_key, company_id, instrument_key, class_label, nport_accession,
+           report_date, shares, value_usd, cost_usd, acquired_first, acquired_last, single_lot, cost_per_share)
+                                           -- derived: only costs that validate completely, each on one position leg;
+                                           -- never read by exposureAsOf, position_facts, company_stats or any total
+round_prices(company_id, class_label, acquired_on, price, firms, funds, evidence)   -- derived: 2+ firms, one date
 -- views
 canonical_filings        -- one per (fund_key, report_date); latest filing_date wins
 fund_filing_timeline     -- all canonical filings per fund

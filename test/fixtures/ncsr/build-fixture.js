@@ -63,6 +63,48 @@ const FILINGS = {
     textChunks: true,
     note: 'T. Rowe Price Science & Technology N-CSR 2025-12-31: costs inline, a blank cost ("Cost $") and a blank value',
   },
+  '0001193125-26-383201': {
+    cik: '729528',
+    doc: null,
+    family: 'capital',
+    sections: ['Global Growth Fund', 'Growth Fund'],
+    note: 'American Funds Insurance Series N-CSRS 2026-06-30: 24 portfolios in one report; Global Growth (no restricted table) and Growth Fund (16 cost lines) kept',
+  },
+  '0000754510-26-000028': {
+    cik: '754510',
+    doc: 'filing11205.htm',
+    family: 'fidelity',
+    funds: ['Fidelity® Blue Chip Growth Fund'],
+    note: 'Fidelity Blue Chip Growth N-CSRS 2026-01-31: Chobani and Trade Republic marked restricted but outside the stated total (set apart)',
+  },
+  '0000707823-25-000029': {
+    cik: '707823',
+    doc: 'filing8325.htm',
+    family: 'fidelity',
+    funds: ['Fidelity® Growth Company Fund'],
+    note: 'Fidelity Growth Company N-CSRS 2024-11-30: DNA Script twice in the schedule, once in the cost table (set apart); "Agomab Therapeutics SA:" then "warrants 10/10/33"',
+  },
+  '0001193125-23-046133': {
+    cik: '75170',
+    doc: null,
+    family: 'troweprice',
+    positioned: true,
+    note: 'T. Rowe Price Small-Cap Stock N-CSR 2022-12-31: no U+200C in the portfolio, "Cost $—", 62 restricted lines = $450,903 (000s)',
+  },
+  '0001193125-26-062880': {
+    cik: '75170',
+    doc: null,
+    family: 'troweprice',
+    positioned: true,
+    note: 'T. Rowe Price Small-Cap Stock N-CSR 2025-12-31: no U+200C in the portfolio, a blank value cell (Farmers Business Network)',
+  },
+  '0001193125-26-062863': {
+    cik: '313212',
+    doc: null,
+    family: 'troweprice',
+    textChunks: true,
+    note: 'T. Rowe Price Dynamic Credit N-CSR 2025-12-31: a coupon and maturity after the cost, "†" (not unitized) value-only lines, "(2) (8)"',
+  },
   '0001104659-26-104596': {
     cik: '836487',
     doc: null,
@@ -82,7 +124,9 @@ const HOLDINGS = {
   '0001099263-26-002527': 'T. Rowe Price Science & Technology Fund (S000002119) 2025-12-31',
   '0001410368-26-084089': 'Morgan Stanley Growth Portfolio (S000002828) 2026-06-30',
   '0001410368-26-084068': 'Morgan Stanley Inception Portfolio (S000002825) 2026-06-30',
+  '0001193125-26-371320': 'American Funds Insurance Series Growth Fund (S000008791) 2026-06-30',
 };
+const IMAGE_ONLY = '0001206774-21-000424'; // T. Rowe Price Growth Stock N-CSR 2020-12-31 (F71)
 const OTHER_ROWS = 3; // unmarked schedule rows kept per fund (the parser must skip them for the cost table)
 
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -126,11 +170,18 @@ function keepSection(events, start, end, family) {
       break;
     }
     const r = e.type === 'row' ? scheduleRow(e.cells, unit) : null;
-    if (r && r.marks.includes(mark)) keep.push(e);
+    if (r && r.marks.includes(mark)) {
+      // its issuer line ("Agomab Therapeutics SA:"), which names a class line ("warrants 10/10/33")
+      const prev = events[i - 1];
+      if (prev && prev.type === 'row' && prev.cells.length === 1 && /:$/.test(prev.cells[0]) && keep.at(-1) !== prev)
+        keep.push(prev);
+      keep.push(e);
+    }
     else if (r && others < OTHER_ROWS) {
       keep.push(e);
       others++;
     } else if (e.type === 'row' && e.cells.length === 1 && others < OTHER_ROWS) keep.push(e); // headings
+    else if (e.type === 'row' && e.cells.some(c => /\(000s\)/.test(c))) keep.push(e); // the unit: values in thousands
   }
   // footnotes and the restricted table, verbatim in order
   const tableStart =
@@ -164,7 +215,45 @@ async function main() {
     const html = await documentOf(cacheDir, accession, f);
     const events = htmlEvents(html);
     let kept = [];
-    if (f.textChunks) {
+    if (f.positioned) {
+      // T. Rowe Price before 2024: words and numbers in positioned <div>s, no U+200C in the
+      // portfolio. The sentences the parser reads as text, then every leaf <div> of each
+      // restricted line verbatim (its position reduced to its top), from the amount that ends the
+      // line before to the two amounts that end it (and a blank value cell on the same line)
+      const text = events.map(e => (e.type === 'row' ? e.cells.join(' | ') : e.text)).join(' ');
+      const pick = [
+        /\w+ \d{1,2}, \d{4}(?: \(?Unaudited\)?)? Statement of Assets and Liabilities/,
+        /NET ASSETS \$ [\d,]+\u200c/,
+        /\(\d{1,2}\) Security cannot be offered for public resale[^.]*\./,
+        /The aggregate value of restricted securities[^%]*%/,
+      ].map(re => (text.match(re) || [''])[0]);
+      const divs = [...html.matchAll(/<div style="([^"]*)">([^<]*)<\/div>/g)].map(m => ({
+        top: (m[1].match(/top:([\d.]+)px/) || [])[1],
+        body: m[2],
+      }));
+      const amount = d => /^\s*(?:[\d,.]+|&#8212;|—)\s*$/.test(d.body);
+      const blank = d => /^(?:\s|&#160;|&nbsp;)*$/.test(d.body);
+      const keep = new Set();
+      divs.forEach((d, i) => {
+        if (!/^Acquisition\s*$/.test(d.body)) return;
+        let a = i - 1;
+        while (a > 0 && i - a < 60 && !amount(divs[a])) a--;
+        let b = i;
+        for (let n = 0; b < divs.length && n < 2 && b - i < 60; b++) if (amount(divs[b])) n++;
+        if (b < divs.length && blank(divs[b]) && divs[b].top === divs[b - 1].top) b++;
+        for (let k = a; k < b; k++) keep.add(k);
+      });
+      const lines = [...keep]
+        .sort((x, y) => x - y)
+        .map(k => `<div style="top:${divs[k].top}px;">${divs[k].body}</div>`)
+        .join('');
+      fs.writeFileSync(
+        path.join(OUT, `${accession}.html`),
+        `<html><body>\n${pick.filter(Boolean).map(t => `<div>${esc(t)}</div>`).join('\n')}\n${lines}\n</body></html>\n`
+      );
+      built[accession] = { ...f, events: keep.size };
+      continue;
+    } else if (f.textChunks) {
       // the statement heading, NET ASSETS, the restricted footnotes and every restricted line, verbatim
       const text = events.map(e => (e.type === 'row' ? e.cells.join(' | ') : e.text)).join(' ');
       const pick = [
@@ -175,6 +264,16 @@ async function main() {
       ].map(re => (text.match(re) || [''])[0]);
       const lines = [...text.matchAll(TROWE_ROW)].map(m => m[0]);
       kept = [...pick, ...lines].filter(Boolean).map(t => ({ type: 'text', text: t }));
+    } else if (f.sections) {
+      // whole portfolios of a multi-fund Capital Group report: each from its fund's name to the next one's
+      const heads = events
+        .map((e, i) => (/^(?:Summary )?[Ii]nvestment portfolio \w+ \d/.test(e.type === 'row' ? e.cells.join(' | ') : e.text) ? i : -1))
+        .filter(i => i >= 0);
+      for (const name of f.sections) {
+        const k = heads.findIndex(h => (events[h - 1].text || '').replace(/\s*\(formerly [^)]*\)/, '') === name);
+        if (k < 0) throw new Error(`${accession}: no portfolio for ${name}`);
+        kept = kept.concat(events.slice(heads[k] - 1, k + 1 < heads.length ? heads[k + 1] - 1 : events.length));
+      }
     } else if (f.whole && f.family === 'morganstanley') {
       const starts = events
         .map((e, i) => (e.type === 'text' && /^(?:Consolidated )?Portfolio of Investments$/.test(e.text) ? i : -1))
@@ -246,6 +345,34 @@ async function main() {
     db.close();
   }
   fs.writeFileSync(path.join(OUT, 'holdings.json'), JSON.stringify(holdings) + '\n');
+  // each filing's SGML header (the series it covers), verbatim, and each registrant's submissions
+  // listing cut to its N-CSR forms: what the ingest (lib/warehouse/ncsr.js) reads besides the report
+  fs.mkdirSync(path.join(OUT, 'headers'), { recursive: true });
+  for (const accession of Object.keys(FILINGS))
+    fs.copyFileSync(path.join(cacheDir, `${accession}-headers.html`), path.join(OUT, 'headers', `${accession}.html`));
+  const submissions = {};
+  for (const cik of [...new Set(Object.values(FILINGS).map(f => f.cik))]) {
+    const sub = JSON.parse(fs.readFileSync(path.join(cacheDir, `submissions-${cik.padStart(10, '0')}.json`), 'utf8'));
+    const r = sub.filings.recent;
+    const keep = r.form.map((f, i) => (/^N-CSRS?(\/A)?$/.test(f) ? i : -1)).filter(i => i >= 0);
+    const pick = k => keep.map(i => r[k][i]);
+    submissions[cik] = {
+      cik: sub.cik,
+      name: sub.name,
+      filings: {
+        recent: Object.fromEntries(
+          ['accessionNumber', 'filingDate', 'reportDate', 'form', 'primaryDocument'].map(k => [k, pick(k)])
+        ),
+        files: [],
+      },
+    };
+  }
+  fs.writeFileSync(path.join(OUT, 'submissions.json'), JSON.stringify(submissions, null, 1) + '\n');
+  // a report printed as page images (T. Rowe Price Growth Stock 2020-12-31): its text
+  // document and its index (43 JPG pages), verbatim, for the "unreadable" path
+  fs.mkdirSync(path.join(OUT, 'imageonly'), { recursive: true });
+  for (const name of [`${IMAGE_ONLY}.htm`, `${IMAGE_ONLY}-index.json`, `${IMAGE_ONLY}-headers.html`])
+    fs.copyFileSync(path.join(cacheDir, name), path.join(OUT, 'imageonly', name));
   const manifest = {
     builtAt: new Date().toISOString(),
     filings: built,

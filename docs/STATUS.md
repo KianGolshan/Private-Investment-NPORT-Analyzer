@@ -65,6 +65,67 @@ On the server: `sudo vantage-run npm run doctor`; timers `vantage-nightly` (06:1
 `vantage-autodeploy` (5 min), `vantage-duckdns`. Units come from `setup.sh`, not from deploys; the live server also
 has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB cap, 3 GB heap; 2026-10-14).
 
+## Where things stand (2026-11-06, P15 full check)
+
+- **Asked:** a full check of progress, alignment, gaps, bugs, logic, UI and data.
+- **Clean:** 14 invariants over every admitted cost (shares and value = the joined N-PORT rows and leg, no cost from
+  a failed report, no duplicates, dates, canonical filings); round prices within the first mark's range (4
+  outliers explained: classes first marked years later); every cost surface agrees (Holders, drawer, X-Ray, firm
+  book, Filings, Status); cost decoration about 5 ms an answer; warehouse 680 MB.
+- **Fixed:** nominal costs (warrants at $1 for millions of shares, 128 lines) refused; failed filings retried on the
+  next runs, then monthly (they were re-fetched every night), `--retry-failed`; the doctor's N-CSR line is
+  information (it would have paged every night); unread filings newest first; nightly re-link of late or amended
+  N-PORT; the cost index built at warm-up; an "Acquired" column wherever a cost shows.
+- **Generation 85:** 20,404 costs on 249 companies in 187 funds, 48 round prices, 6,881 answers = baseline.
+- **Found, not fixed (own change):** warrants titled "WT" filed as equity are labeled Common (trap 74; 1,674 legs, 32
+  companies).
+- **Not run:** the browser e2e suite (asks first). After the merge: `npm run ingest:ncsr -- --backfill` once on the
+  server, or the nightly fills it over about two weeks.
+
+## Where things stand (2026-11-06, P15 W6: refused layouts, more datapoints)
+
+- **Asked:** "Fix everything needed, then continue incorporation and implementation of the new datapoints."
+- **Fixed (each read proven against the filing's own stated totals, real-filing fixtures and counterexample tests):**
+  Capital Group multi-fund reports (American Funds Insurance Series); **lines set apart** (ADR 0011 amendment: a
+  Fidelity report failing only because of 1–3 named lines admits the rest when it then ties out exactly; DNA Script,
+  Chobani, Trade Republic; F74); T. Rowe Price's pre-2024 positioned layout (F75), blank value cells, bond and
+  value-only "†" lines, a dash printed as U+0097; Fidelity "$--" costs and lowercase warrants; Capital side labels and
+  footnoted cost-table names; round prices only from lots precise to 0.5% (tiny thousands-rounded lots had withdrawn
+  Databricks Series J $92.50).
+- **New in the app:** Company › Filings "N-CSR cross-check" column and KPI (Anthropic: 233 rows from 66 N-CSR
+  filings); N-CSR coverage on Status; the round-price tile gives each price its own date and firms (it had printed
+  the first's under both).
+- **Re-read (generation 84):** 20,532 admitted costs (from 17,872; 20,404 at generation 85 after nominal costs were refused) on 249 companies in 187 funds; every admitted cost
+  of generation 81 still admitted, unchanged; 48 confirmed round prices; 6,881 recorded answers = baseline except
+  the added fields; all **1,453** admitted costs of Anthropic, Databricks and Anduril = raw EDGAR on both sides (F72). Filings: 1,948 read, 478 image-only, 151 failed (Morgan Stanley's other trusts, ETFs, credit
+  funds that do not reconcile; fail closed).
+- **Commands:** `npm run ingest:ncsr -- --reread checks,unmapped --reread-family troweprice` after a parser change.
+- **Not done:** Morgan Stanley's remaining layouts, Capital SmallCap World 2024, the vehicle proposal; nothing on
+  the server until PR #41 then #47 merge.
+- **Next prompt:** "merge PR #41 and #47", or "P15: Morgan Stanley layouts".
+
+## Where things stand (2026-11-06, P15 cost basis built)
+
+- **Asked:** decide whether N-CSR is worth it and, if so, ingest it, map it and integrate it without noise; "only
+  100% validatable data … if there are concerns or discrepancies, just do not include it"; every current datapoint
+  must keep working; Anthropic, Databricks and Anduril checked very closely. Plan approved; ADR 0011; ROADMAP §15.
+- **Built (branch `v2-p15-cost`, stacked on PR #41; worktree `../vantage-p15`, because the weekly review was writing
+  `data/review` in the main checkout):** migration 0024; `npm run ingest:ncsr` (job, 93 registrants, quarantine,
+  SEC refusals stop the run and keep what was read); `cost_facts` and `round_prices` under the admission rule;
+  `lib/services/cost.js`; cost on Holders, the drawer, the X-Ray, the firm book; round prices in the company header
+  and on the per-share chart; glossary, About, doctor.
+- **Backfill (local, generation 81):** 2,576 filings tried: 1,934 read, 420 image-only (T. Rowe Price 2020–22),
+  222 failed (layouts refused, fail closed). **17,872 costs admitted** on 248 companies in 175 funds; 37 confirmed
+  round prices.
+- **Checks:** every one of 6,881 recorded answers (the three companies, every fund and firm that held them, Market,
+  Sectors, Analysis at four dates) equals the baseline apart from the added cost fields; all **1,335** admitted costs
+  of the three companies equal raw EDGAR on both sides (F72); entry prices all within 5× of the fund's first mark
+  after purchase (the 1/3 ratios are Databricks' 3-for-1 split, trap 70); browser: Databricks, Growth Fund of
+  America X-Ray, no console errors, no sideways scroll at 375 px. Backend and web suites green.
+- **Not done:** the server has none of this until the PR merges (its nightly then reads 150 filings a night);
+  the vehicle-identity proposal stays a separate review import.
+- **Next prompt:** "merge PR #41, then P15", or "P15: parsers for the refused layouts".
+
 ## Where things stand (2026-10-28, N-CSR big sample)
 
 - **Asked:** do the recommended next steps (vehicle identities, three more families) over a much bigger sample (20+

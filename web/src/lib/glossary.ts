@@ -17,9 +17,19 @@ export type TermId =
   | 'bridge'
   | 'tracked'
   | 'sector'
-  | 'markIndex';
+  | 'markIndex'
+  | 'cost'
+  | 'roundPrice';
 
 export const GLOSSARY: Record<TermId, { term: string; text: string }> = {
+  cost: {
+    term: 'Cost (N-CSR)',
+    text: 'What the fund paid, as it reports in its semiannual or annual shareholder report (Form N-CSR), with the acquisition date. Shown only when the report checks out against its own totals and the line matches the fund’s N-PORT holding at the same date share for share and dollar for dollar; anything less is left out, so many holdings show “—”. A later mark keeps the cost only while the fund holds the same shares with no split. Value ÷ cost compares the fund’s mark with that cost; it is not a return (no dividends, no sales).',
+  },
+  roundPrice: {
+    term: 'Confirmed round price',
+    text: 'A price per share that funds of at least two different firms each report paying for the same class on the same date, within 0.5%, in their N-CSR cost tables. A price one fund alone reports is that fund’s cost, not a confirmed round price.',
+  },
   sector: {
     term: 'Sector, industry and theme',
     text: 'Vantage’s labels for each private operating company: one sector and industry (so they add up to the total) and any number of themes such as AI or Fintech (these overlap, so they do not add up). N-PORT has no industry field: the labels are reviewed decisions, with a confidence, not filed facts. “AI” means the core product is an AI model or system, or the compute, chips or data platforms used to build and run models.',

@@ -20,6 +20,7 @@ import {
 import { useParam } from '../../scope/scope';
 import { Badge, Card, ErrorBox, FilingRef, Kpi, Loading, Segmented } from '../../ui/bits';
 import { DataTable } from '../../ui/DataTable';
+import { costColumns, multiple } from '../../ui/Cost';
 
 // Fund X-Ray, ported from v1 (P6b W3) onto the warehouse routes that keep v1's
 // shapes (lib/services/fund.js): the private book at any filing, the comparison
@@ -88,6 +89,13 @@ export function XRay({ fund, name }: Props) {
               value={num(d.privateHoldingsCount)}
               sub={`of ${num(d.totalHoldingsCount)} holdings`}
             />
+            {d.costCoverage && (
+              <Kpi
+                label="Cost known"
+                value={share(d.costCoverage.share ?? 0)}
+                sub={`of private value · ${num(d.costCoverage.positions)} positions at ${multiple(d.costCoverage.valueToCost)} cost (N-CSR)`}
+              />
+            )}
             {(['company', 'fund', 'vehicle'] as const).map(k => (
               <Kpi
                 key={k}
@@ -157,6 +165,8 @@ export function XRay({ fund, name }: Props) {
                   num: true,
                   render: h => moneyC(h.marketValue),
                 },
+                // P15: only when a row has a cost (N-CSR)
+                ...costColumns(d.privateHoldings, h => h.cost),
                 {
                   id: 'pct',
                   header: '% of NAV',
