@@ -65,6 +65,23 @@ On the server: `sudo vantage-run npm run doctor`; timers `vantage-nightly` (06:1
 `vantage-autodeploy` (5 min), `vantage-duckdns`. Units come from `setup.sh`, not from deploys; the live server also
 has `/etc/systemd/system/vantage-{nightly,monthly}.service.d/memory.conf` (5 GB cap, 3 GB heap; 2026-10-14).
 
+## Where things stand (2026-11-07, warrants filed as equity, branch `v2-warrant-labels`)
+
+- **Asked:** label warrants titled "WT" as Warrant, not Common (trap 74, found by the P15 full check).
+- **Changed:** `parseEquityLabel` labels an EC/EP row whose title names a warrant (WT, WTS, WARRANT(S), WRNT(S), WRT)
+  "Warrant", as a filed WAR derivative is; the instrument type stays as filed. Checked on all 44,886 distinct equity
+  titles: 454 named warrants; the 12 left alone are names (WT Microelectronics, ASG WT Corp.), rights and share units.
+- **Measured** (control rebuild from generation 85's own curation reproduced it exactly, then the change): only
+  `position_facts` and `cost_facts` class labels moved; 1,879 legs on 36 companies relabeled, 3 Cellares warrant legs
+  split out of Series D (F76); every value and effect total equal to the cent; 20,404 costs and 48 round prices
+  unchanged. Answers: 61 of 6,881 differ, all in marks-vs-others and three Cellares timelines (and their firm's):
+  funds holding common and warrants now compare instead of being set aside as mixed (Relativity Space common: 6 →
+  11 funds). No Anthropic, Databricks or Anduril answer changed.
+- **Tests:** 536 pass, 4 skipped; lint and format clean. Not run: e2e (asks first).
+- **Note:** a curation import from this branch's `data/review` (older than the 2026-11-05 weekly review) retired 12
+  new ids in a local generation; rolled back and rebuilt from the generation's own `curation_snapshot`. Nothing left
+  the machine. The weekly review must merge before or with P15.
+
 ## Where things stand (2026-11-06, P15 full check)
 
 - **Asked:** a full check of progress, alignment, gaps, bugs, logic, UI and data.

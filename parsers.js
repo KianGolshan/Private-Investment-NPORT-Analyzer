@@ -130,12 +130,22 @@ function classifyInstrument(inv, pricePerShare, _valUSD) {
 // bare "DATABRICKS INC" with no distinguishing text at all) — that's a
 // label-quality gap, not a mis-grouping one (instrumentKey handles that).
 function parseEquityLabel(inv) {
-  const t = String(inv.title || '').toUpperCase();
+  const t = String(inv.title || '')
+    .toUpperCase()
+    .trim();
   const assetCat = String(inv.assetcat || inv.assetCat || '').toUpperCase();
 
   const isPreferred = assetCat === 'EP' || /\bPFD\b|\bPREF\b|\bPREFERRED\b|\bCVT\b|\bCVY\b/.test(t);
   const isCommon = !isPreferred && (assetCat === 'EC' || /\bCOM(?:MON)?\b/.test(t));
   const isSegregated = /SEGREGATED/.test(t);
+
+  // A warrant the filer files as equity (EC/EP, no derivative block), named
+  // only by its title (DATA-QUALITY trap 74): Fidelity's "ASAPP INC WT
+  // 08/28/2028 PP", "TREELINE BIO COMMON WTS 8.35 PP", "VIDEOAMP PFD WRNTS
+  // 2026". Labeled "Warrant", as a filed WAR derivative is, so its marks no
+  // longer join the common or preferred class; its instrument type stays as
+  // filed (equity), so no total moves.
+  if (isWarrantTitle(t)) return isSegregated ? 'Warrant (segregated)' : 'Warrant';
 
   // Matches "SER H", "SERIES H", "CL G-1", "CLASS G-1" — the conventions
   // seen across Kandou, Anthropic, and the 35-filer Databricks survey.
@@ -160,6 +170,20 @@ function parseEquityLabel(inv) {
     base = 'Equity';
   }
   return isSegregated ? `${base} (segregated)` : base;
+}
+
+// A title that names a warrant (trap 74), checked on every distinct equity
+// title in the warehouse (44,886, 2026-11-06). Words only: WARRANTY is not one;
+// a unit of shares and warrants ("UNITS 1 ORD SHS & 1 WT", "UNIT 1 CL A & 1/2
+// WT") is a unit; "WT" that starts a name ("WT MICROELECTRONICS CO LTD") or
+// sits before a company suffix ("ASG WT CORP.") is a name.
+const WARRANT_WORD = /\b(?:WARRANTS?|WRNTS?|WRTS?|WTS)\b|(?<!^)\bWT\b(?!\s+(?:CORP|INC|LTD|CO|MICRO)\b)/;
+const SHARE_UNIT = /\bUNITS?\s+\d/;
+function isWarrantTitle(title) {
+  const t = String(title || '')
+    .toUpperCase()
+    .trim();
+  return WARRANT_WORD.test(t) && !SHARE_UNIT.test(t);
 }
 
 // Best-effort debt label from title text, e.g. "TL PP (PHYSICAL) 7.0%
@@ -1097,6 +1121,7 @@ module.exports = {
   extractIdString,
   classifyInstrument,
   parseEquityLabel,
+  isWarrantTitle,
   parseDebtLabel,
   isLevel3Holding,
   isLevel3EquityHolding,
