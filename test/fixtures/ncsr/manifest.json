@@ -1,0 +1,105 @@
+{
+  "builtAt": "2026-10-29T05:11:08.249Z",
+  "filings": {
+    "0000707823-26-000042": {
+      "cik": "707823",
+      "doc": "filing12370.htm",
+      "family": "fidelity",
+      "funds": [
+        "Fidelity® Growth Company Fund",
+        "Fidelity® Growth Strategies Fund"
+      ],
+      "note": "Fidelity Mt. Vernon Street Trust N-CSRS 2026-05-31: Growth Company (234 cost rows), Growth Strategies (4)",
+      "events": 509
+    },
+    "0001193125-26-195253": {
+      "cik": "44201",
+      "doc": "8dea0ac98b6ba57.htm",
+      "family": "capital",
+      "note": "Growth Fund of America N-CSRS 2026-02-28: 29 cost rows, a continued table, Stripe Class B in two N-PORT legs",
+      "events": 71
+    },
+    "0001193125-26-247125": {
+      "cik": "858744",
+      "doc": "8deb6d449805be9.htm",
+      "family": "capital",
+      "note": "SMALLCAP World Fund N-CSRS 2026-03-31: \"— (h)\" amounts, a note principal \"USD 25,314\", \"21 | <fund>\" footers",
+      "events": 127
+    },
+    "0001379491-21-003390": {
+      "cik": "707823",
+      "doc": "filing936.htm",
+      "family": "fidelity",
+      "whole": [
+        "Fidelity® New Millennium Fund®"
+      ],
+      "note": "Fidelity N-CSRS 2021-05-31, New Millennium: values in (000s), \"Allbirds, Inc.:\" issuer lines, footnotes as paragraphs, two-digit years, \"(Cost $8,368)\" on its own line",
+      "events": 409
+    },
+    "0000051931-22-001052": {
+      "cik": "44201",
+      "doc": "gfa_ncsr.htm",
+      "family": "capital",
+      "whole": true,
+      "note": "Growth Fund of America N-CSR 2022-08-31: numeric marks \"1,2,5\", \"$ | 142,918\" split cells, a header over three rows",
+      "events": 550
+    },
+    "0001193125-26-062850": {
+      "cik": "819930",
+      "doc": null,
+      "family": "troweprice",
+      "textChunks": true,
+      "note": "T. Rowe Price Science & Technology N-CSR 2025-12-31: costs inline, a blank cost (\"Cost $\") and a blank value",
+      "events": 36
+    },
+    "0001104659-26-104596": {
+      "cik": "836487",
+      "doc": null,
+      "family": "morganstanley",
+      "whole": [
+        "Growth Portfolio",
+        "Inception Portfolio"
+      ],
+      "note": "Morgan Stanley Institutional Fund N-CSRS 2026-06-30: \"(acquisition cost — $63,187; acquired 8/31/21)\"; Inception has two restricted rows without a cost",
+      "events": 288
+    }
+  },
+  "holdings": {
+    "0000035402-26-004656": {
+      "note": "Fidelity Growth Company Fund (S000007119) 2026-05-31",
+      "rows": 255
+    },
+    "0000035402-26-004657": {
+      "note": "Fidelity Growth Strategies Fund (S000007118) 2026-05-31",
+      "rows": 4
+    },
+    "0001193125-26-182055": {
+      "note": "Growth Fund of America (S000009228) 2026-02-28",
+      "rows": 30
+    },
+    "0001193125-26-243462": {
+      "note": "SMALLCAP World Fund (S000009599) 2026-03-31",
+      "rows": 60
+    },
+    "0001752724-21-152583": {
+      "note": "Fidelity New Millennium Fund (S000007120) 2021-05-31",
+      "rows": 22
+    },
+    "0001145549-22-063355": {
+      "note": "Growth Fund of America (S000009228) 2022-08-31",
+      "rows": 14
+    },
+    "0001099263-26-002527": {
+      "note": "T. Rowe Price Science & Technology Fund (S000002119) 2025-12-31",
+      "rows": 34
+    },
+    "0001410368-26-084089": {
+      "note": "Morgan Stanley Growth Portfolio (S000002828) 2026-06-30",
+      "rows": 3
+    },
+    "0001410368-26-084068": {
+      "note": "Morgan Stanley Inception Portfolio (S000002825) 2026-06-30",
+      "rows": 3
+    }
+  }
+}
