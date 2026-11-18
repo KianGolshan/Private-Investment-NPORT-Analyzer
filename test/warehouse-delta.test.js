@@ -277,7 +277,7 @@ test('refresh: loads a newly published bulk quarter, then catches up from its ne
     .reply(200, zipBytes, { 'Content-Length': String(zipBytes.length) });
   mockIndex(2);
 
-  const first = await refresh(db, { until: '2026-06-30', ncen: false });
+  const first = await refresh(db, { until: '2026-06-30', ncen: false, ncsr: false });
   assert.equal(first.status, 'ok');
   assert.deepEqual(first.bulkQuartersAdded, ['2026q2']);
   assert.equal(first.since, defaultSince(db));
@@ -289,7 +289,7 @@ test('refresh: loads a newly published bulk quarter, then catches up from its ne
   nock(SEC)
     .head('/files/dera/data/form-n-port-data-sets/2026q2_nport.zip')
     .reply(200, '', { 'Content-Length': String(zipBytes.length) });
-  const second = await refresh(db, { until: '2026-06-30', ncen: false });
+  const second = await refresh(db, { until: '2026-06-30', ncen: false, ncsr: false });
   assert.deepEqual(second.bulkQuartersAdded, [], 'nothing new published');
   const runs = db.prepare('SELECT status, bulk_quarters_added, delta_since FROM refresh_runs ORDER BY id').all();
   assert.deepEqual(runs, [
@@ -310,13 +310,13 @@ test('refresh: a quarter the SEC re-posts at a different size is reloaded (trap 
     .times(2)
     .reply(200, zipBytes, { 'Content-Length': String(zipBytes.length) });
   mockIndex(2);
-  await refresh(db, { until: '2026-06-30', ncen: false, checkRepublished: false });
+  await refresh(db, { until: '2026-06-30', ncen: false, ncsr: false, checkRepublished: false });
   // Stored as loaded 1 byte smaller than the SEC now serves it: re-posted.
   db.prepare("UPDATE ingest_log SET zip_bytes = zip_bytes - 1 WHERE kind = 'bulk'").run();
   nock(SEC)
     .head(zipPath)
     .reply(200, '', { 'Content-Length': String(zipBytes.length) });
-  const r = await refresh(db, { until: '2026-06-30', ncen: false });
+  const r = await refresh(db, { until: '2026-06-30', ncen: false, ncsr: false });
   assert.equal(r.status, 'ok');
   assert.deepEqual(r.bulkQuartersAdded, ['2026q2']);
   const loads = db.prepare("SELECT zip_bytes FROM ingest_log WHERE kind = 'bulk' AND status = 'ok' ORDER BY id").all();

@@ -128,6 +128,18 @@ export default function Status() {
                     <th scope="row">Firms</th>
                     <td>{num(stats.firms)}</td>
                   </tr>
+                  {stats.ncsr && (
+                    <tr>
+                      <th scope="row">N-CSR cost reports</th>
+                      <td>
+                        {num(stats.ncsr.filings)} read from {num(stats.ncsr.families)} fund families, through{' '}
+                        {longDate(stats.ncsr.newestPeriod)}; {num(stats.ncsr.costs)} costs on{' '}
+                        {num(stats.ncsr.companies)} companies in {num(stats.ncsr.funds)} funds pass every check.{' '}
+                        {num(stats.ncsr.unreadable)} are page images and {num(stats.ncsr.failed)} could not be read in
+                        full; they add nothing
+                      </td>
+                    </tr>
+                  )}
                 </>
               )}
               {ready?.checks && (

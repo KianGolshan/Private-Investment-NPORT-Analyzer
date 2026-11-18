@@ -7,6 +7,7 @@ import { useParam } from '../../scope/scope';
 import { Badge, Card, Empty, FilingRef, Segmented } from '../../ui/bits';
 import { Chart } from '../../ui/Chart';
 import { DataTable } from '../../ui/DataTable';
+import { costColumns, multiple } from '../../ui/Cost';
 import type { ChartTheme } from '../../ui/theme';
 
 // A firm's book as of a date: by company (each position with its fund, mark
@@ -159,6 +160,8 @@ export function Book({ id, book: b, newest }: { id: number; book: FirmBook; newe
                 render: p => price(p.pricePerShare ?? p.pricePerUnit, p.unit),
               },
               { id: 'value', header: 'Value', value: p => p.value, num: true, render: p => moneyC(p.value) },
+              // P15: only when a position has a cost (N-CSR)
+              ...costColumns(positions, p => p.cost),
               { id: 'pctNav', header: '% of fund', value: p => p.pctNav, num: true, render: p => pctOfNav(p.pctNav) },
             ]}
             rows={positions}
@@ -174,6 +177,14 @@ export function Book({ id, book: b, newest }: { id: number; book: FirmBook; newe
                     {c.tracked && <Badge tone="accent">Tracked</Badge>}
                     <span class="spacer" />
                     <span class="muted small">{count(c.funds, 'fund')}</span>
+                    {c.cost && (
+                      <span
+                        class="muted small"
+                        title="Every position of this company in the firm's book has an N-CSR cost"
+                      >
+                        cost {moneyC(c.cost.usd)} · {multiple(c.cost.valueToCost)}
+                      </span>
+                    )}
                     <span class="num" style={{ minWidth: '90px' }}>
                       {moneyC(c.value)}
                     </span>

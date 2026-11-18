@@ -2,7 +2,15 @@ import { lazy } from 'preact-iso';
 import { useCallback, useMemo } from 'preact/hooks';
 import { useRoute } from 'preact-iso';
 import { qs, useApi } from '../../api/client';
-import type { ClassesAsOf, Company as CompanyT, CompanyStats, Envelope, Freshness, TrendPoint } from '../../api/types';
+import type {
+  ClassesAsOf,
+  Company as CompanyT,
+  CompanyStats,
+  Envelope,
+  Freshness,
+  RoundPrice,
+  TrendPoint,
+} from '../../api/types';
 import { longDate, money, moneyC, num } from '../../lib/format';
 import { useParam } from '../../scope/scope';
 import { Badge, Empty, ErrorBox, isNotFound, Kpi, Loading, TabPanel, Tabs, WatchButton } from '../../ui/bits';
@@ -15,6 +23,7 @@ import { PositionDrawer } from './PositionDrawer';
 import type { ViewProps } from './shared';
 import { PAGE_TITLES, itemTitle, usePageTitle } from '../../lib/title';
 import { Term } from '../../ui/Term';
+import { roundPriceTile } from '../../ui/Cost';
 
 // The company workbench (P6b W2): one private company across every fund that
 // reports it. Overview (value by firm, fund or class over time), Holders (as of
@@ -35,6 +44,8 @@ interface Head extends Envelope {
   company?: CompanyT;
   stats?: CompanyStats;
   brands?: { brand: string }[];
+  /** P15: confirmed round prices (N-CSR), when any */
+  roundPrices?: RoundPrice[];
   entity?: { id: number; key: string; name: string; category: string; names: string[] };
   label?: string;
   answeredBy: { source: string; reason?: string };
@@ -225,6 +236,10 @@ export default function Company() {
                 }
                 sub={latestMarks[0] ? `median, mark date ${latestMarks[0].at!.markDate}` : undefined}
               />
+              {(() => {
+                const t = roundPriceTile(h.roundPrices);
+                return t ? <Kpi label={t.label} value={t.value} sub={t.sub} /> : null;
+              })()}
             </div>
           )}
           {showViews && (

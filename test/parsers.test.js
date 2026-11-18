@@ -187,6 +187,70 @@ test('parseEquityLabel edge cases found in the Databricks survey: truncated titl
   assert.equal(abbrev.instrumentLabel, 'Preferred L');
 });
 
+test('a warrant filed as equity is labeled Warrant by its title; names, units and WARRANTY are not (trap 74)', () => {
+  const label = (title, assetcat = 'EC') => classifyInstrument({ title, assetcat }, 1, 1);
+  // real titles from the warehouse, each filed EC or EP with no derivative block
+  for (const [title, cat] of [
+    ['ASAPP INC WT 08/28/2028 PP', 'EC'],
+    ['CANO HEALTH LLC WT', 'EC'], // the token last
+    ['TREELINE BIO COMMON WTS 8.35 PP', 'EC'], // COMMON names the underlying, not the security
+    ['FORM ENERGY SERIES G WTS 05/31 PP', 'EC'], // a series code must not win either
+    ['VIDEOAMP PFD WRNTS 2026', 'EC'],
+    ['IHeartMedia Inc - Warrant', 'EP'], // preferred category, lower case
+    ['ODYSSEY THERAPEUTICS WARRANTS 6/32 WRT PP', 'EC'],
+    ['WTS - TENAYA THERAPEUTICS', 'EC'], // WTS first is still a warrant
+    ['OSISKO DEVELOPMENT WRT P-PLACEMENT 3/2/27 7.60 STRIKE', 'EC'],
+    ['  RAD POWER BIKES INC WT 10/06/2033 PP  ', 'EC'], // padded
+  ]) {
+    const c = label(title, cat);
+    assert.equal(c.instrumentLabel, 'Warrant', title);
+    assert.equal(c.instrumentType, 'equity', `${title}: type stays as filed`);
+    assert.equal(c.chartUnit, 'usd_per_share', title);
+  }
+  assert.equal(label('ACME WT PP SEGREGATED').instrumentLabel, 'Warrant (segregated)');
+  // the 12 real titles the word rule must leave alone, and neighbours
+  for (const [title, want] of [
+    ['WT MICROELECTRONICS CO LTD', 'Common'], // a name starting with WT
+    ['WT MICROELECTRONICS CO. LTD.', 'Common'],
+    ['WT MICROELEC-RTS', 'Common'], // rights, not warrants
+    ['ASG WT CORP.', 'Common'], // WT inside a name
+    ['ASG WT CORP COMMON STOCK', 'Common'],
+    ['FLAG SHIP ACQUISITION CORP UNITS 1 ORD SHS & 1 WT EXP', 'Common'], // a unit
+    ['ARES ACQUISITION CORP II UNIT 1 CL A & 1/2 WT', 'Common A'],
+    ['FERROGLOBE REPRESENTATION & WARRANTY INSURANCE TRUST', 'Common'], // warranty
+    ['FERROGLOBE REP + WRNTY INS TRU', 'Common'],
+    ['UNITI GROUP INC', 'Common'],
+    ['', 'Common'], // empty title
+  ]) {
+    assert.equal(label(title).instrumentLabel, want, title);
+  }
+  // a unit of a company literally called Unit is still a warrant when it says so
+  assert.equal(label('UNIT CORP WTS EXP 09/03/27').instrumentLabel, 'Warrant');
+  // a filed WAR derivative is unchanged
+  const war = classifyInstrument(
+    { title: 'ACME WT', assetcat: 'EC', derivativeInfo: { optionsWaptionWarrantDeriv: { derivCat: 'WAR' } } },
+    1,
+    1
+  );
+  assert.deepEqual([war.instrumentType, war.instrumentLabel], ['derivative', 'Warrant']);
+});
+
+test('a warrant filed as equity is its own class, never the series it converts into (trap 74, F76)', () => {
+  const { classOfRow } = require('../lib/services/classes');
+  // T. Rowe Price Spectrum, 0001099263-26-011054 (2026-08-31): the Series D preferred (EP) and the
+  // Series D warrants (EC, no derivative block) were one "Series D" class, so the warrants read as
+  // preferred shares added and moved its mark
+  const cls = (title, issuerName, assetcat) =>
+    classOfRow({ instrumentLabel: classifyInstrument({ title, assetcat }, 1, 1).instrumentLabel, title, issuerName });
+  assert.equal(cls('CELLARES CORP SER D CVT PFD PP', 'Cellares Corp SER D CVT PFD PP', 'EP'), 'Series D');
+  assert.equal(cls('CELLARES CORP SER D WTS 7.31 PP', 'Cellares Corp Ser D WTS 07/31 PP', 'EC'), 'Warrant');
+  // the issuer field's class code does not pull a warrant into a series either
+  assert.equal(cls('ACME WT PP', 'ACME SERIES B WT', 'EC'), 'Warrant');
+  // Fidelity, 0000035402-26-006748: ASAPP's only EC row is its warrant, so ASAPP had a "Common" class
+  assert.equal(cls('ASAPP INC WT 08/28/2028 PP', 'ASAPP INC', 'EC'), 'Warrant');
+  assert.equal(cls('ASAPP INC SER D PC PP', 'ASAPP INC', 'EP'), 'Series D');
+});
+
 // ── Fund X-Ray (extractAllHoldings / extractFundMeta / buildFundXRay) ──────
 
 test('isLevel3Holding: fairValLevel 3 flags Level 3; Level 2/1 does not, even when isRestrictedSec is Y', () => {

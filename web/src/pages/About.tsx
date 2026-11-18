@@ -18,6 +18,17 @@ export interface WarehouseStats {
   newestReportDate: string | null;
   /** The newest mark date of any private holding in force (W1). */
   newestPrivateMark?: string | null;
+  /** N-CSR cost reports (P15): absent before the first one is read. */
+  ncsr?: {
+    filings: number;
+    unreadable: number;
+    failed: number;
+    families: number;
+    newestPeriod: string | null;
+    costs: number;
+    companies: number;
+    funds: number;
+  };
 }
 
 const REPO = 'https://github.com/KianGolshan/Private-Investment-NPORT-Analyzer';
@@ -98,6 +109,14 @@ export default function About() {
             <li>
               <strong>Form N-CEN</strong>, for each fund’s investment adviser. A fund belongs to the firm that advises
               it in its latest N-CEN, and that mapping is applied to every period.
+            </li>
+            <li>
+              <strong>Form N-CSR</strong> (and N-CSRS), the funds’ annual and semiannual shareholder reports, for what a
+              fund paid for each restricted holding and when it bought it. Read for Fidelity, Capital Group, T. Rowe
+              Price and Morgan Stanley funds. A cost is shown only when the report checks out against its own totals and
+              the line matches the fund’s N-PORT holding at the same date share for share and dollar for dollar;
+              anything less is left out, so many holdings have no cost. N-CSR never changes a holding, a mark or a
+              total.
             </li>
             <li>
               <strong>Fund calendars are staggered.</strong> Each fund files one N-PORT per fiscal quarter, within 60

@@ -56,6 +56,7 @@ export function FilingRef({
   date,
   showAccession,
   long,
+  form = 'N-PORT',
 }: {
   cik: string | number | null | undefined;
   accession: string | null | undefined;
@@ -63,16 +64,18 @@ export function FilingRef({
   showAccession?: boolean;
   /** "May 31, 2026" instead of the ISO date tables use. */
   long?: boolean;
+  /** The form, for the link's spoken name (N-CSR links on the Filings tab). */
+  form?: string;
 }) {
   const url = edgarUrl(cik, accession);
   const label = showAccession ? accession : (date && long ? longDate(date) : date) || accession || '—';
   if (!url) return <span>{label}</span>;
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer" title={`EDGAR filing ${accession}`}>
+    <a href={url} target="_blank" rel="noopener noreferrer" title={`EDGAR ${form} filing ${accession}`}>
       {label}
       <span aria-hidden="true"> ↗</span>
       {/* read out of context, the link says where it goes (review 2026-10-15 accessibility) */}
-      <span class="sr-only"> (N-PORT filing on EDGAR, opens in a new tab)</span>
+      <span class="sr-only"> ({form} filing on EDGAR, opens in a new tab)</span>
     </a>
   );
 }
