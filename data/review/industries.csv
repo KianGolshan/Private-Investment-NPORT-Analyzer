@@ -825,7 +825,7 @@ company_id,company,industry,themes,confidence,source,note
 1539,Venture360 / Liquifi,tech.software,fintech,medium,p14-queue,"Venture360, Inc. Series A-2; 2026-10-21 review"
 1540,PPL Home Healthcare,hc.services,,medium,p14-queue,2026-10-21: confirmed operating company
 1541,Iterate Studio,tech.software,ai,medium,p14-queue,2026-10-21: confirmed operating company
-1542,Fortrex,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1542,Fortrex,ind.business_services,,medium,weekly-review,"Fortrex: food-plant sanitation services; its term-loan lenders took control in a restructuring, which fits the equity held only by BlackRock loan funds; 0002071691-26-023023; weekly review 2026-11-17"
 1543,OpenEvidence,hc.healthtech,ai,medium,p14-queue,"long tail, 2026-10-21"
 1544,Mitratech,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
 1545,IsoTalent,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
@@ -848,7 +848,7 @@ company_id,company,industry,themes,confidence,source,note
 1563,Compass Education,cons.education,,medium,p14-queue,"long tail, 2026-10-21"
 1564,athenahealth,hc.healthtech,,medium,p14-queue,"long tail, 2026-10-21"
 1565,Illumio,tech.security,,medium,p14-queue,"long tail, 2026-10-21"
-1566,Ownors Technologies,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1566,Ownors Technologies,tech.consumer_internet,,low,weekly-review,"Ownors (Los Angeles, 2020): booking live sessions with entertainers and a creator-income app (Craft profile); Connetic Venture Capital Access Fund; 0001996211-26-000007; weekly review 2026-11-17"
 1567,Premier Modular Group,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
 1568,GCM HVAC,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
 1569,EFC International,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
@@ -922,7 +922,7 @@ company_id,company,industry,themes,confidence,source,note
 1637,Healogics,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
 1638,Kommu,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
 1639,Jeeves,fin.payments,fintech,medium,p14-queue,"long tail, 2026-10-21"
-1640,Fireroad Holdings,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1640,Fireroad Holdings,,,unclear,p14-queue,"long tail; Fireroad is a Cincinnati venture studio and holding company (launches and invests in startups), no single operating business; weekly review 2026-11-17"
 1641,Bolt Energy,enr.clean,climate,medium,p14-queue,"long tail, 2026-10-21"
 1642,Lycia Therapeutics,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
 1643,Centric Brands,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
@@ -948,7 +948,7 @@ company_id,company,industry,themes,confidence,source,note
 1663,Accredible (EdInvent),tech.software,,medium,p14-queue,"long tail, 2026-10-21"
 1664,ApplyBoard,cons.education,,medium,p14-queue,"long tail, 2026-10-21"
 1665,Cyware,tech.security,,medium,p14-queue,"long tail, 2026-10-21"
-1666,Big League Advance,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1666,Big League Advance,fin.banking,,medium,weekly-review,Big League Advance: pays minor-league baseball players up front for a share of future MLB earnings; RENN Fund; 0001193125-26-370870; weekly review 2026-11-17
 1667,Job&Talent,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
 1668,Signifyd,tech.security,fintech,medium,p14-queue,"long tail, 2026-10-21"
 1669,American Academy Holdings,cons.education,,medium,p14-queue,"long tail, 2026-10-21"
@@ -966,7 +966,7 @@ company_id,company,industry,themes,confidence,source,note
 1681,Hikerkind,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
 1682,Lazzaro Medical,hc.devices,,medium,p14-queue,"long tail, 2026-10-21"
 1683,ParkPayUSA,tech.software,,medium,p14-queue,"long tail, 2026-10-21"
-1684,Shappi,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1684,Shappi,ind.transport,,low,weekly-review,Shappi: SAFE the Sweater Cashmere Fund itself files under logistics technology; 0001193125-26-355255; weekly review 2026-11-17
 1685,The Nonsense Company,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
 1686,Cricket Valley Energy Center,enr.power,,medium,p14-queue,"long tail, 2026-10-21"
 1687,DistroKid,comm.media,,medium,p14-queue,"long tail, 2026-10-21"
@@ -996,14 +996,14 @@ company_id,company,industry,themes,confidence,source,note
 1711,Cogency Global,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
 1712,TripScout,tech.consumer_internet,,medium,p14-queue,"long tail, 2026-10-21"
 1713,Ingenovis Health,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
-1714,Sortium,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1714,Sortium,comm.media,ai,medium,weekly-review,Sortium: Miami generative-AI gaming studio; ARK Venture Fund invested in its 2023 seed; 0000940400-26-036464; weekly review 2026-11-17
 1715,Applied Aerospace Structures,ind.aerospace_defense,,medium,p14-queue,"long tail, 2026-10-21"
 1716,De Soi,cons.food,,medium,p14-queue,"long tail, 2026-10-21"
 1717,PetVet Care Centers,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
 1718,FEAT Socks,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
 1719,Best Lawyers,comm.media,,medium,p14-queue,"long tail, 2026-10-21"
 1720,FragilePak,mat.materials,,medium,p14-queue,"long tail, 2026-10-21"
-1721,Cloudbreak,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1721,Cloudbreak,hc.services,,medium,weekly-review,"Cloudbreak Health (now Equiti): medical interpretation services, bought by GTCR in 2024 with Barings debt; Class A and B shares held by Barings Corporate and Participation Investors; 0001410368-26-088235; weekly review 2026-11-17"
 1722,Cosmed,hc.devices,,medium,p14-queue,"long tail, 2026-10-21"
 1723,VitalSource,cons.education,,medium,p14-queue,"long tail, 2026-10-21"
 1724,Resolute Forest Products,mat.materials,,medium,p14-queue,"long tail, 2026-10-21"
@@ -1052,7 +1052,7 @@ company_id,company,industry,themes,confidence,source,note
 1767,Stagetime,comm.media,,medium,p14-queue,"long tail, 2026-10-21"
 1768,Surf Therapeutics,hc.biotech,,medium,p14-queue,"long tail, 2026-10-21"
 1769,Whipz,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
-1770,Wonderlab,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1770,Wonderlab,hc.biotech,,medium,weekly-review,Wonderlab Bio: Boston off-the-shelf cell therapy company; Jetstream Venture Fund announced its investment in May 2026; 0002041672-26-000006; weekly review 2026-11-17
 1771,Heritage Energy,enr.oil_gas,,medium,p14-queue,"long tail, 2026-10-21"
 1772,Safety Products Holdings,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
 1773,Grapefruit Health,hc.healthtech,,medium,p14-queue,"long tail, 2026-10-21"
@@ -1060,7 +1060,7 @@ company_id,company,industry,themes,confidence,source,note
 1775,Wellpath,hc.services,,medium,p14-queue,"long tail, 2026-10-21"
 1776,Sword Diagnostics,hc.tools,,medium,p14-queue,"long tail, 2026-10-21"
 1777,Gestalt Tech,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
-1778,Obra,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1778,Obra,cons.brands,,low,weekly-review,Obra: common stock the Sweater Cashmere Fund files under consumer goods and retail (marked near zero); 0001193125-26-355255; weekly review 2026-11-17
 1779,Gooder AI,tech.software,ai,medium,p14-queue,"long tail, 2026-10-21"
 1780,BBB Industries,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
 1781,Shur-Co,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
@@ -1069,7 +1069,7 @@ company_id,company,industry,themes,confidence,source,note
 1784,Ice House America,ind.manufacturing,,medium,p14-queue,"long tail, 2026-10-21"
 1785,Magna Legal Services,ind.business_services,,medium,p14-queue,"long tail, 2026-10-21"
 1786,MRC Impact,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
-1787,Nada Holdings,,,unclear,p14-queue,"long tail, 2026-10-21; industry not yet classified"
+1787,Nada Holdings,re.proptech,fintech,low,weekly-review,Nada: SAFE the Sweater Cashmere Fund files under financial and property technology; 0001193125-26-355255; weekly review 2026-11-17
 1788,Byju's (Think & Learn),cons.education,,medium,p14-queue,"long tail, 2026-10-21"
 1789,Bishop Street Underwriters,fin.insurance,,medium,p14-queue,"long tail, 2026-10-21"
 1790,Made With Love Wellness,cons.brands,,medium,p14-queue,"long tail, 2026-10-21"
@@ -1258,3 +1258,7 @@ company_id,company,industry,themes,confidence,source,note
 1975,Athletico Physical Therapy,hc.services,,high,weekly-review,"Athletico Physical Therapy: outpatient physical therapy clinics; Athletico Group, LLC rows 0000035402-26-006860; weekly review 2026-11-05"
 1976,Affinivax,hc.biotech,,high,weekly-review,Affinivax: vaccine developer (acquired by GSK in 2022); 0001752724-22-189683; weekly review 2026-11-05
 1977,United FP Holdings,cons.services,,medium,weekly-review,United FP (United PF) Holdings: Planet Fitness franchisee gyms; LEI 2549002AF6PASVP2G486; 0001410368-26-109087; weekly review 2026-11-05
+1978,Synchron,hc.devices,,high,weekly-review,"Synchron: brain-computer interface implant (Stentrode), Series D Nov 2025; 0000894189-26-030445; weekly review 2026-11-17"
+1979,Nourish,hc.services,,high,weekly-review,"Nourish: virtual registered-dietitian care billed to insurance (New York), Series B Apr 2025; 0001410368-26-115258; weekly review 2026-11-17"
+1980,Rightway,hc.services,,high,weekly-review,"Rightway Healthcare: care navigation and pharmacy benefit manager for employers, Series E Sep 2026; 0001410368-26-115258; weekly review 2026-11-17"
+1981,EnduroSat,ind.space,space,high,weekly-review,"EnduroSat: satellite maker (Sofia, Bulgaria), held through the Emphatic Partner Capital Kochav vehicle; 0000894189-26-030445; weekly review 2026-11-17"
