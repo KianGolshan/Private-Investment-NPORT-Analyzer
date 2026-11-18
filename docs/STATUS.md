@@ -6,7 +6,7 @@ W1–W4 are live (PR #30). Vantage is live at **https://vantage-kian.duckdns.org
 As You Go, DuckDNS, HTTPS from Caddy, nightly SEC refresh, auto-deploy of every green commit on `main`;
 [DEPLOY.md](DEPLOY.md)). **`main` is protected:** changes go through a pull request with the CI checks green
 (`archive/v1` keeps v1). Waiting on the user: the Oracle security-list rule for SSH (DEPLOY.md 1A.6). Not started or
-deferred by choice: P7 (MCP server), P8's 30-night checkpoint. Next: the user's instructions (N-CSR pilot and big sample done 2026-10-28, see below; nothing applied).
+deferred by choice: P7 (MCP server), P8's 30-night checkpoint. Next: the user's instructions (N-CSR pilot and big sample done 2026-10-28, see below; nothing applied). Weekly reviews 2026-11-05 and 2026-11-17 ([notes](reviews/LOG.md)) wait on their PR.
 
 ## Phase tracker
 
